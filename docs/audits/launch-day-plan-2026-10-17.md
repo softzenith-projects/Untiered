@@ -2,6 +2,8 @@
 
 **Status: proposed, not deployed.** This is the decision and execution checklist for making Untiered available today. The [14 October launch plan](launch-plan.md) and [architecture audit](architecture-audit.md) remain useful evidence, but their open-fix lists predate fixes now on `develop`. Prices and service limits below were checked against provider documentation on 17 October 2026. The remote `develop` SHA `9dd0a0a` passed all four jobs in [CI run 39029938820](https://github.com/softzenith-projects/Untiered/actions/runs/39029938820). Account eligibility, provisioned capacity, production migrations, bills, and the running deployment have not been checked. Recheck CI if the release SHA changes.
 
+**18 October update:** the owner chose **public signup** at `untiered.tech`, with `api.untiered.tech` as its free DNS subdomain. The [deployment runbook](../../deploy/README.md) and VM configuration now spell out execution. The linked Supabase project is healthy in Mumbai, and all migrations on `develop` are applied. Its organization is currently **Free**; Auth still uses localhost URLs, custom SMTP and CAPTCHA are off, and the backup API returns zero backups. Vercel was not authenticated in the available browser. These are live account findings, so the public release remains blocked until the runbook's gates pass.
+
 ## Decision
 
 Keep the current three-part deployment:
