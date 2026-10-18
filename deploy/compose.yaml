@@ -1,0 +1,35 @@
+name: untiered-api
+
+services:
+  api:
+    image: untiered-api:${RELEASE_TAG:?Set RELEASE_TAG in deploy/.env}
+    env_file: ./api.env
+    restart: unless-stopped
+    stop_grace_period: 120s
+    mem_limit: 1400m
+    networks:
+      - private
+
+  proxy:
+    image: caddy:2.11.7-alpine
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN in deploy/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - private
+
+networks:
+  private:
+
+volumes:
+  caddy_data:
+  caddy_config:

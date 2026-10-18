@@ -1,40 +1,46 @@
-# Handoff — 17 October 2026
+# Handoff — 18 October 2026
 
 ## Task
 
-Document and audit the same-day, low-cost launch recommendation (`docs/audits/launch-day-plan-2026-10-17.md`; no task file).
+Prepare the public signup launch for `untiered.tech` and a separate `api.untiered.tech` backend (no task file; follows `docs/audits/launch-day-plan-2026-10-17.md`).
 
 ## What I built
 
-- `docs/audits/launch-day-plan-2026-10-17.md`: deployment choice, cost comparison, launch gates, and claim-by-claim audit with dated provider sources.
-- `docs/audits/launch-plan.md`: points readers of the 14 October snapshot to the current plan.
+- `deploy/compose.yaml`, `deploy/Caddyfile`, and `deploy/*.env.example`: single VM deployment for the existing Spring Boot API, with Caddy HTTPS and only ports 80/443 published.
+- `deploy/README.md`: exact release, Supabase, DNS, Vercel, VM, checks, and rollback sequence.
+- `docs/audits/launch-day-plan-2026-10-17.md`: dated live account findings and link to the execution runbook.
+- `.gitignore`: keep the filled VM API environment file out of Git.
 
 ## Assumptions I made
 
-- A public product on the organization repository warrants Vercel Pro and Supabase Pro; Oracle Always Free is an optional small-beta saving, with Lightsail as the dependable VM choice.
-- The existing Supabase project and `develop` commit are the intended launch inputs. Its actual region and production migration state were not available for this review.
-- This request was for a reviewable plan and audit, not authorization to create paid accounts or deploy.
+- The user chose public signup and supplied `untiered.tech`; `api.untiered.tech` is a DNS subdomain of the existing domain.
+- For a public release, the reliability baseline is a 2 GB AWS Lightsail VM in Mumbai, Vercel Pro, and Supabase Pro; current list price is about $57/month before AI and extras. The owner reviews actual checkout and legal details.
+- The green `develop` commit is the release source. An unapplied migration in the unrelated payments worktree is excluded from this release.
+- Resend Free is a candidate SMTP service within its current 100/day and 3,000/month quota; no account was created.
 
 ## What I could NOT verify
 
-- Live cloud account eligibility, Oracle capacity, Supabase region, linked migration state, SMTP delivery, backup restore, DNS, HTTPS, production latency, or VM memory headroom.
-- Voice quality and a complete spoken round; no live Gemini call or production deployment was made.
-- The exact monthly bill or cost per round. Gemini's configured fallback now routes to a newer model, and the configured TTS model has a November 2026 retirement date.
+- Vercel project, plan, or deployment: the available browser reaches its login page. No AWS, DNS, SMTP, or Turnstile account was connected here.
+- Supabase Pro, production Auth configuration, backup restore, HTTPS, signup flows, VM memory headroom, and the running API. Current read-only checks instead show a Free organization, localhost Auth URLs, custom SMTP/CAPTCHA disabled, and zero listed backups.
+- Five Supabase Security Advisor warnings need review, particularly the Security Definer function grants. No database or Auth settings were changed.
+- A complete spoken round, voice quality, or latency. No live Gemini call or interview occurred.
+- Docker image build/runtime: Docker CLI and Compose are installed, but the Docker Desktop daemon is not running.
 
 ## Verification status
 
-- Documentation diff whitespace check: pass. Local relative document links: checked.
-- [CI run 39031699315](https://github.com/softzenith-projects/Untiered/actions/runs/39031699315) on documentation commit `d8996be`: web, API, database, and image jobs all passed.
-- No application code or migrations changed; no live integration test was run.
+- Linked Supabase project: `ACTIVE_HEALTHY` in `ap-south-1`; all migrations on `develop` are applied. A newer local-only payments migration was deliberately not applied.
+- `docker compose config --no-env-resolution -q`: pass with safe placeholder interpolation values.
+- `git diff --check`: pass. Remote CI on this branch: pending at handoff creation.
 
 ## Merge status
 
-- Documentation branch `feat/launch-plan-audit` merged into `develop` after green CI. This changes the plan only; nothing was deployed.
+- Branch `feat/public-launch-deploy` pending push and CI. Do not merge without all four green jobs. Nothing was deployed or billed.
 
 ## Suggested next task
 
-- Execute the launch-day checklist in the dated plan, starting with production migration and account checks.
+- Complete the account gates in `deploy/README.md`, then deploy the exact green `develop` SHA and run public signup checks.
 
 ## Open questions for you
 
-- Confirm the production domain, cloud accounts, Supabase region, SMTP provider, and whether today's release is a private beta or public signup launch.
+- Confirm the legal operator and grievance contact, and review the actual Vercel, Supabase, and VM checkout before any paid subscription or VM creation.
+- Decide the initial Gemini provider budget and when a live interview test may be run.
