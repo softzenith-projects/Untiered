@@ -21,6 +21,7 @@ Prepare the public signup launch for `untiered.tech` and a separate `api.untiere
 ## What I could NOT verify
 
 - Vercel project, plan, or deployment: the available browser reaches its login page. No AWS, DNS, SMTP, or Turnstile account was connected here.
+- `untiered.tech` already resolves to `2.57.91.91` and serves an `hcdn` page; `api.untiered.tech` has no DNS record. Confirm the apex's current content before redirecting it to Vercel.
 - Supabase Pro, production Auth configuration, backup restore, HTTPS, signup flows, VM memory headroom, and the running API. Current read-only checks instead show a Free organization, localhost Auth URLs, custom SMTP/CAPTCHA disabled, and zero listed backups.
 - Five Supabase Security Advisor warnings need review, particularly the Security Definer function grants. No database or Auth settings were changed.
 - A complete spoken round, voice quality, or latency. No live Gemini call or interview occurred.
