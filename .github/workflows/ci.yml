@@ -105,6 +105,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Validate VM deployment configuration
+        env:
+          API_DOMAIN: api.untiered.tech
+          RELEASE_TAG: ci-placeholder
+        run: |
+          docker compose -f deploy/compose.yaml config --no-env-resolution -q
+          docker run --rm -e API_DOMAIN \
+            -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.11.7-alpine caddy validate --config /etc/caddy/Caddyfile
+
       - name: API image
         run: docker build -t untiered-api apps/api
 
