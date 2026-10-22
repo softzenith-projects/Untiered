@@ -5,6 +5,13 @@
 #     --build-arg NEXT_PUBLIC_API_BASE_URL=... -t untiered-web .
 # NEXT_PUBLIC_* values are compiled into the browser bundle, so they are build arguments,
 # not runtime environment. None of them is secret.
+#
+# Readable production stack traces: pass the Sentry project (not secret) as build arguments
+# and the auth token as a BUILD SECRET, never an argument, which would stay in the image
+# history:
+#   --build-arg SENTRY_ORG=... --build-arg SENTRY_PROJECT=... \
+#   --secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN
+# Without the secret the build succeeds and uploads nothing (see next.config.ts).
 
 FROM node:22-alpine AS deps
 WORKDIR /repo
@@ -23,12 +30,18 @@ ARG NEXT_PUBLIC_SENTRY_DSN=
 ARG NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
 ARG NEXT_PUBLIC_LEGAL_OPERATOR_NAME=
 ARG NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME=
+ARG SENTRY_ORG=
+ARG SENTRY_PROJECT=
 ENV NEXT_OUTPUT_STANDALONE=true NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /repo/node_modules node_modules
 COPY package.json package-lock.json ./
 COPY packages/shared packages/shared
 COPY apps/web apps/web
-RUN npm run build --workspace apps/web
+# The token is read from the secret mount for this one command only. If the secret is not
+# supplied it is empty, which next.config.ts treats as "do not upload source maps".
+RUN --mount=type=secret,id=sentry_auth_token \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" \
+    npm run build --workspace apps/web
 
 FROM node:22-alpine
 WORKDIR /app
