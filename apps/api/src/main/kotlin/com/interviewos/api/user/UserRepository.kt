@@ -21,22 +21,53 @@ class UserRepository(
         // load, since GET /me provisions too. A FOR UPDATE lock blocks the FOR KEY SHARE
         // that any foreign key to this user needs, so an ordinary profile read could stall
         // an unrelated write. An UPDATE whose WHERE matches nothing locks nothing.
+        val created =
+            jdbcClient
+                .sql(
+                    """
+                    insert into public.users (id, email, display_name)
+                    values (:id, :email, :displayName)
+                    on conflict (id) do nothing
+                    """.trimIndent(),
+                ).param("id", identity.id)
+                .param("email", identity.email)
+                .param("displayName", identity.displayName)
+                .update() == 1
+
         jdbcClient
             .sql(
                 """
-                insert into public.users (id, email, display_name)
-                values (:id, :email, :displayName)
-                on conflict (id) do nothing
+                insert into public.email_preferences
+                  (user_id, daily_question, announcements, reengagement, consented_at)
+                values (:id, :optIn, :optIn, :optIn, case when :optIn then now() else null end)
+                on conflict (user_id) do nothing
                 """.trimIndent(),
             ).param("id", identity.id)
-            .param("email", identity.email)
-            .param("displayName", identity.displayName)
+            .param("optIn", created && identity.emailMarketingOptIn)
             .update()
+
+        if (created) {
+            jdbcClient
+                .sql(
+                    """
+                    insert into public.email_deliveries (user_id, dedupe_key, category, subject, body)
+                    values (:id, 'welcome', 'welcome', 'Welcome to Untiered',
+                      'Your account is ready. Choose a company and role, then practise a spoken interview or explore the courses and Arena. Visit your account to get started.')
+                    on conflict (user_id, dedupe_key) do nothing
+                    """.trimIndent(),
+                ).param("id", identity.id)
+                .update()
+        }
 
         jdbcClient
             .sql("update public.users set email = :email where id = :id and email is distinct from :email")
             .param("id", identity.id)
             .param("email", identity.email)
+            .update()
+
+        jdbcClient
+            .sql("update public.users set last_seen_at = now() where id = :id and last_seen_at < now() - interval '1 day'")
+            .param("id", identity.id)
             .update()
 
         if (!identity.displayName.isNullOrBlank()) {

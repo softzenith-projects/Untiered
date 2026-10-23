@@ -6,11 +6,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountSummary, forgetAccount } from "./account-summary";
 
 const fetchMe = vi.hoisted(() => vi.fn());
+const updateEmailPreferences = vi.hoisted(() => vi.fn());
 const signOut = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(() => ({ token: "token-abc" as string | null | undefined }));
 
 vi.mock("@/lib/api", () => ({
   fetchMe,
+  updateEmailPreferences,
   ApiRequestError: class extends Error {},
 }));
 
@@ -49,8 +51,22 @@ describe("AccountSummary", () => {
     vi.clearAllMocks();
     forgetAccount();
     window.localStorage.clear();
+    window.sessionStorage.clear();
     auth.token = "token-abc";
     route.pathname = "/dashboard";
+  });
+
+  it("applies a Google signup email choice after authentication", async () => {
+    fetchMe.mockResolvedValue(me);
+    updateEmailPreferences.mockResolvedValue({ dailyQuestion: true, announcements: true, reengagement: true });
+    window.sessionStorage.setItem("untiered:email-opt-in-pending", "1");
+
+    render(<AccountSummary />);
+
+    await waitFor(() => expect(updateEmailPreferences).toHaveBeenCalledWith("token-abc", {
+      dailyQuestion: true, announcements: true, reengagement: true,
+    }));
+    await waitFor(() => expect(window.sessionStorage.getItem("untiered:email-opt-in-pending")).toBeNull());
   });
 
   /**

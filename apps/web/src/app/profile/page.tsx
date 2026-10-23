@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { AppShell } from "@/components/app-shell";
 import { DeleteAccountSection } from "@/components/delete-account-section";
+import { EmailPreferencesSection } from "@/components/email-preferences-section";
 import { ProfilePanel } from "@/components/profile-panel";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getCourseOutlines } from "@/lib/course-outline";
@@ -44,6 +45,7 @@ export default function ProfilePage() {
               <SignOutButton />
             </div>
           </div>
+          <EmailPreferencesSection />
           <DeleteAccountSection />
         </section>
       </div>
