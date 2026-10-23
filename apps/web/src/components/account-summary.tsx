@@ -7,7 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { fetchMe } from "@/lib/api";
+import { fetchMe, updateEmailPreferences } from "@/lib/api";
 import { forgetReports } from "@/lib/report-cache";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAccessToken } from "@/lib/use-access-token";
@@ -73,6 +73,18 @@ export function AccountSummary() {
       try {
         const me = await fetchMe({ accessToken: operationToken, signal: controller.signal });
         if (!controller.signal.aborted) {
+          if (window.sessionStorage.getItem("untiered:email-opt-in-pending") === "1") {
+            try {
+              await updateEmailPreferences(operationToken, {
+                dailyQuestion: true,
+                announcements: true,
+                reengagement: true,
+              });
+              window.sessionStorage.removeItem("untiered:email-opt-in-pending");
+            } catch {
+              // Keep the explicit choice for a retry on the next account load.
+            }
+          }
           lastMe = me;
           setState({ status: "ready", ownerToken: operationToken, me });
           const isEmpty = !me.profile.function && !me.profile.currentLevel && !me.profile.targetLevel;

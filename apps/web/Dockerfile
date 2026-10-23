@@ -5,6 +5,7 @@
 #     --build-arg NEXT_PUBLIC_API_BASE_URL=... -t untiered-web .
 # NEXT_PUBLIC_* values are compiled into the browser bundle, so they are build arguments,
 # not runtime environment. None of them is secret.
+# The server-only EMAIL_CONTENT_TOKEN must instead be supplied at container runtime.
 #
 # Readable production stack traces: pass the Sentry project (not secret) as build arguments
 # and the auth token as a BUILD SECRET, never an argument, which would stay in the image

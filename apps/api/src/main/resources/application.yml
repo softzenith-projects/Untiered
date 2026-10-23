@@ -7,6 +7,14 @@ spring:
     url: ${DATABASE_URL}
     username: ${DATABASE_USER}
     password: ${DATABASE_PASSWORD}
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
   threads:
     virtual:
       enabled: true
@@ -57,6 +65,13 @@ management:
         enabled: true
 
 interviewos:
+  email:
+    enabled: ${EMAIL_ENABLED:false}
+    from: ${EMAIL_FROM:}
+    public-base-url: ${EMAIL_PUBLIC_BASE_URL:http://localhost:3000}
+    api-base-url: ${EMAIL_API_BASE_URL:http://localhost:8080}
+    daily-question-url: ${EMAIL_DAILY_QUESTION_URL:}
+    content-token: ${EMAIL_CONTENT_TOKEN:}
   features:
     # Product-level kill switches. The same public environment variables are compiled
     # into the Next.js app, so one deployment setting hides the UI and closes its API.

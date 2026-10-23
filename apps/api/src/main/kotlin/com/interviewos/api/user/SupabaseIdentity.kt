@@ -18,6 +18,8 @@ data class SupabaseIdentity(
      * never a `user_metadata.email_verified` flag, is what may vouch for the email.
      */
     val signInProviders: Set<String> = emptySet(),
+    /** Captured only when the account is first provisioned. The user explicitly selected it at sign-up. */
+    val emailMarketingOptIn: Boolean = false,
 ) {
     companion object {
         /** Google fills `full_name`; other providers vary, so `name` is the fallback. */
@@ -42,7 +44,7 @@ data class SupabaseIdentity(
                     (appMetadata["provider"] as? String)?.let { add(it.lowercase()) }
                     (appMetadata["providers"] as? Collection<*>)?.forEach { (it as? String)?.let { name -> add(name.lowercase()) } }
                 }
-            return SupabaseIdentity(id, email, displayName, providers)
+            return SupabaseIdentity(id, email, displayName, providers, metadata["email_marketing_opt_in"] == true)
         }
     }
 }
