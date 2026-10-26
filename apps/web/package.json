@@ -22,8 +22,8 @@
     "@untiered/shared": "*",
     "canvas-confetti": "^1.9.4",
     "next": "16.4.3",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "shiki": "^4.5.0",
     "ts-fsrs": "^5.4.2"
   },

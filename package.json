@@ -30,8 +30,8 @@
     "node": ">=20.12"
   },
   "devDependencies": {
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "supabase": "^2.120.0"
   },
   "//overrides": [
@@ -50,8 +50,8 @@
     "vitest's vite is dev-only. Drop each entry once its parent ships the fix."
   ],
   "overrides": {
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "@excalidraw/excalidraw": {
       "nanoid": "^3.3.18"
     },
