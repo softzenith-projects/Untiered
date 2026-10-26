@@ -56,11 +56,24 @@ describe("EmailPasswordAuth", () => {
     const options = signUp.mock.calls[0]?.[0];
     expect(options.email).toBe("candidate@example.com");
     expect(options.password).toBe("password123");
+    expect(options.options.data.email_marketing_opt_in).toBe(false);
     const callback = new URL(options.options.emailRedirectTo);
     expect(callback.pathname).toBe("/auth/callback");
     expect(callback.searchParams.get("next")).toBe("/dashboard");
     expect(await screen.findByRole("status")).toHaveTextContent(/check your email/i);
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("sends consent only when the signup checkbox is explicitly selected", async () => {
+    render(<EmailPasswordAuth next="/dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /email me the daily question/i }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Email address" }), "candidate@example.com");
+    await userEvent.type(screen.getByLabelText("Password", { exact: true }), "password123");
+    await userEvent.type(screen.getByLabelText("Confirm password"), "password123");
+    await userEvent.click(screen.getAllByRole("button", { name: "Create account" })[1]!);
+
+    await waitFor(() => expect(signUp.mock.calls[0]?.[0].options.data.email_marketing_opt_in).toBe(true));
   });
 
   it("rejects mismatched passwords before contacting Supabase", async () => {
@@ -113,5 +126,17 @@ describe("EmailPasswordAuth", () => {
     await waitFor(() => expect(signUp).toHaveBeenCalledTimes(1));
     expect(signUp.mock.calls[0]?.[0].options.captchaToken).toBe("verified-token");
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Create account" })[1]).toBeDisabled());
+  });
+
+  it("requires a CAPTCHA token for password reset when the challenge is configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "public-site-key");
+    render(<EmailPasswordAuth next="/dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Forgot password?" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Email address" }), "candidate@example.com");
+    expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Complete security check" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+    await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledTimes(1));
+    expect(resetPasswordForEmail.mock.calls[0]?.[1].captchaToken).toBe("verified-token");
   });
 });

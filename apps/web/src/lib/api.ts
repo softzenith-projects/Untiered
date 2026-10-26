@@ -184,6 +184,28 @@ export function fetchMe(options: ApiGetOptions): Promise<MeResponse> {
   return apiGet<MeResponse>("/api/v1/me", options);
 }
 
+export interface EmailPreferences {
+  dailyQuestion: boolean;
+  announcements: boolean;
+  reengagement: boolean;
+  consentedAt: string | null;
+}
+
+export type EmailPreferenceChoices = Pick<EmailPreferences, "dailyQuestion" | "announcements" | "reengagement">;
+
+export function fetchEmailPreferences(options: ApiGetOptions): Promise<EmailPreferences> {
+  return apiGet<EmailPreferences>("/api/v1/me/email-preferences", options);
+}
+
+export function updateEmailPreferences(accessToken: string, choices: EmailPreferenceChoices): Promise<EmailPreferences> {
+  return apiSend<EmailPreferences>("/api/v1/me/email-preferences", "PUT", accessToken, choices);
+}
+
+export async function unsubscribeEmail(token: string): Promise<void> {
+  const response = await fetch(`${env.apiBaseUrl}/api/v1/email/unsubscribe/${encodeURIComponent(token)}`, { method: "POST" });
+  if (!response.ok) throw new Error("Could not unsubscribe right now.");
+}
+
 /**
  * The public usage counters. No token: this is two aggregate integers, read by the
  * landing page before anyone has signed in.

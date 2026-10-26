@@ -13,7 +13,16 @@ vi.mock("@/lib/supabase/client", () => ({
 describe("SignInWithGoogle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
     signInWithOAuth.mockResolvedValue({ error: null });
+  });
+
+  it("keeps an explicit email choice across the OAuth redirect", async () => {
+    render(<SignInWithGoogle next="/dashboard" />);
+    await userEvent.click(screen.getByRole("checkbox", { name: /email me the daily question/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(window.sessionStorage.getItem("untiered:email-opt-in-pending")).toBe("1");
   });
 
   it("exposes a single button with an accessible name", () => {

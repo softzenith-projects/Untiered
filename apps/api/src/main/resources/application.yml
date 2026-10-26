@@ -57,6 +57,15 @@ management:
         enabled: true
 
 interviewos:
+  email:
+    enabled: ${EMAIL_ENABLED:false}
+    from: ${SES_FROM_EMAIL:noreply@untiered.tech}
+    reply-to: ${SES_REPLY_TO_EMAIL:help@untiered.tech}
+    aws-region: ${AWS_REGION:ap-southeast-2}
+    public-base-url: ${EMAIL_PUBLIC_BASE_URL:http://localhost:3000}
+    api-base-url: ${EMAIL_API_BASE_URL:http://localhost:8080}
+    daily-question-url: ${EMAIL_DAILY_QUESTION_URL:}
+    content-token: ${EMAIL_CONTENT_TOKEN:}
   features:
     # Product-level kill switches. The same public environment variables are compiled
     # into the Next.js app, so one deployment setting hides the UI and closes its API.

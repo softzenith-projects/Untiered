@@ -19,6 +19,7 @@ export function EmailPasswordAuth({ next }: { next: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [emailOptIn, setEmailOptIn] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -63,12 +64,17 @@ export function EmailPasswordAuth({ next }: { next: string }) {
         if (resetError) throw resetError;
         setSuccess("If an account exists for this email, a password reset link is on its way.");
       } else if (mode === "sign-up") {
+        window.sessionStorage.removeItem("untiered:email-opt-in-pending");
         const callback = new URL("/auth/callback", window.location.origin);
         callback.searchParams.set("next", next);
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: callback.toString(), ...(captchaToken ? { captchaToken } : {}) },
+          options: {
+            emailRedirectTo: callback.toString(),
+            data: { email_marketing_opt_in: emailOptIn },
+            ...(captchaToken ? { captchaToken } : {}),
+          },
         });
         if (signUpError) throw signUpError;
         if (data.session) {
@@ -78,6 +84,7 @@ export function EmailPasswordAuth({ next }: { next: string }) {
           setSuccess("Check your email for a confirmation link to finish creating your account.");
         }
       } else {
+        window.sessionStorage.removeItem("untiered:email-opt-in-pending");
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
@@ -139,6 +146,12 @@ export function EmailPasswordAuth({ next }: { next: string }) {
             <FieldLabel htmlFor="auth-confirm-password">Confirm password</FieldLabel>
             <Input id="auth-confirm-password" type="password" autoComplete="new-password" required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} disabled={pending} />
           </div>
+        ) : null}
+        {mode === "sign-up" ? (
+          <label className="flex items-start gap-3 rounded-xl border border-line bg-surface-raised p-3 text-caption text-ink-muted">
+            <input type="checkbox" checked={emailOptIn} onChange={(event) => setEmailOptIn(event.target.checked)} disabled={pending} className="mt-1 size-4 accent-accent" />
+            <span>Email me the daily question, occasional platform news, and reminders if I stop visiting. I can change this anytime.</span>
+          </label>
         ) : null}
         {turnstileSiteKey ? <TurnstileChallenge key={challengeAttempt} siteKey={turnstileSiteKey} onToken={setCaptchaToken} /> : null}
         {error ? <Alert tone="error">{error}</Alert> : null}

@@ -39,6 +39,7 @@ class SecurityConfig {
                 // Two aggregate integers with nothing personal in them, read by the
                 // public landing page before anyone has signed in.
                 it.requestMatchers(HttpMethod.GET, "/api/v1/usage").permitAll()
+                it.requestMatchers(HttpMethod.POST, "/api/v1/email/unsubscribe/*").permitAll()
                 it.anyRequest().authenticated()
             }.oauth2ResourceServer { resourceServer ->
                 resourceServer.jwt { }

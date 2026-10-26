@@ -34,6 +34,7 @@ configurations.matching { it.name.startsWith("ktlint") }.configureEach {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -45,6 +46,7 @@ dependencies {
     // Error reporting. Inert until SENTRY_DSN is set, so local runs and CI send nothing.
     implementation("io.sentry:sentry-spring-boot-4-starter:8.60.0")
     implementation("io.sentry:sentry-logback:8.60.0")
+    implementation("software.amazon.awssdk:sesv2:2.55.12")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-jdbc-test")
