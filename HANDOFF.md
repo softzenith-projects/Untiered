@@ -29,17 +29,18 @@ Finish Untiered SES email integration and production checks (owner's pasted requ
 ## Verification status
 
 - Web: `npm run typecheck` pass; `npm run lint` pass; `npm run test` pass (85 files, 3,089 tests); standard `npm run build` pass with CI placeholder environment after Next.js 16.4.3 patch.
-- API: `./gradlew.bat ktlintCheck test build` pass. SES sender tests 4/4 pass. Migrated-PostgreSQL tests guarded by `TEST_DB_URL` skipped locally; CI must run them.
+- API: `./gradlew.bat ktlintCheck test build` pass. SES sender tests 4/4 pass. Migrated-PostgreSQL tests guarded by `TEST_DB_URL` skipped locally; the CI database job passed them.
 - Repository: `npm run scenario:check` pass; `node --test scripts/*.test.mjs` pass (85 tests, including two new Auth config/template checks). Frontend bundle/static scan found no AWS variable references. No live email, AI call, or migration application occurred.
-- Early local test/build attempts failed from Windows worker contention, font network isolation, missing CI placeholder environment, and the pre-patch Next.js security block. The final commands above passed after these were resolved. New CI status is pending push.
+- Early local test/build attempts failed from Windows worker contention, font network isolation, missing CI placeholder environment, and the pre-patch Next.js security block. The final commands above passed after these were resolved. [CI run 40319915682](https://github.com/softzenith-projects/Untiered/actions/runs/40319915682) passed all four jobs: web, API, migrated database integration, and container images.
 
 ## Merge status
 
 - Draft [PR #121](https://github.com/softzenith-projects/Untiered/pull/121) on `feat/lifecycle-emails` targets `develop`. It remains unmerged for human review because it changes auth and personal-data handling. No push to `main`.
+- The PR description still describes the former SMTP sender. The GitHub connector returned 403 when updating it, and local `gh` credentials are invalid. This handoff and the current diff describe the SES v2 implementation.
 
 ## Suggested next task
 
-- Review PR #121 and its new CI run, apply both migrations to the linked Supabase project, configure hosted Supabase SMTP/rate limits/CAPTCHA/templates, then merge into `develop`; test SES simulator and Auth callbacks with the owner's explicit live-test approval before setting `EMAIL_ENABLED=true`.
+- Review PR #121, update its description, apply both migrations to the linked Supabase project, configure hosted Supabase SMTP/rate limits/CAPTCHA/templates, then merge into `develop`; test SES simulator and Auth callbacks with the owner's explicit live-test approval before setting `EMAIL_ENABLED=true`.
 
 ## Open questions for you
 
