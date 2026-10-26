@@ -1,49 +1,48 @@
-# Handoff — 18 October 2026
+# Handoff — 26 October 2026
 
 ## Task
 
-Prepare the public signup launch for `untiered.tech` and a separate `api.untiered.tech` backend (no task file; follows `docs/audits/launch-day-plan-2026-10-17.md`).
+Finish Untiered SES email integration and resolve PR #121's lockfile conflict (owner's pasted requests; PRD §05 and §15; no task file).
 
 ## What I built
 
-- `deploy/compose.yaml`, `deploy/Caddyfile`, and `deploy/*.env.example`: single VM deployment for the existing Spring Boot API, with Caddy HTTPS and only ports 80/443 published.
-- `deploy/README.md`: exact release, Supabase, DNS, Vercel, VM, checks, and rollback sequence.
-- `docs/audits/launch-day-plan-2026-10-17.md`: dated live account findings and link to the execution runbook.
-- `.github/workflows/ci.yml`: validates Compose and Caddy configuration in CI before building the existing images.
-- `.gitignore`: keep the filled VM API environment file out of Git.
+- Extended the existing draft lifecycle-email PR #121 rather than adding another email service. `SesEmailSender.kt` now sends responsive HTML and plain text through the AWS SDK SES v2, with the verified sender and support Reply-To. `LifecycleEmailJob.kt` uses the existing durable queue for bounded transient retries and records permanent or ambiguous failures without sensitive logs.
+- `20261026000000_ses_delivery_retries.sql` adds claim and retry state. The older lifecycle migration remains unchanged.
+- Added branded Supabase Auth confirmation, recovery, and email-change templates, local Auth rate limits, and tests for templates, CAPTCHA reset flow, MIME content, SES errors, configuration, and outbox retry state.
+- Updated `.env.example`, `deploy/api.env.example`, `application.yml`, and `docs/lifecycle-email-operations.md` for separate API SES v2 and Supabase Auth SMTP configuration in Sydney. The existing SNS email subscription remains the manual bounce/complaint monitor.
+- Patched Next.js and its ESLint config from 16.4.0 to 16.4.3 after the production build blocked on a documented critical advisory. No new web dependency was introduced.
+- Merged the latest `origin/develop` into the PR branch and resolved the sole conflict, `package-lock.json`, with develop's lockfile. Develop already carries Next.js 16.4.3 and newer audit overrides; the resolved lockfile exactly matches its blob.
 
 ## Assumptions I made
 
-- The user chose public signup and supplied `untiered.tech`; `api.untiered.tech` is a DNS subdomain of the existing domain.
-- For a public release, the reliability baseline is a 2 GB AWS Lightsail VM in Mumbai, Vercel Pro, and Supabase Pro; current list price is about $57/month before AI and extras. The owner reviews actual checkout and legal details.
-- The green `develop` commit is the release source. An unapplied migration in the unrelated payments worktree is excluded from this release.
-- Resend Free is a candidate SMTP service within its current 100/day and 3,000/month quota; no account was created.
+- Supabase Auth remains the owner of registration, verification, and reset tokens. Its hosted custom SMTP settings send those messages through SES; the Kotlin API uses SES v2 for its own queued lifecycle messages. Routing Auth through a new backend hook would duplicate token handling and create another sensitive queue.
+- Explicit SES 429/5xx and ThrottlingException responses are retryable; SDK client failures are ambiguous and require manual review. Three total attempts are the limit, without an exactly-once claim.
+- Hosted Supabase settings and templates need a human to apply. The repository's `config.toml` only configures local Supabase Auth. The owner's stated SNS and suppression setup is taken as reported, not remotely verified.
+- PR #121 is already over the 800-line review guideline. Keeping this follow-up on it avoids duplicating the existing queue, preferences, and signup flow; the SES transport and retry migration depend on those unmerged changes.
 
 ## What I could NOT verify
 
-- Vercel project, plan, or deployment: the available browser reaches its login page. No AWS, DNS, SMTP, or Turnstile account was connected here.
-- `untiered.tech` already resolves to `2.57.91.91` and serves an `hcdn` page; `api.untiered.tech` has no DNS record. Confirm the apex's current content before redirecting it to Vercel.
-- Supabase Pro, production Auth configuration, backup restore, HTTPS, signup flows, VM memory headroom, and the running API. Current read-only checks instead show a Free organization, localhost Auth URLs, custom SMTP/CAPTCHA disabled, and zero listed backups.
-- Five Supabase Security Advisor warnings need review, particularly the Security Definer function grants. No database or Auth settings were changed.
-- A complete spoken round, voice quality, or latency. No live Gemini call or interview occurred.
-- Docker image build/runtime: Docker CLI and Compose are installed, but the Docker Desktop daemon is not running.
+- No live AWS call or mailbox-simulator send was made, per the owner's instruction. SES credentials, quota, sender reputation, actual inbox MIME, callbacks, SNS delivery, and account-level suppression remain unverified.
+- The owner reports applying the migrations. `npm run supabase -- migration list --linked` still cannot verify the remote from this worktree: it has no linked project ref or `.env`. Confirm both email rows have a remote entry before merging into `develop`.
+- Hosted Supabase Auth SMTP, rate limits, CAPTCHA, and HTML templates need manual deployment. Confirm Auth mail has a plain-text MIME alternative during the controlled mailbox test; Supabase's template editor accepts HTML only.
+- Legal/consent wording and final inbox appearance need owner review. `npm install` still reported dependency advisories outside this focused patch update.
 
 ## Verification status
 
-- Linked Supabase project: `ACTIVE_HEALTHY` in `ap-south-1`; all migrations on `develop` are applied. A newer local-only payments migration was deliberately not applied.
-- `docker compose config -q` with the blank example environment: pass locally.
-- [CI run 39134563654](https://github.com/softzenith-projects/Untiered/actions/runs/39134563654) on `310e420`: web, API, database, and image jobs all passed; the image job validated Compose and Caddy and built both existing images.
-- `git diff --check`: pass. No live integration test or production deploy was run.
+- Web: `npm run typecheck` pass; `npm run lint` pass; `npm run test` pass (85 files, 3,089 tests); standard `npm run build` pass with CI placeholder environment after Next.js 16.4.3 patch.
+- API: `./gradlew.bat ktlintCheck test build` pass. SES sender tests 4/4 pass. Migrated-PostgreSQL tests guarded by `TEST_DB_URL` skipped locally; the CI database job passed them.
+- Repository: `npm run scenario:check` pass; `node --test scripts/*.test.mjs` pass (85 tests, including two new Auth config/template checks). Frontend bundle/static scan found no AWS variable references. No live email, AI call, or migration application occurred.
+- Earlier [CI runs 40319915682](https://github.com/softzenith-projects/Untiered/actions/runs/40319915682) and [40320569790](https://github.com/softzenith-projects/Untiered/actions/runs/40320569790) passed all four jobs. After the develop merge, `npm install --package-lock-only --ignore-scripts --offline --no-audit --no-fund` passed; an incidental optional-peer rewrite was discarded. A local clean install was stopped after a Windows sandbox write error and a long retry. The new PR CI run must validate clean install, tests, and builds before merge.
 
 ## Merge status
 
-- Branch `feat/public-launch-deploy` (`310e420`) merged into `develop` by this merge commit after green CI. Nothing was deployed or billed.
+- Draft [PR #121](https://github.com/softzenith-projects/Untiered/pull/121) on `feat/lifecycle-emails` targets `develop`. It remains unmerged for human review because it changes auth and personal-data handling. No push to `main`.
+- The PR description still describes the former SMTP sender. The GitHub connector returned 403 when updating it, and local `gh` credentials are invalid. This handoff and the current diff describe the SES v2 implementation.
 
 ## Suggested next task
 
-- Complete the account gates in `deploy/README.md`, then deploy the exact green `develop` SHA and run public signup checks.
+- Verify both migration rows on the linked Supabase project, review PR #121 and update its description, configure hosted Supabase SMTP/rate limits/CAPTCHA/templates, then merge into `develop` only after new CI passes; test SES simulator and Auth callbacks with the owner's explicit live-test approval before setting `EMAIL_ENABLED=true`.
 
 ## Open questions for you
 
-- Confirm the legal operator and grievance contact, and review the actual Vercel, Supabase, and VM checkout before any paid subscription or VM creation.
-- Decide the initial Gemini provider budget and when a live interview test may be run.
+- Confirm the production SES send-rate/daily quota and whether Supabase Auth mail includes a plain-text MIME alternative. The sender, region, support address, and app hosting are now specified by the owner.

@@ -277,7 +277,7 @@ class SessionRepositoryDatabaseIntegrationTest {
             .param("email", email)
             .update()
         jdbc
-            .sql("insert into public.users (id, email) values (:id, :email)")
+            .sql("insert into public.users (id, email) values (:id, :email) on conflict (id) do nothing")
             .param("id", id)
             .param("email", email)
             .update()
