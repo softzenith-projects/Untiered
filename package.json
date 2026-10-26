@@ -40,10 +40,26 @@
     "and two copies of React in one tree break reconciliation. It surfaced as",
     "'Objects are not valid as a React child' across seventeen unrelated tests, green",
     "locally and red under `npm ci`, because only a clean install produces the broken",
-    "layout. Radix works with React 19; the peer range is stale, not a real bound."
+    "layout. Radix works with React 19; the peer range is stale, not a real bound.",
+    "",
+    "The rest are npm audit fixes for packages pinned by a dependency, so no range",
+    "update can reach them. Excalidraw pins nanoid 3.3.3 and its mermaid plugin pins",
+    "4.0.2; every 4.x is affected, so the plugin moves to 5, and both only call",
+    "nanoid(), which is unchanged across 3-5. chevrotain pins lodash-es 4.17.21,",
+    "mermaid caps katex below the fixed 0.19 (it only calls renderToString), and",
+    "vitest's vite is dev-only. Drop each entry once its parent ships the fix."
   ],
   "overrides": {
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "@excalidraw/excalidraw": {
+      "nanoid": "^3.3.18"
+    },
+    "@excalidraw/mermaid-to-excalidraw": {
+      "nanoid": "^5.1.16"
+    },
+    "lodash-es": "^4.18.1",
+    "katex": "^0.19.1",
+    "vite": "^8.3.5"
   }
 }
