@@ -13,7 +13,9 @@ import java.util.UUID
 @ConfigurationProperties(prefix = "interviewos.email")
 data class EmailProperties(
     val enabled: Boolean = false,
-    val from: String = "",
+    val from: String = "noreply@untiered.tech",
+    val replyTo: String = "help@untiered.tech",
+    val awsRegion: String = "ap-southeast-2",
     val publicBaseUrl: String = "http://localhost:3000",
     val apiBaseUrl: String = "http://localhost:8080",
     val dailyQuestionUrl: String = "",

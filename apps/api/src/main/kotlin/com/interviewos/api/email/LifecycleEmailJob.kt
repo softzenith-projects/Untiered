@@ -1,16 +1,16 @@
 package com.interviewos.api.email
 
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.jdbc.core.simple.JdbcClient
-import org.springframework.mail.javamail.JavaMailSender
-import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
+import software.amazon.awssdk.awscore.exception.AwsServiceException
+import software.amazon.awssdk.services.sesv2.model.SesV2Exception
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlin.random.Random
 
 data class DailyQuestionEmailContent(
     val prompt: String,
@@ -40,6 +40,7 @@ private data class PendingEmail(
     val subject: String,
     val body: String,
     val unsubscribeToken: String,
+    val attemptCount: Int,
     val allowed: Boolean,
     val active: Boolean,
 )
@@ -49,7 +50,7 @@ class LifecycleEmailJob(
     private val jdbcClient: JdbcClient,
     private val properties: EmailProperties,
     private val restClientBuilder: RestClient.Builder,
-    private val senderProvider: ObjectProvider<JavaMailSender>,
+    private val sender: SesEmailSender,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val india = ZoneId.of("Asia/Kolkata")
@@ -61,16 +62,20 @@ class LifecycleEmailJob(
         if (LocalTime.now(india).hour >= 9) {
             val date = LocalDate.now(india)
             runCatching { queueDaily(date) }
-                .onFailure { log.warn("Could not queue daily question email for {}", date, it) }
+                .onFailure { log.warn("Could not queue daily question email for {} ({})", date, it.javaClass.simpleName) }
             queueRetention()
         }
         queueCampaigns()
     }
 
-    /** One claimed row at a time keeps SES's initial sending rate under control. */
+    /** One row every two seconds per API instance. Keep deployment replicas within the SES quota. */
     @Scheduled(initialDelay = 90_000, fixedDelay = 2_000)
     fun dispatch() {
         if (!properties.enabled) return
+        jdbcClient
+            .sql(
+                "update public.email_deliveries set status = 'failed', error_code = 'interrupted' where status = 'sending' and claimed_at < now() - interval '5 minutes'",
+            ).update()
         jdbcClient
             .sql(
                 """
@@ -86,10 +91,12 @@ class LifecycleEmailJob(
                 .sql(
                     """
                     with next as (
-                      select id from public.email_deliveries where status = 'pending'
-                      order by id for update skip locked limit 1
+                      select id from public.email_deliveries
+                       where status = 'pending' and next_attempt_at <= now()
+                      order by next_attempt_at, id for update skip locked limit 1
                     )
-                    update public.email_deliveries d set status = 'sending'
+                    update public.email_deliveries d
+                       set status = 'sending', attempt_count = attempt_count + 1, claimed_at = now()
                     from next where d.id = next.id returning d.id
                     """.trimIndent(),
                 ).query(Long::class.java)
@@ -99,7 +106,7 @@ class LifecycleEmailJob(
             jdbcClient
                 .sql(
                     """
-                    select d.id, u.email, d.category, d.dedupe_key, d.subject, d.body,
+                    select d.id, u.email, d.category, d.dedupe_key, d.subject, d.body, d.attempt_count,
                            p.unsubscribe_token::text,
                            (d.category = 'welcome'
                              or (d.category = 'daily_question' and p.daily_question)
@@ -123,6 +130,7 @@ class LifecycleEmailJob(
                         rs.getString("subject"),
                         rs.getString("body"),
                         rs.getString("unsubscribe_token"),
+                        rs.getInt("attempt_count"),
                         rs.getBoolean("allowed"),
                         rs.getBoolean("active"),
                     )
@@ -136,18 +144,30 @@ class LifecycleEmailJob(
             return
         }
         try {
-            send(pending)
+            sender.send(pending.address, pending.category, pending.subject, pending.body, pending.unsubscribeToken)
             jdbcClient
                 .sql("update public.email_deliveries set status = 'sent', sent_at = now() where id = :id")
                 .param("id", id)
                 .update()
         } catch (cause: Exception) {
-            // SMTP can fail after accepting a message. Never retry automatically and risk a duplicate.
-            // Mail exceptions can contain the recipient address. Keep it out of logs and Sentry.
-            log.error("Email delivery {} needs review ({})", id, cause.javaClass.simpleName)
+            // SDK client timeouts may occur after acceptance: never retry ambiguous results.
+            // Exception messages can contain addresses or content, so log only a safe class and row ID.
+            val retry = cause is SesV2Exception && isTransientSesFailure(cause)
+            log.error("Email delivery {} failed ({}); retryable={}", id, cause.javaClass.simpleName, retry)
+            val delaySeconds = if (retry) retryDelaySeconds(pending.attemptCount) else 0L
             jdbcClient
-                .sql("update public.email_deliveries set status = 'failed', error_code = 'smtp_error' where id = :id")
-                .param("id", id)
+                .sql(
+                    """
+                    update public.email_deliveries
+                       set status = case when :retry and attempt_count < 3 then 'pending' else 'failed' end,
+                           next_attempt_at = now() + (:delay * interval '1 second'),
+                           error_code = :code
+                     where id = :id
+                    """.trimIndent(),
+                ).param("id", id)
+                .param("retry", retry)
+                .param("delay", delaySeconds)
+                .param("code", if (retry) "ses_transient" else "ses_permanent_or_ambiguous")
                 .update()
         }
     }
@@ -228,61 +248,19 @@ class LifecycleEmailJob(
                 .update()
         }
     }
-
-    private fun send(delivery: PendingEmail) {
-        require(properties.from.isNotBlank()) { "EMAIL_FROM is required when email sending is enabled" }
-        val sender = senderProvider.getIfAvailable() ?: error("MAIL_HOST is required when email sending is enabled")
-        val mime = sender.createMimeMessage()
-        val helper = MimeMessageHelper(mime, true, "UTF-8")
-        helper.setFrom(properties.from)
-        helper.setTo(delivery.address)
-        helper.setSubject(delivery.subject)
-        val accountLink =
-            "${properties.publicBaseUrl.trimEnd('/')}/${if (delivery.category == "daily_question") "daily-challenge" else "dashboard"}"
-        val preferencesLink = "${properties.publicBaseUrl.trimEnd('/')}/profile#account"
-        val unsubscribe = "${properties.apiBaseUrl.trimEnd('/')}/api/v1/email/unsubscribe/${delivery.unsubscribeToken}"
-        val text =
-            buildString {
-                appendLine(delivery.body)
-                appendLine()
-                appendLine("Your account: $accountLink")
-                if (delivery.category != "welcome") {
-                    appendLine("Manage emails: $preferencesLink")
-                    appendLine("Unsubscribe: ${properties.publicBaseUrl.trimEnd('/')}/unsubscribe?token=${delivery.unsubscribeToken}")
-                }
-            }
-        val unsubscribePage = "${properties.publicBaseUrl.trimEnd('/')}/unsubscribe?token=${delivery.unsubscribeToken}"
-        val footer =
-            if (delivery.category == "welcome") {
-                "Welcome aboard."
-            } else {
-                "<a href=\"${escapeHtml(preferencesLink)}\">Manage email preferences</a> · " +
-                    "<a href=\"${escapeHtml(unsubscribePage)}\">Unsubscribe</a>"
-            }
-        val html =
-            """
-            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px;color:#17315a;line-height:1.6">
-              <p style="font-size:14px;font-weight:800;letter-spacing:.12em;color:#1865db">UNTIERED</p>
-              <h1 style="font-size:28px;line-height:1.2">${escapeHtml(delivery.subject)}</h1>
-              <p style="font-size:16px;white-space:pre-wrap">${escapeHtml(delivery.body)}</p>
-              <p><a href="${escapeHtml(
-                accountLink,
-            )}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#1865db;color:#fff;text-decoration:none;font-weight:700">Visit your account</a></p>
-              <p style="margin-top:32px;border-top:1px solid #d8e3f2;padding-top:16px;font-size:13px;color:#5b6d89">$footer</p>
-            </div>
-            """.trimIndent()
-        helper.setText(text, html)
-        if (delivery.category != "welcome") {
-            mime.setHeader("List-Unsubscribe", "<$unsubscribe>")
-            mime.setHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
-        }
-        sender.send(mime)
-    }
 }
 
-private fun escapeHtml(value: String): String =
-    value
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
+internal fun isTransientSesStatus(status: Int): Boolean = status == 429 || status in 500..504
+
+internal fun isTransientSesFailure(cause: AwsServiceException): Boolean =
+    isTransientSesStatus(cause.statusCode()) ||
+        cause.awsErrorDetails()?.errorCode() in setOf("ThrottlingException", "TooManyRequestsException")
+
+internal fun retryDelaySeconds(
+    attemptCount: Int,
+    random: Random = Random.Default,
+): Long {
+    require(attemptCount in 1..3)
+    val base = 30L shl (attemptCount - 1)
+    return base + random.nextLong(base + 1)
+}

@@ -127,4 +127,16 @@ describe("EmailPasswordAuth", () => {
     expect(signUp.mock.calls[0]?.[0].options.captchaToken).toBe("verified-token");
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Create account" })[1]).toBeDisabled());
   });
+
+  it("requires a CAPTCHA token for password reset when the challenge is configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "public-site-key");
+    render(<EmailPasswordAuth next="/dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Forgot password?" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Email address" }), "candidate@example.com");
+    expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Complete security check" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+    await waitFor(() => expect(resetPasswordForEmail).toHaveBeenCalledTimes(1));
+    expect(resetPasswordForEmail.mock.calls[0]?.[1].captchaToken).toBe("verified-token");
+  });
 });

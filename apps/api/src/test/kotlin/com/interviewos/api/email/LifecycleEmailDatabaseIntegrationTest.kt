@@ -4,8 +4,16 @@ import com.interviewos.api.user.UserRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.jdbc.datasource.DriverManagerDataSource
+import org.springframework.web.client.RestClient
+import software.amazon.awssdk.services.sesv2.SesV2Client
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest
+import software.amazon.awssdk.services.sesv2.model.SendEmailResponse
+import software.amazon.awssdk.services.sesv2.model.SesV2Exception
 import java.util.UUID
 import kotlin.test.assertEquals
 
@@ -108,6 +116,46 @@ class LifecycleEmailDatabaseIntegrationTest {
                 select count(*) from public.email_deliveries
                  where user_id = :id and dedupe_key = 'daily-question-test' and status = 'cancelled'
                 """.trimIndent(),
+            ),
+        )
+    }
+
+    @Test
+    fun `transient SES response retries from durable outbox then records acceptance`() {
+        createAuthUser(confirmed = true, optedIn = false)
+        val client = mock(SesV2Client::class.java)
+        `when`(client.sendEmail(any(SendEmailRequest::class.java)))
+            .thenThrow(SesV2Exception.builder().statusCode(503).build())
+            .thenReturn(SendEmailResponse.builder().messageId("simulated").build())
+        val job =
+            LifecycleEmailJob(
+                jdbc,
+                EmailProperties(enabled = true),
+                RestClient.builder(),
+                SesEmailSender(client, EmailProperties()),
+            )
+
+        job.dispatch()
+        assertEquals(
+            1L,
+            count(
+                """
+                select count(*) from public.email_deliveries
+                 where user_id = :id and status = 'pending'
+                   and attempt_count = 1 and error_code = 'ses_transient'
+                """.trimIndent(),
+            ),
+        )
+
+        jdbc
+            .sql("update public.email_deliveries set next_attempt_at = now() where user_id = :id")
+            .param("id", userId)
+            .update()
+        job.dispatch()
+        assertEquals(
+            1L,
+            count(
+                "select count(*) from public.email_deliveries where user_id = :id and status = 'sent' and attempt_count = 2",
             ),
         )
     }

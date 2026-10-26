@@ -46,6 +46,7 @@ dependencies {
     // Error reporting. Inert until SENTRY_DSN is set, so local runs and CI send nothing.
     implementation("io.sentry:sentry-spring-boot-4-starter:8.60.0")
     implementation("io.sentry:sentry-logback:8.60.0")
+    implementation("software.amazon.awssdk:sesv2:2.55.12")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-jdbc-test")

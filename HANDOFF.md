@@ -1,49 +1,46 @@
-# Handoff — 23 October 2026
+# Handoff — 26 October 2026
 
 ## Task
 
-Build opted-in welcome, daily-question, inactivity, announcement, and informative emails (owner request; PRD §05 and §15; no task file).
+Finish Untiered SES email integration and production checks (owner's pasted request; PRD §05 and §15; no task file).
 
 ## What I built
 
-- `supabase/migrations/20261023000000_lifecycle_email.sql`: confirmed-signup hook, account-owned preferences, deduplicated delivery queue, campaigns, RLS, and deletion cascades.
-- `apps/api/src/main/kotlin/com/interviewos/api/email/`: preference and unsubscribe API, allow-listed campaign scheduling, SES SMTP delivery, daily question and inactivity jobs.
-- `apps/web/src/app/api/internal/daily-question/route.ts`: token-protected access to the exact in-app Question of the Day, without its answer.
-- Signup opt-in controls, Google OAuth choice handoff, Profile email settings, and a public unsubscribe confirmation page.
-- `docs/lifecycle-email-operations.md`, `.env.example`, and `deploy/api.env.example`: deployment and operating instructions. Added Spring Boot Mail because the JDK/previous dependencies do not provide SMTP delivery.
-- API, web, and migrated-PostgreSQL integration tests.
+- Extended the existing draft lifecycle-email PR #121 rather than adding another email service. `SesEmailSender.kt` now sends responsive HTML and plain text through the AWS SDK SES v2, with the verified sender and support Reply-To. `LifecycleEmailJob.kt` uses the existing durable queue for bounded transient retries and records permanent or ambiguous failures without sensitive logs.
+- `20261026000000_ses_delivery_retries.sql` adds claim and retry state. The older lifecycle migration remains unchanged.
+- Added branded Supabase Auth confirmation, recovery, and email-change templates, local Auth rate limits, and tests for templates, CAPTCHA reset flow, MIME content, SES errors, configuration, and outbox retry state.
+- Updated `.env.example`, `deploy/api.env.example`, `application.yml`, and `docs/lifecycle-email-operations.md` for separate API SES v2 and Supabase Auth SMTP configuration in Sydney. The existing SNS email subscription remains the manual bounce/complaint monitor.
+- Patched Next.js and its ESLint config from 16.4.0 to 16.4.3 after the production build blocked on a documented critical advisory. No new web dependency was introduced.
 
 ## Assumptions I made
 
-- Amazon SES via SMTP is the lower-cost scalable option after the small free quota of Resend. No account or credentials were created.
-- Welcome follows confirmed signup, including people who never open the app. Marketing categories remain off unless explicitly selected at signup or later in Profile.
-- Daily mail begins from 09:00 Asia/Kolkata and contains that date's exact question and options, without the answer. People in other time zones may see a different live question on a different local date.
-- Inactivity gets one reminder at 7 days and one at 21 days. Platform announcements and informative messages are manually scheduled through the existing admin allow-list API.
-- The 1,289 added lines form one change because the auth trigger, preference flow, outbox, question source, and tests depend on the same schema.
+- Supabase Auth remains the owner of registration, verification, and reset tokens. Its hosted custom SMTP settings send those messages through SES; the Kotlin API uses SES v2 for its own queued lifecycle messages. Routing Auth through a new backend hook would duplicate token handling and create another sensitive queue.
+- Explicit SES 429/5xx and ThrottlingException responses are retryable; SDK client failures are ambiguous and require manual review. Three total attempts are the limit, without an exactly-once claim.
+- Hosted Supabase settings and templates need a human to apply. The repository's `config.toml` only configures local Supabase Auth. The owner's stated SNS and suppression setup is taken as reported, not remotely verified.
+- PR #121 is already over the 800-line review guideline. Keeping this follow-up on it avoids duplicating the existing queue, preferences, and signup flow; the SES transport and retry migration depend on those unmerged changes.
 
 ## What I could NOT verify
 
-- SES SMTP and inbox behavior, sender/domain reputation, bounce handling, and production send quota: no credentials or live sending.
-- Legal/consent wording and final email appearance in real inboxes need owner review.
-- The new migration has not been applied to the linked database. CI's local Supabase job is the first migrated-PostgreSQL check; applying it to the linked project is required before merge.
-- The standard local Turbopack build failed with a child-process exit; the first sandbox build also could not fetch the existing Google font. A supported webpack production build passed. CI will determine Linux status.
-- `npm ci` reported dependency advisories and the Next build emitted an upgrade recommendation; dependency upgrades are outside this feature PR.
+- No live AWS call or mailbox-simulator send was made, per the owner's instruction. SES credentials, quota, sender reputation, actual inbox MIME, callbacks, SNS delivery, and account-level suppression remain unverified.
+- `npm run supabase -- migration list --linked` could not check the remote: this worktree has no linked project ref or `.env`. Neither migration was applied. Both must be applied before merging into `develop`.
+- Hosted Supabase Auth SMTP, rate limits, CAPTCHA, and HTML templates need manual deployment. Confirm Auth mail has a plain-text MIME alternative during the controlled mailbox test; Supabase's template editor accepts HTML only.
+- Legal/consent wording and final inbox appearance need owner review. `npm install` still reported dependency advisories outside this focused patch update.
 
 ## Verification status
 
-- Web: typecheck pass; lint pass; full test pass (85 files, 3,088 tests); `next build --webpack` pass. Standard `npm run build` failed locally in Turbopack before application compilation.
-- API: `ktlintCheck test build` pass. Database integration tests guarded by `TEST_DB_URL` were skipped locally and run in CI.
-- `git diff --cached --check` passed before commit. No live AI call, email send, or migration application occurred.
-- [CI run 39978193186](https://github.com/softzenith-projects/Untiered/actions/runs/39978193186) for PR #121: web, API, migrated database integration, and Docker image jobs all passed on commit `bb751a5`.
+- Web: `npm run typecheck` pass; `npm run lint` pass; `npm run test` pass (85 files, 3,089 tests); standard `npm run build` pass with CI placeholder environment after Next.js 16.4.3 patch.
+- API: `./gradlew.bat ktlintCheck test build` pass. SES sender tests 4/4 pass. Migrated-PostgreSQL tests guarded by `TEST_DB_URL` skipped locally; CI must run them.
+- Repository: `npm run scenario:check` pass; `node --test scripts/*.test.mjs` pass (85 tests, including two new Auth config/template checks). Frontend bundle/static scan found no AWS variable references. No live email, AI call, or migration application occurred.
+- Early local test/build attempts failed from Windows worker contention, font network isolation, missing CI placeholder environment, and the pre-patch Next.js security block. The final commands above passed after these were resolved. New CI status is pending push.
 
 ## Merge status
 
-- Commit `bb751a5` on pushed branch `feat/lifecycle-emails`; draft PR #121 targets `develop` for human review because this changes auth, permissions, and personal-data handling. Unmerged. Never pushed to `main`.
+- Draft [PR #121](https://github.com/softzenith-projects/Untiered/pull/121) on `feat/lifecycle-emails` targets `develop`. It remains unmerged for human review because it changes auth and personal-data handling. No push to `main`.
 
 ## Suggested next task
 
-- Finish PR #121 review and green CI, review legal copy and email rendering, apply the migration to the linked Supabase project, then merge into `develop`; configure SES and the deployment's secret/runtime variables before enabling `EMAIL_ENABLED`.
+- Review PR #121 and its new CI run, apply both migrations to the linked Supabase project, configure hosted Supabase SMTP/rate limits/CAPTCHA/templates, then merge into `develop`; test SES simulator and Auth callbacks with the owner's explicit live-test approval before setting `EMAIL_ENABLED=true`.
 
 ## Open questions for you
 
-- Which verified sending domain/address and SES region should production use, and where will Web and API run? These only block activation, not code review.
+- Confirm the production SES send-rate/daily quota and whether Supabase Auth mail includes a plain-text MIME alternative. The sender, region, support address, and app hosting are now specified by the owner.
