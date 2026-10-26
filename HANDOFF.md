@@ -2,7 +2,7 @@
 
 ## Task
 
-Finish Untiered SES email integration and production checks (owner's pasted request; PRD §05 and §15; no task file).
+Finish Untiered SES email integration and resolve PR #121's lockfile conflict (owner's pasted requests; PRD §05 and §15; no task file).
 
 ## What I built
 
@@ -11,6 +11,7 @@ Finish Untiered SES email integration and production checks (owner's pasted requ
 - Added branded Supabase Auth confirmation, recovery, and email-change templates, local Auth rate limits, and tests for templates, CAPTCHA reset flow, MIME content, SES errors, configuration, and outbox retry state.
 - Updated `.env.example`, `deploy/api.env.example`, `application.yml`, and `docs/lifecycle-email-operations.md` for separate API SES v2 and Supabase Auth SMTP configuration in Sydney. The existing SNS email subscription remains the manual bounce/complaint monitor.
 - Patched Next.js and its ESLint config from 16.4.0 to 16.4.3 after the production build blocked on a documented critical advisory. No new web dependency was introduced.
+- Merged the latest `origin/develop` into the PR branch and resolved the sole conflict, `package-lock.json`, with develop's lockfile. Develop already carries Next.js 16.4.3 and newer audit overrides; the resolved lockfile exactly matches its blob.
 
 ## Assumptions I made
 
@@ -22,7 +23,7 @@ Finish Untiered SES email integration and production checks (owner's pasted requ
 ## What I could NOT verify
 
 - No live AWS call or mailbox-simulator send was made, per the owner's instruction. SES credentials, quota, sender reputation, actual inbox MIME, callbacks, SNS delivery, and account-level suppression remain unverified.
-- `npm run supabase -- migration list --linked` could not check the remote: this worktree has no linked project ref or `.env`. Neither migration was applied. Both must be applied before merging into `develop`.
+- The owner reports applying the migrations. `npm run supabase -- migration list --linked` still cannot verify the remote from this worktree: it has no linked project ref or `.env`. Confirm both email rows have a remote entry before merging into `develop`.
 - Hosted Supabase Auth SMTP, rate limits, CAPTCHA, and HTML templates need manual deployment. Confirm Auth mail has a plain-text MIME alternative during the controlled mailbox test; Supabase's template editor accepts HTML only.
 - Legal/consent wording and final inbox appearance need owner review. `npm install` still reported dependency advisories outside this focused patch update.
 
@@ -31,7 +32,7 @@ Finish Untiered SES email integration and production checks (owner's pasted requ
 - Web: `npm run typecheck` pass; `npm run lint` pass; `npm run test` pass (85 files, 3,089 tests); standard `npm run build` pass with CI placeholder environment after Next.js 16.4.3 patch.
 - API: `./gradlew.bat ktlintCheck test build` pass. SES sender tests 4/4 pass. Migrated-PostgreSQL tests guarded by `TEST_DB_URL` skipped locally; the CI database job passed them.
 - Repository: `npm run scenario:check` pass; `node --test scripts/*.test.mjs` pass (85 tests, including two new Auth config/template checks). Frontend bundle/static scan found no AWS variable references. No live email, AI call, or migration application occurred.
-- Early local test/build attempts failed from Windows worker contention, font network isolation, missing CI placeholder environment, and the pre-patch Next.js security block. The final commands above passed after these were resolved. [CI run 40319915682](https://github.com/softzenith-projects/Untiered/actions/runs/40319915682) passed all four jobs: web, API, migrated database integration, and container images.
+- Earlier [CI runs 40319915682](https://github.com/softzenith-projects/Untiered/actions/runs/40319915682) and [40320569790](https://github.com/softzenith-projects/Untiered/actions/runs/40320569790) passed all four jobs. After the develop merge, `npm install --package-lock-only --ignore-scripts --offline --no-audit --no-fund` passed; an incidental optional-peer rewrite was discarded. A local clean install was stopped after a Windows sandbox write error and a long retry. The new PR CI run must validate clean install, tests, and builds before merge.
 
 ## Merge status
 
@@ -40,7 +41,7 @@ Finish Untiered SES email integration and production checks (owner's pasted requ
 
 ## Suggested next task
 
-- Review PR #121, update its description, apply both migrations to the linked Supabase project, configure hosted Supabase SMTP/rate limits/CAPTCHA/templates, then merge into `develop`; test SES simulator and Auth callbacks with the owner's explicit live-test approval before setting `EMAIL_ENABLED=true`.
+- Verify both migration rows on the linked Supabase project, review PR #121 and update its description, configure hosted Supabase SMTP/rate limits/CAPTCHA/templates, then merge into `develop` only after new CI passes; test SES simulator and Auth callbacks with the owner's explicit live-test approval before setting `EMAIL_ENABLED=true`.
 
 ## Open questions for you
 

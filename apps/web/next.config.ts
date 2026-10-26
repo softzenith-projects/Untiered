@@ -54,6 +54,9 @@ const nextConfig: NextConfig = {
    * information is available in the terminal and the build output either way.
    */
   devIndicators: false,
+  experimental: {
+    agentUpgrade: "security",
+  },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
