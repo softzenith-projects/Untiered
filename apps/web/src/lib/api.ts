@@ -201,6 +201,17 @@ export function updateEmailPreferences(accessToken: string, choices: EmailPrefer
   return apiSend<EmailPreferences>("/api/v1/me/email-preferences", "PUT", accessToken, choices);
 }
 
+/** Keys the API accepts for a Pro feature request; labels live with the form. */
+export type ProFeatureKey = "more_practice" | "progress" | "recommendations" | "prep_plans" | "new_formats";
+
+/** Records what the caller would want from Pro. No plan, price or entitlement changes. */
+export async function submitProFeatureRequest(
+  accessToken: string,
+  request: { features: ProFeatureKey[]; note: string | null },
+): Promise<void> {
+  await apiSend<void>("/api/v1/me/pro-feature-requests", "POST", accessToken, request);
+}
+
 export async function unsubscribeEmail(token: string): Promise<void> {
   const response = await fetch(`${env.apiBaseUrl}/api/v1/email/unsubscribe/${encodeURIComponent(token)}`, { method: "POST" });
   if (!response.ok) throw new Error("Could not unsubscribe right now.");
