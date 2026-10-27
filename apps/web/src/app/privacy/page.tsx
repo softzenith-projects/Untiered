@@ -148,7 +148,7 @@ export default function PrivacyPage() {
           <li>raise a complaint with us about how we handle your data.</li>
         </ul>
         <p>
-          You can reach our Grievance Officer at {CONTACT_EMAIL_DISPLAY}. We
+          Our Grievance Officer is {LEGAL.grievanceOfficer}, reachable at {CONTACT_EMAIL_DISPLAY}. We
           reply within 30 days.
         </p>
       </LegalSection>

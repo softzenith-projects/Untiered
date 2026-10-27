@@ -29,7 +29,7 @@ describe("legal pages", () => {
   it("shows the confirmed support email and routes complaints to it", () => {
     render(<ContactPage />);
 
-    expect(screen.getByText(/write to our grievance officer at help@untiered\.tech\./i)).toBeInTheDocument();
+    expect(screen.getByText(/write to our grievance officer, natasha sharma, at help@untiered\.tech\./i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "help@untiered.tech" })).toHaveAttribute(
       "href",
       "mailto:help@untiered.tech",

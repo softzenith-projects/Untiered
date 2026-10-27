@@ -7,6 +7,8 @@ export const LEGAL = {
   /** The person or company responsible for the data (the "Data Fiduciary"). */
   operatorName: "Softzenith Softwares Private Limited",
   contactEmail: "help@untiered.tech",
+  /** The person designated to handle privacy complaints (owner, 27 October 2026). */
+  grievanceOfficer: "Natasha Sharma",
   /** Where the database and stored files live (the linked Supabase project's region). */
   dataRegion: "India (Mumbai, ap-south-1)",
   /** Kept in step with `interviewos.retention.reports-kept-for` on the API. */
