@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.sql.ResultSet
+import java.sql.Timestamp
 import java.time.Instant
 import java.util.UUID
 
@@ -147,7 +148,7 @@ class InterviewEventRepository(
                     limit :limit
                  )
                 """.trimIndent(),
-            ).param("cutoff", cutoff)
+            ).param("cutoff", Timestamp.from(cutoff))
             .param("limit", limit)
             .update()
 
