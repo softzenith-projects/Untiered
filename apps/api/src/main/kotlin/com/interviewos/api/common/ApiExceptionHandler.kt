@@ -10,6 +10,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.multipart.MaxUploadSizeExceededException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 /**
  * Turns the exceptions controllers and services raise into the single [ApiError]
@@ -42,6 +43,11 @@ class ApiExceptionHandler {
         ResponseEntity
             .status(413)
             .body(ApiError("file_too_large", "That file is larger than the upload limit."))
+
+    /** A path no controller serves. Scanners probe these constantly; it is not a defect. */
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNotFound(ex: NoResourceFoundException): ResponseEntity<ApiError> =
+        ResponseEntity.status(404).body(ApiError("not_found", "There is nothing at this address."))
 
     /**
      * Anything that reaches here is a defect. The client still gets the same envelope

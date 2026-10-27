@@ -1,5 +1,6 @@
 package com.interviewos.api.email
 
+import com.interviewos.api.user.SupabaseIdentity
 import com.interviewos.api.user.UserRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -14,6 +15,8 @@ import software.amazon.awssdk.services.sesv2.SesV2Client
 import software.amazon.awssdk.services.sesv2.model.SendEmailRequest
 import software.amazon.awssdk.services.sesv2.model.SendEmailResponse
 import software.amazon.awssdk.services.sesv2.model.SesV2Exception
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import kotlin.test.assertEquals
 
@@ -158,6 +161,25 @@ class LifecycleEmailDatabaseIntegrationTest {
                 "select count(*) from public.email_deliveries where user_id = :id and status = 'sent' and attempt_count = 2",
             ),
         )
+    }
+
+    @Test
+    fun `admin can schedule a campaign with a timestamptz schedule`() {
+        createAuthUser(confirmed = true, optedIn = false)
+        val admin = SupabaseIdentity(userId, "lifecycle-$userId@example.invalid", null)
+        val scheduledAt = Instant.now().plusSeconds(3600).truncatedTo(ChronoUnit.MICROS)
+
+        val id =
+            EmailService(jdbc, mock(UserRepository::class.java))
+                .scheduleCampaign(admin, ScheduleEmailCampaign("announcement", "Subject", "Body", scheduledAt))
+
+        val stored =
+            jdbc
+                .sql("select scheduled_at from public.email_campaigns where id = :id")
+                .param("id", id)
+                .query { rs, _ -> rs.getTimestamp("scheduled_at").toInstant() }
+                .single()
+        assertEquals(scheduledAt, stored)
     }
 
     private fun createAuthUser(
