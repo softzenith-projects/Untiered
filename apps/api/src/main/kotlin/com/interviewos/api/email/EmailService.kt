@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.sql.Timestamp
 import java.time.Instant
 import java.util.UUID
 
@@ -104,7 +105,7 @@ class EmailService(
             .param("category", request.category)
             .param("subject", subject)
             .param("body", body)
-            .param("scheduled", request.scheduledAt)
+            .param("scheduled", Timestamp.from(request.scheduledAt))
             .query(UUID::class.java)
             .single()
     }

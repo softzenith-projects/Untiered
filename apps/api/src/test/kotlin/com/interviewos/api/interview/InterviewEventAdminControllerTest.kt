@@ -109,6 +109,14 @@ class InterviewEventAdminControllerTest {
         verifyNoInteractions(repository)
     }
 
+    @Test
+    fun `unknown path is a not found envelope rather than an internal error`() {
+        mockMvc
+            .perform(get("/api/v1/no-such-endpoint").with(tokenFor(adminId)))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.error").value("not_found"))
+    }
+
     private fun tokenFor(userId: UUID) =
         jwt().jwt { builder: Jwt.Builder ->
             builder
