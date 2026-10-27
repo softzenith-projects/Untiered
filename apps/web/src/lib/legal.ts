@@ -1,27 +1,23 @@
 /**
  * The facts the legal pages state, in one place, so the privacy policy, the terms and the
  * contact page cannot disagree with each other or with the product.
- *
- * Anything only the owner can supply comes from the environment and renders a visible
- * "to be confirmed" marker when unset, rather than a plausible-looking invented value: a
- * made-up grievance officer or address in a privacy policy is worse than an obvious gap.
  */
-const UNCONFIRMED = "[to be confirmed before launch]";
-
 export const LEGAL = {
   productName: "Untiered",
   /** The person or company responsible for the data (the "Data Fiduciary"). */
-  operatorName: process.env.NEXT_PUBLIC_LEGAL_OPERATOR_NAME || UNCONFIRMED,
+  operatorName: "Softzenith Softwares Private Limited",
   contactEmail: "help@untiered.tech",
-  /** The person designated to handle privacy complaints, supplied by the operator. */
-  grievanceOfficer: process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME || UNCONFIRMED,
   /** Where the database and stored files live (the linked Supabase project's region). */
   dataRegion: "India (Mumbai, ap-south-1)",
   /** Kept in step with `interviewos.retention.reports-kept-for` on the API. */
   reportRetentionDays: 28,
-  dailyRounds: 2,
+  /** Kept in step with `EntitlementProperties` on the API (owner, 27 October 2026). */
+  dailyRounds: 1,
   dailyMinutes: 60,
-  lastUpdated: "16 October 2026",
+  lastUpdated: "27 October 2026",
 } as const;
 
 export const CONTACT_EMAIL_DISPLAY = LEGAL.contactEmail;
+
+/** "1 round" or "2 rounds", so the allowance reads correctly at any setting. */
+export const DAILY_ROUNDS_TEXT = `${LEGAL.dailyRounds} ${LEGAL.dailyRounds === 1 ? "round" : "rounds"}`;

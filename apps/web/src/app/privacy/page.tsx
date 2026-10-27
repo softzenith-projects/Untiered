@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { CONTACT_EMAIL_DISPLAY, LEGAL } from "@/lib/legal";
+import { CONTACT_EMAIL_DISPLAY, DAILY_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
           <li>To tailor questions to your resume, and to keep track of your course and Arena progress.</li>
           <li>
             To keep free practice fair: we count the rounds and minutes you start each day
-            (currently {LEGAL.dailyRounds} rounds and {LEGAL.dailyMinutes} minutes).
+            (currently {DAILY_ROUNDS_TEXT} and {LEGAL.dailyMinutes} minutes; a Pro mode with more practice is coming soon).
           </li>
           <li>To keep the service secure and working, and to fix errors.</li>
         </ul>
@@ -148,7 +148,7 @@ export default function PrivacyPage() {
           <li>raise a complaint with us about how we handle your data.</li>
         </ul>
         <p>
-          Our Grievance Officer is {LEGAL.grievanceOfficer}, reachable at {CONTACT_EMAIL_DISPLAY}. We
+          You can reach our Grievance Officer at {CONTACT_EMAIL_DISPLAY}. We
           reply within 30 days.
         </p>
       </LegalSection>
