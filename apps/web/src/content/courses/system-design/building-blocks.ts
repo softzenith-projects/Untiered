@@ -41,12 +41,117 @@ export const buildingBlocks: ChapterSource[] = [
     flow: ["health signal", "routing decision", "healthy instance"], best: "Separate readiness from liveness and remove unhealthy instances from rotation quickly.", check: "Check whether health probes test dependencies without causing a dependency storm.", pitfall: "Using a shallow 200 response as proof that the whole request path works.", interview: "Discuss algorithms, sticky sessions, zone awareness and graceful draining only as requirements demand.",
   },
   {
-    slug: "caching-layers", title: "Caching Without Stale Surprises", summary: "Use faster copies while planning expiry, invalidation and misses.",
-    ...legacyDetails("caching-layers"),
-    analogy: ["Keep daily items on the desk", "A notebook on your desk is faster than visiting an archive, but a changed address must reach the notebook or it becomes confidently wrong."],
-    idea: "Caches may live in browsers, CDNs, services or databases. Pick a key, value, TTL and invalidation rule. Measure hit rate, miss cost and staleness tolerance. Protect the origin from stampedes.",
-    flow: ["cache lookup", "origin on miss", "fill with expiry"], best: "Cache a proven read hotspot with an explicit staleness budget and miss path.", check: "Check invalidation, eviction, hot keys and what happens when the cache is empty.", pitfall: "Treating a cache as the source of truth or assuming invalidation is automatic.", interview: "Explain cache-aside, write-through or write-behind through one concrete read and update.",
+    slug: "caching-layers",
+    title: "Caching Without Stale Surprises",
+    summary: "Use faster copies while planning expiry, invalidation and misses.",
+    intro: [
+      "A cache is a small, fast copy of data that is slow or expensive to fetch. Instead of asking the database the same question a thousand times a minute, you ask once, keep the answer nearby, and reuse it. Caches sit in many places — the browser, a CDN near the user, the memory of your service, or a separate cache server such as Redis.",
+      "The speed is real, but so is the catch: a copy can go out of date. Every cache therefore needs three decisions written down before it is built — what the key is, how long a copy may live, and what happens when the original changes. Skip those decisions and the cache will one day show a user an old price, a deleted post or someone else's data.",
+    ],
+    analogy: [
+      "The notebook on your desk",
+      "You keep your friends' phone numbers in a notebook on your desk because opening the school records office every time would take all afternoon. The notebook is fast. But when a friend changes their number, the notebook keeps the old one until you cross it out — and it never tells you it is wrong.",
+    ],
+    glossary: [
+      ["cache hit", "The answer was found in the fast copy, so the slow source was not touched."],
+      ["cache miss", "The answer was not in the copy, so the request had to visit the slow source."],
+      ["TTL (time to live)", "How long a cached copy may be used before it must be fetched again."],
+      ["invalidation", "Deleting or replacing a cached copy because the original has changed."],
+      ["cache stampede", "Many requests missing at the same moment and all rebuilding the same value at once."],
+    ],
+    walkthrough: {
+      title: "Follow one read through a cache",
+      steps: [
+        { label: "Look in the cache", text: "A learner opens the Java course page. The service builds a key such as `catalogue:java` and asks the cache for it first." },
+        { label: "Miss: ask the source", text: "Nothing is there yet, so the service reads the course from the database — the slow, authoritative copy." },
+        { label: "Fill with an expiry", text: "It stores the result under that key with a TTL of 60 seconds, then returns it. Every request in the next minute is a hit and never touches the database." },
+        { label: "Change: invalidate", text: "When an author edits the course, the write path deletes `catalogue:java`. The next read misses and fetches the new version instead of waiting out the TTL." },
+      ],
+    },
+    example: {
+      title: "Worked example: a catalogue read 5,000 times a minute",
+      text: "The course catalogue changes a few times a day but is read about 5,000 times a minute. With a 60-second TTL, the database answers about one read per key per minute instead of 5,000. The cost: after an edit, readers may see the old catalogue for up to a minute unless the edit also invalidates the key. And when the key expires, hundreds of requests may miss together — letting one request rebuild it while the rest briefly reuse the old copy stops them all hitting the database at once.",
+    },
+    tradeoff: {
+      title: "What a cache buys, and what it costs",
+      gain: {
+        label: "You gain",
+        items: [
+          "Much faster reads for data that is asked for again and again",
+          "Far less load on the database, so it survives traffic spikes",
+          "Lower cost per request once most reads are hits",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "Readers can see old data until the copy expires or is invalidated",
+          "A second system to run, size and watch",
+          "A sudden flood of misses when the cache is emptied or restarted",
+        ],
+      },
+    },
+    artifact: {
+      kind: "table",
+      head: ["Pattern", "How a write works", "Good when"],
+      rows: [
+        ["Cache-aside", "Write to the database, then delete the cache key; the next read refills it.", "Reads far outnumber writes — the usual default."],
+        ["Write-through", "Write to the cache and the database together, every time.", "Readers must see a fresh value right after a write."],
+        ["Write-behind", "Write to the cache now; save to the database a little later.", "Writes are very frequent and losing the last few is acceptable."],
+      ],
+    },
+    pitfalls: [
+      "Treating the cache as the source of truth. If a cache restart can lose data for good, it was never a cache.",
+      "Changing data in the database without invalidating its cached copy, so users keep seeing the old value until the TTL runs out.",
+      "Caching one user's data under a shared key, so one person's account details are served to another.",
+    ],
+    remember: [
+      "A cache is a copy. The database stays the truth.",
+      "Decide the key, the TTL and the invalidation rule before you add a cache.",
+      "Every write path that changes data must also fix its cached copy.",
+      "Plan for the miss: what happens when the cache is empty?",
+    ],
+    interview: [
+      "When you add a cache, say what you are caching, the TTL, and how a write invalidates it — interviewers listen for the invalidation plan.",
+      "Name one concrete failure and its fix, such as a stampede on a popular key solved by letting one request refresh while others use the old copy.",
+    ],
+    quizzes: [
+      {
+        question: "An author fixes a typo in a course title, but learners still see the old title for a minute. What is the most likely cause?",
+        options: [
+          "The database did not save the author's change",
+          "The cached copy was not invalidated, so it lives until its TTL ends",
+          "Browsers cannot display a title that has been edited",
+          "The cache server is too small to hold the new title",
+        ],
+        answer: 1,
+        why: "The database has the new title, but the cache still holds the old copy. Without invalidation, that copy keeps being served until its time to live runs out.",
+      },
+      {
+        question: "Which data is the poorest candidate for a shared cache?",
+        options: [
+          "A list of courses that changes twice a day",
+          "Today's top ten questions, rebuilt every hour",
+          "One person's balance during a money transfer",
+          "The thumbnail images shown on course cards",
+        ],
+        answer: 2,
+        why: "A balance during a transfer must be exactly right at that moment and belongs to one person. A stale or shared copy could show the wrong amount, and being wrong costs far more than the time a cache saves.",
+      },
+      {
+        question: "A popular key expires and 300 requests miss at the same moment. What is a sensible fix?",
+        options: [
+          "Remove the TTL so that the key never expires",
+          "Let one request rebuild it while the rest reuse the old copy",
+          "Send all 300 to the database, since it holds the truth",
+          "Give every user their own copy of the same value",
+        ],
+        answer: 1,
+        why: "This is a cache stampede. Letting a single request refresh the value while the others reuse the previous copy keeps the database from being hit 300 times at once.",
+      },
+    ],
   },
+
   {
     slug: "sql-and-nosql", title: "SQL, NoSQL and the Actual Workload", summary: "Choose a store from relationships, queries, consistency and scale—not fashion.",
     ...legacyDetails("sql-and-nosql"),

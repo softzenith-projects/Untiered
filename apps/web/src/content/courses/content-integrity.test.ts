@@ -101,24 +101,22 @@ describe("course: system-design, as a whole", () => {
 
   it("teaches each topic in beginner-first layers instead of a terse repeated outline", () => {
     for (const chapter of systemDesignChapters) {
-      const headings = chapter.blocks.filter((block) => block.kind === "h").map((block) => block.text);
       const tables = chapter.blocks.filter((block) => block.kind === "table");
       const concepts = chapter.blocks.filter((block) => block.kind === "concept");
       const comparisons = chapter.blocks.filter((block) => block.kind === "compare");
       const steps = chapter.blocks.filter((block) => block.kind === "steps");
       const glossaries = tables.filter((block) => block.head[0] === "Term");
-      const workedExamples = concepts.filter((block) => block.title === "Worked example");
+      const workedExamples = concepts.filter((block) => block.title.startsWith("Worked example"));
 
-      expect(headings, chapter.slug).toContain("First, learn the words in plain language");
+      // The plain-language glossary comes before the walkthrough that uses its words.
       expect(glossaries, chapter.slug).toHaveLength(1);
       expect(glossaries[0]?.rows.length, chapter.slug).toBeGreaterThanOrEqual(3);
       expect(glossaries[0]?.rows.every((row) => row.length === 2 && row.every((cell) => cell.trim().length > 0)), chapter.slug).toBe(true);
-      expect(chapter.blocks.indexOf(glossaries[0]!), chapter.slug).toBeLessThan(
-        chapter.blocks.findIndex((block) => block.kind === "analogy"),
-      );
+      expect(chapter.blocks.indexOf(glossaries[0]!), chapter.slug).toBeLessThan(chapter.blocks.indexOf(steps[0]!));
       expect(workedExamples, chapter.slug).toHaveLength(1);
       expect(workedExamples[0]?.text.trim().length, chapter.slug).toBeGreaterThanOrEqual(80);
-      expect(comparisons.some((block) => block.title?.includes("trade-off")), chapter.slug).toBe(true);
+      // A trade-off is two sides: what the choice buys and what it costs.
+      expect(comparisons.some((block) => block.columns.length === 2), chapter.slug).toBe(true);
       expect(steps, chapter.slug).toHaveLength(1);
       expect(steps[0]?.steps.every((step) => !/^(Start|Add|Finish)\b/.test(step.text)), chapter.slug).toBe(true);
     }
@@ -126,7 +124,7 @@ describe("course: system-design, as a whole", () => {
 
   it("uses a substantive, chapter-specific worked example instead of fallback prose", () => {
     const examples = systemDesignChapters.map((chapter) => {
-      const block = chapter.blocks.find((candidate) => candidate.kind === "concept" && candidate.title === "Worked example");
+      const block = chapter.blocks.find((candidate) => candidate.kind === "concept" && candidate.title.startsWith("Worked example"));
       expect(block, chapter.slug).toBeDefined();
       return block?.kind === "concept" ? block.text.trim() : "";
     });
