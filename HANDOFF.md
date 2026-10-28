@@ -33,6 +33,12 @@ Make in-app navigation between tabs feel instant (owner's request in session; PR
 
 - Merged `fix/fast-navigation` into `develop` at 0360c49. No migrations.
 
+## Follow-up: landing-page round lists (also 28 October)
+
+- Owner's correction applied in `components/landing/loop-picker.tsx`: Big Four technical hiring shares the service-IT tab (no case discussion); "Europe & abroad" and GCC lead with technical rounds; every panel says the rounds are typical, not a fixed list. The hero demo's Big Four turn is now techno-managerial (`sample-turn.tsx`).
+- The round names are product knowledge from the owner and the earlier page, not sourced per employer; worth a domain check.
+- Merged `fix/landing-loop-rounds` into `develop` at 1105ff2 after CI passed all four jobs.
+
 ## Suggested next task
 
 - Act on the Next.js security advisory: run `next upgrade` on its own branch.
