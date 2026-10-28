@@ -122,11 +122,31 @@ export function RoundHistoryPanel() {
   );
 }
 
+/**
+ * The last dashboard this tab loaded. The panel mounts afresh on every visit, and without
+ * this each return to the dashboard showed the loading state until four API calls came
+ * back. Now the previous data paints on the first frame and is replaced when the refetch
+ * lands. Keyed to the token that fetched it, memory only, and cleared on sign-out — the
+ * same rules as the account block's cache.
+ */
+let lastDashboard: DashboardState | null = null;
+
+/** Drops the remembered dashboard; called with the rest of the account caches on sign-out. */
+export function forgetDashboard(): void {
+  lastDashboard = null;
+}
+
 /** Sessions, entitlement and readiness for the signed-in account, plus round deletion. */
 function useRoundData() {
   const accessToken = useAccessToken();
-  const [dashboard, setDashboard] = useState<DashboardState>(() => emptyDashboard(null));
+  const [dashboard, setDashboard] = useState<DashboardState>(() =>
+    lastDashboard && accessToken && lastDashboard.ownerToken === accessToken ? lastDashboard : emptyDashboard(null),
+  );
   const loadingToken = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (dashboard.loaded) lastDashboard = { ...dashboard, loadingMore: false, loadError: false };
+  }, [dashboard]);
 
   // Identity changes are visible during render, before effects run. Never render data
   // whose owner is the token from a previous render, even for a single frame.

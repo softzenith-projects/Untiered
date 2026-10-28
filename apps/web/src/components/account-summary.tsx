@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { forgetDashboard } from "@/components/dashboard-panel";
 import { fetchMe, updateEmailPreferences } from "@/lib/api";
 import { forgetReports } from "@/lib/report-cache";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -29,6 +30,7 @@ let lastMe: MeResponse | null = null;
 export function forgetAccount(): void {
   lastMe = null;
   forgetReports();
+  forgetDashboard();
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {
