@@ -23,6 +23,13 @@ describe("deriveChallenges", () => {
     expect(challenges.length).toBeGreaterThanOrEqual(MIN_TOTAL_CHALLENGES);
   });
 
+  it("never prints the chapter summary above the question, where it can give the answer away", () => {
+    for (const challenge of challenges) {
+      const summary = getChapter(challenge.courseSlug, challenge.chapterSlug)?.summary;
+      if (summary && challenge.context) expect(challenge.context, challenge.id).not.toContain(summary);
+    }
+  });
+
   it("derives at least one challenge of every kind", () => {
     const kinds = new Set(challenges.map((c) => c.kind));
     expect(kinds).toEqual(new Set(["mcq", "predict-output", "spot-mistake", "which-column", "what-next"]));

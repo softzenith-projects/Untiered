@@ -68,8 +68,14 @@ interface ChapterLoc {
   chapter: Chapter;
 }
 
+/**
+ * Where the question comes from, and nothing more. This used to append the chapter's
+ * summary, and a summary states the chapter's key idea, so it often answered the question
+ * printed under it ("cost grows with the square of its length", above "why does a 12-turn
+ * run cost more than 12 calls?").
+ */
 function lessonContext(loc: ChapterLoc): string {
-  return `From “${loc.chapter.title}”: ${loc.chapter.summary}`;
+  return `From “${loc.chapter.title}”.`;
 }
 
 function locations(courses: Course[]): ChapterLoc[] {
