@@ -1,0 +1,282 @@
+{
+  "course_slug": "system-design",
+  "slug": "diwali-dinner-rush",
+  "title": "Diwali Dinner Rush",
+  "hook": "On Diwali night your food-delivery app sees orders jump to about 8x normal between 7 and 10 pm. Kitchens, delivery partners and your servers all hit their limits at the same time.",
+  "context": "Food-delivery app where the slowest real-world step, cooking and riding, caps what the software may promise.",
+  "tier": "intermediate",
+  "concept_ids": [
+    "capacity-gating",
+    "truthful-eta",
+    "batching-dispatch",
+    "caching",
+    "read-heavy-traffic",
+    "graceful-degradation"
+  ],
+  "estimated_minutes": 13,
+  "status": "live",
+  "solution_brief": "Treat each kitchen's capacity as a hard limit: cap in-flight orders per restaurant and show a busy state instead of accepting what cannot be cooked. Compute ETAs from live queue length, recent prep time and rider supply, and show a range. Dispatch in short batching windows so scarce partners carry bundled orders from one restaurant or nearby drop points. Cache menus and listings with a short TTL while keeping item availability live. When write latency climbs, switch off recommendations and reviews automatically so ordering stays fast.",
+  "steps": [
+    {
+      "kind": "initial",
+      "step_type": "design_choice",
+      "prompt": "A restaurant that normally gets 10 orders an hour is receiving 80 an hour and can cook about 30. The app accepts every order, so its tablet shows 50 orders waiting, customers wait over an hour and many cancel. What should the app do first?",
+      "context_note": "It is 7:45 pm on Diwali. Order volume is 8x normal and kitchens are the first thing to give way.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "app-servers",
+          "orders-db",
+          "restaurant-tablet"
+        ],
+        "links": [
+          [
+            "customers",
+            "app-servers"
+          ],
+          [
+            "app-servers",
+            "orders-db"
+          ],
+          [
+            "orders-db",
+            "restaurant-tablet"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Cap in-flight orders for each restaurant and show it as busy once the cap is reached"
+        },
+        {
+          "id": "b",
+          "text": "Auto-scale the order servers so every incoming order is accepted without delay"
+        },
+        {
+          "id": "c",
+          "text": "Accept everything and cancel orders that the restaurant has not started after 20 minutes"
+        },
+        {
+          "id": "d",
+          "text": "Offer a discount coupon to every customer whose order runs more than 30 minutes late"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "A kitchen that cooks 30 an hour cannot be helped by accepting 80, so the extra 50 an hour only becomes a queue of late and cancelled orders. A cap on in-flight orders, shown honestly as busy or as a later slot, keeps the promise to the customers who are accepted. Scaling servers or compensating afterwards treats the symptom while the kitchen stays overloaded.",
+      "bottleneck_note": "Accept work only up to what the slowest real-world step can finish, and say so when you are full.",
+      "concept_ids": [
+        "capacity-gating"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "tradeoff",
+      "prompt": "Your app shows every order a flat 35 minute delivery time. With kitchens backed up the real time is closer to 70 minutes. How should the promised time be produced?",
+      "context_note": "Orders are now capped per restaurant, but accepted orders still take very different times depending on the kitchen and the street.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "order-service(cap per restaurant)",
+          "eta-service",
+          "restaurant-tablet"
+        ],
+        "links": [
+          [
+            "customers",
+            "order-service(cap per restaurant)"
+          ],
+          [
+            "order-service(cap per restaurant)",
+            "eta-service"
+          ],
+          [
+            "order-service(cap per restaurant)",
+            "restaurant-tablet"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Raise the flat figure to 90 minutes for every order all evening so late deliveries become rare"
+        },
+        {
+          "id": "b",
+          "text": "Compute it per order from kitchen queue, prep time, rider wait and travel, and show a range"
+        },
+        {
+          "id": "c",
+          "text": "Use the average delivery time from the same hour on the previous day for every restaurant"
+        },
+        {
+          "id": "d",
+          "text": "Keep 35 minutes on screen and send an apology message to anyone who is more than 20 minutes late"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "An honest promise depends on the current state of this kitchen and this route, so it has to be recomputed from live queue length and recent prep time and shown as a range. A flat 90 minutes hides fast kitchens and drives people away, yesterday's average ignores tonight's load, and an apology after a false promise has already broken trust.",
+      "bottleneck_note": "An estimate is only truthful if it is computed from the load that exists right now.",
+      "concept_ids": [
+        "truthful-eta"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Only 2,000 delivery partners are online and 9,000 cooked orders are waiting across the city. Today each order is assigned the moment it is ready, to the nearest free partner, and partners often ride far for one small order. What dispatch change helps most?",
+      "context_note": "Customers now see honest times, but the wait is dominated by partners, who are scarce and spend their time on long single-order trips.",
+      "system_state": {
+        "nodes": [
+          "order-service",
+          "dispatch",
+          "delivery-partners",
+          "restaurant-tablet"
+        ],
+        "links": [
+          [
+            "order-service",
+            "dispatch"
+          ],
+          [
+            "dispatch",
+            "delivery-partners"
+          ],
+          [
+            "order-service",
+            "restaurant-tablet"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Assign instantly to the nearest free partner, since that gives each order the shortest wait"
+        },
+        {
+          "id": "b",
+          "text": "Ask each partner to pick the order they want from an open list of everything that is ready"
+        },
+        {
+          "id": "c",
+          "text": "Collect ready orders for a short window, then assign in rounds, bundling nearby orders"
+        },
+        {
+          "id": "d",
+          "text": "Hold every order until a partner is free within a kilometre of its restaurant"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "When supply is short, the goal is orders delivered per partner-hour, and a half-minute window lets the dispatcher match many orders to many partners and bundle compatible ones. Greedy nearest-partner assignment is best when partners are plentiful, but it wastes scarce trips. An open list lets partners cherry-pick the short, well-paid orders and strands the rest.",
+      "bottleneck_note": "With scarce supply, decide in short batches so a trip carries more than one order.",
+      "concept_ids": [
+        "batching-dispatch"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Menu and restaurant listing pages are about 90% of requests and the database CPU sits near 85%, yet menus change only a few times a day. Item sold-out flags change every few minutes. How should these pages be served?",
+      "context_note": "Dispatch is steadier, but browsing traffic is now the main load on the database that also stores the orders.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "cdn / cache",
+          "app-servers",
+          "menu-db"
+        ],
+        "links": [
+          [
+            "customers",
+            "cdn / cache"
+          ],
+          [
+            "cdn / cache",
+            "app-servers"
+          ],
+          [
+            "app-servers",
+            "menu-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Cache the full page, including sold-out flags, for 30 minutes so the database is rarely touched"
+        },
+        {
+          "id": "b",
+          "text": "Add read replicas and keep every menu request live so the page is never stale"
+        },
+        {
+          "id": "c",
+          "text": "Build a separate personalised page for each customer ahead of the evening and store it"
+        },
+        {
+          "id": "d",
+          "text": "Cache menus and listings briefly, but check item availability live when the cart is built"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "Menus are read constantly and change rarely, so a short-lived cache removes nearly all of that load, while availability changes fast enough that it must be confirmed at cart time. Caching sold-out flags for 30 minutes sells dishes the kitchen has stopped making, replicas still do the same work for every view, and per-customer pages multiply storage for no gain.",
+      "bottleneck_note": "Cache what rarely changes and keep the fast-changing facts live at the point of commitment.",
+      "concept_ids": [
+        "caching",
+        "read-heavy-traffic"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "At 8:40 pm the same database also serves recommendations, reviews and order tracking. Write latency has risen from 40 ms to 900 ms and order placement is starting to time out. What is the right response?",
+      "context_note": "Menus are cached, yet the shared database is still slow, and the features that are not needed to place an order compete with the ones that are.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "app-servers",
+          "cdn / cache",
+          "shared-db"
+        ],
+        "links": [
+          [
+            "customers",
+            "cdn / cache"
+          ],
+          [
+            "customers",
+            "app-servers"
+          ],
+          [
+            "app-servers",
+            "shared-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Reject a random 30% of all requests, including checkout, until latency recovers"
+        },
+        {
+          "id": "b",
+          "text": "Turn off recommendations and reviews with latency-triggered flags, and keep ordering served"
+        },
+        {
+          "id": "c",
+          "text": "Scale every service up equally and wait for the database to catch up"
+        },
+        {
+          "id": "d",
+          "text": "Switch off order tracking and payment retries first, since they make the most database writes"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Ordering is the one flow that earns money and cannot wait, so non-essential features are shed first, ideally automatically when latency crosses a threshold. Random rejection hits checkout as often as browsing, equal scaling cannot fix a shared database in minutes, and tracking and payment retries are part of finishing an order that is already placed.",
+      "bottleneck_note": "Decide in advance which features to sacrifice, so overload costs you extras instead of orders.",
+      "concept_ids": [
+        "graceful-degradation"
+      ]
+    }
+  ]
+}

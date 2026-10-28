@@ -43,10 +43,24 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "batching-dispatch",
+          "name": "Batched dispatch",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
           "id": "brute-force-protection",
           "name": "Brute Force Protection",
           "tier": "intermediate",
           "prerequisite_concept_ids": []
+        },
+        {
+          "id": "budget-chunks",
+          "name": "Budget chunks",
+          "tier": "advanced",
+          "prerequisite_concept_ids": [
+            "hot-counter"
+          ]
         },
         {
           "id": "cached-availability",
@@ -59,6 +73,14 @@
           "name": "Caching",
           "tier": "foundations",
           "prerequisite_concept_ids": []
+        },
+        {
+          "id": "capacity-gating",
+          "name": "Capacity gating",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "load-shaping"
+          ]
         },
         {
           "id": "cdn",
@@ -131,6 +153,14 @@
           "name": "Geospatial indexing",
           "tier": "foundations",
           "prerequisite_concept_ids": []
+        },
+        {
+          "id": "graceful-degradation",
+          "name": "Graceful degradation",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "load-shaping"
+          ]
         },
         {
           "id": "home-region-partitioning",
@@ -247,6 +277,12 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "price-quotes",
+          "name": "Price quotes with expiry",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
           "id": "priority-lanes",
           "name": "Priority Lanes",
           "tier": "advanced",
@@ -331,6 +367,14 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "search-index-lag",
+          "name": "Search index lag",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "propagation-delay"
+          ]
+        },
+        {
           "id": "seat-holds-with-ttl",
           "name": "Seat holds with TTL",
           "tier": "intermediate",
@@ -341,6 +385,14 @@
           "name": "Server-sent events",
           "tier": "intermediate",
           "prerequisite_concept_ids": []
+        },
+        {
+          "id": "serviceable-store-routing",
+          "name": "Serviceable-area store routing",
+          "tier": "advanced",
+          "prerequisite_concept_ids": [
+            "geospatial-index"
+          ]
         },
         {
           "id": "session-revocation",
@@ -355,6 +407,12 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "staged-publish",
+          "name": "Staged atomic publish",
+          "tier": "advanced",
+          "prerequisite_concept_ids": []
+        },
+        {
           "id": "state-machine",
           "name": "State Machine",
           "tier": "foundations",
@@ -365,6 +423,14 @@
           "name": "Static Precomputation",
           "tier": "foundations",
           "prerequisite_concept_ids": []
+        },
+        {
+          "id": "stock-drift",
+          "name": "Stock drift",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "inventory-reservation"
+          ]
         },
         {
           "id": "thundering-herd",
@@ -390,6 +456,14 @@
           "tier": "intermediate",
           "prerequisite_concept_ids": [
             "session-revocation"
+          ]
+        },
+        {
+          "id": "truthful-eta",
+          "name": "Truthful ETAs",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "honest-ux"
           ]
         },
         {
