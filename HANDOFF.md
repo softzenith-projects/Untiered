@@ -1,83 +1,93 @@
-# Handoff — 2026-10-28
+# Handoff — 28 October 2026
 
 ## Task
-Fix the security and privacy findings from the codebase audit (user request; no task file).
+Paid mock interviews through Razorpay: interview credits sold as 1 for ₹199, 5 for ₹899,
+10 for ₹1,499; a credit is used up the moment a round starts (owner request, PRD §10).
+Branch `feat/razorpay-credit-packs`.
 
 ## What I built
-- `apps/api/src/main/kotlin/com/interviewos/api/resume/ResumeRepository.kt`, `ResumeService.kt`, and `ResumeCleanupJob.kt`: retain only the latest upload and latest parsed resume, queue superseded objects for deletion, and retry cleanup hourly. Owned older resumes can now be deleted directly.
-- `apps/api/src/main/kotlin/com/interviewos/api/resume/ProfileController.kt` and `AvatarImage.kt`: verify actual PNG/JPEG bytes, limit dimensions, resize and rewrite image data, and queue replaced avatar objects for deletion.
-- `supabase/migrations/20261028180000_superseded_resume_cleanup.sql`: queue historical hidden resumes and orphaned avatar objects for deletion through the durable storage outbox.
-- `apps/web/src/components/profile-panel.tsx`: align avatar file selection with supported formats.
-- Focused unit, controller, and database integration tests for validation and cleanup.
-- Production API configuration can require a positive optional-call AI cap at startup; the deployment template enables that requirement.
-- Email signup and password reset require Turnstile in production, and fail closed when its public site key is absent.
+- **Credit ledger**: `supabase/migrations/20261028200000_interview_credits.sql`. It is
+  append-only, the balance is `sum(delta)`, and partial unique indexes make sure each
+  payment grants once and each session is charged once and refunded once. It also adds
+  `credits` and `paid_at` to the existing `payments` table.
+- **Entitlement** (`interview/Entitlement.kt`): free allowance first, then one credit
+  (`Funding.FREE | CREDIT`). The admit transaction locks the candidate's row
+  (`for no key update`), so two starts cannot spend the same last credit.
+- **Refunds**: `failSessionAndRefundUsage` now also returns the credit when a paid round
+  ends `failed` (our fault), in the same SQL statement as the status change. Abandoning a
+  round keeps the charge.
+- **Billing API** (`billing/`), with all prices set on the server:
+  - `GET /api/v1/billing` returns the packs and the caller's balance.
+  - `POST /api/v1/billing/orders` creates the Razorpay order.
+  - `POST /api/v1/billing/orders/{id}/confirm` checks the HMAC signature, then fetches the
+    payment from Razorpay, checks it matches the order id and exact amount, and captures
+    it if it is only authorised. Only then does it grant the credits.
+  - `POST /api/v1/billing/razorpay/webhook` is unauthenticated and signature-checked. It
+    grants on `payment.captured` / `order.paid` when the browser never came back.
+- **Web**:
+  - `credit-packs.tsx` loads Razorpay Checkout lazily (`lib/razorpay-checkout.ts`).
+  - The free-practice notice shows the packs when buying is open. After a purchase the
+    page re-reads the allowance and the setup form unlocks.
+  - Holding a credit lifts the free-minutes cap on round length, and the Begin button
+    says when a paid interview will be used.
+  - `/upgrade` shows the packs and the balance (`premium-offer.tsx`).
+- **Legal copy**: terms have a new "Paid interviews and refunds" section, the privacy
+  policy lists Razorpay as a processor, and account deletion warns that unused paid
+  interviews are lost.
+- **Off by default**: buying stays off until `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`
+  are set. Until then the product behaves exactly as it does today ("Pro · coming soon").
 
 ## Assumptions I made
-- Keep the latest parsed resume alongside the latest upload so a failed replacement does not remove the candidate's last usable resume.
-- Historical avatar objects that are more than one hour old and unreferenced by a profile are superseded; newer objects are excluded to avoid active-upload races.
-- Invalid legacy storage paths remain for manual review rather than risking deletion outside the user's folder.
-- The owner chose a $10/day app cap for optional preparation calls; the provider billing budget remains the hard limit and must also be configured.
+- **"Pay ₹199 per interview" and "1-interview pack" are the same product.** Buying one
+  credit unlocks the start screen right away, and the credit is spent when the round
+  starts. I did not build a separate entitlement type for it.
+- **Free practice is spent before credits.** A buyer never pays for a round the free
+  allowance would have covered. The daily free allowance (1 round / 60 min) is unchanged.
+- **A credit comes back automatically only on `failed`** (our fault: AI unavailable or
+  setup crash). Leaving a round does not refund it.
+- **Credits never expire.** Deleting the account deletes them.
+- **Paid rounds do not write `practice_usage`.** A paid round leaves today's free
+  allowance untouched.
+- Refund window in the terms: 7 days, unused packs only (`LEGAL.refundWindowDays`).
 
 ## What I could NOT verify
-- Local Docker was unavailable, so the database integration tests and migration were verified only by CI.
-- The linked database migration has not been applied. Apply it with the eventual reviewed merge, then confirm it appears on both sides of `npm run supabase -- migration list --linked`.
-- The deployment template now sets the owner-approved $10/day app cap. The VM environment and provider-side Gemini billing budget still need configuration.
-- Production Turnstile needs the Vercel site key and the matching secret configured in Supabase Auth; I did not change production settings.
-- Actual storage deletion and upload behavior against production Supabase were not run.
+- **No real payment has been made.** Rule 7: no live spend, and there are no Razorpay
+  keys. Order creation, capture and the webhook are tested with Razorpay mocked at the
+  boundary. A test-mode purchase (`rzp_test_` keys, card 4111 1111 1111 1111) end to end
+  is needed before live keys.
+- `CreditLedgerDatabaseIntegrationTest` (10 tests on the real SQL) runs only in CI's
+  Supabase job. There is no local Docker here, so I have not seen it pass yet.
+- Visual design of the pack cards and the reworked `/upgrade` layout.
 
 ## Verification status
-- Backend: `ktlintCheck test build` passed locally.
-- Frontend: `typecheck`, `lint`, 3,187 tests, and `build` passed locally; build used CI placeholder public environment values.
-- CI PR #129 at commit `bf358e2`: API, web, image, and database jobs all passed, including migration application and database integration tests. The duplicate push-triggered CI run also passed.
+- API `./gradlew ktlintCheck test build`: pass (DB integration tests skipped locally, see above).
+- Web typecheck / lint / test (3,203) / build: pass.
 
 ## Merge status
-- Branch `fix/private-file-lifecycle` pushed; PR #129 opened against `develop` for human review because this changes personal-data deletion.
-- **Update (later the same day):** PR #129 was merged into `develop` (5f0f46a). Its migration `20261028180000_superseded_resume_cleanup.sql` was applied to the linked project by a later `npm run db:push`, which applies everything pending, alongside `20261028140000_arena_concept_names.sql`.
-  - The resume rows it removes are gone at once.
-  - Queued objects are deleted by the API's storage deletion worker after the 15-minute settle window.
-  - Not yet counted: the applying session has no SQL access to the project. To see what was queued, run `select count(*), count(distinct user_id) from storage_deletion_jobs where reason = 'resume_deleted';` in the dashboard.
-
-## Later still: signed-in end-to-end pass (merged at 276f921)
-- **Test account.** The owner approved a test account, `naman.kaushik06+untiered-e2e@gmail.com`, created through the admin API. Its password is only in the session scratchpad, not the repo.
-  - Supabase enforces a captcha on password sign-in, and local `.env` has no `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, so **the email/password form cannot sign anyone in locally**.
-  - The test signed in with an admin-minted magic-link token, turned into the app's own cookies.
-- **Fixed:**
-  - **No scenario could be finished, in any course.** The last answer returned 500: `advance()` used a bare null parameter in `is null`, which PostgreSQL rejects. The parameter is now cast, and `ScenarioArenaRepositoryDatabaseIntegrationTest` finishes a scenario.
-  - **"Concepts to practise"** showed the first three concepts alphabetically for a new user. It now shows only concepts the user has answered.
-  - **The scenario card** showed its context sentence as an all-caps label. It now shows tier · minutes, with the context as a line of text.
-  - **fest-night step 5's context note** gave away the answer.
-  - **The chapter reader** had a different header (New interview / Sign out). It now uses the app's `AppHeader` at reader width.
-  - **The guided "Explain and remember" step** put Common mistakes and the interview box at half width beside an empty column.
-- **Migration** `20261028130000_arena_scenario_fixes.sql` was applied.
-- **Checked and fine:**
-  - Signed-in pages load with no console or network errors and no phone overflow: dashboard, courses, chapters, Arena (all courses), interview setup, history, profile, questions, daily challenge, rounds.
-  - Arena steps 1–4 play correctly on desktop and phone, including feedback, Best answer and Key point.
-- **Not checked live at first:** the finish fix, because the owner's local API still ran the old code. A second API on :3002 could not get a database connection, because the session pooler is capped at 15 clients, so it was stopped.
-
-## Final pass the same evening (merged at 4cad9af)
-- **Local stack restarted** on `develop` with the owner's go-ahead.
-  - Verified live: scenarios finish in all four courses, the "Solution in brief" screen shows, and progress updates.
-  - The new festive scenarios also play end to end (Toss-Time Teams).
-  - **Redeploy the OCI API**: production still has the finish bug.
-- **Local development uses the transaction pooler** (port 6543, `prepareThreshold=0`). See `.env.example`, `README.md` and `deploy/README.md`.
-  - Production stays on 5432.
-  - The owner's `.env` was switched, and verified with every signed-in page and two full scenarios.
-- **Concept names** are sentence case everywhere, with acronyms kept (migration `20261028140000_arena_concept_names.sql`).
-- **The daily question gave its answer away.** Derived questions opened with the chapter summary, which often stated the answer. They now name the chapter only, and a test checks this.
-- **The question heading** no longer shows the focus-ring box.
-- **Click-tested and fine:**
-  - course quizzes (feedback shown)
-  - step-throughs
-  - Python playgrounds (output matches expected; every course playground is Python, run in the browser)
-  - profile edit (saves, survives reload, the nudge disappears)
-- **`/questions` returns "not found" by design**: the `questions` feature flag is off.
-- **Cleanup:**
-  - Removed the six merged agent worktrees and their branches, and the stale `C:/tmp/uquiz` and `C:/tmp/uquizai` copies.
-  - Not mine and left alone: `C:/tmp/uadv`, `C:/tmp/ufix`, `C:/tmp/urel`, and the Codex worktree.
-- **Still not run:** a mock round (live Gemini spend, needs the owner's go-ahead).
+- **PR opened, not merged**, because it touches payments, which CLAUDE.md lists as a
+  human-review area.
+- **The migration is not applied.** Run `npm run db:push` as part of the merge, or the
+  entitlement query will fail on the missing table.
+- Size is about 2,300 lines, of which about 800 are tests. It is over the 800-line
+  guideline, but the API, ledger and UI only make sense together.
 
 ## Suggested next task
-- Review PR #129 after its latest CI is green. Apply its migration with the reviewed merge; configure the $10/day cap, Gemini billing budget, and both Turnstile keys before opening signup.
+- A test-mode Razorpay purchase end to end, then a purchase-history list on `/profile`.
 
 ## Open questions for you
-- Confirm the provider-side Gemini billing budget and configure Turnstile in Supabase Auth before public signup.
+1. **Is the free tier too generous to sell packs?** One free 60-minute round every day
+   leaves little reason to pay ₹199 unless someone practises more than once a day. To make
+   the packs sell, consider either of these (one config value each, no code change):
+   - `interviewos.entitlement.free-rounds: 1`: one free interview for life.
+   - `daily-minutes: 20`: a short free round each day, with paid full-length rounds.
+2. **The per-user AI spend cap ($2/day) also applies to paying users.** It returns
+   "Try again tomorrow" before the credit is touched, so nobody loses money. But a heavy
+   buyer could hit it. Should paid rounds raise or bypass it?
+3. **GST and invoices.** Prices are shown as tax-inclusive. If you are GST-registered you
+   need tax invoices, which Razorpay does not issue for you.
+4. **Account deletion cascade-deletes `payments`.** Tax law may require keeping payment
+   records. Decide whether to keep an anonymised payment row instead.
+5. **Razorpay dashboard settings:**
+   - Webhook URL `<api>/api/v1/billing/razorpay/webhook`, with events `payment.captured`,
+     `order.paid` and `payment.failed`.
+   - Confirm the terms and refund wording, which Razorpay checks during KYC.
