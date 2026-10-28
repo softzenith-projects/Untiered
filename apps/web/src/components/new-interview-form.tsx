@@ -49,18 +49,23 @@ export function NewInterviewForm({
   initialRoundType,
   initialTopic = "",
   roundPreselected = false,
+  initialCompany = "",
+  initialRole = "",
 }: {
   initialRoundType?: RoundType;
   initialTopic?: string;
   roundPreselected?: boolean;
+  /** Filled in from a dashboard quick start; the candidate can still change both. */
+  initialCompany?: string;
+  initialRole?: string;
 }) {
   const router = useRouter();
   const accessToken = useAccessToken();
   const topic = initialTopic.trim();
 
   const [query, setQuery] = useState("");
-  const [structuredCompany, setStructuredCompany] = useState("");
-  const [structuredRole, setStructuredRole] = useState("");
+  const [structuredCompany, setStructuredCompany] = useState(initialCompany);
+  const [structuredRole, setStructuredRole] = useState(initialRole);
   const [structuredRound, setStructuredRound] = useState<RoundType>(
     initialRoundType ?? "coding_practical",
   );

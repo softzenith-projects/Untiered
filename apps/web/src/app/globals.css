@@ -328,9 +328,46 @@
     box-shadow: var(--focus-ring);
   }
 
+  /* Solid accent with contrast text: a pale tint left selected text the same blue-ish
+     tone as links and washes, so a selection was hard to see at all. */
   ::selection {
-    background: color-mix(in srgb, var(--accent) 24%, transparent);
+    background: var(--accent);
+    color: var(--accent-contrast);
+  }
+}
+
+/*
+ * Form controls sit in `components`, below `utilities`, so a caller's `pl-12` or
+ * `min-h-12` on <Input> actually applies. In `utilities` the shorthand `padding` here
+ * came later in source order and silently won — the course search text ran under its icon.
+ */
+@layer components {
+  .field-control {
+    min-height: var(--control-height);
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
     color: var(--ink);
+    padding: 0.65rem 0.8rem;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition:
+      border-color var(--motion-fast) var(--ease-product),
+      box-shadow var(--motion-fast) var(--ease-product);
+  }
+  .field-control::placeholder {
+    color: var(--ink-subtle);
+  }
+  .field-control:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+  .field-control[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+  .field-error {
+    color: var(--danger);
   }
 }
 
@@ -445,34 +482,6 @@
   }
   .action-destructive:hover {
     background: color-mix(in srgb, var(--danger) 85%, var(--ink));
-  }
-
-  .field-control {
-    min-height: var(--control-height);
-    width: 100%;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-md);
-    background: var(--surface-raised);
-    color: var(--ink);
-    padding: 0.65rem 0.8rem;
-    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
-    transition:
-      border-color var(--motion-fast) var(--ease-product),
-      box-shadow var(--motion-fast) var(--ease-product);
-  }
-  .field-control::placeholder {
-    color: var(--ink-subtle);
-  }
-  .field-control:focus {
-    border-color: var(--accent);
-    outline: none;
-    box-shadow: var(--focus-ring);
-  }
-  .field-control[aria-invalid="true"] {
-    border-color: var(--danger);
-  }
-  .field-error {
-    color: var(--danger);
   }
 
   /* Small rounded label — status, tag, coverage archetype. Never the primary action. */

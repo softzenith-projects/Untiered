@@ -71,11 +71,13 @@ class InterviewService(
     private val transactions = TransactionTemplate(transactionManager)
 
     fun entitlement(userId: UUID): EntitlementView {
-        val decision = evaluateEntitlement(userId, requestedMinutes = null)
+        val openSessionId = repository.findOpenSessionId(userId)
+        val decision = evaluateEntitlement(userId, requestedMinutes = null, openSessionId = openSessionId)
         return EntitlementView(
             allowed = decision.allowed,
             reason = decision.reason.name.lowercase(),
             message = decision.message,
+            openSessionId = openSessionId,
             remainingFree = decision.remainingFree,
             dailyRoundLimit = decision.daily.roundLimit,
             dailyMinuteLimit = decision.daily.minuteLimit,
@@ -87,12 +89,13 @@ class InterviewService(
     private fun evaluateEntitlement(
         userId: UUID,
         requestedMinutes: Int?,
+        openSessionId: UUID? = repository.findOpenSessionId(userId),
     ): EntitlementDecision {
         val (roundsToday, minutesToday) = repository.practiceUsageSince(userId, startOfToday())
         return Entitlement.evaluate(
             completedSessions = repository.countCompletedSessions(userId),
             paidSessionCredits = repository.countPaidSessionCredits(userId),
-            sessionInProgress = repository.findOpenSessionId(userId) != null,
+            sessionInProgress = openSessionId != null,
             freeRounds = entitlementProperties.freeRounds,
             daily =
                 DailyUsage(
