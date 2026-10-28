@@ -18,6 +18,13 @@ describe("orderedQuiz", () => {
     }
   });
 
+  it("never offers the same option twice in one quiz", () => {
+    for (const quiz of allQuizzes) {
+      const normalised = quiz.options.map((option) => option.trim().toLowerCase());
+      expect(new Set(normalised).size, quiz.question).toBe(normalised.length);
+    }
+  });
+
   it("gives the same order every time, so server and browser agree", () => {
     for (const quiz of allQuizzes.slice(0, 50)) {
       expect(orderedQuiz(quiz)).toEqual(orderedQuiz(quiz));

@@ -295,10 +295,10 @@ export const chapterTheFrameworks: Chapter = {
       kind: "quiz",
       question: "What is smolagents' documented argument for writing actions as code rather than JSON?",
       options: [
-        "Code is shorter than JSON",
-        "JSON cannot express function calls at all, so code is the only way to tell a model which tool to use next",
-        "JSON cannot express function calls",
-        "Code runs faster",
+        "Code is shorter than JSON, so every action costs the model fewer output tokens to write",
+        "Code is composable, handles objects, is general, and is well represented in models' training data",
+        "JSON cannot express function calls, so code is the only way to name the tool to use next",
+        "Code runs faster than parsed JSON once the agent's actions reach the Python interpreter",
       ],
       answer: 1,
       why:
