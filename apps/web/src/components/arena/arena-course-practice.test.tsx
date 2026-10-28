@@ -42,6 +42,7 @@ describe("course scenario practice", () => {
     await user.click(screen.getByRole("button", { name: "Check answer" }));
     await waitFor(() => expect(answer).toHaveBeenCalledWith("dsa", "token", first.id, "b"));
     expect(screen.getByRole("status")).toHaveTextContent("Best answer: Trie");
+    expect(screen.getByRole("status")).toHaveTextContent("Key point: Prefix lookup.");
     expect(screen.queryByText("Traffic grew.")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Next probe" }));
     expect(screen.getByText("Traffic grew.")).toBeInTheDocument();

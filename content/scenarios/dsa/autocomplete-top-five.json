@@ -2,7 +2,7 @@
   "course_slug": "dsa",
   "slug": "autocomplete-top-five",
   "title": "Autocomplete under 50 ms",
-  "hook": "A search box needs five suggestions for each typed prefix in under 50 ms. What data structure fits?",
+  "hook": "A search box must show five suggestions for whatever prefix the user has typed, within 50 ms of each keystroke.",
   "context": "Search suggestion service; query frequencies change throughout the day",
   "tier": "foundations",
   "concept_ids": [
@@ -11,29 +11,29 @@
   ],
   "estimated_minutes": 7,
   "status": "live",
-  "solution_brief": "Use a trie and cache top five suggestions at each prefix node for O(L + 5) query work, where L is prefix length. This spends O(5 \u00d7 total indexed prefix nodes) extra references. Batch frequency updates; a full sort at query time loses the latency budget.",
+  "solution_brief": "Use a trie and cache top five suggestions at each prefix node for O(L + 5) query work, where L is prefix length. This spends O(5 × total indexed prefix nodes) extra references. Batch frequency updates; a full sort at query time loses the latency budget.",
   "steps": [
     {
       "kind": "initial",
       "step_type": "algo_choice",
-      "prompt": "Which structure finds the prefix without scanning every query string?",
+      "prompt": "There are millions of past queries. Which structure finds every query that starts with the typed prefix without scanning them all?",
       "options": [
         {
           "id": "a",
-          "text": "A trie keyed by characters"
+          "text": "A trie, with one edge per character"
         },
         {
           "id": "b",
-          "text": "An unsorted array scanned linearly"
+          "text": "A hash map from each full query to its count"
         },
         {
           "id": "c",
-          "text": "A stack of recent queries"
+          "text": "A max-heap of queries ordered by count"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A walks the prefix in L characters. B costs a scan over all N strings. C has recency order but no prefix index.",
-      "bottleneck_note": "A trie indexes prefixes directly.",
+      "explanation": "A trie walks down one edge per typed character and lands on the node under which every matching query lives. A hash map answers exact lookups only, so finding all keys with a prefix means checking every key. A heap orders queries by count but knows nothing about prefixes.",
+      "bottleneck_note": "Pick the structure that is indexed the way you query: here, by prefix.",
       "concept_ids": [
         "trie"
       ]
@@ -41,7 +41,7 @@
     {
       "kind": "probe",
       "step_type": "complexity",
-      "prompt": "With prefix length L, what is trie lookup time before collecting suggestions?",
+      "prompt": "With N queries stored, how long does it take to reach the node for the prefix?",
       "options": [
         {
           "id": "a",
@@ -54,94 +54,106 @@
         {
           "id": "c",
           "text": "O(L log N)"
+        },
+        {
+          "id": "d",
+          "text": "O(log N)"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A follows one edge per character. B describes a scan of all N entries. C adds a logarithmic search that a character-edge lookup does not perform.",
-      "bottleneck_note": "The number of stored queries does not appear in prefix traversal time.",
+      "explanation": "Each character moves down exactly one edge, so reaching the prefix node takes L steps however many queries are stored. O(N) is the cost of scanning every query, and a logarithmic factor would come from binary search, which a trie never does.",
+      "bottleneck_note": "Trie lookup depends on the length of the prefix, not the size of the dictionary.",
       "concept_ids": [
         "trie"
       ],
-      "context_note": "The trie is already built in memory."
+      "context_note": "The trie is built in memory, and the user has typed a prefix of length L."
     },
     {
       "kind": "probe",
       "step_type": "algo_choice",
-      "prompt": "How can the endpoint return top five without traversing a huge subtree per keystroke?",
+      "prompt": "How do you return the five most frequent matches without visiting all four million on every keystroke?",
       "options": [
         {
           "id": "a",
-          "text": "Store a precomputed top-five list at each prefix node"
+          "text": "Keep each node's own top-five list, refreshed as counts change"
         },
         {
           "id": "b",
-          "text": "Sort every matching query on every request"
+          "text": "Collect every match under the node and sort them by frequency"
         },
         {
           "id": "c",
-          "text": "Return the first five insertion-order leaves"
+          "text": "Return the first five matches found by depth-first search"
+        },
+        {
+          "id": "d",
+          "text": "Cache the five most frequent queries overall and filter them"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A makes collection bounded to five after lookup. B grows with the matching set. C does not produce the highest-frequency suggestions.",
-      "bottleneck_note": "Precomputation trades memory and update work for read latency.",
+      "explanation": "If every node already holds its five best completions, a lookup is the prefix walk plus reading five items. Sorting the matches redoes millions of comparisons per keystroke, and depth-first order is alphabetical, not by popularity. The overall top five rarely contains five queries that start with the typed prefix.",
+      "bottleneck_note": "Precompute what reads need when reads vastly outnumber updates.",
       "concept_ids": [
         "top-k"
       ],
-      "context_note": "A popular prefix has millions of matching queries."
+      "context_note": "The prefix \"s\" matches four million stored queries."
     },
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "What is the main cost of caching five suggestions at each node?",
+      "prompt": "What does that precomputation cost?",
       "options": [
         {
           "id": "a",
-          "text": "Up to five suggestion references per indexed prefix node plus update work"
+          "text": "Five references per node, and re-ranking up the path on each update"
         },
         {
           "id": "b",
-          "text": "Exactly five bytes total"
+          "text": "Nothing extra, because the lists are computed once and never change"
         },
         {
           "id": "c",
-          "text": "No update cost because the trie is immutable"
+          "text": "Slower lookups, because each node now has more data to read"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A scales with nodes and changes in frequency. B ignores pointers and node count. C contradicts live frequency updates.",
-      "bottleneck_note": "Measure indexed prefix nodes, not just the count of full terms.",
+      "explanation": "Every node carries its own list, so memory grows with the number of nodes, not just the number of queries. When a query's count changes, every ancestor on its path may need its list re-ranked. Lookups get faster, not slower: reading five stored items beats searching a subtree.",
+      "bottleneck_note": "Size a trie by its prefix nodes, not by its full queries.",
       "concept_ids": [
         "top-k"
       ],
-      "context_note": "The team agrees to cache top five per node."
+      "context_note": "The team stores a top-five list at every node of the trie."
     },
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "The query log updates every second and traffic reaches a billion daily requests. What should be separated?",
+      "prompt": "How should count updates reach the trie without slowing lookups down?",
       "options": [
         {
           "id": "a",
-          "text": "Batch ranking updates from the read-serving trie and atomically publish refreshed snapshots"
+          "text": "Rebuild rankings in the background and swap in a fresh snapshot"
         },
         {
           "id": "b",
-          "text": "Sort the full log for each keystroke"
+          "text": "Update every ancestor's list inside the user's search request"
         },
         {
           "id": "c",
-          "text": "Mutate every ancestor node synchronously inside the user request"
+          "text": "Lock the trie for each count update so readers see exact counts"
+        },
+        {
+          "id": "d",
+          "text": "Re-sort the whole query log whenever a lookup arrives"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A keeps reads predictable and permits slightly stale popularity. B scales with log volume per request. C makes user latency depend on update fan-out.",
-      "bottleneck_note": "Freshness can be seconds while the 50 ms read target stays firm.",
+      "explanation": "Computing rankings off the request path and publishing a new snapshot in one swap keeps every lookup a fast read, at the price of suggestions a few seconds stale. Updating ancestors inside the request makes users wait on that work, and locking the trie makes a billion reads queue behind updates.",
+      "bottleneck_note": "Freshness can lag by seconds; the 50 ms read budget cannot.",
       "concept_ids": [
         "trie",
         "top-k"
       ],
-      "context_note": "Read traffic now dwarfs frequency-update traffic."
+      "context_note": "Traffic reaches a billion lookups a day, while query counts change every second."
     }
   ]
 }

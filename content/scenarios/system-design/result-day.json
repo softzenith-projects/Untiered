@@ -19,7 +19,7 @@
     {
       "kind": "initial",
       "step_type": "design_choice",
-      "prompt": "Today each lookup runs a query: SELECT marks FROM results WHERE roll_no = ?. At 10:00 the database falls over. The results never change after publication. What is the best fundamental change?",
+      "prompt": "Every result view runs SELECT marks FROM results WHERE roll_no = ?, and the database falls over at 10:00. The results never change after publication. What is the best fundamental change?",
       "context_note": "The traffic is a huge spike, but the data is immutable once published.",
       "system_state": {
         "nodes": [
@@ -41,23 +41,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Buy a much bigger database server."
+          "text": "Buy a much bigger database server and keep running the same lookup for every view"
         },
         {
           "id": "b",
-          "text": "Precompute each result privately and serve authorized requests through a cache, without querying marks on every view."
+          "text": "Add read replicas and keep running the same query for every view"
         },
         {
           "id": "c",
-          "text": "Add a loading spinner so students wait patiently."
+          "text": "Precompute each result and serve it behind per-student authorization"
         },
         {
           "id": "d",
-          "text": "Ask students to check at different times."
+          "text": "Cache the query output at the CDN under a URL built from the roll number"
         }
       ],
-      "correct_option_id": "b",
-      "explanation": "Immutable results can be computed once and served many times, but each result remains private. A cache must be behind per-student authorization or use a key that cannot be shared across users. A bigger database alone still faces the publication spike.",
+      "correct_option_id": "c",
+      "explanation": "Immutable data can be computed once and served many times, as long as each result stays private behind a per-student check. A bigger server or more replicas still run one query per view and face the same spike, while a public cache keyed by roll number lets anyone who guesses a number read that student's marks.",
       "bottleneck_note": "If data cannot change, you should not compute it at request time.",
       "concept_ids": [
         "read-heavy-traffic",
@@ -67,45 +67,45 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "You want to avoid database lookups, but each student must see only their own result. How do you lay out the static content?",
-      "context_note": "Static is the plan, but results are per student.",
+      "prompt": "Results must not need a marks query per view, yet each student may see only their own. How should the precomputed results be laid out and served?",
+      "context_note": "Static serving is the plan, but each result is personal.",
       "system_state": {
         "nodes": [
           "students",
-          "cdn",
-          "object-storage"
+          "web",
+          "results-cache"
         ],
         "links": [
           [
             "students",
-            "cdn"
+            "web"
           ],
           [
-            "cdn",
-            "object-storage"
+            "web",
+            "results-cache"
           ]
         ]
       },
       "options": [
         {
           "id": "a",
-          "text": "One giant file with all 300,000 results that every browser downloads and searches locally."
+          "text": "One private object per student, served only after checking who is signed in"
         },
         {
           "id": "b",
-          "text": "One private precomputed object per student, returned only after checking the signed-in student identity, with cache keys scoped to that student."
+          "text": "One file holding all 300,000 results, downloaded and searched in the browser"
         },
         {
           "id": "c",
-          "text": "Generate each page on demand with a script at the CDN."
+          "text": "One public object per student at a URL built from the roll number"
         },
         {
           "id": "d",
-          "text": "Email results to every student."
+          "text": "One page per department listing every student's marks behind a shared password"
         }
       ],
-      "correct_option_id": "b",
-      "explanation": "Small per-student objects avoid a live marks query. The object store must remain private, and every result request must authorize the student before any cached response is served. A public URL based on a roll number would expose marks; one giant download would leak every result.",
+      "correct_option_id": "a",
+      "explanation": "Small per-student objects remove the live query while keeping the store private, with the sign-in check in front of every response. One big download hands every student everyone's marks, and public or shared-password pages expose results to anyone who guesses a URL or learns the password.",
       "bottleneck_note": "Precomputation changes the serving path, not the need for authorization.",
       "concept_ids": [
         "static-precomputation",
@@ -115,14 +115,13 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "The private files are ready before 10:00. How do you publish the new result set on time without exposing it early?",
-      "context_note": "Pre-uploading removes the load but creates an early-leak problem.",
+      "prompt": "How do you make the results visible at exactly 10:00 without exposing them early or doing the heavy upload at the last moment?",
+      "context_note": "The private files can be built ahead of time, but nothing may be visible before 10:00.",
       "system_state": {
         "nodes": [
           "students",
           "cdn",
-          "object-storage(hidden release)",
-          "release-pointer"
+          "object-storage"
         ],
         "links": [
           [
@@ -131,34 +130,30 @@
           ],
           [
             "cdn",
-            "release-pointer"
-          ],
-          [
-            "release-pointer",
-            "object-storage(hidden release)"
+            "object-storage"
           ]
         ]
       },
       "options": [
         {
           "id": "a",
-          "text": "Upload everything at 10:00:00 and hope it finishes quickly."
+          "text": "Upload everything at 10:00:00 and let the upload finish as fast as it can"
         },
         {
           "id": "b",
-          "text": "Stage in a private release, then atomically switch the active release pointer at 10:00 while keeping student authorization in front of every result."
+          "text": "Protect the files with a shared password announced at 10:00"
         },
         {
           "id": "c",
-          "text": "Put a password on the CDN and share it at 10:00."
+          "text": "Publish them early under an unlisted URL and tell nobody until 10:00"
         },
         {
           "id": "d",
-          "text": "Publish early and ask students not to look."
+          "text": "Stage the files ahead of time and flip a release pointer at 10:00"
         }
       ],
-      "correct_option_id": "b",
-      "explanation": "The heavy upload can happen ahead of time. Switching the active release pointer is cheap, and the authorization gate remains in place before and after publication. Uploading at 10:00 risks partial availability; a shared password is not access control.",
+      "correct_option_id": "d",
+      "explanation": "Preparing and publishing are separate jobs: the heavy upload happens early and privately, and publishing becomes one cheap atomic switch, with the per-student check in front before and after. Uploading at 10:00 risks partial availability, and unlisted URLs or shared passwords are not real access control.",
       "bottleneck_note": "Separate 'prepare' from 'publish'. Publishing should be one cheap atomic switch.",
       "concept_ids": [
         "static-precomputation"
@@ -167,14 +162,14 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "At 10:00, thousands of students request the same public result-page shell and release manifest. These shared assets miss the CDN cache together. What reduces the origin spike?",
-      "context_note": "The CDN helps only after objects are cached. The first second is the dangerous one.",
+      "prompt": "Which change keeps this cold-cache burst from reaching the origin thousands of times?",
+      "context_note": "At 10:00:00 thousands of students request the same page shell and release manifest, and all of them miss the CDN cache together.",
       "system_state": {
         "nodes": [
           "students",
           "cdn-edge",
-          "origin-shield",
-          "object-storage"
+          "object-storage",
+          "release-pointer"
         ],
         "links": [
           [
@@ -183,34 +178,34 @@
           ],
           [
             "cdn-edge",
-            "origin-shield"
+            "object-storage"
           ],
           [
-            "origin-shield",
-            "object-storage"
+            "object-storage",
+            "release-pointer"
           ]
         ]
       },
       "options": [
         {
           "id": "a",
-          "text": "Enable an origin shield / request coalescing layer so many simultaneous misses become one origin fetch, and pre-warm the cache if possible."
+          "text": "Lower the CDN cache lifetime to one second so content is refreshed constantly"
         },
         {
           "id": "b",
-          "text": "Lower the CDN cache TTL to 1 second."
+          "text": "Add origin shielding with request coalescing for shared assets"
         },
         {
           "id": "c",
-          "text": "Turn off the CDN so there is only one path to debug."
+          "text": "Add more origin servers behind the CDN to absorb the burst"
         },
         {
           "id": "d",
-          "text": "Retry failed requests immediately from the browser in a tight loop."
+          "text": "Have browsers retry failed requests straight away"
         }
       ],
-      "correct_option_id": "a",
-      "explanation": "Origin shielding and request coalescing help when many clients request the same shared asset. They do not collapse requests for different students’ private results into one fetch. Lowering TTL or tight browser retries amplify the burst.",
+      "correct_option_id": "b",
+      "explanation": "Shielding and coalescing collapse many simultaneous misses for the same shared asset into a single origin fetch, and pre-warming helps further. A shorter cache lifetime creates more misses, and immediate browser retries amplify the burst. Extra origin servers absorb load but do not remove the duplicate fetches. None of this merges private per-student results, which are different objects.",
       "bottleneck_note": "Caches fail hardest on a cold start. Plan the first second, not just the steady state.",
       "concept_ids": [
         "thundering-herd",
@@ -220,55 +215,55 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "Two problems appear: nervous students refresh every second, and a scraper is trying every roll number from 1 to 400000 to download everyone's marks. What is the best protection?",
-      "context_note": "The site stands up. Now both enthusiastic and hostile clients show up.",
+      "prompt": "Students refresh every second, and a scraper requests roll numbers 1 to 400000 to collect everyone's marks. Which protection handles both?",
+      "context_note": "The site is standing, and now two kinds of heavy traffic arrive: nervous students and a scraper.",
       "system_state": {
         "nodes": [
           "students",
           "scraper",
-          "edge-rate-limit",
           "cdn",
-          "object-storage"
+          "object-storage",
+          "release-pointer"
         ],
         "links": [
           [
             "students",
-            "edge-rate-limit"
+            "cdn"
           ],
           [
             "scraper",
-            "edge-rate-limit"
-          ],
-          [
-            "edge-rate-limit",
             "cdn"
           ],
           [
             "cdn",
             "object-storage"
+          ],
+          [
+            "object-storage",
+            "release-pointer"
           ]
         ]
       },
       "options": [
         {
           "id": "a",
-          "text": "Authorize every result against the signed-in student, keep objects private, and rate limit suspicious request patterns at the edge."
+          "text": "Rely on the data being static, because nothing about it can be changed by traffic"
         },
         {
           "id": "b",
-          "text": "Do nothing, because the data is static."
+          "text": "Block all traffic from outside the university's own network and VPN"
         },
         {
           "id": "c",
-          "text": "Block all traffic that does not come from a university network."
+          "text": "Check the signed-in student on every request and rate limit at the edge"
         },
         {
           "id": "d",
-          "text": "Make every page 50 MB so scraping is slow."
+          "text": "Ask for roll number and date of birth on each result lookup"
         }
       ],
-      "correct_option_id": "a",
-      "explanation": "Roll numbers and dates of birth are guessable personal attributes, not authorization. A signed-in identity check prevents one student from requesting another’s result, while rate limits reduce refresh storms and enumeration attempts. Private origin storage prevents direct bypass.",
+      "correct_option_id": "c",
+      "explanation": "A signed-in identity check stops one student requesting another's result, private origin storage prevents bypassing it, and edge rate limits blunt both refresh storms and enumeration. Roll numbers and dates of birth are guessable, so they identify a person without proving it is them, and blocking off-campus traffic locks out students at home.",
       "bottleneck_note": "Never use a guessable URL or personal attribute as proof of access.",
       "concept_ids": [
         "rate-limiting"

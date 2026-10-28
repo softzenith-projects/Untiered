@@ -57,14 +57,23 @@ export function GraphViz({ frame }: { frame: GraphFrame }) {
         if (!node) return null;
         const fill = node.state ? STATE_FILL[node.state] : "var(--surface-raised)";
         const stroke = node.state ? STATE_STROKE[node.state] : "var(--line-strong)";
+        // A circle holds a short name. Anything after " · " ("0 · dist 4") is an annotation
+        // and goes underneath, where it has room, instead of spilling over the circle's edge.
+        const [name, ...rest] = node.label.split(" · ");
+        const annotation = rest.join(" · ");
         return (
           <g key={p.id}>
             <circle cx={p.x} cy={p.y} r={RADIUS} fill={fill} stroke={stroke} strokeWidth={1.5} />
             <text x={p.x} y={p.y + 5} textAnchor="middle" className="font-mono" fontSize={12} fill="var(--ink)">
-              {node.label}
+              {name}
             </text>
+            {annotation ? (
+              <text x={p.x} y={p.y + RADIUS + 14} textAnchor="middle" className="font-mono" fontSize={10} fontWeight={600} fill="var(--accent-strong)">
+                {annotation}
+              </text>
+            ) : null}
             {node.state ? (
-              <text x={p.x} y={p.y + RADIUS + 14} textAnchor="middle" fontSize={9} fill="var(--ink-subtle)">
+              <text x={p.x} y={p.y + RADIUS + (annotation ? 26 : 14)} textAnchor="middle" fontSize={9} fill="var(--ink-subtle)">
                 {STATE_LABEL[node.state]}
               </text>
             ) : null}

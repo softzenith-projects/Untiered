@@ -42,23 +42,23 @@
       "options": [
         {
           "id": "a",
-          "text": "The CDN, because it cannot serve images fast enough."
+          "text": "The web servers, which have run out of CPU capacity to handle the burst"
         },
         {
           "id": "b",
-          "text": "The database: connection pool exhaustion plus lock contention on a small set of hot rows."
+          "text": "The database: exhausted connections and lock contention on hot rows"
         },
         {
           "id": "c",
-          "text": "DNS, because the domain name cannot be resolved."
+          "text": "The payment gateway, which is rate limiting our calls to it"
         },
         {
           "id": "d",
-          "text": "The users' phones."
+          "text": "The CDN, which cannot serve the static assets fast enough"
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Waiting on locks and running out of connections point at the database. With 800 seats and 2 lakh requesters, almost every request is contending for the same hot rows, so work serialises while connections pile up behind it.",
+      "explanation": "Queries waiting on locks and an exhausted connection pool point at the database. With 800 seats and 2 lakh requesters, nearly every request contends for the same rows, so work serialises while connections pile up. Web CPU is described as moderate, which rules out the web tier as the first failure.",
       "bottleneck_note": "Hot rows serialise writes. More concurrent requests just make the line longer.",
       "concept_ids": [
         "lock-contention",
@@ -68,22 +68,17 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "You triple the number of web servers and the site still falls over. Why, and what is the right kind of fix?",
-      "context_note": "Scaling the stateless tier did not help.",
+      "prompt": "More web servers did not relieve the hot seat rows. What should change at the front of the booking path?",
+      "context_note": "You tripled the web servers, but the database is still out of connections and the site still falls over.",
       "system_state": {
         "nodes": [
           "users",
-          "waiting-room",
           "web x3",
           "db(seat rows)"
         ],
         "links": [
           [
             "users",
-            "waiting-room"
-          ],
-          [
-            "waiting-room",
             "web x3"
           ],
           [
@@ -95,23 +90,23 @@
       "options": [
         {
           "id": "a",
-          "text": "More servers means more concurrent requests reaching the same hot rows. Add a virtual waiting room that admits users at a rate the booking path can handle."
+          "text": "Add ten times more web servers so that no single one is overloaded by the spike"
         },
         {
           "id": "b",
-          "text": "Add ten times more web servers."
+          "text": "Increase the database connection pool to match the larger web tier"
         },
         {
           "id": "c",
-          "text": "Remove the database and store seats in browser cookies."
+          "text": "Add read replicas for the seat table"
         },
         {
           "id": "d",
-          "text": "Return an HTTP 200 with an empty body to everyone."
+          "text": "Put a virtual waiting room in front that admits users at a controlled rate"
         }
       ],
-      "correct_option_id": "a",
-      "explanation": "The bottleneck is serialised access to a small set of rows, and extra web servers only increase the pressure. A waiting room (queue with a controlled admission rate) shapes demand to match capacity so the critical section is never flooded. Cookies would let users forge their own seats.",
+      "correct_option_id": "d",
+      "explanation": "The bottleneck is serialised access to a few rows, so more web servers only send more contenders at them. A waiting room meters demand to what the critical section can take. A bigger connection pool just lets more transactions queue on the same locks, and read replicas do nothing for contended writes.",
       "bottleneck_note": "When demand cannot be served, shape it before it reaches the scarce resource.",
       "concept_ids": [
         "virtual-waiting-room"
@@ -120,23 +115,18 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "A user picks seat 12 and goes to pay. You must keep the seat for them during payment, but you cannot lock it forever if they abandon. What is the right mechanism?",
-      "context_note": "Admission is controlled. Now seat selection needs a safe temporary claim.",
+      "prompt": "A user picks seat 12 and goes to pay. How should the seat be protected during payment without being lost for ever if they abandon?",
+      "context_note": "Admission is now metered. The next problem is protecting a seat while its buyer pays, which can take minutes.",
       "system_state": {
         "nodes": [
           "waiting-room",
           "booking-service",
-          "seat-hold-store(TTL)",
           "payment"
         ],
         "links": [
           [
             "waiting-room",
             "booking-service"
-          ],
-          [
-            "booking-service",
-            "seat-hold-store(TTL)"
           ],
           [
             "booking-service",
@@ -147,23 +137,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Mark the seat 'sold' immediately and refund later if needed."
+          "text": "Place a hold that expires after a few minutes unless payment completes"
         },
         {
           "id": "b",
-          "text": "Place a short hold on the seat (for example 5 to 10 minutes) with an expiry time; if payment does not complete, the hold expires and the seat becomes available again."
+          "text": "Mark the seat as sold immediately and refund the buyer later if payment fails"
         },
         {
           "id": "c",
-          "text": "Hold the seat until the user explicitly cancels."
+          "text": "Hold the seat until the user explicitly cancels or pays"
         },
         {
           "id": "d",
-          "text": "Do not hold anything, and let the first payment win."
+          "text": "Place no hold, and give the seat to the first payment that succeeds"
         }
       ],
-      "correct_option_id": "b",
-      "explanation": "A hold with a TTL gives the user a fair window to pay and guarantees the seat comes back if they disappear. Holds that need an explicit cancel leak seats whenever users close the tab. Marking seats sold early causes mass refunds, and no hold at all means users pay for seats they then cannot get.",
+      "correct_option_id": "a",
+      "explanation": "A hold with an expiry gives the user a fair window and guarantees the seat returns if they vanish. A hold that needs an explicit cancel leaks seats whenever someone closes the tab, marking seats sold early causes mass refunds, and no hold means people pay for seats they then cannot get.",
       "bottleneck_note": "Every temporary claim needs an expiry, or abandoned claims silently eat your inventory.",
       "concept_ids": [
         "seat-holds-with-ttl"
@@ -172,26 +162,21 @@
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "Bots with fast connections are winning the first slots in your waiting room. If you admit strictly by arrival time (FIFO), who benefits, and what is a fairer design?",
-      "context_note": "FIFO sounds fair, but arrival time within one second is mostly network speed.",
+      "prompt": "Admission is first-come first-served by arrival time. Which change makes it fairer?",
+      "context_note": "Within one second, arrival order mostly reflects network speed and automation, not effort. Bots are filling the first positions.",
       "system_state": {
         "nodes": [
           "users",
-          "bot-check",
-          "waiting-room(random within window)",
+          "waiting-room(FIFO)",
           "booking-service"
         ],
         "links": [
           [
             "users",
-            "bot-check"
+            "waiting-room(FIFO)"
           ],
           [
-            "bot-check",
-            "waiting-room(random within window)"
-          ],
-          [
-            "waiting-room(random within window)",
+            "waiting-room(FIFO)",
             "booking-service"
           ]
         ]
@@ -199,23 +184,23 @@
       "options": [
         {
           "id": "a",
-          "text": "FIFO is perfectly fair. Do nothing."
+          "text": "Keep strict first-in first-out, because the order of arrival is already fair to all"
         },
         {
           "id": "b",
-          "text": "Give everyone who arrives in the opening window a random position, verify humans and limit one queue entry per account, so speed advantages stop mattering."
+          "text": "Admit the 800 fastest requests straight to booking"
         },
         {
           "id": "c",
-          "text": "Admit the fastest 800 requests directly."
+          "text": "Randomise positions in the opening window, one entry per verified account"
         },
         {
           "id": "d",
-          "text": "Admit users alphabetically by name."
+          "text": "Admit users in order of account age"
         }
       ],
-      "correct_option_id": "b",
-      "explanation": "In a burst, arrival order differences of milliseconds reflect latency and automation, not effort. Randomising positions among everyone in the opening window, combined with one entry per verified account, removes the advantage of speed and multi-tab botting. Alphabetical order is arbitrary and unfair in a different way.",
+      "correct_option_id": "c",
+      "explanation": "Differences of a few milliseconds measure latency and scripting, not intent. Randomising positions across the opening window removes the advantage of speed, and one entry per verified account blunts multi-tab bots. Account age rewards early sign-ups and shuts out genuine new users.",
       "bottleneck_note": "Fairness is a design decision. Strict FIFO rewards the fastest machine, not the person.",
       "concept_ids": [
         "fairness",
@@ -225,14 +210,13 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "A user's payment succeeds at minute 6, but their 5-minute hold expired and another user already bought the seat. What should the system do?",
-      "context_note": "Real payments have variable latency. Edge cases appear.",
+      "prompt": "Another user has already bought the seat. How should the system handle this late payment?",
+      "context_note": "Payment latency varies. This user's payment succeeded at minute 6, after their 5-minute hold expired.",
       "system_state": {
         "nodes": [
           "payment-gateway",
           "booking-service",
-          "seat-hold-store(TTL)",
-          "refund-flow"
+          "seat-hold-store(TTL)"
         ],
         "links": [
           [
@@ -242,33 +226,29 @@
           [
             "booking-service",
             "seat-hold-store(TTL)"
-          ],
-          [
-            "booking-service",
-            "refund-flow"
           ]
         ]
       },
       "options": [
         {
           "id": "a",
-          "text": "Give the seat to both users."
+          "text": "Give the seat to both users and sort it out on the platform"
         },
         {
           "id": "b",
-          "text": "Extend the hold when payment begins so slow payments are protected, and if a late payment still finds the seat gone, automatically refund and tell the user."
+          "text": "Refund the late payment automatically and tell the user the seat was taken"
         },
         {
           "id": "c",
-          "text": "Keep the money and apologise."
+          "text": "Cancel the other user's confirmed ticket and move the late payer into the seat"
         },
         {
           "id": "d",
-          "text": "Cancel the other user's ticket."
+          "text": "Keep the payment pending until the user contacts support"
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Extending the hold once payment is in flight prevents most races, and a compensating refund handles the leftover cases consistently. Taking the seat from the other user breaks their confirmed booking, and keeping money without a ticket is unacceptable.",
+      "explanation": "The other user holds a confirmed booking, so the late payer's money must be returned through an automatic compensating refund with a clear message. Extending the hold once payment starts prevents most of these races, but the refund covers the rest. Double-booking or cancelling a confirmed ticket just moves the harm to someone else.",
       "bottleneck_note": "Assume timing races will occur and design a compensating action for each one.",
       "concept_ids": [
         "compensating-actions"

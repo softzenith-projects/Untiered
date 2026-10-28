@@ -20,8 +20,8 @@
     {
       "kind": "initial",
       "step_type": "design_choice",
-      "prompt": "340 packets, 2 lakh people clicking Add to Cart. When should the system actually commit stock to a customer?",
-      "context_note": "The core question of the whole campaign.",
+      "prompt": "340 packets of Maggi are left and 2 lakh people are adding them to their carts. At which moment should the system commit a packet to a customer?",
+      "context_note": "Add to Cart is the first click and Place order is the second. Stock can be claimed at either one, or later.",
       "system_state": {
         "nodes": [
           "customers",
@@ -42,23 +42,23 @@
       "options": [
         {
           "id": "a",
-          "text": "On Add to Cart, so every cart is guaranteed."
+          "text": "When they press Add to Cart, so every cart is guaranteed."
         },
         {
           "id": "b",
-          "text": "At checkout, when the user commits to buying (Place order), not when they add to cart."
+          "text": "When they press Place order, held briefly while payment runs."
         },
         {
           "id": "c",
-          "text": "After payment completes, with no earlier claim."
+          "text": "Only after payment completes, with no earlier claim."
         },
         {
           "id": "d",
-          "text": "Never, and just oversell and apologise."
+          "text": "Never hold stock, and cancel orders for anything that turns out to be oversold."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "If every Add to Cart reserves stock, 340 clicks can exhaust inventory immediately, even though most carts will never become orders. Reserving only after payment makes people pay for goods they may not get. The balanced point is checkout commitment, with a short reservation while payment happens.",
+      "explanation": "Reserving at Add to Cart lets the first 340 clicks lock up all the stock in carts that mostly never become orders. Waiting until after payment means people can pay for goods that are already gone. Claiming at Place order, with a short hold while payment happens, matches the moment the customer commits.",
       "bottleneck_note": "Reserve at the moment of commitment, not the moment of interest.",
       "concept_ids": [
         "inventory-reservation"
@@ -67,13 +67,12 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "Millions of browsers are looking at the product page and cart, which show whether Maggi is available. How should these reads work?",
-      "context_note": "Carts do not reserve stock, but they still need to show availability.",
+      "prompt": "Millions of browsers are viewing the product page and cart, which show whether Maggi is available. How should those availability reads be served?",
+      "context_note": "Carts hold no stock, but millions of views still need to display something about availability.",
       "system_state": {
         "nodes": [
           "customers",
           "cart-service",
-          "availability-cache",
           "inventory-db"
         ],
         "links": [
@@ -83,10 +82,6 @@
           ],
           [
             "cart-service",
-            "availability-cache"
-          ],
-          [
-            "availability-cache",
             "inventory-db"
           ]
         ]
@@ -94,23 +89,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Run a live inventory query against the authoritative store for each view."
+          "text": "Query the authoritative stock store on every page view."
         },
         {
           "id": "b",
-          "text": "Serve an approximate availability hint from a short-lived cache, but confirm the real stock only when the customer places the order."
+          "text": "Serve an approximate value from a short-lived cache; check real stock when ordering."
         },
         {
           "id": "c",
-          "text": "Never show availability."
+          "text": "Show a fixed 'In stock' badge until the sale ends."
         },
         {
           "id": "d",
-          "text": "Always show 'in stock' regardless."
+          "text": "Hide availability entirely until the customer reaches checkout and the stock is reserved."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Browsing traffic should not hammer the authoritative stock counter. A cached hint can be stale even with a safety buffer, so the page must not promise a precise count or guarantee a packet. The checkout reservation decides whether stock is still available.",
+      "explanation": "Browsing traffic is huge and should stay off the authoritative stock counter, and a cached hint is cheap. The hint can be stale, so the page must not promise a packet and the Place order step makes the real decision. Querying the store on every view puts millions of reads on the one counter that checkout needs.",
       "bottleneck_note": "Keep high-volume browsing away from the stock write path, and label cached availability as an estimate.",
       "concept_ids": [
         "cached-availability"
@@ -119,21 +114,21 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "Two customers press Place order for the last packet within the same millisecond. How do you make sure exactly one gets it?",
-      "context_note": "Checkout is where the scarce resource is actually decided.",
+      "prompt": "Two customers press Place order for the last packet within the same millisecond. How do you make sure exactly one of them gets it?",
+      "context_note": "Only customers who reach checkout contend for stock, but the few who do arrive together.",
       "system_state": {
         "nodes": [
+          "customers",
           "checkout-service",
-          "atomic-counter",
           "inventory-db"
         ],
         "links": [
           [
-            "checkout-service",
-            "atomic-counter"
+            "customers",
+            "checkout-service"
           ],
           [
-            "atomic-counter",
+            "checkout-service",
             "inventory-db"
           ]
         ]
@@ -141,23 +136,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Read the stock, check it is above zero in application code, then write the new value."
+          "text": "Read the stock, check it is above zero in the application, then write the new value."
         },
         {
           "id": "b",
-          "text": "Use one atomic operation that decrements only if the stock is at least 1 (for example, a conditional update or an atomic counter script), and treat 'not applied' as sold out."
+          "text": "One atomic decrement that applies only while stock is at least 1."
         },
         {
           "id": "c",
-          "text": "Let both succeed and sort it out later."
+          "text": "Hold a distributed lock around the whole checkout flow until payment completes."
         },
         {
           "id": "d",
-          "text": "Use a random number to decide who wins."
+          "text": "Let both orders succeed and cancel the later one during reconciliation."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "A conditional atomic decrement makes the check and the update one indivisible step, so two requests cannot both take the last unit. Reading and then writing in application code has a race window where both see stock 1.",
+      "explanation": "A conditional atomic decrement makes the check and the update a single step, so two requests cannot both take the last unit. Reading then writing in application code leaves a window where both see a stock of one. A lock held through payment would be safe but serialises every buyer behind the slowest card payment.",
       "bottleneck_note": "Decide scarce stock with one atomic operation, not read-then-write. Only the small fraction of users who reach checkout compete for this one hot counter.",
       "concept_ids": [
         "atomic-decrement",
@@ -167,26 +162,21 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "A customer gets a packet reserved and then closes the app without paying. How does that packet come back for the next buyer?",
-      "context_note": "Stock is now held during payment.",
+      "prompt": "A customer's packet is reserved at checkout, and they close the app without paying. How does that packet come back for the next buyer?",
+      "context_note": "Stock is now held for each customer who is partway through paying.",
       "system_state": {
         "nodes": [
           "checkout-service",
-          "reservation-store(TTL)",
           "payment",
           "inventory"
         ],
         "links": [
           [
             "checkout-service",
-            "reservation-store(TTL)"
-          ],
-          [
-            "checkout-service",
             "payment"
           ],
           [
-            "reservation-store(TTL)",
+            "checkout-service",
             "inventory"
           ]
         ]
@@ -194,23 +184,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Wait for the customer to cancel."
+          "text": "Wait for the customer to cancel the order."
         },
         {
           "id": "b",
-          "text": "Give each reservation a short expiry (for example 5 minutes). On payment success it becomes SOLD, and on failure or timeout it returns to AVAILABLE."
+          "text": "Give each reservation a short expiry so unpaid holds return on their own."
         },
         {
           "id": "c",
-          "text": "Reserve forever to be safe."
+          "text": "Release it only when the payment provider reports a failure."
         },
         {
           "id": "d",
-          "text": "Manually check abandoned reservations every day."
+          "text": "Run a daily report of abandoned reservations and release them by hand each morning."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "A TTL guarantees that abandoned reservations free themselves without relying on user behaviour, and the explicit states (RESERVED to SOLD, or back to AVAILABLE) keep inventory accounting clean. Waiting for cancellation leaks stock whenever users vanish.",
+      "explanation": "An expiry frees the unit without relying on anything the customer does, and clear states (reserved, then sold or back to available) keep the stock accounting clean. A payment provider only reports failures for payments that were attempted, so it never hears about a customer who just left.",
       "bottleneck_note": "Temporary claims must expire on their own.",
       "concept_ids": [
         "ttl-reservations"
@@ -219,8 +209,8 @@
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "Stock drops from 340 to 20. The page still shows a confident green 'In stock' badge. What is the better product and system behaviour?",
-      "context_note": "The cart is not a guarantee, so the UI should not pretend it is.",
+      "prompt": "Stock has fallen from 340 to 20, but the page still shows a confident green 'In stock' badge. What should the page show as stock gets low?",
+      "context_note": "Carts hold no stock, so a customer who sees the badge can still lose the race at checkout.",
       "system_state": {
         "nodes": [
           "customers",
@@ -241,23 +231,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Keep showing 'In stock' until it hits 0."
+          "text": "Keep 'In stock' until the count reaches zero."
         },
         {
           "id": "b",
-          "text": "Change the message as stock falls ('In stock', then 'Only a few left', then 'High demand, availability confirmed at checkout') so the UI sets the right expectation."
+          "text": "Wording that softens as stock falls, ending in 'confirmed at checkout'."
         },
         {
           "id": "c",
-          "text": "Hide the product when stock is below 100."
+          "text": "The exact live count, refreshed every second on every product page view."
         },
         {
           "id": "d",
-          "text": "Show the exact live count to the unit."
+          "text": "Hide the product once fewer than 100 remain."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Because carts do not hold inventory, the UI should communicate uncertainty as stock gets low. Graduated messaging manages expectations and reduces the shock of a failed checkout. Showing an exact count would invite constant refresh traffic and still be stale.",
+      "explanation": "Graduated wording sets the right expectation and reduces the shock of a failed checkout. An exact count would invite constant refreshes and still be stale a moment later. A confident badge until zero promises something the cart cannot deliver.",
       "bottleneck_note": "Correctness is also about honest expectations, not only backend guarantees.",
       "concept_ids": [
         "honest-ux"

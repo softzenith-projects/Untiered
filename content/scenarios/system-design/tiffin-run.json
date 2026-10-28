@@ -20,7 +20,7 @@
     {
       "kind": "initial",
       "step_type": "design_choice",
-      "prompt": "In your first version, the 'place order' API finds a delivery partner, waits for them to accept, and only then responds to the customer. At lunch time the app hangs and customers tap Order again and again. How should the flow change?",
+      "prompt": "The place-order API finds a delivery partner and waits for them to accept before replying, so at lunch the app hangs and customers tap Order again and again. How should the flow change?",
       "context_note": "The order API is slow because it waits on a human to respond.",
       "system_state": {
         "nodes": [
@@ -42,23 +42,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Save the order immediately, respond to the customer, and hand dispatch to a queue processed by background workers."
+          "text": "Raise the API timeout to 5 minutes so dispatch has time to finish"
         },
         {
           "id": "b",
-          "text": "Increase the API timeout to 5 minutes."
+          "text": "Add more API servers so more requests can wait on partners at once"
         },
         {
           "id": "c",
-          "text": "Make the customer choose the delivery partner."
+          "text": "Disable the Order button for 60 seconds after each tap"
         },
         {
           "id": "d",
-          "text": "Run dispatch inside the customer's phone."
+          "text": "Save the order, reply at once, and dispatch from a queue"
         }
       ],
-      "correct_option_id": "a",
-      "explanation": "Accepting the order is fast and certain, whereas finding a partner is slow and uncertain. Splitting them with a queue means customers get an instant confirmation and dispatch can take as long as it needs, with retries. A longer timeout just ties up more server resources while the user stares at a spinner.",
+      "correct_option_id": "d",
+      "explanation": "Accepting an order is fast and certain, while finding a partner is slow and uncertain, so a queue between them gives customers instant confirmation and lets dispatch retry at its own pace. A longer timeout or more servers just hold more requests open behind a spinner, and disabling the button hides the symptom without fixing the wait.",
       "bottleneck_note": "Do not make a fast user-facing request wait on a slow, uncertain background process.",
       "concept_ids": [
         "message-queues"
@@ -67,7 +67,7 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "Your queue delivers each message at least once. Occasionally a worker crashes after assigning a partner but before acknowledging the message, so the order is dispatched again and two partners show up with the same tiffin. How do you prevent double assignment?",
+      "prompt": "The queue delivers each message at least once. A worker crashes after assigning a partner but before acknowledging, so the order is dispatched again and two partners arrive with the same tiffin. How do you prevent double assignment?",
       "context_note": "The queue is in place, but 'at least once' means duplicates happen.",
       "system_state": {
         "nodes": [
@@ -94,23 +94,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Hope workers never crash."
+          "text": "Make assignment idempotent with a unique constraint on order_id"
         },
         {
           "id": "b",
-          "text": "Make assignment idempotent: record the assignment keyed by order_id with a uniqueness constraint, so a repeated message becomes a no-op."
+          "text": "Delete each message from the queue before the worker starts processing it"
         },
         {
           "id": "c",
-          "text": "Delete the message from the queue before processing it."
+          "text": "Run a single dispatch worker so that two workers never overlap on an order"
         },
         {
           "id": "d",
-          "text": "Run only one worker at a time."
+          "text": "Raise the queue's visibility timeout so messages are never redelivered"
         }
       ],
-      "correct_option_id": "b",
-      "explanation": "With at-least-once delivery, duplicates are normal, so the consumer must tolerate them. A unique constraint on the order's assignment makes the second attempt fail harmlessly. Deleting the message first turns the problem into 'at most once', which loses orders if the worker crashes. One worker limits throughput and still does not remove the crash window.",
+      "correct_option_id": "a",
+      "explanation": "With at-least-once delivery, duplicates are normal, so the consumer must tolerate them: a unique constraint makes the second attempt fail harmlessly. Deleting the message first turns this into at-most-once, which loses orders when a worker crashes, and a single worker or longer timeout only narrows the crash window without closing it.",
       "bottleneck_note": "Design consumers to be safe under redelivery instead of trying to prevent redelivery.",
       "concept_ids": [
         "at-least-once-delivery",
@@ -120,21 +120,16 @@
     {
       "kind": "probe",
       "step_type": "algo_choice",
-      "prompt": "The city grows to 5,000 active partners. For each order you scan all partners and compute the distance to find the closest free one. Dispatch is getting slow. What is a better approach?",
-      "context_note": "Dispatch correctness is fixed. Now the nearest-partner search is the slow part.",
+      "prompt": "What speeds up finding the closest free partner while still returning nearby ones?",
+      "context_note": "Dispatch is now correct, but the city has grown to 5,000 active partners and each order scans all of them.",
       "system_state": {
         "nodes": [
           "dispatch-workers",
-          "geo-index",
           "partner-locations"
         ],
         "links": [
           [
             "dispatch-workers",
-            "geo-index"
-          ],
-          [
-            "geo-index",
             "partner-locations"
           ]
         ]
@@ -142,23 +137,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Keep scanning, but buy a faster server."
+          "text": "Buy a faster server and keep scanning every partner for each order"
         },
         {
           "id": "b",
-          "text": "Bucket partners into geographic cells (geohash or grid), look up the order's cell and its neighbours, then rank only those candidates by distance."
+          "text": "Bucket partners into geohash cells; search the order's cell and neighbours"
         },
         {
           "id": "c",
-          "text": "Pick a random partner."
+          "text": "Offer the order to whichever partner finished a delivery most recently, wherever they are"
         },
         {
           "id": "d",
-          "text": "Sort all partners alphabetically."
+          "text": "Reuse the partner who was nearest to this customer's previous order"
         }
       ],
       "correct_option_id": "b",
-      "explanation": "A spatial index limits the search to partners near the customer instead of everyone in the city. You must check neighbouring cells too, because the nearest partner can be just across a cell boundary. Scanning all partners grows linearly with city size per order, which multiplies badly at lunch peak.",
+      "explanation": "A spatial index limits the search to partners near the customer, and neighbouring cells must be checked because the nearest partner may sit just across a boundary. A faster server still scans linearly with city size at lunch peak, and the last-free or previous-nearest shortcuts are quick but ignore where the partner is now.",
       "bottleneck_note": "Turn a global scan into a local lookup with a spatial index.",
       "concept_ids": [
         "geospatial-index"
@@ -167,8 +162,8 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "Status updates from partner phones arrive out of order on bad networks: the customer sometimes sees DELIVERED and then PICKED_UP. How do you stop that?",
-      "context_note": "Messages from flaky mobile networks do not arrive in the order they were sent.",
+      "prompt": "Customers sometimes see DELIVERED and then PICKED_UP. What stops that?",
+      "context_note": "Status updates from partner phones travel over weak mobile networks and do not arrive in the order they were sent.",
       "system_state": {
         "nodes": [
           "partner-app",
@@ -194,23 +189,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Model order status as a state machine with allowed transitions and a sequence number, and ignore updates that are stale or illegal."
+          "text": "Always apply the most recently received update"
         },
         {
           "id": "b",
-          "text": "Always trust the most recently received message."
+          "text": "Order the updates by the timestamp recorded on each partner phone's own clock"
         },
         {
           "id": "c",
-          "text": "Ask partners to retry until the order is right."
+          "text": "Allow only legal transitions and ignore updates with a stale sequence number"
         },
         {
           "id": "d",
-          "text": "Show customers only the first status."
+          "text": "Make partner apps resend each status every few seconds until the order closes"
         }
       ],
-      "correct_option_id": "a",
-      "explanation": "Arrival order is not event order on mobile networks. A defined state machine says DELIVERED cannot be followed by PICKED_UP, and a per-order sequence number or timestamp lets you drop old updates. 'Latest received wins' is exactly the bug you are seeing.",
+      "correct_option_id": "c",
+      "explanation": "Arrival order is not event order, so a state machine says DELIVERED cannot be followed by PICKED_UP and a per-order sequence number lets the server drop old updates. 'Latest received wins' is exactly the bug being seen, and phone clocks drift, so their timestamps cannot order events reliably.",
       "bottleneck_note": "Never assume messages arrive in the order they were sent.",
       "concept_ids": [
         "state-machine"
@@ -219,12 +214,11 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "You offer an order to the nearest partner, but they are busy and never respond, so the order sits unassigned. What should happen?",
-      "context_note": "Humans are unreliable consumers. The system has to keep moving anyway.",
+      "prompt": "The nearest partner is busy and never answers, so the order sits unassigned. What should dispatch do?",
+      "context_note": "Partners are people, and the nearest one has not responded to the offer.",
       "system_state": {
         "nodes": [
           "dispatch-workers",
-          "offer-timer",
           "partner-app",
           "queue"
         ],
@@ -234,11 +228,7 @@
             "partner-app"
           ],
           [
-            "dispatch-workers",
-            "offer-timer"
-          ],
-          [
-            "offer-timer",
+            "partner-app",
             "queue"
           ]
         ]
@@ -246,23 +236,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Wait for the partner as long as it takes."
+          "text": "Wait for the partner to answer"
         },
         {
           "id": "b",
-          "text": "Give each offer a short timeout (for example 30 seconds); on expiry or rejection, offer to the next candidate, with a limit on attempts and an alert if none accept."
+          "text": "Time out the offer after 30 seconds and try the next candidate, with a cap"
         },
         {
           "id": "c",
-          "text": "Offer the order to all partners at the same time and let them fight."
+          "text": "Cancel the order and refund the customer after the first non-response"
         },
         {
           "id": "d",
-          "text": "Cancel the order after the first non-response."
+          "text": "Re-send the same offer to that partner every few seconds until they finally reply"
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Timeouts turn an unbounded wait into a bounded step, and moving to the next candidate keeps the order flowing. A cap on attempts avoids endless loops and lets you escalate to a human. Broadcasting to everyone invites races and multiple acceptances, and cancelling after one silent partner wastes a sale.",
+      "explanation": "A timeout turns an open-ended wait into a bounded step, moving to the next candidate keeps the order flowing, and an attempt cap lets a human step in when nobody accepts. Waiting or nagging the same partner leaves the order stuck, and cancelling after one silent partner throws away a sale.",
       "bottleneck_note": "Every external wait needs a timeout, a fallback and an upper bound on retries.",
       "concept_ids": [
         "timeouts-and-retries"
