@@ -108,3 +108,18 @@ describe("ReportPreview", () => {
     expect(screen.getByText(`“${target.quote}”`)).toBeInTheDocument();
   });
 });
+
+describe("LoopPicker round lists", () => {
+  it("says on every loop that the rounds are typical, not a fixed list", () => {
+    render(<LoopPicker />);
+    for (const loop of LOOPS) {
+      fireEvent.click(screen.getByRole("tab", { name: loop.tab }));
+      expect(within(screen.getByRole("tabpanel")).getByText(/not a fixed list/)).toBeInTheDocument();
+    }
+  });
+
+  it("does not give Big Four technical hiring a case-interview loop", () => {
+    const rounds = LOOPS.flatMap((loop) => loop.rounds);
+    expect(rounds).not.toContain("Case discussion");
+  });
+});
