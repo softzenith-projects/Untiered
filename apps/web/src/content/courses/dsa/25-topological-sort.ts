@@ -345,12 +345,10 @@ export const chapterTopologicalSort: Chapter = {
       kind: "quiz",
       question: "Why does Kahn's algorithm only work on directed acyclic graphs, not graphs with cycles?",
       options: [
-        "It works fine on cyclic graphs too, just slower",
-        "In a cycle, every vertex within it always has at least one incoming edge from another vertex in " +
-          "the same cycle, so its in-degree never reaches 0 and it's never enqueued — leaving the result " +
-          "shorter than the full vertex count",
-        "Cyclic graphs cause an ArrayIndexOutOfBoundsException",
-        "In-degree is undefined for cyclic graphs",
+        "It works fine on cyclic graphs too, because a vertex on a cycle has its in-degree reduced to 0 once the cycle is walked.",
+        "Every vertex on a cycle has an incoming edge from another one on it, so its in-degree never reaches 0.",
+        "Cyclic graphs make the queue grow without end, so the algorithm runs out of memory before it can finish.",
+        "In-degree is undefined for graphs that contain cycles, so the counting step cannot even be carried out.",
       ],
       answer: 1,
       why:
@@ -362,10 +360,10 @@ export const chapterTopologicalSort: Chapter = {
       kind: "quiz",
       question: "What does it mean if topoSort's resulting order has fewer elements than the total number of vertices?",
       options: [
-        "The graph has isolated vertices with no edges at all",
+        "The graph has isolated vertices with no edges at all, which the algorithm skips",
         "The graph contains at least one cycle, so no valid topological order exists",
-        "The algorithm has a bug and needs to be rerun",
-        "The graph is undirected",
+        "The algorithm has a bug and needs to be rerun on the same graph",
+        "The graph is undirected, so a topological order cannot be defined for it",
       ],
       answer: 1,
       why:
@@ -376,11 +374,10 @@ export const chapterTopologicalSort: Chapter = {
       kind: "quiz",
       question: "Is a topological sort of a given DAG always unique?",
       options: [
-        "Yes, every DAG has exactly one valid topological order",
-        "No — whenever more than one vertex has in-degree 0 at the same point in the algorithm, different " +
-          "choices of which to process next produce different, equally valid orderings",
-        "Only DAGs with an even number of vertices have multiple valid orders",
-        "Uniqueness depends on whether the graph is weighted",
+        "Yes, every DAG has exactly one valid topological order, because each edge fixes the relative order of its two vertices.",
+        "No: when more than one vertex has in-degree 0 at once, different choices give different valid orderings.",
+        "Only DAGs with an even number of vertices can have several valid orders, since the vertices must pair up.",
+        "Uniqueness depends on whether the graph is weighted, because edge weights decide which vertex is processed first.",
       ],
       answer: 1,
       why:

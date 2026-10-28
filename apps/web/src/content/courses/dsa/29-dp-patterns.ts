@@ -419,11 +419,10 @@ export const chapterDpPatterns: Chapter = {
       kind: "quiz",
       question: "Why is the standard LIS solution's time complexity O(n²) rather than O(n)?",
       options: [
-        "Because it sorts the array first, which costs O(n log n) rounded up",
-        "Because for each index i, the inner loop must check every earlier index j < i as a possible " +
-          "predecessor in the increasing subsequence, not just the immediately preceding element",
-        "Because Java arrays are inherently O(n) to access",
-        "It's actually O(n), the problem statement is wrong",
+        "Because it sorts the array first, which costs O(n log n) and is then rounded up to O(n²) in the analysis.",
+        "For each index i, the inner loop checks every earlier index j < i as a possible predecessor.",
+        "Because Java arrays are inherently O(n) to access, so every single read inside the loop costs a full pass.",
+        "It's actually O(n), and the problem statement is wrong, because each element only needs one comparison.",
       ],
       answer: 1,
       why:
@@ -434,12 +433,10 @@ export const chapterDpPatterns: Chapter = {
       kind: "quiz",
       question: "In the grid-paths recurrence, why is dp[i][j] = dp[i-1][j] + dp[i][j-1]?",
       options: [
-        "It's an arbitrary formula that happens to work",
-        "Every path to cell (i, j) must arrive either from directly above (i-1, j) or directly from the " +
-          "left (i, j-1), since only right and down moves are allowed — so the total paths to (i, j) is the " +
-          "sum of paths to those two predecessor cells",
-        "Because rows and columns must always be equal",
-        "Because dp[i-1][j] and dp[i][j-1] are always equal to each other",
+        "It's an arbitrary formula that happens to work, because grid problems always add the cells next to the one being filled.",
+        "Every path to cell (i, j) arrives from above or from the left, so the two counts add.",
+        "Because rows and columns must always be equal in size, so the two neighbouring cells contribute the same amount each time.",
+        "Because dp[i-1][j] and dp[i][j-1] are always equal to each other, so adding them is the same as doubling one of them.",
       ],
       answer: 1,
       why:

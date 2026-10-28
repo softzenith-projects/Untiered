@@ -543,11 +543,10 @@ export const chapterBacktracking: Chapter = {
       kind: "quiz",
       question: "Why does subsets([1,2,3]) produce exactly 8 subsets, while permutations([1,2,3]) produces 6?",
       options: [
-        "Both should produce the same count; one of the two is a bug",
-        "Subsets counts every include/exclude combination (2³=8); permutations counts every ordering " +
-          "of all 3 elements (3!=6)",
-        "8 and 6 are arbitrary and unrelated to the input size",
-        "Because permutations only considers even-length arrangements",
+        "Both should produce the same count for the same input, so one of the two functions must have a bug",
+        "Subsets counts every include/exclude choice (2³=8); permutations counts every ordering of 3 elements (3!=6)",
+        "8 and 6 are arbitrary numbers, unrelated to the size of the input array being processed",
+        "Because permutations only considers arrangements of even length, so it skips several of the orderings",
       ],
       answer: 1,
       why:

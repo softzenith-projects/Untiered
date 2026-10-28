@@ -225,10 +225,10 @@ export const chapterStrings: Chapter = {
       kind: "quiz",
       question: "After `String s = \"  hi  \"; s.trim();` with no reassignment, what does s hold?",
       options: [
-        "\"hi\", with the whitespace removed",
-        "\"  hi  \", unchanged — trim() returned a new string that was never captured",
-        "null",
-        "It fails to compile.",
+        "\"hi\", because trim() removes the whitespace from s itself, even without reassignment.",
+        "\"  hi  \", unchanged: trim() returned a new string that was never captured.",
+        "null, because trim() with no reassignment leaves the variable without a value.",
+        "It fails to compile, because the result of trim() is ignored and Java requires it to be used.",
       ],
       answer: 1,
       why:

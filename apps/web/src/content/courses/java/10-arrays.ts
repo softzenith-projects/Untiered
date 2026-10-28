@@ -230,11 +230,10 @@ export const chapterArrays: Chapter = {
       kind: "quiz",
       question: "What happens when you run `for (int m : marks) { m = m * 2; }` intending to double every element of marks in place?",
       options: [
-        "It works exactly as intended — every element of marks is doubled.",
-        "It fails to compile, since for-each loop variables can't be reassigned.",
-        "It compiles and runs, but marks is unchanged — m is a copy of each element, not a reference to " +
-          "the array's slot.",
-        "It throws an exception at runtime.",
+        "It works exactly as intended, doubling every element of marks, because m refers to each slot in turn.",
+        "It fails to compile, since a for-each loop variable cannot be reassigned inside the loop body.",
+        "It compiles and runs, but marks is unchanged; m is a copy of each element, not the array slot itself.",
+        "It throws an exception at runtime, because the loop is modifying the array while it iterates.",
       ],
       answer: 2,
       why:

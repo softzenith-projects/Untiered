@@ -307,11 +307,10 @@ export const chapterTries: Chapter = {
       kind: "quiz",
       question: "What does search(\"ca\") returning false mean, given that \"car\" and \"card\" are both in the trie?",
       options: [
-        "The trie is broken — it should return true since 'ca' is a valid prefix",
-        "The path for 'c' then 'a' exists in the trie (because 'car' and 'card' pass through it), but the " +
-          "node at the end of that path was never marked isWord, since 'ca' itself was never inserted",
-        "search() only works for words of length 3 or more",
-        "HashMap lookups for 'c' and 'a' failed",
+        "The trie is broken: it should return true, because 'ca' is a valid prefix of two stored words.",
+        "The path c, a exists because 'car' and 'card' pass through it, but its last node was never marked isWord.",
+        "search() only works for words of length 3 or more, so any shorter word is reported as missing.",
+        "The HashMap lookups for 'c' and then 'a' both failed, so the walk ended before it reached the end of the word.",
       ],
       answer: 1,
       why:
@@ -323,12 +322,10 @@ export const chapterTries: Chapter = {
       kind: "quiz",
       question: "Why is a trie lookup's time complexity O(L) — the word's length — rather than depending on how many words are stored?",
       options: [
-        "Because tries only ever store one word",
-        "Because each step of the lookup follows exactly one child-map access per character, and the depth " +
-          "walked is bounded by the word's own length, regardless of how many other words share or diverge " +
-          "from that path",
-        "Because Java caches all trie lookups automatically",
-        "It isn't O(L) — it's actually O(n) where n is the number of stored words",
+        "Because a trie only ever stores a single word at a time, so there is nothing else for a lookup to search through or compare against.",
+        "Each character costs one child-map access, so the walk is bounded by the word's own length, however many other words share the path.",
+        "Because Java caches every trie lookup automatically, so repeated searches for a word cost only a single step each time.",
+        "It isn't O(L): it is actually O(n), where n is the number of stored words, because every stored word is compared in turn.",
       ],
       answer: 1,
       why:

@@ -272,10 +272,10 @@ export const chapterHashing: Chapter = {
       kind: "quiz",
       question: "What is a hash collision?",
       options: [
-        "When a HashMap runs out of memory",
-        "When two different keys are hashed to the same bucket index",
-        "When a key is inserted twice with the same value",
-        "An error that only happens with String keys",
+        "When a HashMap runs out of memory and cannot accept any more keys",
+        "When two different keys map to the same bucket index",
+        "When a key is inserted twice with the same value, so the second put is repeated",
+        "An error that only happens with String keys, because other types hash differently",
       ],
       answer: 1,
       why:
@@ -302,11 +302,10 @@ export const chapterHashing: Chapter = {
       kind: "quiz",
       question: "In groupAnagrams, why does sorting each word's letters before using it as a map key work?",
       options: [
-        "Sorting is unrelated to correctness — it's only there for output formatting",
-        "Two words are anagrams exactly when their letters, sorted, produce the identical string, so the " +
-          "sorted form is a key shared by every word in the same anagram group",
-        "HashMap requires all keys to be sorted internally",
-        "Sorting makes the hash function run faster",
+        "Sorting is unrelated to correctness; it's only there so the groups are printed in a tidy order.",
+        "Anagrams have identical sorted letters, so the sorted form is a key shared by the whole group.",
+        "HashMap requires all of its keys to be sorted internally, so the letters must be sorted before use.",
+        "Sorting makes the hash function run faster, because shorter ordered strings need fewer steps to hash.",
       ],
       answer: 1,
       why:

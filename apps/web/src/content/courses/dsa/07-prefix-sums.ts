@@ -248,10 +248,10 @@ export const chapterPrefixSums: Chapter = {
       kind: "quiz",
       question: "What does prefix[i] represent in the buildPrefix code above?",
       options: [
-        "The value of nums[i]",
+        "The value of nums[i], copied across so that it can be looked up quickly later",
         "The sum of all elements from index 0 up to, but not including, index i",
-        "The maximum element seen so far",
-        "The index of the largest element before position i",
+        "The maximum element seen so far, updated each time a larger value is found",
+        "The index of the largest element that appears before position i in the array",
       ],
       answer: 1,
       why:
@@ -262,10 +262,10 @@ export const chapterPrefixSums: Chapter = {
       kind: "quiz",
       question: "Why is rangeSum(prefix, left, right) computed as prefix[right + 1] - prefix[left], and not prefix[right] - prefix[left]?",
       options: [
-        "Both formulas give the same answer, so it doesn't matter",
-        "prefix[right] excludes nums[right] itself; prefix[right + 1] is needed to include it in the sum",
-        "It's a Java syntax requirement for array indexing",
-        "prefix[right + 1] is always the array's last element",
+        "Both formulas give the same answer for every range, so the choice of index doesn't matter",
+        "prefix[right] excludes nums[right]; prefix[right + 1] is needed to include it in the sum",
+        "It's a Java syntax requirement for array indexing, since indexes must always start at one",
+        "prefix[right + 1] is always the array's last element, so the subtraction removes the correct tail",
       ],
       answer: 1,
       why:
@@ -277,10 +277,10 @@ export const chapterPrefixSums: Chapter = {
       kind: "quiz",
       question: "When is the prefix sum technique NOT a good fit?",
       options: [
-        "When there will be many range-sum queries on a fixed array",
-        "When the array is updated frequently between queries that need to reflect the latest values",
-        "When the array contains negative numbers",
-        "When the array has fewer than 10 elements",
+        "When there will be many range-sum queries on a fixed array that is never changed",
+        "When the array is updated frequently between queries that need the latest values",
+        "When the array contains negative numbers, since subtraction then gives a wrong total",
+        "When the array has fewer than 10 elements, because prefix sums need at least ten values",
       ],
       answer: 1,
       why:

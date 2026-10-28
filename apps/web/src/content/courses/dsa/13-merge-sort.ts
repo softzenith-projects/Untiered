@@ -278,11 +278,10 @@ export const chapterMergeSort: Chapter = {
       kind: "quiz",
       question: "Why is merge sort's time complexity O(n log n) rather than O(n²)?",
       options: [
-        "Because it never actually compares every pair of elements, by luck",
-        "Because splitting the array in half each time (the O(log n) shrink-by-a-fraction pattern) gives " +
-          "log n levels, and merging everything at one level costs O(n) total, for O(n) × O(log n)",
-        "Because Java automatically parallelises the recursive calls",
-        "It is actually O(n²); this is a common misconception",
+        "Because it never compares every pair of elements, simply by luck, whatever order the input values happen to arrive in.",
+        "Halving gives log n levels, and merging all pieces at one level costs O(n) in total, so n times log n.",
+        "Because Java automatically runs the recursive calls in parallel, which divides the quadratic cost across processors.",
+        "It is actually O(n²); the O(n log n) figure is a common misconception based on small inputs.",
       ],
       answer: 1,
       why:
@@ -294,11 +293,10 @@ export const chapterMergeSort: Chapter = {
       kind: "quiz",
       question: "Why does merge sort need O(n) extra space, unlike bubble, selection, or insertion sort?",
       options: [
-        "It doesn't — merge sort is also in-place",
-        "The merge step copies each half being combined into temporary arrays before writing the merged " +
-          "result back",
-        "Java requires all recursive sorts to use extra memory",
-        "It's a bug in the specific implementation shown, not a property of merge sort generally",
+        "It doesn't need any: merge sort is also in-place, just like bubble, selection and insertion",
+        "The merge step copies the two halves into temporary arrays before writing the merged result back",
+        "Java requires every recursive sort to allocate extra memory, however it is implemented",
+        "It's a bug in the specific implementation shown, not a property of merge sort in general",
       ],
       answer: 1,
       why:
@@ -310,11 +308,10 @@ export const chapterMergeSort: Chapter = {
       kind: "quiz",
       question: "What guarantees that merge sort's worst-case time complexity is the same as its average case?",
       options: [
-        "The algorithm randomly shuffles the input first",
-        "The split-and-merge structure depends only on the array's length, not on the existing order of " +
-          "its elements",
-        "It doesn't — merge sort has a much worse worst case than average case",
-        "Java's JIT compiler optimises merge sort specifically",
+        "The algorithm randomly shuffles the input first, so no particular order can ever be the worst case",
+        "The split-and-merge structure depends only on the array's length, not on the order of its elements",
+        "It doesn't guarantee that: merge sort has a much worse worst case than its average case",
+        "Java's JIT compiler optimises merge sort specifically, removing the extra work on unlucky inputs",
       ],
       answer: 1,
       why:

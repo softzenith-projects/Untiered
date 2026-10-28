@@ -188,10 +188,10 @@ export const chapterInputOutput: Chapter = {
       kind: "quiz",
       question: "Why might sc.next() be the wrong choice for reading someone's full name?",
       options: [
-        "next() can only read numbers, not text.",
-        "next() reads only one word — it stops at the first space, so a name with a space is cut short.",
-        "next() requires the name to be in quotes.",
-        "next() and nextLine() behave identically, so it doesn't matter.",
+        "next() can read only numbers, so any text such as a name makes it fail at run time.",
+        "next() reads only one word: it stops at the first space, so a name with a space is cut short.",
+        "next() requires the name to be typed inside quotes, otherwise it returns nothing at all.",
+        "next() and nextLine() behave identically, so using either one for a full name works the same.",
       ],
       answer: 1,
       why:

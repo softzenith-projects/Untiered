@@ -328,10 +328,10 @@ export const chapterComplexity: Chapter = {
       kind: "quiz",
       question: "What does Big-O notation primarily describe?",
       options: [
-        "The exact number of seconds a program takes to run",
+        "The exact number of seconds a program takes to run on a given machine",
         "How the amount of work grows as the input size grows, ignoring constant factors",
-        "How much disk space the source code file takes up",
-        "The programming language's execution speed",
+        "How much disk space the source code file takes up once it has been compiled",
+        "The programming language's raw execution speed compared to other languages",
       ],
       answer: 1,
       why:
@@ -341,7 +341,7 @@ export const chapterComplexity: Chapter = {
     {
       kind: "quiz",
       question: "A function has one loop over n elements, followed by a separate, second loop over the same n elements. What is its time complexity?",
-      options: ["O(n²), because there are two loops", "O(2n), which must be kept separate from O(n)", "O(n), since the two loops add rather than nest", "O(log n)"],
+      options: ["O(n²), because there are two loops, so the work is multiplied", "O(2n), which must be kept separate from O(n) in the final answer", "O(n), since the two loops add rather than nest", "O(log n)"],
       answer: 2,
       why:
         "Two loops that run one after another (not nested) add their costs: O(n) + O(n) simplifies to O(n) " +
@@ -352,10 +352,10 @@ export const chapterComplexity: Chapter = {
       kind: "quiz",
       question: "Why do interviews generally expect worst-case complexity rather than best-case?",
       options: [
-        "Because best-case complexity is mathematically undefined",
-        "Because a guarantee that only holds on lucky input isn't a reliable guarantee for real use",
-        "Because worst-case is always the same as average-case",
-        "Because best-case only applies to sorting algorithms",
+        "Because best-case complexity is mathematically undefined, so it cannot be written in Big-O notation",
+        "A guarantee that holds only on lucky input isn't a reliable guarantee for real use",
+        "Because worst-case is always the same as average-case, so only one of them needs stating",
+        "Because best-case analysis applies only to sorting algorithms and not to other kinds of code",
       ],
       answer: 1,
       why:

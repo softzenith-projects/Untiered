@@ -180,10 +180,10 @@ export const chapterFileIO: Chapter = {
       kind: "quiz",
       question: "Why must a method calling Files.readAllLines either catch IOException or declare `throws IOException`?",
       options: [
-        "It's an optional style choice",
-        "IOException is a checked exception, and the compiler enforces handling it",
-        "readAllLines never actually throws anything",
-        "Only true on Windows",
+        "It's an optional style choice, and the code compiles whether or not the exception is handled.",
+        "IOException is a checked exception, so the compiler forces you to handle or declare it.",
+        "readAllLines never actually throws anything, so the try/catch would always be unnecessary.",
+        "This is true only on Windows, where file access can fail; other systems never throw it.",
       ],
       answer: 1,
       why:

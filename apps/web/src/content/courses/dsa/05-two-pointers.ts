@@ -300,11 +300,10 @@ export const chapterTwoPointers: Chapter = {
       kind: "quiz",
       question: "In pairWithSum, why does the array need to be sorted for the technique to be correct?",
       options: [
-        "It doesn't — sorting is only for speed, not correctness",
-        "Sorted order guarantees that moving left forward strictly increases the sum, and moving right " +
-          "backward strictly decreases it, so no valid pair is skipped",
-        "Java's two-pointer functions require sorted input as a language rule",
-        "Sorting removes duplicate values, which the algorithm can't handle otherwise",
+        "It doesn't need to be: sorting is only there for speed, not for the correctness of the answer",
+        "Sorted order means moving left forward increases the sum and moving right backward decreases it, so no pair is skipped",
+        "Java's two-pointer functions require sorted input as a language rule, otherwise the code won't compile",
+        "Sorting removes duplicate values, which the algorithm cannot handle correctly if they are left in",
       ],
       answer: 1,
       why:
@@ -324,10 +323,10 @@ export const chapterTwoPointers: Chapter = {
       kind: "quiz",
       question: "Which of these is a same-direction (not converging) two-pointer pattern?",
       options: [
-        "Checking a palindrome by comparing the first and last characters inward",
-        "Finding a pair sum by moving left forward and right backward",
-        "A fast and slow pointer both starting at the head of a list, moving forward at different speeds",
-        "Reversing an array by swapping the outermost elements inward",
+        "Checking a palindrome by comparing the first and last characters and working inward to the middle",
+        "Finding a pair sum in a sorted array by moving left forward and right backward",
+        "A fast and slow pointer both starting at the head of a list and moving forward",
+        "Reversing an array by swapping the outermost elements and moving both pointers inward",
       ],
       answer: 2,
       why:

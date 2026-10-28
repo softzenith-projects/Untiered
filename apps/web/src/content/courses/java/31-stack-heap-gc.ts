@@ -196,10 +196,10 @@ export const chapterStackHeapGC: Chapter = {
       kind: "quiz",
       question: "After `first = null; reference1 = null;` while reference2 still points at the same Node, is that Node eligible for garbage collection?",
       options: [
-        "Yes, because two of the three references are now null",
-        "No — reference2 still reaches it, so it remains reachable and ineligible for collection",
-        "It depends on when System.gc() is called",
-        "Yes, immediately, because null was assigned",
+        "Yes, because two of the three references to it are now null, leaving it mostly unused.",
+        "No: reference2 still reaches it, so it stays reachable and ineligible for collection.",
+        "It depends on when System.gc() is called, since eligibility is decided only at that moment.",
+        "Yes, immediately, because assigning null to a reference frees the object it pointed to.",
       ],
       answer: 1,
       why:
@@ -210,10 +210,10 @@ export const chapterStackHeapGC: Chapter = {
       kind: "quiz",
       question: "What does calling `System.gc()` actually guarantee?",
       options: [
-        "Immediate garbage collection",
-        "Nothing specific — it's a hint to the JVM, which may or may not act on it soon",
-        "That the program will crash",
-        "That all local variables are cleared",
+        "That garbage collection runs immediately and every unreachable object is freed before the call returns.",
+        "Nothing specific; it is only a hint to the JVM, which may or may not act on it soon.",
+        "That the program will crash with an OutOfMemoryError if any objects are still reachable.",
+        "That every local variable in the current method is cleared back to its default value.",
       ],
       answer: 1,
       why:

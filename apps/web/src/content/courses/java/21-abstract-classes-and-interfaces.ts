@@ -229,10 +229,10 @@ export const chapterAbstractInterfaces: Chapter = {
       kind: "quiz",
       question: "What is a default method on an interface?",
       options: [
-        "A method every implementing class must override",
-        "A method with a body that implementing classes inherit automatically unless they override it",
-        "The interface's constructor",
-        "A method that only works on primitive types",
+        "A method every implementing class must override, because interfaces cannot contain method bodies.",
+        "A method with a body that implementing classes inherit unless they override it.",
+        "The interface's constructor, which runs when a class that implements it is created.",
+        "A method that works only on primitive types, because defaults cannot take object parameters.",
       ],
       answer: 1,
       why:

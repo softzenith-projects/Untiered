@@ -246,11 +246,10 @@ export const chapterArraysInMemory: Chapter = {
       kind: "quiz",
       question: "Why is reading array[i] an O(1) operation regardless of the array's size?",
       options: [
-        "Because Java caches every array in memory automatically",
-        "Because the element's memory address is computed directly from the base address and index, with " +
-          "no scanning",
-        "Because arrays are always small in practice",
-        "Because array[i] secretly uses binary search internally",
+        "Because Java caches every array in a fast memory area, so each read is answered instantly",
+        "The element's address is computed directly from the base address and index, with no scanning",
+        "Because arrays are always small in practice, so scanning them never takes noticeable time",
+        "Because array[i] secretly uses binary search internally, which keeps the lookup very short",
       ],
       answer: 1,
       why:
@@ -262,11 +261,10 @@ export const chapterArraysInMemory: Chapter = {
       kind: "quiz",
       question: "Why does inserting a value near the start of an array typically cost O(n)?",
       options: [
-        "Because Java recompiles the array's type",
-        "Because every element from the insertion point onward must shift one slot to keep the array " +
-          "contiguous",
-        "Because array insertion always requires sorting first",
-        "It doesn't — inserting anywhere in an array is O(1)",
+        "Because Java recompiles the array's type each time a value is inserted into it, which takes time",
+        "Every element from the insertion point onward must shift one slot to keep the array contiguous",
+        "Because array insertion always requires sorting the whole array first, so a sort is hidden inside",
+        "It doesn't cost O(n): inserting anywhere in an array is O(1), because the index is already known",
       ],
       answer: 1,
       why:
@@ -278,10 +276,10 @@ export const chapterArraysInMemory: Chapter = {
       kind: "quiz",
       question: "Which operation is the exception that stays O(1) even though it modifies the array's contents?",
       options: [
-        "Inserting at the very start",
-        "Deleting the middle element",
+        "Inserting at the very start, since the index is known",
+        "Deleting the middle element, since nothing needs to move",
         "Appending at the end, when spare capacity already exists",
-        "Reversing the whole array",
+        "Reversing the whole array in place, because swaps are constant time",
       ],
       answer: 2,
       why:

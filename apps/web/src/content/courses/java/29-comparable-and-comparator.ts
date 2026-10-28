@@ -207,10 +207,10 @@ export const chapterComparableComparator: Chapter = {
       kind: "quiz",
       question: "Why is `Integer.compare(this.marks, other.marks)` generally preferred over `this.marks - other.marks` inside compareTo()?",
       options: [
-        "It's shorter to type",
-        "Subtraction can overflow for extreme int values and return an incorrect sign; Integer.compare avoids this",
-        "Subtraction doesn't work on int at all",
-        "There's no real difference",
+        "Subtraction is not allowed inside compareTo, so Integer.compare is the only version that compiles.",
+        "Subtraction can overflow for extreme int values and give the wrong sign; Integer.compare avoids that.",
+        "Subtraction doesn't work on int values at all, so it has to be replaced with a method call.",
+        "There's no real difference; both versions return the same sign for every possible pair of ints.",
       ],
       answer: 1,
       why:

@@ -262,11 +262,10 @@ export const chapterGreedy: Chapter = {
       kind: "quiz",
       question: "Why is sorting by end time, not start time, the key to activity selection's greedy correctness?",
       options: [
-        "It doesn't matter which one you sort by — both give the same result",
-        "The activity that ends earliest leaves the most possible room for future activities, so choosing " +
-          "it can never be worse than choosing any activity that ends later",
-        "Sorting by start time is actually faster to compute",
-        "End time sorting is required by Java's Comparator API",
+        "It doesn't matter which one you sort by, because both orders give the same selected set of activities.",
+        "The activity that ends earliest leaves the most room for later ones, so picking it is never worse.",
+        "Sorting by start time is actually faster to compute, and it always selects the same number of activities.",
+        "End-time sorting is required by Java's Comparator API, which refuses to compare activities by start time.",
       ],
       answer: 1,
       why:
@@ -278,12 +277,10 @@ export const chapterGreedy: Chapter = {
       kind: "quiz",
       question: "Why does the greedy coin-change approach fail for the coin set {1, 3, 4} when making change for 6?",
       options: [
-        "It doesn't fail — 3 coins is optimal for this case",
-        "Greedy takes one 4-coin first (the largest that fits), leaving 2, which needs two more 1-coins for " +
-          "3 total coins, while two 3-coins would only need 2 coins total — greedy's first choice can't be " +
-          "undone even though it turns out to be suboptimal",
-        "The coins array wasn't sorted correctly",
-        "Amount 6 is not achievable with these coins",
+        "It doesn't fail: 3 coins is optimal here, because no two coins from the set add up to 6.",
+        "Greedy takes the 4-coin first and then needs two 1-coins, 3 coins in all; two 3-coins need only 2.",
+        "Greedy fails only because the coins array wasn't sorted; sorted from largest to smallest, it finds 2 coins.",
+        "Amount 6 cannot be made from these coins at all, so greedy has no valid answer to find.",
       ],
       answer: 1,
       why:
@@ -294,11 +291,10 @@ export const chapterGreedy: Chapter = {
       kind: "quiz",
       question: "What must be true for a greedy algorithm to be guaranteed correct on a given problem?",
       options: [
-        "The algorithm must run in O(n log n) time or faster",
-        "It must be provable (e.g. via an exchange argument) that the locally best choice at each step is " +
-          "never worse than any alternative choice, so local optimality composes into global optimality",
-        "The input must already be sorted",
-        "Nothing — greedy is always correct as long as the code compiles and runs without errors",
+        "The algorithm must run in O(n log n) time or faster, since slower greedy methods can pick wrong choices.",
+        "It must be provable (e.g. by an exchange argument) that the best local choice is never worse",
+        "The input must already be sorted, because a greedy algorithm cannot choose well from unordered data.",
+        "Nothing: greedy is always correct as long as the code compiles and runs without any errors.",
       ],
       answer: 1,
       why:

@@ -320,10 +320,10 @@ export const chapterWhatIsDsa: Chapter = {
       kind: "quiz",
       question: "In the kitchen analogy, what does a data structure correspond to?",
       options: [
-        "The ingredients themselves",
+        "The ingredients themselves, because data structures are the raw material the cook starts with",
         "The deliberate organisation of where things are kept (the spice rack, the drawer)",
-        "The recipe being cooked",
-        "The person cooking",
+        "The recipe being cooked, since a data structure is the list of steps to follow",
+        "The person doing the cooking, because they decide what happens with the ingredients",
       ],
       answer: 1,
       why:
@@ -334,10 +334,10 @@ export const chapterWhatIsDsa: Chapter = {
       kind: "quiz",
       question: "Why does hasDuplicateFast typically do less work than hasDuplicateSlow on the same input?",
       options: [
-        "It uses a different, faster programming language internally.",
-        "It only checks half the array.",
-        "It checks each number against a running set once, instead of comparing every pair of numbers.",
-        "It sorts the array first, which is always free.",
+        "It uses a different, faster programming language internally, so each comparison takes less time.",
+        "It only checks half the array, because the other half is guaranteed to hold no duplicates.",
+        "It checks each number against a running set once, instead of comparing every pair.",
+        "It sorts the array first, and Java's sorting step is free, so only the scan is counted.",
       ],
       answer: 2,
       why:
@@ -349,11 +349,10 @@ export const chapterWhatIsDsa: Chapter = {
       kind: "quiz",
       question: "What is the main reason interviews test DSA, according to this chapter?",
       options: [
-        "To check whether you've memorised standard library method names",
-        "Because every job requires implementing a HashMap from scratch",
-        "As a proxy for recognising a problem's shape and reasoning about cost at scale, which transfers " +
-          "to real engineering work",
-        "It's mostly tradition with no real connection to the job",
+        "To check whether you've memorised the names of standard library methods and their exact signatures",
+        "Because almost every job requires implementing a HashMap or a balanced tree from scratch each week",
+        "As a proxy for recognising a problem's shape and reasoning about cost at scale, which transfers to real work",
+        "It's mostly tradition, with no real connection to the work you would actually do on the job",
       ],
       answer: 2,
       why:

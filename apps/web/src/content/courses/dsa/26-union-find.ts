@@ -273,11 +273,10 @@ export const chapterUnionFind: Chapter = {
       kind: "quiz",
       question: "What does it mean when union(a, b) returns false in this chapter's implementation?",
       options: [
-        "An error occurred during the union operation",
-        "a and b are already in the same group (find(a) == find(b)), so merging them again would create a " +
-          "cycle rather than a new connection",
-        "a or b doesn't exist in the structure",
-        "The rank arrays are corrupted",
+        "An error occurred during the union operation, and the groups were left unchanged",
+        "a and b are already in the same group, so merging them again would create a cycle",
+        "a or b doesn't exist in the structure, so there was nothing to merge",
+        "The rank arrays are corrupted, so the structure can no longer be trusted",
       ],
       answer: 1,
       why:
@@ -289,11 +288,10 @@ export const chapterUnionFind: Chapter = {
       kind: "quiz",
       question: "What is the combined effect of path compression and union by rank on the amortised time complexity of find/union?",
       options: [
-        "O(n) per operation",
-        "O(log n) per operation",
-        "Effectively O(1) (formally O(α(n)), the inverse Ackermann function, which is under 5 for any " +
-          "practical input size)",
-        "O(n log n) per operation",
+        "O(n) per operation, because each find must still walk a chain whose length can reach the number of elements.",
+        "O(log n) per operation, because the trees stay balanced but each find still climbs a logarithmic number of parents.",
+        "Effectively O(1): formally O(α(n)), the inverse Ackermann function, which is under 5 for any practical input size.",
+        "O(n log n) per operation, because every union has to merge two sorted lists of members before it can finish.",
       ],
       answer: 2,
       why:

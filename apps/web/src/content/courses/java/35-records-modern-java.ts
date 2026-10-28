@@ -196,10 +196,10 @@ export const chapterRecordsModernJava: Chapter = {
       kind: "quiz",
       question: "Why is p1.equals(p2) true for two separately created `new Point(3, 4)` records?",
       options: [
-        "It isn't true — records always compare by identity like ordinary objects",
-        "Records automatically generate equals()/hashCode() that compare by the value of their components",
-        "Only because == was actually used, not equals()",
-        "Points are cached like small Integers",
+        "It isn't true: records always compare by identity, like ordinary objects created with new.",
+        "Records automatically generate equals() and hashCode() that compare their components by value.",
+        "Only because == was actually used in that comparison, rather than the equals() method.",
+        "Because Java caches Point objects like small Integers, so both variables share one object.",
       ],
       answer: 1,
       why:
@@ -210,10 +210,10 @@ export const chapterRecordsModernJava: Chapter = {
       kind: "quiz",
       question: "What does declaring `sealed interface Shape permits Circle, Rectangle {}` enable?",
       options: [
-        "Nothing beyond documentation — it has no compiler effect",
-        "The compiler knows Circle and Rectangle are the only possible Shape subtypes, allowing an exhaustive switch with no default branch",
-        "It makes Shape's methods automatically final",
-        "It prevents Circle and Rectangle from being records",
+        "Nothing beyond documentation: the compiler ignores permits, and any other class may still implement Shape.",
+        "The compiler knows Circle and Rectangle are the only Shape subtypes, so a switch can be exhaustive with no default.",
+        "It makes every method of Shape automatically final, so Circle and Rectangle cannot override them.",
+        "It stops Circle and Rectangle from being records, because sealed types may only be ordinary classes.",
       ],
       answer: 1,
       why:
@@ -224,10 +224,10 @@ export const chapterRecordsModernJava: Chapter = {
       kind: "quiz",
       question: "Is `var message = \"hello\";` dynamically typed — can message later be reassigned to hold an int?",
       options: [
-        "Yes, var means the type can change at any time",
-        "No — var only infers the type once at compile time; message stays a String and reassigning it to an int is a compile error",
-        "Only inside a method, not at the class level",
-        "It depends on the JVM version",
+        "Yes, var lets the variable's type change whenever a value of another type is assigned.",
+        "No, var infers the type once at compile time; message stays a String, and assigning an int is a compile error.",
+        "Yes, but only for local variables inside a method; fields declared with var keep a fixed type.",
+        "It depends on the JVM version, since older runtimes treated var as a dynamic type.",
       ],
       answer: 1,
       why:

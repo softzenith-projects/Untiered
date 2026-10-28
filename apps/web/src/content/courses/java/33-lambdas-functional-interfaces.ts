@@ -178,10 +178,10 @@ export const chapterLambdas: Chapter = {
       kind: "quiz",
       question: "Which of these can a lambda expression be assigned to?",
       options: [
-        "Any interface",
-        "Only an interface with exactly one abstract method (a functional interface)",
-        "Any class",
-        "Only java.util.function interfaces specifically",
+        "Any interface at all, as long as the lambda's parameters match one of its methods.",
+        "Only an interface with exactly one abstract method (a functional interface).",
+        "Any class, as long as the lambda is placed inside one of that class's methods.",
+        "Only interfaces from the java.util.function package, and no interface that you write yourself.",
       ],
       answer: 1,
       why:
