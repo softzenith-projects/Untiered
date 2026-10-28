@@ -92,10 +92,10 @@ describe("course: system-design, as a whole", () => {
   const systemDesignChapters = systemDesignCourse ? flattenChapters(systemDesignCourse) : [];
   const systemDesignBlocks = systemDesignChapters.flatMap((chapter) => chapter.blocks);
 
-  it("covers foundations, building blocks, AI systems, and compositional cases", () => {
+  it("covers foundations, building blocks, data-layer internals, AI systems, and compositional cases", () => {
     expect(systemDesignCourse).toBeDefined();
-    expect(systemDesignCourse?.modules).toHaveLength(4);
-    expect(systemDesignChapters).toHaveLength(56);
+    expect(systemDesignCourse?.modules).toHaveLength(5);
+    expect(systemDesignChapters).toHaveLength(59);
     expect(systemDesignCourse?.requiresCodeExamples).toBe(false);
   });
 
@@ -137,6 +137,9 @@ describe("course: system-design, as a whole", () => {
     const slugs = new Set(systemDesignChapters.map((chapter) => chapter.slug));
     const required = [
       "network-protocols",
+      "unique-ids-at-scale",
+      "storage-engines",
+      "bloom-filters-and-sketches",
       "proxies-and-service-discovery",
       "consistent-hashing",
       "leader-election-and-leases",
