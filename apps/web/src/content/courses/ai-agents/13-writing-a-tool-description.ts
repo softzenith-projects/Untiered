@@ -246,7 +246,7 @@ export const chapterWritingAToolDescription: Chapter = {
       kind: "quiz",
       question: "Your agent calls `search_trains(from=\"Pune\")` and the API rejects it. What is the first thing to fix?",
       options: [
-        "The model — switch to a larger one",
+        "The model — switch to a larger one that is less likely to guess a city name for a station code",
         "The system prompt — add \"always use station codes\"",
         "The tool description — state that `from` must be a station code, with an example",
         "The API — make it accept city names too",
@@ -262,7 +262,7 @@ export const chapterWritingAToolDescription: Chapter = {
       kind: "quiz",
       question: "Which line most reliably prevents wasted turns?",
       options: [
-        "\"This is a very important tool.\"",
+        "\"This is a very important tool, so choose it before any of the other tools whenever you are unsure.\"",
         "\"Do not use this to check seat availability — use check_availability instead.\"",
         "\"Use this tool carefully.\"",
         "\"This tool is fast.\"",
@@ -276,7 +276,7 @@ export const chapterWritingAToolDescription: Chapter = {
       kind: "quiz",
       question: "Why is a wordy tool description more expensive than it looks?",
       options: [
-        "It is stored permanently on the provider's servers",
+        "It is stored permanently on the provider's servers, so you are billed for it every month it sits there",
         "It is re-sent to the model on every turn of every run, so the cost multiplies by turns and by runs",
         "It slows down your own function",
         "It counts against the output token limit",

@@ -235,7 +235,7 @@ export const chapterEvaluatingAnAgent: Chapter = {
       kind: "quiz",
       question: "Your agent gives the right answer but called a tool it did not need. Should the evaluation case pass?",
       options: [
-        "Yes — the answer is correct, which is what matters",
+        "Yes — the answer is correct, which is the only outcome that matters to the user, so the route taken is irrelevant",
         "No — the trace is part of the expected outcome, and an unnecessary call costs money, latency and a step",
         "Only if the extra call was cheap",
         "It cannot be detected automatically",
@@ -249,8 +249,8 @@ export const chapterEvaluatingAnAgent: Chapter = {
       kind: "quiz",
       question: "Why must half your evaluation cases have no good answer?",
       options: [
-        "To make the score look more realistic",
-        "Because refusing correctly is a behaviour you need to test, and a suite of answerable cases cannot catch invention",
+        "To make the score look more realistic to readers of the report, because a perfect score is never believed",
+        "Because refusing correctly is a behaviour to test, and a suite of answerable cases cannot catch invention",
         "Because models are better at refusing",
         "To reduce the cost of running the suite",
       ],
@@ -263,7 +263,7 @@ export const chapterEvaluatingAnAgent: Chapter = {
       kind: "quiz",
       question: "You use a model as a judge. What is the most important guard?",
       options: [
-        "Use the largest available model as the judge",
+        "Use the largest available model as the judge, since a bigger model is always the most reliable grader",
         "Give it an explicit rubric and calibrate its scores against human labels on a sample",
         "Run the judge at temperature 0",
         "Have the judge explain its reasoning in detail",

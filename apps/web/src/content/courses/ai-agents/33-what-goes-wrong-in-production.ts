@@ -261,8 +261,8 @@ export const chapterWhatGoesWrongInProduction: Chapter = {
       kind: "quiz",
       question: "Your agent gave a confident wrong answer in production. What do you need in order to find out why?",
       options: [
-        "The answer it gave",
-        "The full trace: the prompt as sent, every tool call and its arguments, and every observation returned",
+        "The answer it gave, together with the exact question the user typed and the version of the model that wrote it",
+        "The full trace: the prompt as sent, every tool call with its arguments, and every observation returned",
         "The model version",
         "The user's original question",
       ],
@@ -278,7 +278,7 @@ export const chapterWhatGoesWrongInProduction: Chapter = {
       options: [
         "Enable it for a small percentage of traffic and watch the metrics",
         "Ship read-only first, then add the refund tool behind a human approval that shows the real arguments",
-        "Ship it with a strong system prompt warning it to be careful with refunds",
+        "Ship it to everyone with a strong system prompt warning it to be careful with refunds and to double-check each one",
         "Ship it and monitor for complaints",
       ],
       answer: 1,
@@ -291,7 +291,7 @@ export const chapterWhatGoesWrongInProduction: Chapter = {
       kind: "quiz",
       question: "What is the single idea this course would most like you to keep?",
       options: [
-        "Bigger models solve most of these problems",
+        "Bigger models solve most of these problems, so the best use of your effort is to wait for the next release",
         "A model produces likely text; everything that makes it trustworthy is engineering you built around it",
         "Agents should be preferred to workflows",
         "Prompt engineering is the main skill",

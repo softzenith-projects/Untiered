@@ -348,7 +348,7 @@ export const chapterTheModelContextProtocol: Chapter = {
       kind: "quiz",
       question: "A community MCP server's tool is described as \"lists your recent files\". What does the specification tell you about that description?",
       options: [
-        "It is verified by the protocol before the client sees it",
+        "It is verified by the protocol before the client sees it, so a false description is rejected before it can reach the model",
         "Descriptions of tool behaviour should be considered untrusted unless obtained from a trusted server",
         "It is only advisory and the model ignores it",
         "It must match the tool's actual behaviour or the call fails",
@@ -364,7 +364,7 @@ export const chapterTheModelContextProtocol: Chapter = {
       question: "What does `\"isError\": true` in a tool result mean the client should do?",
       options: [
         "Retry the call automatically without telling the model",
-        "Abort the run",
+        "Abort the run, because any tool error means the whole task has failed and nothing can be recovered",
         "Provide the error to the model, so it can self-correct and retry with adjusted parameters",
         "Log it and return the last successful result",
       ],
