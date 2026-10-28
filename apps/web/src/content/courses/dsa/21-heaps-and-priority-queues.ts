@@ -411,11 +411,12 @@ export const chapterHeapsAndPriorityQueues: Chapter = {
     },
     {
       kind: "quiz",
-      question: "For a node at index i in an array-backed heap, where are its two children?",
+      question: "In an array-backed heap with the root at index 0, where are the two children of the node at index i?",
       options: ["i-1 and i+1 (the neighbours)", "2i and 2i+1", "2i+1 and 2i+2", "i/2 and i*2 (halved and doubled)"],
       answer: 2,
       why:
-        "The complete-binary-tree packing places a node's children at 2i+1 and 2i+2, and its parent at " +
+        "With the root at index 0, the complete-binary-tree packing places a node's children at 2i+1 and " +
+        "2i+2, and its parent at " +
         "(i-1)/2 (integer division) — the formulas push() and pop() both rely on directly.",
     },
   ],
