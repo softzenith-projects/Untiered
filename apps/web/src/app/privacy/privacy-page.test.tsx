@@ -43,7 +43,8 @@ describe("legal pages", () => {
 
     privacy.unmount();
     render(<TermsPage />);
-    expect(screen.getByText(/help@untiered\.tech/)).toBeInTheDocument();
+    // Once for refund requests on paid interviews, once for general questions.
+    expect(screen.getAllByText(/help@untiered\.tech/).length).toBe(2);
   });
 
   it("states the same daily allowance the API enforces", () => {

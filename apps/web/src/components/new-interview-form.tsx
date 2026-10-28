@@ -86,6 +86,8 @@ export function NewInterviewForm({
   // Today's allowance, read once so a candidate who has used it is told before filling
   // anything in. The server enforces it either way; this only saves them the wasted form.
   const [entitlement, setEntitlement] = useState<EntitlementView | null>(null);
+  // Bumped after a purchase, so the allowance is read again and the setup unlocks.
+  const [entitlementRead, setEntitlementRead] = useState(0);
   useEffect(() => {
     if (!accessToken) return;
     let active = true;
@@ -99,12 +101,12 @@ export function NewInterviewForm({
     return () => {
       active = false;
     };
-  }, [accessToken]);
+  }, [accessToken, entitlementRead]);
 
   if (isDailyLimitReached(entitlement) && entitlement) {
     return (
       <div className="flex flex-col gap-6">
-        <DailyLimitNotice entitlement={entitlement} />
+        <DailyLimitNotice entitlement={entitlement} onPurchased={() => setEntitlementRead((read) => read + 1)} />
         <a href="/dashboard" className="w-fit text-caption font-medium text-accent hover:underline">
           Back to your dashboard
         </a>
@@ -211,6 +213,8 @@ export function NewInterviewForm({
         onStart={(id) => router.push(`/interview/${id}`)}
         accessToken={accessToken}
         minutesLeftToday={entitlement?.remainingMinutesToday ?? null}
+        creditBalance={entitlement?.creditBalance ?? 0}
+        fundedByCredit={entitlement?.funding === "credit"}
       />
     );
   }
@@ -487,6 +491,8 @@ function RoundSetup({
   accessToken,
   roundPreselected,
   minutesLeftToday = null,
+  creditBalance = 0,
+  fundedByCredit = false,
 }: {
   draft: RoundDraft;
   query: string;
@@ -502,6 +508,10 @@ function RoundSetup({
   roundPreselected: boolean;
   /** Free minutes left today, or null when there is no daily limit (or it is unknown). */
   minutesLeftToday?: number | null;
+  /** Paid interviews held. Any at all lifts the free-minutes cap on the round's length. */
+  creditBalance?: number;
+  /** True when the free allowance is already used, so any round started now is paid for. */
+  fundedByCredit?: boolean;
 }) {
   const [companyName, setCompanyName] = useState(draft.companyName);
   const [roleTitle, setRoleTitle] = useState(draft.roleTitle);
@@ -533,13 +543,17 @@ function RoundSetup({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lengthOptions = (roundType === "custom_topic" ? CUSTOM_LENGTHS : ROUND_LENGTHS).filter(
-    (option) => minutesLeftToday === null || option.minutes <= minutesLeftToday,
+    (option) => minutesLeftToday === null || creditBalance > 0 || option.minutes <= minutesLeftToday,
   );
   // The chosen length, kept inside what is left today: one that cannot start would only be
   // refused by the server after the candidate had filled everything in.
   const effectiveMinutes = lengthOptions.some((option) => option.minutes === durationMinutes)
     ? durationMinutes
     : (lengthOptions.at(-1)?.minutes ?? durationMinutes);
+  // Mirrors the server, which spends free practice first: a credit pays only when the free
+  // allowance is gone or this round is longer than the free minutes left.
+  const usesCredit =
+    creditBalance > 0 && (fundedByCredit || (minutesLeftToday !== null && effectiveMinutes > minutesLeftToday));
   const selectedRound = ROUND_CATALOGUE.find((item) => item.value === roundType);
   // The server keeps a focus topic only for a custom-topic round and drops it for every
   // other one, so asking for it anywhere else would collect words that go nowhere.
@@ -801,7 +815,9 @@ function RoundSetup({
               ? `Only ${minutesLeftToday} free minutes are left today, which is shorter than this round can run. Choose a different round, or come back tomorrow.`
               : minutesLeftToday === null
                 ? "Real rounds are time-boxed. The clock ends this one."
-                : `Real rounds are time-boxed. ${minutesLeftToday} free minutes left today.`
+                : `Real rounds are time-boxed. ${minutesLeftToday} free minutes left today${
+                    creditBalance > 0 ? "; a longer round uses a paid interview." : "."
+                  }`
           }
         >
           <select
@@ -867,6 +883,10 @@ function RoundSetup({
         </Button>
         {!consentAudio ? (
           <p className="text-caption text-ink-subtle">Voice recording is required to continue.</p>
+        ) : usesCredit ? (
+          <p className="text-caption text-ink-muted">
+            Uses 1 of your {creditBalance} paid {creditBalance === 1 ? "interview" : "interviews"} when it begins.
+          </p>
         ) : null}
       </div>
     </form>

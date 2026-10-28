@@ -25,7 +25,7 @@ import { useAccessToken } from "@/lib/use-access-token";
  * important thing here after the heading.
  */
 export function DashboardPanel() {
-  const { visible, handleDelete } = useRoundData();
+  const { visible, handleDelete, refreshEntitlement } = useRoundData();
 
   if (!visible.loaded) {
     return <DashboardLoadingState />;
@@ -40,6 +40,7 @@ export function DashboardPanel() {
       loaded={visible.loaded}
       resumeUploaded={visible.resumeUploaded}
       onDelete={handleDelete}
+      onPurchased={refreshEntitlement}
     />
   );
 }
@@ -210,6 +211,18 @@ function useRoundData() {
     };
   }, [accessToken]);
 
+  /** After a purchase, the allowance is the server's to re-derive — read it again. */
+  const refreshEntitlement = useCallback(async () => {
+    if (!accessToken) return;
+    const operationToken = accessToken;
+    try {
+      const entitlement = await fetchEntitlement({ accessToken: operationToken });
+      setDashboard((current) => (current.ownerToken === operationToken ? { ...current, entitlement } : current));
+    } catch {
+      // The notice stays; the start screen re-reads the allowance on its own.
+    }
+  }, [accessToken]);
+
   /**
    * Deleting a round is irreversible on the server, so it is reflected here rather than
    * refetched: the row goes the moment the request succeeds, and a failure is raised to
@@ -286,7 +299,7 @@ function useRoundData() {
     }
   }, [accessToken, visible]);
 
-  return { visible, handleDelete, loadMore };
+  return { visible, handleDelete, loadMore, refreshEntitlement };
 }
 
 interface DashboardState {
@@ -340,6 +353,7 @@ export function DashboardView({
   loaded,
   resumeUploaded = null,
   onDelete,
+  onPurchased,
 }: {
   entitlement: EntitlementView | null;
   me?: MeResponse | null;
@@ -349,6 +363,8 @@ export function DashboardView({
   /** Null when unknown — the profile could not be read, or has not been yet. */
   resumeUploaded?: boolean | null;
   onDelete?: (id: string) => Promise<void>;
+  /** Re-reads the allowance once interviews have been bought from the notice. */
+  onPurchased?: () => Promise<void>;
 }) {
   const mockInterviewsEnabled = featureEnabled("mockInterviews");
   const reportsEnabled = featureEnabled("reports");
@@ -391,7 +407,7 @@ export function DashboardView({
           </header>
 
           {loaded && entitlement && isDailyLimitReached(entitlement) ? (
-            <DailyLimitNotice entitlement={entitlement} />
+            <DailyLimitNotice entitlement={entitlement} onPurchased={() => void onPurchased?.()} />
           ) : null}
 
           {lastCompleted ? (

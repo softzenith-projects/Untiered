@@ -48,11 +48,41 @@ export default function TermsPage() {
 
       <LegalSection id="free" title="Free practice and limits">
         <p>
-          Practice interviews are currently free, up to {DAILY_ROUNDS_TEXT} and{" "}
-          {LEGAL.dailyMinutes} minutes a day, reset at midnight India time. We are working on a Pro
-          mode with more practice. We may change these limits, or introduce paid plans, and will
-          say so on the site before a change affects you. Courses and the Arena are free.
+          Practice interviews are free up to {DAILY_ROUNDS_TEXT} and {LEGAL.dailyMinutes} minutes
+          a day, reset at midnight India time. Beyond that, you can buy paid interviews (below). We
+          may change these limits and will say so on the site before a change affects you. Courses
+          and the Arena are free.
         </p>
+      </LegalSection>
+
+      <LegalSection id="payments" title="Paid interviews and refunds">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            Paid interviews are sold singly or in packs, at the price shown before you pay. Prices
+            are in Indian rupees and include all taxes. Each is a one-off purchase: there is no
+            subscription and nothing renews.
+          </li>
+          <li>
+            Each paid interview is one mock interview with its full report. Your free practice is
+            always used first, so a paid interview is only used when you practise beyond it.
+          </li>
+          <li>
+            A paid interview is used when the interview starts. Leaving an interview partway through
+            still uses it. If an interview fails because of a fault on our side, the paid interview
+            is returned to your account automatically.
+          </li>
+          <li>Paid interviews do not expire while your account exists. Deleting your account deletes any you have not used.</li>
+          <li>
+            If you were charged but did not receive your interviews, or want a refund for a pack you
+            have not used any of, write to {CONTACT_EMAIL_DISPLAY} within {LEGAL.refundWindowDays}{" "}
+            days of paying. Approved refunds go back to the original payment method, usually within
+            5&ndash;7 working days.
+          </li>
+          <li>
+            Payments are processed by Razorpay. Your card, UPI or bank details are entered with
+            Razorpay and are never seen or stored by us.
+          </li>
+        </ul>
       </LegalSection>
 
       <LegalSection id="use" title="Fair use">
@@ -60,7 +90,7 @@ export default function TermsPage() {
         <ul className="list-disc space-y-2 pl-5">
           <li>use the service to get help during a real interview or assessment;</li>
           <li>upload a resume or recording of anyone but yourself, or other people&rsquo;s personal information without their permission;</li>
-          <li>try to get around the daily limits, for example with automated scripts or many accounts;</li>
+          <li>try to get around the daily limits or payments, for example with automated scripts or many accounts;</li>
           <li>copy or resell the courses, questions or reports, or scrape the service;</li>
           <li>attack, overload or try to access parts of the service or data that are not yours.</li>
         </ul>

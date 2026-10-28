@@ -320,15 +320,22 @@ interviewbit.com: a bright, confident, polished learning-platform look.
   what it sees" — the two came apart when video stopped being uploaded, and conflating
   them again is how a report ends up claiming someone "maintained good eye contact" when
   nothing watched them. That is fabricated evidence, the same failure as an invented quote.
-- **Every round is free, for now.** There is no paid tier and no limit: gating an
-  unproven product turns away the people whose use of it is currently worth more than
-  the model calls it saves. This is a deliberate change from the PRD's one-free-round
-  position (§10) — **do not "restore" the gate.** When a paid tier exists, it comes back
-  through one config property, `interviewos.entitlement.free-rounds`, and the arithmetic
-  and tests for it are already in `Entitlement.kt`. Whatever the free tier ends up being,
-  it must include the full report, because the report is what sells the product.
-- **Payments: Razorpay.** Do not wire real payments without the owner — keys and
-  pricing are a human decision.
+- **Free practice first, paid interviews beyond it** (owner, 28 October 2026). The free
+  tier is the daily allowance in `EntitlementProperties` (no lifetime gate —
+  `interviewos.entitlement.free-rounds` stays unset; **do not "restore" it** without the
+  owner). Beyond it, candidates buy **interview credits** in packs: 1 for ₹199, 5 for ₹899,
+  10 for ₹1,499, tax-inclusive (`BillingProperties.DEFAULT_PACKS`). Every interview, free
+  or paid, includes the full report, because the report is what sells the product.
+  - A credit is spent **when the round starts**, only after the free allowance says no
+    (`Entitlement.Funding`), and handed back automatically if the round ends `failed`
+    (our fault). Leaving a round does not hand it back.
+  - The balance is the sum of the `interview_credits` ledger, never a stored counter.
+    Grants are idempotent per payment, charges and refunds per session.
+  - The server prices every order; the browser names a pack, never an amount. Credits are
+    granted only after the Razorpay signature *and* a captured payment of the order's
+    exact amount are checked, by the confirm call or the signed webhook, whichever is first.
+- **Payments: Razorpay.** Buying is off until `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`
+  are set. Live keys, price changes, and refund terms are the owner's decision.
 - **Community interview reports and salary data are later phases.** Do not scaffold
   them. When they arrive, contributions are anonymised before entering the corpus and
   contributors are rewarded with credits.

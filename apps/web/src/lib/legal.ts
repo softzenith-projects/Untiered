@@ -16,7 +16,9 @@ export const LEGAL = {
   /** Kept in step with `EntitlementProperties` on the API (owner, 27 October 2026). */
   dailyRounds: 1,
   dailyMinutes: 60,
-  lastUpdated: "27 October 2026",
+  /** How long after paying an unused pack can be refunded. Needs the owner's sign-off. */
+  refundWindowDays: 7,
+  lastUpdated: "28 October 2026",
 } as const;
 
 export const CONTACT_EMAIL_DISPLAY = LEGAL.contactEmail;

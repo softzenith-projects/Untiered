@@ -265,6 +265,9 @@ describe("DashboardView daily allowance", () => {
     remainingFree: null,
     dailyRoundLimit: 2,
     dailyMinuteLimit: 60,
+    creditBalance: 0,
+    funding: null,
+    purchasable: false,
   };
 
   it("says what is left today while practice remains", () => {
@@ -322,6 +325,9 @@ describe("DashboardView first run", () => {
     remainingRoundsToday: null,
     remainingMinutesToday: null,
     openSessionId: null,
+    creditBalance: 0,
+    funding: "free" as const,
+    purchasable: false,
   };
 
   it("gives a new candidate a checklist ticked from their account", () => {
@@ -375,6 +381,9 @@ describe("DashboardView open round", () => {
           remainingRoundsToday: 1,
           remainingMinutesToday: 60,
           openSessionId: "open-1",
+          creditBalance: 0,
+          funding: null,
+          purchasable: false,
         }}
         sessions={[]}
         readiness={[]}

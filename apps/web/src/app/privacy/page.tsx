@@ -55,6 +55,11 @@ export default function PrivacyPage() {
             and your Arena answers, streak and badges.
           </li>
           <li>
+            <strong className="text-ink">Purchases:</strong> if you buy paid interviews, what you
+            bought, the amount, when, and Razorpay&rsquo;s order and payment references. We never
+            receive your card, UPI or bank details.
+          </li>
+          <li>
             <strong className="text-ink">Technical data:</strong> error reports and server logs,
             identified by your account number rather than your name or email, so we can fix things
             that break.
@@ -109,6 +114,11 @@ export default function PrivacyPage() {
           <li>
             <strong className="text-ink">Google sign-in</strong> confirms who you are if you choose
             Google to sign in.
+          </li>
+          <li>
+            <strong className="text-ink">Razorpay</strong> processes payments if you buy paid
+            interviews. You enter your payment details with Razorpay, and it receives your email
+            address to send you a receipt.
           </li>
         </ul>
         <p>
