@@ -39,6 +39,12 @@ Make in-app navigation between tabs feel instant (owner's request in session; PR
 - The round names are product knowledge from the owner and the earlier page, not sourced per employer; worth a domain check.
 - Merged `fix/landing-loop-rounds` into `develop` at 1105ff2 after CI passed all four jobs.
 
+## Follow-up: sign-in layout and logo contrast (also 28 October)
+
+- `app/login/page.tsx`: navy panel pinned to viewport height, form card top-aligned, so switching Sign in / Create account moves nothing (measured in headless Edge at 1440x860: identical positions in both modes).
+- `public/brand/wordmark-on-navy.png` (new): the U lifted from 1.2:1 to 3:1 against navy, hue kept; used by `BrandWordmark inverse` (sign-in panel, footer) and dark mode. Supplied brand files unchanged; the owner may prefer a designer-made light variant.
+- Merged `fix/login-layout-logo` into `develop` at 129205f after CI passed all four jobs.
+
 ## Suggested next task
 
 - Act on the Next.js security advisory: run `next upgrade` on its own branch.
