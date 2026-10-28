@@ -42,7 +42,7 @@ Make in-app navigation between tabs feel instant (owner's request in session; PR
 ## Follow-up: sign-in layout and logo contrast (also 28 October)
 
 - `app/login/page.tsx`: navy panel pinned to viewport height, form card top-aligned, so switching Sign in / Create account moves nothing (measured in headless Edge at 1440x860: identical positions in both modes).
-- `public/brand/wordmark-on-navy.png` (new): the U lifted from 1.2:1 to 3:1 against navy, hue kept; used by `BrandWordmark inverse` (sign-in panel, footer) and dark mode. Supplied brand files unchanged; the owner may prefer a designer-made light variant.
+- Logo on navy: the owner rejected recolouring the artwork. `BrandWordmark inverse` now shows the supplied light-surface wordmark on a white chip (sign-in panel, footer); the generated `wordmark-on-navy.png` was removed. The sign-in panel's three feature cards are white to match. Merged at 8235702.
 - Merged `fix/login-layout-logo` into `develop` at 129205f after CI passed all four jobs.
 
 ## Suggested next task
