@@ -2,22 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AppShell } from "@/components/app-shell";
+import { ProFeatureRequestForm } from "@/components/pro-feature-request-form";
+import { DAILY_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
+import { PRO_FEATURES } from "@/lib/pro-features";
 
 export const metadata: Metadata = { title: "Upgrade" };
 
 const INCLUDED_NOW = [
-  "Every available mock-interview round",
+  `${DAILY_ROUNDS_TEXT} of mock interview a day, up to ${LEGAL.dailyMinutes} minutes`,
   "The complete evidence-backed report",
   "All enabled courses and Arena practice",
   "English and Hindi-English interviews",
 ];
 
-const PRO_DIRECTIONS = [
-  "Longer-term progress views across repeated goals",
-  "Deeper practice recommendations from past reports",
-  "More control over saved preparation plans",
-  "Priority access to future practice formats",
-];
 
 /**
  * A deliberately honest upgrade surface. Payments and pricing are not live product
@@ -70,19 +67,21 @@ export default function UpgradePage() {
                 after the plan and payment experience are ready for owner review.
               </p>
               <ul className="mt-6 grid gap-3">
-                {PRO_DIRECTIONS.map((item) => (
-                  <li key={item} className="flex gap-3 text-caption text-ink-muted">
+                {PRO_FEATURES.map(({ key, label }) => (
+                  <li key={key} className="flex gap-3 text-caption text-ink-muted">
                     <span aria-hidden className="font-bold text-accent">+</span>
-                    {item}
+                    {label}
                   </li>
                 ))}
               </ul>
-              <Link href="/contact" className="action-primary mt-8 self-start">
+              <Link href="#pro-request" className="action-primary mt-8 self-start">
                 Tell us what Pro should include <span aria-hidden>→</span>
               </Link>
             </div>
           </section>
         </div>
+
+        <ProFeatureRequestForm />
 
         <p className="rounded-xl border border-line bg-surface-raised px-5 py-4 text-caption text-ink-muted">
           No payment details are collected on this page. When plans become real, the price,

@@ -33,7 +33,7 @@ export default function ContactPage() {
       <LegalSection id="data" title="Data requests and complaints">
         <p>
           To see, correct or delete your data, or to make a complaint, write to our Grievance
-          Officer, {LEGAL.grievanceOfficer}, at the address above. We reply within 30 days. You can
+          Officer, {LEGAL.grievanceOfficer}, at {LEGAL.contactEmail}. We reply within 30 days. You can
           also delete interviews or your whole account yourself from your profile. See the{" "}
           <Link href="/privacy" className="font-medium text-accent hover:underline">
             privacy policy

@@ -26,10 +26,10 @@ describe("legal pages", () => {
     expect(screen.getByText(/never receives recordings of your voice/i)).toBeInTheDocument();
   });
 
-  it("shows the confirmed support email and keeps the unset grievance officer visible", () => {
+  it("shows the confirmed support email and routes complaints to it", () => {
     render(<ContactPage />);
 
-    expect(screen.getAllByText(/to be confirmed before launch/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/write to our grievance officer, natasha sharma, at help@untiered\.tech\./i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "help@untiered.tech" })).toHaveAttribute(
       "href",
       "mailto:help@untiered.tech",
@@ -49,7 +49,7 @@ describe("legal pages", () => {
   it("states the same daily allowance the API enforces", () => {
     render(<TermsPage />);
 
-    expect(screen.getByText(/up to 2 rounds and\s+60 minutes a day/i)).toBeInTheDocument();
+    expect(screen.getByText(/up to 1 round and\s+60 minutes a day/i)).toBeInTheDocument();
   });
 
   it("links every legal page from the others", () => {
