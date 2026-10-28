@@ -16,132 +16,137 @@
     {
       "kind": "initial",
       "step_type": "design_choice",
-      "prompt": "What does Add to cart mean for stock?",
+      "prompt": "340 packets of Maggi are left and 200,000 people are adding them to their carts. What should Add to cart mean for stock?",
       "options": [
         {
           "id": "a",
-          "text": "A best-effort availability hint, without reservation"
+          "text": "A non-binding intent: the cart can show availability but holds no stock."
         },
         {
           "id": "b",
-          "text": "A permanent reservation until the browser closes"
+          "text": "A 30-minute reservation, so nobody loses the item they just chose."
         },
         {
           "id": "c",
-          "text": "An immediate purchase"
+          "text": "A reservation that lasts until the shopper closes the browser."
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A avoids trapping 340 units in abandoned carts. B can strand every unit. C charges or commits before checkout consent.",
+      "explanation": "A cart records intent, and if every Add to cart held a unit, the first 340 clicks would lock up the whole stock in carts that mostly never become orders. A timed reservation at this stage has the same problem, only for 30 minutes at a time. A reservation tied to the browser session can strand units for as long as a tab stays open.",
       "bottleneck_note": "A cart is intent; it is not yet a stock guarantee.",
       "concept_ids": [
         "inventory-reservation"
-      ]
+      ],
+      "context_note": "Add to cart is the first click, long before anyone has paid."
     },
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "Two buyers click Place order for the final packet. How is one winner chosen?",
+      "prompt": "Two buyers press Place order at the same moment for the one remaining packet. How should the system pick exactly one winner?",
       "options": [
         {
           "id": "a",
-          "text": "One conditional atomic decrement or reservation transaction"
+          "text": "One conditional atomic decrement that succeeds only while stock is at least 1."
         },
         {
           "id": "b",
-          "text": "Read stock separately, then each writes stock minus one"
+          "text": "Read the stock, check it is above zero in the application, then write stock minus one."
         },
         {
           "id": "c",
-          "text": "Have both browsers hide the button"
+          "text": "Process orders in the order of the click times their browsers report."
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A serializes the last-unit claim. B lets both see one and oversell. C is cosmetic and cannot arbitrate races across devices.",
+      "explanation": "Making the check and the decrement one indivisible step means the database lets exactly one order through and rejects the other. Reading and then writing leaves a window in which both requests see a stock of one. Browser clocks differ and can be wrong, so they cannot order requests fairly or safely.",
       "bottleneck_note": "The invariant is reserved plus sold never exceeds 340.",
       "concept_ids": [
         "atomic-stock"
       ],
-      "context_note": "Only one unreserved packet remains."
+      "context_note": "Only one unreserved packet remains, and two orders arrive together."
     },
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "A buyer reserves one packet but abandons payment. What prevents stock staying trapped?",
+      "prompt": "A buyer reserved one packet at checkout but never paid. What stops that packet from staying trapped?",
       "options": [
         {
           "id": "a",
-          "text": "A short reservation expiry and idempotent release"
+          "text": "A short expiry that returns the unit to stock, safe to apply twice."
         },
         {
           "id": "b",
-          "text": "Leave it reserved forever for fairness"
+          "text": "A reminder email asking the buyer to pay or cancel."
         },
         {
           "id": "c",
-          "text": "Let another buyer spend the same reservation ID"
+          "text": "A nightly job that releases every reservation older than 24 hours."
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A returns the unit after the deadline. B permanently loses stock. C creates double-spend risk and breaks ownership.",
+      "explanation": "A timeout frees the unit even when the browser never returns, and making the release idempotent means a retry or a race with a late payment cannot double-count it. A reminder email relies on the buyer acting, and a nightly sweep leaves scarce stock frozen for hours while other buyers see sold out.",
       "bottleneck_note": "Expiry recovery must work even if the browser never returns.",
       "concept_ids": [
         "inventory-reservation"
       ],
-      "context_note": "Payment has not completed after the hold deadline."
+      "context_note": "Each reserved packet is now held for a buyer, and some buyers will walk away in the middle of payment."
     },
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "The cache says 12 left while the durable counter says 0. What should checkout do?",
+      "prompt": "A shopper's cart page says 12 left, but the authoritative stock counter says 0. What should checkout do when they press Place order?",
       "options": [
         {
           "id": "a",
-          "text": "Reject reservation and explain that the estimate changed"
+          "text": "Refuse the reservation based on the real counter and say the estimate has changed."
         },
         {
           "id": "b",
-          "text": "Accept the cached value as final"
+          "text": "Accept the order, because the shopper saw 12 and was effectively promised stock."
         },
         {
           "id": "c",
-          "text": "Insert a negative stock row and reconcile later"
+          "text": "Accept the order and cancel the surplus orders after the sale ends."
+        },
+        {
+          "id": "d",
+          "text": "Trust the cache if it was refreshed within the last 10 seconds."
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A treats the authoritative counter as the promise. B oversells. C creates a debt the seller may be unable to fulfil.",
+      "explanation": "The authoritative counter is the only thing that can promise a unit, so checkout must follow it even when the page said otherwise. Accepting orders against a stale view means overselling, and cancelling later turns a refusal into a broken promise. A fresher cache is still only an estimate.",
       "bottleneck_note": "Cached availability can guide display, never authorize the last unit.",
       "concept_ids": [
         "atomic-stock"
       ],
-      "context_note": "Cart reads a slightly stale availability cache."
+      "context_note": "The cart page reads a cached availability value that can lag behind the real counter."
     },
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "How should the UI behave as stock approaches zero?",
+      "prompt": "As stock nears zero, cart pages are getting far more traffic than checkout. How should the cart page present availability?",
       "options": [
         {
           "id": "a",
-          "text": "Show less certain availability and confirm only after reservation"
+          "text": "As an estimate, with the promise made only when checkout reserves a unit."
         },
         {
           "id": "b",
-          "text": "Promise stock as soon as the item appears in cart"
+          "text": "As 'In stock' until the counter reaches zero, since that is what the data says."
         },
         {
           "id": "c",
-          "text": "Run every cart view through the critical stock transaction"
+          "text": "As an exact figure read from the stock counter on every cart view."
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A is truthful and keeps the hot counter for checkout. B promises too early. C puts 200,000 cart views on a 340-unit contention path.",
+      "explanation": "Honest, softer wording keeps expectations right, and the hot counter stays reserved for the few shoppers who actually check out. A confident 'In stock' promises something the cart cannot deliver. Reading the real counter on every view puts 200,000 shoppers on the one resource that is already contended.",
       "bottleneck_note": "Only checkout needs to contend on the critical counter.",
       "concept_ids": [
         "inventory-reservation",
         "atomic-stock"
       ],
-      "context_note": "The cart page is receiving far more traffic than checkout."
+      "context_note": "Cart views now outnumber checkout attempts by a huge margin, and none of them hold stock."
     }
   ]
 }
