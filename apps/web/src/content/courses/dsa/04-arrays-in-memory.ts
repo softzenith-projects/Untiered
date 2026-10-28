@@ -179,6 +179,20 @@ export const chapterArraysInMemory: Chapter = {
       ],
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "`values[2]` reads one slot directly, no matter how long the list is. Inserting at the front shifts " +
+        "every existing element along. Try `values.append(60)` instead of the insert and compare.",
+      starter:
+        "values = [10, 20, 30, 40, 50]\n" +
+        'print("values[2] =", values[2])\n' +
+        "\n" +
+        "values.insert(0, 5)\n" +
+        'print("after inserting 5 at the front:", values)\n',
+      expectedOutput: "values[2] = 30\nafter inserting 5 at the front: [5, 10, 20, 30, 40, 50]",
+    },
+    {
       kind: "pitfall",
       items: [
         "Assuming all array operations are O(1) because indexing is — insertion and deletion away from the " +
@@ -211,35 +225,6 @@ export const chapterArraysInMemory: Chapter = {
           "conflate 'array' with 'free to modify anywhere' — the correct answer names the shifting cost.",
         "Choosing an array versus a linked list (a later chapter) almost always comes down to this exact " +
           "trade-off: fast indexed access versus fast insertion/deletion away from the ends.",
-      ],
-    },
-    {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "`values[2]` reads one slot directly, no matter how long the list is. Inserting at the front shifts " +
-        "every existing element along. Try `values.append(60)` instead of the insert and compare.",
-      starter:
-        "values = [10, 20, 30, 40, 50]\n" +
-        'print("values[2] =", values[2])\n' +
-        "\n" +
-        "values.insert(0, 5)\n" +
-        'print("after inserting 5 at the front:", values)\n',
-      expectedOutput: "values[2] = 30\nafter inserting 5 at the front: [5, 10, 20, 30, 40, 50]",
-    },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Given a 10-element array with 3 spare trailing slots, describe (in words) the exact shifting work " +
-          "needed to insert one value at index 2, and separately at index 8.",
-        "Explain, in your own words, why deleting the first element of an n-element array costs O(n), " +
-          "walking through what has to move and why.",
-        "For a program that only ever appends new values to the end of an array with pre-reserved capacity, " +
-          "and never inserts elsewhere, explain why its per-operation cost stays O(1).",
-        "Describe a real scenario where you'd pick a structure that supports fast insertion anywhere over a " +
-          "plain array, and explain what you'd be trading away to get it.",
       ],
     },
     {
@@ -285,6 +270,21 @@ export const chapterArraysInMemory: Chapter = {
       why:
         "Appending to the end, with room already reserved, touches only the one new slot — there are no " +
         "later elements that need to shift to make room, unlike inserting anywhere before the end.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Given a 10-element array with 3 spare trailing slots, describe (in words) the exact shifting work " +
+          "needed to insert one value at index 2, and separately at index 8.",
+        "Explain, in your own words, why deleting the first element of an n-element array costs O(n), " +
+          "walking through what has to move and why.",
+        "For a program that only ever appends new values to the end of an array with pre-reserved capacity, " +
+          "and never inserts elsewhere, explain why its per-operation cost stays O(1).",
+        "Describe a real scenario where you'd pick a structure that supports fast insertion anywhere over a " +
+          "plain array, and explain what you'd be trading away to get it.",
+      ],
     },
   ],
 };

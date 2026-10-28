@@ -288,21 +288,6 @@ export const chapterTries: Chapter = {
           "the whole branch can be abandoned.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd extend this trie to list every stored word starting with a " +
-          "given prefix, using a traversal from the prefix's node.",
-        "Explain how you would delete a word from a trie without breaking other words that share part of " +
-          "its path — which nodes are safe to remove, and which aren't?",
-        "Describe how a trie could be used to check whether any prefix of a given string is itself a " +
-          "complete stored word (useful for word-break style problems).",
-        "Explain, in your own words, a case where a plain HashSet of strings would be a better choice than a " +
-          "trie, and why.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What does search(\"ca\") returning false mean, given that \"car\" and \"card\" are both in the trie?",
@@ -347,6 +332,21 @@ export const chapterTries: Chapter = {
       why:
         "A HashSet can check exact membership about as fast as a trie, but has no structural notion of " +
         "shared prefixes — answering a prefix query would need to check every stored string individually.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd extend this trie to list every stored word starting with a " +
+          "given prefix, using a traversal from the prefix's node.",
+        "Explain how you would delete a word from a trie without breaking other words that share part of " +
+          "its path — which nodes are safe to remove, and which aren't?",
+        "Describe how a trie could be used to check whether any prefix of a given string is itself a " +
+          "complete stored word (useful for word-break style problems).",
+        "Explain, in your own words, a case where a plain HashSet of strings would be a better choice than a " +
+          "trie, and why.",
+      ],
     },
   ],
 };

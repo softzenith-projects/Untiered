@@ -234,38 +234,6 @@ export const chapterWhatIsDsa: Chapter = {
         "day real traffic arrives.",
     },
     {
-      kind: "pitfall",
-      items: [
-        "Treating DSA as trivia to memorise (\"HashMap is O(1)\") rather than a way of thinking — the " +
-          "interview question is rarely the exact problem you rehearsed, but the underlying pattern usually " +
-          "is.",
-        "Assuming a solution that works on the small example in front of you will scale — always ask " +
-          "\"what happens at 10x, or 1000x, the input size?\" before calling a solution done.",
-        "Reaching for the most advanced structure you know instead of the simplest one that fits — a plain " +
-          "array is the right answer more often than it gets credit for.",
-      ],
-    },
-    {
-      kind: "remember",
-      items: [
-        "A data structure is how information is organised; an algorithm is the procedure that works on it.",
-        "The same correct answer can cost wildly different amounts of work depending on the organisation " +
-          "chosen — that cost is what DSA studies.",
-        "Interviews test DSA as a proxy for judgement under scale, not as trivia to recite.",
-        "\"Does this still work if the input were a million times bigger?\" is the single most useful " +
-          "question to ask yourself while solving any problem.",
-      ],
-    },
-    {
-      kind: "interview",
-      items: [
-        "Expect to be asked, at least once, to state out loud *why* your solution is efficient, not just " +
-          "that it produces the right answer — interviewers listen for this reasoning as much as the code.",
-        "\"Can you do better?\" after a correct brute-force answer is one of the most common follow-ups in " +
-          "any interview — it's a prompt to reconsider the data structure, not to panic.",
-      ],
-    },
-    {
       kind: "playground",
       language: "python",
       prompt:
@@ -296,24 +264,35 @@ export const chapterWhatIsDsa: Chapter = {
       expectedOutput: "slow: True\nfast: True",
     },
     {
-      kind: "h",
-      text: "Practice problems",
+      kind: "pitfall",
+      items: [
+        "Treating DSA as trivia to memorise (\"HashMap is O(1)\") rather than a way of thinking — the " +
+          "interview question is rarely the exact problem you rehearsed, but the underlying pattern usually " +
+          "is.",
+        "Assuming a solution that works on the small example in front of you will scale — always ask " +
+          "\"what happens at 10x, or 1000x, the input size?\" before calling a solution done.",
+        "Reaching for the most advanced structure you know instead of the simplest one that fits — a plain " +
+          "array is the right answer more often than it gets credit for.",
+      ],
     },
     {
-      kind: "list",
-      ordered: true,
+      kind: "remember",
       items: [
-        "For a list of numbers, describe (in words, no code) two different ways to find the single most " +
-          "frequent value, and say which one avoids re-scanning the list for every candidate value.",
-        "You're given a phone contact list and asked to check, as new contacts are added one at a time, " +
-          "whether a name already exists. Compare re-scanning the whole list each time versus keeping a " +
-          "structure built for fast lookup — which grows worse as the list gets longer?",
-        "A librarian organises books either by the order they arrived, or by subject on labelled shelves. " +
-          "For the task \"find every book on astronomy\", explain which organisation costs less work and " +
-          "why, in your own words.",
-        "Think of one real app you use daily (maps, messaging, shopping) and name one feature where you " +
-          "suspect the wrong data structure would make it noticeably slow at large scale. You don't need to " +
-          "know the real implementation — just reason about what would go wrong.",
+        "A data structure is how information is organised; an algorithm is the procedure that works on it.",
+        "The same correct answer can cost wildly different amounts of work depending on the organisation " +
+          "chosen — that cost is what DSA studies.",
+        "Interviews test DSA as a proxy for judgement under scale, not as trivia to recite.",
+        "\"Does this still work if the input were a million times bigger?\" is the single most useful " +
+          "question to ask yourself while solving any problem.",
+      ],
+    },
+    {
+      kind: "interview",
+      items: [
+        "Expect to be asked, at least once, to state out loud *why* your solution is efficient, not just " +
+          "that it produces the right answer — interviewers listen for this reasoning as much as the code.",
+        "\"Can you do better?\" after a correct brute-force answer is one of the most common follow-ups in " +
+          "any interview — it's a prompt to reconsider the data structure, not to panic.",
       ],
     },
     {
@@ -358,6 +337,27 @@ export const chapterWhatIsDsa: Chapter = {
       why:
         "The chapter argues DSA questions stand in for a transferable skill — picking an organisation " +
         "suited to a problem and reasoning about its cost — rather than testing memorised trivia.",
+    },
+    {
+      kind: "h",
+      text: "Practice problems",
+    },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "For a list of numbers, describe (in words, no code) two different ways to find the single most " +
+          "frequent value, and say which one avoids re-scanning the list for every candidate value.",
+        "You're given a phone contact list and asked to check, as new contacts are added one at a time, " +
+          "whether a name already exists. Compare re-scanning the whole list each time versus keeping a " +
+          "structure built for fast lookup — which grows worse as the list gets longer?",
+        "A librarian organises books either by the order they arrived, or by subject on labelled shelves. " +
+          "For the task \"find every book on astronomy\", explain which organisation costs less work and " +
+          "why, in your own words.",
+        "Think of one real app you use daily (maps, messaging, shopping) and name one feature where you " +
+          "suspect the wrong data structure would make it noticeably slow at large scale. You don't need to " +
+          "know the real implementation — just reason about what would go wrong.",
+      ],
     },
   ],
 };

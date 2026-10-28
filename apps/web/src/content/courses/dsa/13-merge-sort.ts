@@ -259,21 +259,6 @@ export const chapterMergeSort: Chapter = {
           "in-place, lower memory use.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Trace mergeSort by hand on {6, 3, 8, 1}, writing out every split and every merge step, the same " +
-          "way the trace above does.",
-        "Describe, in your own words, why merge sort's time complexity doesn't change between a best-case " +
-          "(already sorted) input and a worst-case (reverse sorted) input, unlike the simple sorts.",
-        "Given two already-sorted arrays of different lengths (not halves of the same array), describe how " +
-          "you'd merge them into one sorted array, reusing the merge step's logic directly.",
-        "Explain, in your own words, why merge sort is a reasonable choice when sorting a linked list " +
-          "(where random access is expensive) even though it needs 'extra space' for arrays.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why is merge sort's time complexity O(n log n) rather than O(n²)?",
@@ -318,6 +303,21 @@ export const chapterMergeSort: Chapter = {
         "Unlike the simple sorts, where an already-sorted or reverse-sorted input changes how much work is " +
         "done, merge sort always splits at the midpoint and always does a full merge pass — neither step's " +
         "cost depends on how the input happens to be arranged.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Trace mergeSort by hand on {6, 3, 8, 1}, writing out every split and every merge step, the same " +
+          "way the trace above does.",
+        "Describe, in your own words, why merge sort's time complexity doesn't change between a best-case " +
+          "(already sorted) input and a worst-case (reverse sorted) input, unlike the simple sorts.",
+        "Given two already-sorted arrays of different lengths (not halves of the same array), describe how " +
+          "you'd merge them into one sorted array, reusing the merge step's logic directly.",
+        "Explain, in your own words, why merge sort is a reasonable choice when sorting a linked list " +
+          "(where random access is expensive) even though it needs 'extra space' for arrays.",
+      ],
     },
   ],
 };

@@ -237,21 +237,6 @@ export const chapterQueuesAndDeques: Chapter = {
           "problem signals two pointers.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you would implement a FIFO queue using two LIFO stacks, and how " +
-          "many stack operations a single dequeue costs in the worst case versus amortised over many calls.",
-        "Adapt this chapter's sliding-window-maximum approach in words to instead track the sliding-window " +
-          "*minimum* — what changes about the monotonic deque's ordering rule?",
-        "Explain how a deque can be used to check whether a string reads the same forwards and backwards " +
-          "(a palindrome), comparing characters from both ends inward.",
-        "Describe, in your own words, a scenario (outside interviews) where FIFO order is the wrong choice " +
-          "and a priority-based structure (covered in the next module) would be more appropriate.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What does FIFO mean for a queue, and how does it differ from a stack's LIFO?",
@@ -295,6 +280,21 @@ export const chapterQueuesAndDeques: Chapter = {
       why:
         "ArrayDeque is a circular buffer with head/tail pointers, so removing from either end is just an " +
         "index update; ArrayList must physically shift every subsequent element to keep indices contiguous.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you would implement a FIFO queue using two LIFO stacks, and how " +
+          "many stack operations a single dequeue costs in the worst case versus amortised over many calls.",
+        "Adapt this chapter's sliding-window-maximum approach in words to instead track the sliding-window " +
+          "*minimum* — what changes about the monotonic deque's ordering rule?",
+        "Explain how a deque can be used to check whether a string reads the same forwards and backwards " +
+          "(a palindrome), comparing characters from both ends inward.",
+        "Describe, in your own words, a scenario (outside interviews) where FIFO order is the wrong choice " +
+          "and a priority-based structure (covered in the next module) would be more appropriate.",
+      ],
     },
   ],
 };

@@ -222,22 +222,6 @@ export const chapterQuickSort: Chapter = {
           "(quickselect) — worth knowing the connection exists even without covering it in full here.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Trace partition() by hand on {5, 1, 4, 2, 8} with the last element (8) as pivot, writing out " +
-          "boundary and the array's state after each comparison, the same way the trace above does.",
-        "Explain, in your own words, why an already-sorted array combined with always choosing the last " +
-          "element as pivot produces quick sort's worst case.",
-        "Describe, in your own words, how choosing the pivot randomly (instead of always the last element) " +
-          "helps avoid consistently unbalanced partitions on already-ordered input.",
-        "Compare merge sort and quick sort on three dimensions — extra memory used, whether the algorithm " +
-          "is stable, and worst-case time — in your own words, as if explaining the trade-off to a " +
-          "teammate choosing between them.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What is guaranteed to be true about the pivot immediately after one call to partition()?",
@@ -281,6 +265,22 @@ export const chapterQuickSort: Chapter = {
         "Merge sort trades O(n) extra space for a guaranteed O(n log n) worst case and stability. Quick " +
         "sort trades away that worst-case guarantee (and, in this implementation, stability) for in-place " +
         "sorting and generally lower constant factors in the average case.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Trace partition() by hand on {5, 1, 4, 2, 8} with the last element (8) as pivot, writing out " +
+          "boundary and the array's state after each comparison, the same way the trace above does.",
+        "Explain, in your own words, why an already-sorted array combined with always choosing the last " +
+          "element as pivot produces quick sort's worst case.",
+        "Describe, in your own words, how choosing the pivot randomly (instead of always the last element) " +
+          "helps avoid consistently unbalanced partitions on already-ordered input.",
+        "Compare merge sort and quick sort on three dimensions — extra memory used, whether the algorithm " +
+          "is stable, and worst-case time — in your own words, as if explaining the trade-off to a " +
+          "teammate choosing between them.",
+      ],
     },
   ],
 };

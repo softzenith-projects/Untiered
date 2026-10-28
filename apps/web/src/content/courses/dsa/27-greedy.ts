@@ -242,22 +242,6 @@ export const chapterGreedy: Chapter = {
           "mechanics.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, why sorting activities by end time (rather than start time or " +
-          "duration) is the specific choice that makes the greedy activity-selection algorithm correct.",
-        "Given a list of meetings with start and end times, describe how you'd find the minimum number of " +
-          "meeting rooms needed to hold all of them (a related but different greedy problem — think about " +
-          "what to sort and track).",
-        "Explain, in your own words, why the greedy coin-change approach fails for coins {1, 3, 4} and " +
-          "amount 6, tracing through what greedy picks versus the true optimal answer.",
-        "Describe a real scheduling or resource-allocation situation (outside interviews) where taking the " +
-          "'best right now' option repeatedly could lead to a worse outcome than a more careful approach.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why is sorting by end time, not start time, the key to activity selection's greedy correctness?",
@@ -301,6 +285,22 @@ export const chapterGreedy: Chapter = {
         "Greedy's correctness is a property of the problem's structure, not of the code — it requires an " +
         "argument (formal or informal) that no alternative first choice could ever lead to a better overall " +
         "outcome than the greedy one.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, why sorting activities by end time (rather than start time or " +
+          "duration) is the specific choice that makes the greedy activity-selection algorithm correct.",
+        "Given a list of meetings with start and end times, describe how you'd find the minimum number of " +
+          "meeting rooms needed to hold all of them (a related but different greedy problem — think about " +
+          "what to sort and track).",
+        "Explain, in your own words, why the greedy coin-change approach fails for coins {1, 3, 4} and " +
+          "amount 6, tracing through what greedy picks versus the true optimal answer.",
+        "Describe a real scheduling or resource-allocation situation (outside interviews) where taking the " +
+          "'best right now' option repeatedly could lead to a worse outcome than a more careful approach.",
+      ],
     },
   ],
 };

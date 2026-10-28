@@ -276,23 +276,6 @@ export const chapterRecursionDsa: Chapter = {
           "by a fraction instead of an amount?",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Write out, in your own words, why a recursive function that computes the nth Fibonacci number by " +
-          "calling itself twice per step (as in the Java course) makes exponentially many calls, not " +
-          "linearly many.",
-        "Describe a recursive approach to find the maximum value in an array by splitting it in half each " +
-          "call, and state its call count in your own words.",
-        "For a recursive function that removes the last two elements of a list each call (instead of one), " +
-          "describe in words how its number of calls compares to one that removes only the last element " +
-          "each call.",
-        "Explain, in your own words, why a recursive function's call count and its space cost (call stack " +
-          "depth) can differ — describe a shape where they wouldn't match.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What determines whether a recursive function's call count is O(n) or O(log n)?",
@@ -332,6 +315,23 @@ export const chapterRecursionDsa: Chapter = {
         "Total call count drives time complexity; how many of those calls are simultaneously paused, " +
         "waiting on the stack, drives space complexity. Some recursive shapes make many calls but keep the " +
         "stack shallow, so the two measurements genuinely need separate reasoning.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Write out, in your own words, why a recursive function that computes the nth Fibonacci number by " +
+          "calling itself twice per step (as in the Java course) makes exponentially many calls, not " +
+          "linearly many.",
+        "Describe a recursive approach to find the maximum value in an array by splitting it in half each " +
+          "call, and state its call count in your own words.",
+        "For a recursive function that removes the last two elements of a list each call (instead of one), " +
+          "describe in words how its number of calls compares to one that removes only the last element " +
+          "each call.",
+        "Explain, in your own words, why a recursive function's call count and its space cost (call stack " +
+          "depth) can differ — describe a shape where they wouldn't match.",
+      ],
     },
   ],
 };

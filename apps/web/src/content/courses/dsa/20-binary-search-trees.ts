@@ -382,21 +382,6 @@ export const chapterBinarySearchTrees: Chapter = {
           "real understanding rather than memorised code.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how to validate whether a given binary tree satisfies the BST property, " +
-          "explaining why checking only each node against its immediate children is not sufficient.",
-        "Explain how you'd find the kth smallest value in a BST using inorder traversal, and how you'd stop " +
-          "early once you've found it rather than always visiting the whole tree.",
-        "Describe how you would find the lowest common ancestor of two values in a BST, using the ordering " +
-          "property to avoid searching the whole tree.",
-        "Given a sorted array, describe how you would build a height-balanced BST from it directly, rather " +
-          "than inserting the values one at a time in order.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why does inserting already-sorted values (1, 2, 3, 4, 5) into a BST produce a worst-case O(n) tree?",
@@ -442,6 +427,21 @@ export const chapterBinarySearchTrees: Chapter = {
       why:
         "Each step of search descends exactly one level, and a balanced tree has O(log n) levels for n " +
         "nodes — mirroring why halving-based recursion costs O(log n) calls in the recursion chapter.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how to validate whether a given binary tree satisfies the BST property, " +
+          "explaining why checking only each node against its immediate children is not sufficient.",
+        "Explain how you'd find the kth smallest value in a BST using inorder traversal, and how you'd stop " +
+          "early once you've found it rather than always visiting the whole tree.",
+        "Describe how you would find the lowest common ancestor of two values in a BST, using the ordering " +
+          "property to avoid searching the whole tree.",
+        "Given a sorted array, describe how you would build a height-balanced BST from it directly, rather " +
+          "than inserting the values one at a time in order.",
+      ],
     },
   ],
 };

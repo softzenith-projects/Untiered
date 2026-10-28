@@ -196,6 +196,22 @@ export const chapterHashing: Chapter = {
         "same underlying move: trade O(n) memory for turning an O(n) rescan into an O(1) lookup.",
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "Add a repeated word of your own to the sentence and run again — the dictionary catches it without " +
+        "a second pass over the whole list.",
+      starter:
+        'words = "the quick brown fox jumps over the lazy dog the fox runs".split()\n' +
+        "counts = {}\n" +
+        "for word in words:\n" +
+        "    counts[word] = counts.get(word, 0) + 1\n" +
+        "\n" +
+        "for word, count in sorted(counts.items()):\n" +
+        "    print(word, count)\n",
+      expectedOutput: "brown 1\ndog 1\nfox 2\njumps 1\nlazy 1\nover 1\nquick 1\nruns 1\nthe 3",
+    },
+    {
       kind: "pitfall",
       items: [
         "Using a mutable object as a HashMap key, or one whose `hashCode()`/`equals()` aren't consistent " +
@@ -234,38 +250,6 @@ export const chapterHashing: Chapter = {
           "whether the average-case claim is understood, not just recited.",
         "Grouping problems (anagrams, items sharing a computed property) are a very common way this pattern " +
           "is tested, using a HashMap<computed key, List<items>>.",
-      ],
-    },
-    {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "Add a repeated word of your own to the sentence and run again — the dictionary catches it without " +
-        "a second pass over the whole list.",
-      starter:
-        'words = "the quick brown fox jumps over the lazy dog the fox runs".split()\n' +
-        "counts = {}\n" +
-        "for word in words:\n" +
-        "    counts[word] = counts.get(word, 0) + 1\n" +
-        "\n" +
-        "for word, count in sorted(counts.items()):\n" +
-        "    print(word, count)\n",
-      expectedOutput: "brown 1\ndog 1\nfox 2\njumps 1\nlazy 1\nover 1\nquick 1\nruns 1\nthe 3",
-    },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Given a list of exam scores, describe, in your own words, a HashMap-based approach to find the " +
-          "single score that appears most often.",
-        "Given two arrays, describe a HashSet-based approach to find all values present in both — and " +
-          "explain why this beats checking every element of one array against every element of the other.",
-        "Describe how you'd adapt Two Sum's HashMap approach (from an earlier chapter) to instead count how " +
-          "many pairs of numbers sum to exactly a target, allowing duplicate values in the input.",
-        "Explain, in your own words, why a HashMap keyed on a student's roll number (a small, dense integer " +
-          "range like 1-60) could reasonably be replaced by a plain array instead — what's gained and what, " +
-          "if anything, is lost?",
       ],
     },
     {
@@ -312,6 +296,22 @@ export const chapterHashing: Chapter = {
         "Anagrams contain exactly the same letters in some order — sorting removes the 'order' part, so " +
         "every anagram of the same word produces an identical sorted string, which is exactly what makes " +
         "it a valid shared grouping key.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Given a list of exam scores, describe, in your own words, a HashMap-based approach to find the " +
+          "single score that appears most often.",
+        "Given two arrays, describe a HashSet-based approach to find all values present in both — and " +
+          "explain why this beats checking every element of one array against every element of the other.",
+        "Describe how you'd adapt Two Sum's HashMap approach (from an earlier chapter) to instead count how " +
+          "many pairs of numbers sum to exactly a target, allowing duplicate values in the input.",
+        "Explain, in your own words, why a HashMap keyed on a student's roll number (a small, dense integer " +
+          "range like 1-60) could reasonably be replaced by a plain array instead — what's gained and what, " +
+          "if anything, is lost?",
+      ],
     },
   ],
 };

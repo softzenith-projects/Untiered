@@ -261,21 +261,6 @@ export const chapterInterviewApproach: Chapter = {
           "not because the answer matters, but because it cleanly exercises this exact routine.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "For \"find the maximum sum of any two numbers in an array\", write out (in words) the clarifying " +
-          "questions you'd ask before writing any code.",
-        "Given an array, describe a brute-force approach (in words) to check if any two elements are equal " +
-          "to *double* a third element, then describe how you'd start looking for a faster approach.",
-        "Practise narrating, out loud, the complexity of a brute-force nested-loop solution to a problem of " +
-          "your choice, before looking at any optimisation.",
-        "For a problem that asks for the two closest numbers in an unsorted array, list what you'd test " +
-          "for at the end: at least one normal case and two edge cases, in your own words.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why write a brute-force solution first, even when you suspect a better one exists?",
@@ -320,6 +305,21 @@ export const chapterInterviewApproach: Chapter = {
         "Compiling and reading clearly says nothing about logical correctness. Tracing concrete examples — " +
         "normal and edge cases — by hand is what actually surfaces bugs, which is the whole point of the " +
         "test step.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "For \"find the maximum sum of any two numbers in an array\", write out (in words) the clarifying " +
+          "questions you'd ask before writing any code.",
+        "Given an array, describe a brute-force approach (in words) to check if any two elements are equal " +
+          "to *double* a third element, then describe how you'd start looking for a faster approach.",
+        "Practise narrating, out loud, the complexity of a brute-force nested-loop solution to a problem of " +
+          "your choice, before looking at any optimisation.",
+        "For a problem that asks for the two closest numbers in an unsorted array, list what you'd test " +
+          "for at the end: at least one normal case and two edge cases, in your own words.",
+      ],
     },
   ],
 };

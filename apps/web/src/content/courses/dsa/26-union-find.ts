@@ -253,22 +253,6 @@ export const chapterUnionFind: Chapter = {
           "of union-find: sort edges by weight, add each one unless union() reports it would form a cycle.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you would use union-find to find the single edge that, if removed " +
-          "from a connected graph with exactly one cycle, would make it a tree.",
-        "Given a list of accounts where some share an email address (implying the same person), describe how " +
-          "union-find would group all accounts belonging to the same person.",
-        "Explain why union by rank alone (without path compression), or path compression alone (without " +
-          "union by rank), still gives correct results but loses some of the near-O(1) performance guarantee.",
-        "Describe, in words, how you'd track the *size* of each group (not just its representative) as " +
-          "unions happen, and how that could answer 'how many elements are in the same group as x?' " +
-          "efficiently.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What does it mean when union(a, b) returns false in this chapter's implementation?",
@@ -314,6 +298,22 @@ export const chapterUnionFind: Chapter = {
         "Once a node points directly at its group's root, any later find() on it (or on anything that was " +
         "compressed along the same path) short-circuits immediately — the flattening pays for itself on " +
         "every subsequent call.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you would use union-find to find the single edge that, if removed " +
+          "from a connected graph with exactly one cycle, would make it a tree.",
+        "Given a list of accounts where some share an email address (implying the same person), describe how " +
+          "union-find would group all accounts belonging to the same person.",
+        "Explain why union by rank alone (without path compression), or path compression alone (without " +
+          "union by rank), still gives correct results but loses some of the near-O(1) performance guarantee.",
+        "Describe, in words, how you'd track the *size* of each group (not just its representative) as " +
+          "unions happen, and how that could answer 'how many elements are in the same group as x?' " +
+          "efficiently.",
+      ],
     },
   ],
 };

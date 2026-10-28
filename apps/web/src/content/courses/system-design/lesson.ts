@@ -1,6 +1,5 @@
 import type { Block, Chapter } from "@/content/courses/types";
 import { labIntroductions, type LabId } from "@/content/courses/system-design/labs";
-import { type ChapterSpec, makeChapter } from "@/content/courses/system-design/legacy-template";
 
 /** A quiz with exactly four options. Write them in any order — they are shuffled on screen. */
 export type QuizSpec = {
@@ -18,7 +17,8 @@ export type QuizSpec = {
  * paragraphs, the picture, the teaching sections, then common mistakes, remember this,
  * the interview angle and three questions — so the four courses read as one product.
  * Every field is real prose for this chapter; nothing is stitched together from fragments
- * of other fields (that is what `legacy-template.ts` did, and why its chapters read alike).
+ * of other fields. (The course was first generated from such a fill-in template, and its
+ * chapters all read alike; every chapter was rewritten in this format on 28 October 2026.)
  */
 export type LessonSpec = {
   slug: string;
@@ -48,21 +48,11 @@ export type LessonSpec = {
   quizzes: [QuizSpec, QuizSpec, QuizSpec];
 };
 
-/** A module may mix written lessons and not-yet-rewritten template chapters during the move. */
-export type ChapterSource = LessonSpec | ChapterSpec;
-
-function isLesson(source: ChapterSource): source is LessonSpec {
-  return "quizzes" in source;
-}
-
-export function buildChapter(source: ChapterSource, minutes: number): Chapter {
-  return isLesson(source) ? makeLesson(source, minutes) : makeChapter(source, minutes);
-}
-
 export function makeLesson(spec: LessonSpec, minutes: number): Chapter {
   const blocks: Block[] = [
     { kind: "p", text: spec.intro[0] },
     { kind: "p", text: spec.intro[1] },
+    { kind: "h", text: `The picture: ${spec.analogy[0].charAt(0).toLowerCase()}${spec.analogy[0].slice(1)}` },
     { kind: "analogy", title: spec.analogy[0], text: spec.analogy[1] },
     { kind: "h", text: "The words you need" },
     { kind: "table", head: ["Term", "What it means"], rows: spec.glossary },

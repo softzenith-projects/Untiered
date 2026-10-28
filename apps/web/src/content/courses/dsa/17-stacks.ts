@@ -275,22 +275,6 @@ export const chapterStacks: Chapter = {
           "using the LIFO property to hold operands or operators awaiting their turn.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how a monotonic stack would find, for every day's temperature in a " +
-          "list, how many days until a strictly warmer day — and why it's the same shape as nextGreater.",
-        "Given a string of only parentheses, describe how you'd find the length of the longest valid " +
-          "(well-formed) substring, extending the balanced-brackets idea with a stack of indices instead of " +
-          "characters.",
-        "Explain how you would implement a 'min stack' — a stack that supports push, pop, and getMinimum, " +
-          "all in O(1) — without scanning the whole stack for getMinimum.",
-        "Describe, in words, how to evaluate a postfix expression like '3 4 + 2 *' using a single stack of " +
-          "numbers.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why can't a single counter (incrementing on '(' and decrementing on ')') correctly validate a string with multiple bracket types like ([{}])?",
@@ -333,6 +317,22 @@ export const chapterStacks: Chapter = {
         "The invariant maintained is on the *values* pointed to, not the indices: whenever a new value " +
         "would break that decreasing order, the stack pops until the order is restored, which is exactly " +
         "what resolves each popped index's next-greater answer.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how a monotonic stack would find, for every day's temperature in a " +
+          "list, how many days until a strictly warmer day — and why it's the same shape as nextGreater.",
+        "Given a string of only parentheses, describe how you'd find the length of the longest valid " +
+          "(well-formed) substring, extending the balanced-brackets idea with a stack of indices instead of " +
+          "characters.",
+        "Explain how you would implement a 'min stack' — a stack that supports push, pop, and getMinimum, " +
+          "all in O(1) — without scanning the whole stack for getMinimum.",
+        "Describe, in words, how to evaluate a postfix expression like '3 4 + 2 *' using a single stack of " +
+          "numbers.",
+      ],
     },
   ],
 };

@@ -1,6 +1,6 @@
-import type { ChapterSource } from "@/content/courses/system-design/lesson";
+import type { LessonSpec } from "@/content/courses/system-design/lesson";
 
-export const cases: ChapterSource[] = [
+export const cases: LessonSpec[] = [
   {
     slug: "case-url-shortener",
     title: "Case: A URL Shortening Service",

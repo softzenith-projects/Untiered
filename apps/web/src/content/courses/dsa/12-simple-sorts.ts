@@ -288,23 +288,6 @@ export const chapterSimpleSorts: Chapter = {
           "above, generally is not.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Trace bubble sort by hand on {3, 1, 4, 1, 5}, writing out the array's state after each full pass, " +
-          "and note the pass on which no swaps happen.",
-        "Explain, in your own words, why selection sort always performs exactly n-1 swaps for an n-element " +
-          "array, regardless of the input's initial order.",
-        "Describe, in your own words, why insertion sort is a reasonable choice for an array that is " +
-          "'almost' sorted (only a few elements out of place), even though its worst-case complexity is " +
-          "the same as bubble and selection sort.",
-        "Given an array of card objects that must keep cards of equal rank in their original relative " +
-          "order (stability), explain which of the three sorts, as described in this chapter, would be " +
-          "safe to use and why.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why does bubble sort's best-case complexity become O(n) rather than O(n²)?",
@@ -349,6 +332,23 @@ export const chapterSimpleSorts: Chapter = {
         "The loop shifts each element in the sorted prefix that's greater than key one position to the " +
         "right, opening a gap; it stops as soon as it finds an element not greater than key (or reaches " +
         "the start), which is exactly where key should be inserted.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Trace bubble sort by hand on {3, 1, 4, 1, 5}, writing out the array's state after each full pass, " +
+          "and note the pass on which no swaps happen.",
+        "Explain, in your own words, why selection sort always performs exactly n-1 swaps for an n-element " +
+          "array, regardless of the input's initial order.",
+        "Describe, in your own words, why insertion sort is a reasonable choice for an array that is " +
+          "'almost' sorted (only a few elements out of place), even though its worst-case complexity is " +
+          "the same as bubble and selection sort.",
+        "Given an array of card objects that must keep cards of equal rank in their original relative " +
+          "order (stability), explain which of the three sorts, as described in this chapter, would be " +
+          "safe to use and why.",
+      ],
     },
   ],
 };

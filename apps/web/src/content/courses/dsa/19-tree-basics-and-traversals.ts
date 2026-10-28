@@ -405,21 +405,6 @@ export const chapterTreeBasicsAndTraversals: Chapter = {
           "classic postorder-shaped problems — a node's answer depends on its children's answers first.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd compute the height of a binary tree using postorder logic — " +
-          "what does each node need from its children before it can answer for itself?",
-        "Explain how level order traversal could be adapted to print the tree level by level, on separate " +
-          "lines, rather than as one flat list — what extra bookkeeping does the queue need?",
-        "Given two binary trees, describe how you'd check whether they're structurally identical with the " +
-          "same values, using any traversal you choose, and explain your choice.",
-        "Describe, in words, how you would find the diameter of a binary tree (the longest path between any " +
-          "two nodes, not necessarily through the root) using a postorder-style computation.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why does inorder traversal visit a binary search tree's nodes in ascending sorted order?",
@@ -459,6 +444,21 @@ export const chapterTreeBasicsAndTraversals: Chapter = {
         "Recursion follows the call stack (LIFO), naturally diving deep before backtracking. Level order " +
         "needs strict row-by-row, left-to-right order, which is exactly what enqueueing children and " +
         "dequeueing in arrival order (FIFO) guarantees.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd compute the height of a binary tree using postorder logic — " +
+          "what does each node need from its children before it can answer for itself?",
+        "Explain how level order traversal could be adapted to print the tree level by level, on separate " +
+          "lines, rather than as one flat list — what extra bookkeeping does the queue need?",
+        "Given two binary trees, describe how you'd check whether they're structurally identical with the " +
+          "same values, using any traversal you choose, and explain your choice.",
+        "Describe, in words, how you would find the diameter of a binary tree (the longest path between any " +
+          "two nodes, not necessarily through the root) using a postorder-style computation.",
+      ],
     },
   ],
 };

@@ -1,6 +1,6 @@
-import type { ChapterSource } from "@/content/courses/system-design/lesson";
+import type { LessonSpec } from "@/content/courses/system-design/lesson";
 
-export const aiSystems: ChapterSource[] = [
+export const aiSystems: LessonSpec[] = [
   {
     slug: "ai-request-path",
     title: "The AI Request Path",

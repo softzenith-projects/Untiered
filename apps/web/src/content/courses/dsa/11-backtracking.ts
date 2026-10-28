@@ -507,23 +507,6 @@ export const chapterBacktracking: Chapter = {
           "choose/undo shape and an early-pruning constraint in one problem.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd adapt the subsets backtracking code to only record subsets " +
-          "that sum to a given target, pruning early rather than filtering the final list.",
-        "Given a string, describe a backtracking approach to generate every possible way to insert commas " +
-          "to split it into non-empty pieces.",
-        "Describe, in your own words, how permutations would need to change to correctly handle an input " +
-          "array containing duplicate values, avoiding duplicate permutations in the output.",
-        "For a grid where you must place non-attacking rooks (which only attack along rows and columns, not " +
-          "diagonals), describe how the isSafe check would differ from N-Queens.",
-        "Explain, in your own words, why generating every arrangement first and checking validity afterward " +
-          "would be far slower than N-Queens's approach of checking isSafe before each recursive call.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What is the key discipline backtracking adds on top of plain recursion?",
@@ -569,6 +552,23 @@ export const chapterBacktracking: Chapter = {
         "Checking safety before recursing means the algorithm never explores the (large) space of " +
         "placements that build on an already-invalid partial arrangement — this early pruning is what " +
         "makes N-Queens practical rather than checking all nⁿ full placements afterward.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd adapt the subsets backtracking code to only record subsets " +
+          "that sum to a given target, pruning early rather than filtering the final list.",
+        "Given a string, describe a backtracking approach to generate every possible way to insert commas " +
+          "to split it into non-empty pieces.",
+        "Describe, in your own words, how permutations would need to change to correctly handle an input " +
+          "array containing duplicate values, avoiding duplicate permutations in the output.",
+        "For a grid where you must place non-attacking rooks (which only attack along rows and columns, not " +
+          "diagonals), describe how the isSafe check would differ from N-Queens.",
+        "Explain, in your own words, why generating every arrangement first and checking validity afterward " +
+          "would be far slower than N-Queens's approach of checking isSafe before each recursive call.",
+      ],
     },
   ],
 };

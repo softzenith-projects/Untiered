@@ -362,21 +362,6 @@ export const chapterGraphRepresentationBfsDfs: Chapter = {
           "explicit adjacency list.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd count the number of connected components in an undirected " +
-          "graph, using BFS or DFS as a building block.",
-        "Given a 2D grid of land ('1') and water ('0') cells, describe how BFS or DFS from each unvisited " +
-          "land cell counts the number of separate islands.",
-        "Explain how you would detect a cycle in an undirected graph using DFS, and what information beyond " +
-          "a simple visited array you'd need to track.",
-        "Describe, in words, how you'd find all vertices reachable from a given start vertex, and how that " +
-          "differs from finding the *shortest* path to each of them.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why is a queue used for BFS but recursion (or an explicit stack) used for DFS?",
@@ -418,6 +403,21 @@ export const chapterGraphRepresentationBfsDfs: Chapter = {
         "A tree's structure guarantees no cycles and a unique path from the root to any node, so " +
         "traversal naturally terminates. A graph offers no such guarantee — an unguarded traversal can " +
         "cycle indefinitely without explicit visited tracking.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd count the number of connected components in an undirected " +
+          "graph, using BFS or DFS as a building block.",
+        "Given a 2D grid of land ('1') and water ('0') cells, describe how BFS or DFS from each unvisited " +
+          "land cell counts the number of separate islands.",
+        "Explain how you would detect a cycle in an undirected graph using DFS, and what information beyond " +
+          "a simple visited array you'd need to track.",
+        "Describe, in words, how you'd find all vertices reachable from a given start vertex, and how that " +
+          "differs from finding the *shortest* path to each of them.",
+      ],
     },
   ],
 };

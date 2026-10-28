@@ -309,21 +309,6 @@ export const chapterLinkedLists: Chapter = {
           "solves it — when fast reaches the end, slow is at the middle — without first counting the length.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how to find the middle node of a linked list in a single pass using " +
-          "fast and slow pointers, without first counting how many nodes there are.",
-        "Given two singly linked lists that eventually merge into the same tail (like a Y shape), describe an " +
-          "approach to find the node where they merge, using O(1) extra space.",
-        "Explain how you would remove the nth node from the end of a linked list in one pass, without " +
-          "knowing the list's length in advance.",
-        "Describe how merging two already-sorted linked lists into one sorted list works, and why it needs " +
-          "no extra array to hold the result.",
-      ],
-    },
     {
       kind: "quiz",
       question: "In the iterative reverse(), why must `next` be saved before `curr.next` is reassigned?",
@@ -365,6 +350,21 @@ export const chapterLinkedLists: Chapter = {
       why:
         "Each of the n nodes is visited exactly once to flip its pointer, and only three reference " +
         "variables (prev, curr, next) are held at any time — no second list is ever allocated.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how to find the middle node of a linked list in a single pass using " +
+          "fast and slow pointers, without first counting how many nodes there are.",
+        "Given two singly linked lists that eventually merge into the same tail (like a Y shape), describe an " +
+          "approach to find the node where they merge, using O(1) extra space.",
+        "Explain how you would remove the nth node from the end of a linked list in one pass, without " +
+          "knowing the list's length in advance.",
+        "Describe how merging two already-sorted linked lists into one sorted list works, and why it needs " +
+          "no extra array to hold the result.",
+      ],
     },
   ],
 };

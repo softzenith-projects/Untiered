@@ -385,21 +385,6 @@ export const chapterShortestPaths: Chapter = {
           "and negative edges can violate that.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd adapt the BFS shortest-path code to also reconstruct the " +
-          "actual path (not just the distance) from the source to a given vertex.",
-        "Given a grid where some cells are walls, describe how BFS finds the shortest path from a start cell " +
-          "to a target cell, treating the grid as an implicit unweighted graph.",
-        "Explain, in your own words, why Dijkstra's algorithm always finalises the vertex with the smallest " +
-          "tentative distance next, rather than any other unfinalised vertex.",
-        "Describe how you would find the shortest path between two specific vertices (not from a source to " +
-          "all vertices) — does anything in Dijkstra's approach change, or can it stop early?",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why does BFS give the correct shortest path on an unweighted graph without any extra bookkeeping?",
@@ -442,6 +427,21 @@ export const chapterShortestPaths: Chapter = {
         "Dijkstra's greedy correctness relies on distances only ever growing as you extend a path with " +
         "non-negative edges. A negative edge can make an already-finalised vertex's true shortest distance " +
         "smaller than what was recorded, which the algorithm has no mechanism to revisit.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd adapt the BFS shortest-path code to also reconstruct the " +
+          "actual path (not just the distance) from the source to a given vertex.",
+        "Given a grid where some cells are walls, describe how BFS finds the shortest path from a start cell " +
+          "to a target cell, treating the grid as an implicit unweighted graph.",
+        "Explain, in your own words, why Dijkstra's algorithm always finalises the vertex with the smallest " +
+          "tentative distance next, rather than any other unfinalised vertex.",
+        "Describe how you would find the shortest path between two specific vertices (not from a source to " +
+          "all vertices) — does anything in Dijkstra's approach change, or can it stop early?",
+      ],
     },
   ],
 };

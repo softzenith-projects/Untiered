@@ -326,21 +326,6 @@ export const chapterTopologicalSort: Chapter = {
           "matters outside interviews.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you would modify Kahn's algorithm to detect not just whether a " +
-          "cycle exists, but to report the specific vertices involved in it.",
-        "Given a list of course prerequisite pairs, describe how you would determine whether it's possible " +
-          "to finish all courses, without necessarily producing the full order.",
-        "Explain how a DFS-based approach (using a 'currently visiting' marker in addition to 'visited') " +
-          "could also produce a valid topological order, as an alternative to Kahn's BFS-based approach.",
-        "Describe, in words, how you would find *all* valid topological orderings of a small DAG, not just " +
-          "one — and why this could be expensive for a larger graph.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why does Kahn's algorithm only work on directed acyclic graphs, not graphs with cycles?",
@@ -384,6 +369,21 @@ export const chapterTopologicalSort: Chapter = {
         "Any time the queue holds more than one in-degree-0 vertex simultaneously, picking a different one " +
         "first yields an equally valid but different overall ordering — DAGs generally have several correct " +
         "topological sorts, not one.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you would modify Kahn's algorithm to detect not just whether a " +
+          "cycle exists, but to report the specific vertices involved in it.",
+        "Given a list of course prerequisite pairs, describe how you would determine whether it's possible " +
+          "to finish all courses, without necessarily producing the full order.",
+        "Explain how a DFS-based approach (using a 'currently visiting' marker in addition to 'visited') " +
+          "could also produce a valid topological order, as an alternative to Kahn's BFS-based approach.",
+        "Describe, in words, how you would find *all* valid topological orderings of a small DAG, not just " +
+          "one — and why this could be expensive for a larger graph.",
+      ],
     },
   ],
 };

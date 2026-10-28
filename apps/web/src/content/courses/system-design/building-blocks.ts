@@ -1,6 +1,6 @@
-import type { ChapterSource } from "@/content/courses/system-design/lesson";
+import type { LessonSpec } from "@/content/courses/system-design/lesson";
 
-export const buildingBlocks: ChapterSource[] = [
+export const buildingBlocks: LessonSpec[] = [
   {
     slug: "network-protocols",
     title: "HTTP, TCP, UDP and Realtime Connections",
@@ -488,7 +488,7 @@ export const buildingBlocks: ChapterSource[] = [
         options: [
           "The database did not save the author's change",
           "The cached copy was not invalidated, so it lives until its TTL ends",
-          "Browsers cannot display a title that has been edited",
+          "Browsers cannot redraw any title that was edited after the page loaded",
           "The cache server is too small to hold the new title",
         ],
         answer: 1,
@@ -510,7 +510,7 @@ export const buildingBlocks: ChapterSource[] = [
         options: [
           "Remove the TTL so that the key never expires",
           "Let one request rebuild it while the rest reuse the old copy",
-          "Send all 300 to the database, since it holds the truth",
+          "Send all 300 to the database, since it is where the truth is stored",
           "Give every user their own copy of the same value",
         ],
         answer: 1,

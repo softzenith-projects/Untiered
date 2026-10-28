@@ -385,21 +385,6 @@ export const chapterDpPatterns: Chapter = {
           "is what you write first.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd adapt the 0/1 knapsack recurrence to solve 'subset sum' — " +
-          "does a subset of the given numbers add up to exactly a target value?",
-        "Explain, in words, how you'd extend the LCS table to also reconstruct the actual longest common " +
-          "subsequence string, not just its length.",
-        "Given the grid-paths problem, describe how you'd handle some cells being blocked (impassable), and " +
-          "what changes in the recurrence.",
-        "Describe how edit distance (minimum insertions, deletions, and substitutions to turn one string " +
-          "into another) could be solved with a 2D table similar in shape to this chapter's LCS solution.",
-      ],
-    },
     {
       kind: "quiz",
       question: "In the 0/1 knapsack recurrence, what does dp[i][w] represent?",
@@ -443,6 +428,21 @@ export const chapterDpPatterns: Chapter = {
         "With only rightward and downward moves allowed, every route to (i, j) took its very last step from " +
         "exactly one of two cells, so counting all routes is exactly summing the routes to each of those " +
         "two predecessors.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd adapt the 0/1 knapsack recurrence to solve 'subset sum' — " +
+          "does a subset of the given numbers add up to exactly a target value?",
+        "Explain, in words, how you'd extend the LCS table to also reconstruct the actual longest common " +
+          "subsequence string, not just its length.",
+        "Given the grid-paths problem, describe how you'd handle some cells being blocked (impassable), and " +
+          "what changes in the recurrence.",
+        "Describe how edit distance (minimum insertions, deletions, and substitutions to turn one string " +
+          "into another) could be solved with a 2D table similar in shape to this chapter's LCS solution.",
+      ],
     },
   ],
 };

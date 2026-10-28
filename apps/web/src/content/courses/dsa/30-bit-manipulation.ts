@@ -264,22 +264,6 @@ export const chapterBitManipulation: Chapter = {
           "state spaces, like tracking which of a handful of rooms have been visited.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd check whether a given integer is a power of two, using the " +
-          "n & (n-1) trick from this chapter, and explain why it works.",
-        "Given an array where every element appears exactly three times except one that appears once, " +
-          "explain why the simple XOR trick from this chapter no longer works directly, and describe (in " +
-          "words) what would need to change.",
-        "Describe how you would use bits of an integer to represent a small set of flags (for example, which " +
-          "of 5 features a user has enabled), and how you'd check, add, and remove a flag.",
-        "Explain, in your own words, the difference between Java's `>>` and `>>>` operators, and describe a " +
-          "situation where using the wrong one would produce an incorrect result.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why does n & (n - 1) always clear exactly the lowest set bit of n?",
@@ -322,6 +306,22 @@ export const chapterBitManipulation: Chapter = {
       why:
         "`1 << i` creates a mask with only bit i set; ANDing it with n keeps only that position's value — " +
         "nonzero exactly when bit i was already 1, and 0 otherwise, which is a read, not a modification.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd check whether a given integer is a power of two, using the " +
+          "n & (n-1) trick from this chapter, and explain why it works.",
+        "Given an array where every element appears exactly three times except one that appears once, " +
+          "explain why the simple XOR trick from this chapter no longer works directly, and describe (in " +
+          "words) what would need to change.",
+        "Describe how you would use bits of an integer to represent a small set of flags (for example, which " +
+          "of 5 features a user has enabled), and how you'd check, add, and remove a flag.",
+        "Explain, in your own words, the difference between Java's `>>` and `>>>` operators, and describe a " +
+          "situation where using the wrong one would produce an incorrect result.",
+      ],
     },
   ],
 };

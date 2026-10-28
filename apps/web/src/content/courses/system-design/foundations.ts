@@ -1,6 +1,6 @@
-import type { ChapterSource } from "@/content/courses/system-design/lesson";
+import type { LessonSpec } from "@/content/courses/system-design/lesson";
 
-export const foundations: ChapterSource[] = [
+export const foundations: LessonSpec[] = [
   {
     slug: "requirements-first",
     title: "Start With Requirements, Not Boxes",

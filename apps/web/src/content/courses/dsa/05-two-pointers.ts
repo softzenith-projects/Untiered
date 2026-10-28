@@ -220,6 +220,31 @@ export const chapterTwoPointers: Chapter = {
       ],
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "Add `print(left, right, total)` inside the loop and re-run to watch the two pointers converge on " +
+        "each target.",
+      starter:
+        "def has_pair_with_sum(nums, target):\n" +
+        "    left, right = 0, len(nums) - 1\n" +
+        "    while left < right:\n" +
+        "        total = nums[left] + nums[right]\n" +
+        "        if total == target:\n" +
+        "            return True\n" +
+        "        if total < target:\n" +
+        "            left += 1\n" +
+        "        else:\n" +
+        "            right -= 1\n" +
+        "    return False\n" +
+        "\n" +
+        "\n" +
+        "nums = [1, 3, 5, 7, 9, 11]\n" +
+        "print(has_pair_with_sum(nums, 12))\n" +
+        "print(has_pair_with_sum(nums, 2))\n",
+      expectedOutput: "True\nFalse",
+    },
+    {
       kind: "pitfall",
       items: [
         "Applying converging two pointers to an unsorted array — without sorted order, moving `left` or " +
@@ -254,46 +279,6 @@ export const chapterTwoPointers: Chapter = {
         "Interviewers will often ask you to justify *why* moving a pointer is safe — being able to explain " +
           "what set of pairs just got ruled out, not just that the code works, is what separates a strong " +
           "answer.",
-      ],
-    },
-    {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "Add `print(left, right, total)` inside the loop and re-run to watch the two pointers converge on " +
-        "each target.",
-      starter:
-        "def has_pair_with_sum(nums, target):\n" +
-        "    left, right = 0, len(nums) - 1\n" +
-        "    while left < right:\n" +
-        "        total = nums[left] + nums[right]\n" +
-        "        if total == target:\n" +
-        "            return True\n" +
-        "        if total < target:\n" +
-        "            left += 1\n" +
-        "        else:\n" +
-        "            right -= 1\n" +
-        "    return False\n" +
-        "\n" +
-        "\n" +
-        "nums = [1, 3, 5, 7, 9, 11]\n" +
-        "print(has_pair_with_sum(nums, 12))\n" +
-        "print(has_pair_with_sum(nums, 2))\n",
-      expectedOutput: "True\nFalse",
-    },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Given a sorted array, describe (in words) how you'd find a pair whose sum is closest to a target, " +
-          "not necessarily exactly equal, adapting the converging two-pointer approach.",
-        "For a string, describe how two pointers from both ends can check whether it's a palindrome " +
-          "ignoring spaces and punctuation, without building a cleaned copy of the string first.",
-        "Given an array of 0s and 1s, describe a same-direction (read/write) two-pointer approach to move " +
-          "all the 0s to the end while keeping the relative order of the 1s.",
-        "Explain, in your own words, why the converging two-pointer approach for pair-sum would give a " +
-          "wrong answer on an unsorted array, with a small example.",
       ],
     },
     {
@@ -332,6 +317,21 @@ export const chapterTwoPointers: Chapter = {
       why:
         "Fast/slow pointers both move in the same direction (forward), just at different speeds — unlike " +
         "the converging pattern, where one pointer starts at each end and they move toward each other.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Given a sorted array, describe (in words) how you'd find a pair whose sum is closest to a target, " +
+          "not necessarily exactly equal, adapting the converging two-pointer approach.",
+        "For a string, describe how two pointers from both ends can check whether it's a palindrome " +
+          "ignoring spaces and punctuation, without building a cleaned copy of the string first.",
+        "Given an array of 0s and 1s, describe a same-direction (read/write) two-pointer approach to move " +
+          "all the 0s to the end while keeping the relative order of the 1s.",
+        "Explain, in your own words, why the converging two-pointer approach for pair-sum would give a " +
+          "wrong answer on an unsorted array, with a small example.",
+      ],
     },
   ],
 };

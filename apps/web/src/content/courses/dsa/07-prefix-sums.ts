@@ -229,21 +229,6 @@ export const chapterPrefixSums: Chapter = {
           "you recognise prefix sums' limits, not just their use case.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Given an array and a list of (left, right) ranges to sum, describe in words why building one " +
-          "prefix array up front beats summing each range directly, once there are many ranges.",
-        "Describe, in your own words, how you'd extend the prefix sum idea to a 2D grid, to answer the sum " +
-          "of any rectangular sub-region quickly.",
-        "Given an array of positive and negative numbers, describe how a running total stored in a HashMap " +
-          "(not a plain prefix array) could help count how many subarrays sum to exactly zero.",
-        "Explain, in your own words, why prefix sums stop being a good fit if the underlying array is " +
-          "updated frequently between queries.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What does prefix[i] represent in the buildPrefix code above?",
@@ -287,6 +272,21 @@ export const chapterPrefixSums: Chapter = {
         "A prefix sum array reflects the array's state at the moment it was built. If the array changes " +
         "often and queries must reflect those changes, either the whole prefix array must be rebuilt " +
         "(costly) or a different, update-friendly structure is needed instead.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Given an array and a list of (left, right) ranges to sum, describe in words why building one " +
+          "prefix array up front beats summing each range directly, once there are many ranges.",
+        "Describe, in your own words, how you'd extend the prefix sum idea to a 2D grid, to answer the sum " +
+          "of any rectangular sub-region quickly.",
+        "Given an array of positive and negative numbers, describe how a running total stored in a HashMap " +
+          "(not a plain prefix array) could help count how many subarrays sum to exactly zero.",
+        "Explain, in your own words, why prefix sums stop being a good fit if the underlying array is " +
+          "updated frequently between queries.",
+      ],
     },
   ],
 };

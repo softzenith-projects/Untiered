@@ -354,22 +354,6 @@ export const chapterDpIntuition: Chapter = {
           "a fixed, small number of previous entries.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd add memoization to a naive recursive function that counts " +
-          "the number of ways to climb n stairs taking 1 or 2 steps at a time — what's the repeated " +
-          "subproblem?",
-        "Explain how you would convert a top-down memoized solution into a bottom-up tabulated one for the " +
-          "same problem, describing what determines the correct fill order for the table.",
-        "Describe, in words, how Fibonacci's tabulation could be reduced from an O(n) array to two plain " +
-          "variables, and why that reduction works here but wouldn't for every DP problem.",
-        "Given a recursive function with overlapping subproblems but multiple changing parameters (not just " +
-          "one integer n), describe how you'd choose a suitable memo key.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What two properties must a problem have for dynamic programming to apply?",
@@ -413,6 +397,22 @@ export const chapterDpIntuition: Chapter = {
         "Branching recursion without caching revisits the same subproblems exponentially many times; " +
         "caching collapses each distinct subproblem down to a single computation, bounding total work by " +
         "the number of distinct subproblems (n+1 values here).",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd add memoization to a naive recursive function that counts " +
+          "the number of ways to climb n stairs taking 1 or 2 steps at a time — what's the repeated " +
+          "subproblem?",
+        "Explain how you would convert a top-down memoized solution into a bottom-up tabulated one for the " +
+          "same problem, describing what determines the correct fill order for the table.",
+        "Describe, in words, how Fibonacci's tabulation could be reduced from an O(n) array to two plain " +
+          "variables, and why that reduction works here but wouldn't for every DP problem.",
+        "Given a recursive function with overlapping subproblems but multiple changing parameters (not just " +
+          "one integer n), describe how you'd choose a suitable memo key.",
+      ],
     },
   ],
 };

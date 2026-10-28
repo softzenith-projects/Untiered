@@ -243,6 +243,32 @@ export const chapterComplexity: Chapter = {
         "recurring theme in the chapters ahead.",
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "Run this as-is, then change the list `[10, 20, 40]` to `[10, 20, 40, 80]` and watch the quadratic " +
+        "count grow far faster than the linear one — that gap is what Big-O is naming.",
+      starter:
+        "def linear_work(n):\n" +
+        "    count = 0\n" +
+        "    for _ in range(n):\n" +
+        "        count += 1\n" +
+        "    return count\n" +
+        "\n" +
+        "\n" +
+        "def quadratic_work(n):\n" +
+        "    count = 0\n" +
+        "    for _ in range(n):\n" +
+        "        for _ in range(n):\n" +
+        "            count += 1\n" +
+        "    return count\n" +
+        "\n" +
+        "\n" +
+        "for n in [10, 20, 40]:\n" +
+        '    print(f"n={n}: linear={linear_work(n)}, quadratic={quadratic_work(n)}")\n',
+      expectedOutput: "n=10: linear=10, quadratic=100\nn=20: linear=20, quadratic=400\nn=40: linear=40, quadratic=1600",
+    },
+    {
       kind: "pitfall",
       items: [
         "Confusing Big-O with actual runtime — an O(n) algorithm with a huge constant factor can be slower " +
@@ -277,51 +303,6 @@ export const chapterComplexity: Chapter = {
           "doing a constant amount of work per element\" is a far stronger answer than the label alone.",
         "Being asked to improve a correct O(n²) solution to O(n log n) or O(n) is one of the most common " +
           "interview arcs there is — it's exactly what the rest of this course trains for.",
-      ],
-    },
-    {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "Run this as-is, then change the list `[10, 20, 40]` to `[10, 20, 40, 80]` and watch the quadratic " +
-        "count grow far faster than the linear one — that gap is what Big-O is naming.",
-      starter:
-        "def linear_work(n):\n" +
-        "    count = 0\n" +
-        "    for _ in range(n):\n" +
-        "        count += 1\n" +
-        "    return count\n" +
-        "\n" +
-        "\n" +
-        "def quadratic_work(n):\n" +
-        "    count = 0\n" +
-        "    for _ in range(n):\n" +
-        "        for _ in range(n):\n" +
-        "            count += 1\n" +
-        "    return count\n" +
-        "\n" +
-        "\n" +
-        "for n in [10, 20, 40]:\n" +
-        '    print(f"n={n}: linear={linear_work(n)}, quadratic={quadratic_work(n)}")\n',
-      expectedOutput: "n=10: linear=10, quadratic=100\nn=20: linear=20, quadratic=400\nn=40: linear=40, quadratic=1600",
-    },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "State the time complexity, in your own words with a one-line reason, for: printing every element " +
-          "of an array once; printing every pair of elements from an array; and printing only the first " +
-          "element regardless of array size.",
-        "A colleague says their function is \"O(2n)\", treating it as meaningfully different from another " +
-          "function that is \"O(n)\". Explain, in your own words, why Big-O notation treats these as the " +
-          "same growth class.",
-        "You have a function with two loops, one after another (not nested), each running n times. What is " +
-          "the overall time complexity, and why doesn't it become O(n²)?",
-        "For a search that jumps to the middle and eliminates half the remaining data each time, explain " +
-          "why doubling the input size adds only one extra step rather than doubling the total work.",
-        "Describe a real situation (not necessarily code) where you'd accept using more memory in exchange " +
-          "for a faster result, and one where you'd refuse that trade — explain what makes the difference.",
       ],
     },
     {
@@ -362,6 +343,25 @@ export const chapterComplexity: Chapter = {
         "Worst-case complexity describes what you can rely on no matter what input arrives — a solution " +
         "that's fast only when the input happens to be favourable doesn't give you a dependable guarantee, " +
         "which is what interviewers, and production systems, actually need.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "State the time complexity, in your own words with a one-line reason, for: printing every element " +
+          "of an array once; printing every pair of elements from an array; and printing only the first " +
+          "element regardless of array size.",
+        "A colleague says their function is \"O(2n)\", treating it as meaningfully different from another " +
+          "function that is \"O(n)\". Explain, in your own words, why Big-O notation treats these as the " +
+          "same growth class.",
+        "You have a function with two loops, one after another (not nested), each running n times. What is " +
+          "the overall time complexity, and why doesn't it become O(n²)?",
+        "For a search that jumps to the middle and eliminates half the remaining data each time, explain " +
+          "why doubling the input size adds only one extra step rather than doubling the total work.",
+        "Describe a real situation (not necessarily code) where you'd accept using more memory in exchange " +
+          "for a faster result, and one where you'd refuse that trade — explain what makes the difference.",
+      ],
     },
   ],
 };
