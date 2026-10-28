@@ -286,11 +286,10 @@ export const chapterQueuesAndDeques: Chapter = {
       kind: "quiz",
       question: "Why does removing from the front of an ArrayList-backed structure cost O(n), while ArrayDeque's poll() is O(1)?",
       options: [
-        "ArrayList and ArrayDeque are actually implemented identically",
-        "ArrayList must shift every remaining element one position left to close the gap; ArrayDeque tracks " +
-          "a head index internally and simply advances it",
-        "ArrayDeque doesn't actually support removal from the front",
-        "ArrayList is always O(1) for any removal",
+        "ArrayList and ArrayDeque are actually implemented identically, so the cost is the same",
+        "ArrayList shifts every remaining element left to close the gap; ArrayDeque just advances a head index",
+        "ArrayDeque doesn't support removal from the front, so it needs a different structure",
+        "ArrayList removal is always O(1), whichever position the removed element is at",
       ],
       answer: 1,
       why:

@@ -374,11 +374,10 @@ export const chapterDpIntuition: Chapter = {
       kind: "quiz",
       question: "What two properties must a problem have for dynamic programming to apply?",
       options: [
-        "It must be solvable with a for loop, and involve only integers",
-        "Optimal substructure (the answer builds from smaller versions of the same problem) and overlapping " +
-          "subproblems (naive recursion repeats identical work)",
-        "It must have exactly one base case and one recursive case",
-        "It must be a sorting or searching problem",
+        "It must be solvable with a single for loop, and the inputs and outputs must involve only integers.",
+        "Optimal substructure (answers build from smaller versions) and overlapping subproblems (repeated work).",
+        "It must have exactly one base case and exactly one recursive case, so each call makes a single further call.",
+        "It must be a sorting or searching problem, since dynamic programming only works on ordered data.",
       ],
       answer: 1,
       why:
@@ -389,11 +388,10 @@ export const chapterDpIntuition: Chapter = {
       kind: "quiz",
       question: "What is the key structural difference between memoization and tabulation?",
       options: [
-        "They solve different problems entirely",
-        "Memoization is top-down (recursion plus a cache, computing subproblems as they're first needed); " +
-          "tabulation is bottom-up (an iterative table filled in dependency order, no recursion)",
-        "Tabulation is always slower than memoization",
-        "Memoization only works for Fibonacci-style problems",
+        "They solve different kinds of problems entirely, so a problem that suits one cannot be solved with the other.",
+        "Memoization is top-down (recursion plus a cache); tabulation is bottom-up (an iterative table).",
+        "Tabulation is always slower than memoization, because filling a whole table does extra work for every single entry.",
+        "Memoization works only for Fibonacci-style problems, since other recurrences cannot be cached by a map.",
       ],
       answer: 1,
       why:
@@ -405,12 +403,10 @@ export const chapterDpIntuition: Chapter = {
       kind: "quiz",
       question: "Why does fibNaive(n) run in O(2ⁿ) time while fibMemo(n) runs in O(n)?",
       options: [
-        "fibMemo uses a completely different, faster mathematical formula",
-        "fibNaive branches into two recursive calls per step with no memory of repeated work, so the call " +
-          "count grows exponentially; fibMemo computes each distinct value of n exactly once and reuses a " +
-          "cached result for every repeat, capping the work at one entry per n",
-        "fibMemo doesn't actually compute the correct answer, just an approximation",
-        "The two functions have the same time complexity",
+        "fibMemo uses a closed-form mathematical formula instead of recursion, so it finishes in a fixed number of steps.",
+        "fibNaive recomputes the same values over and over, so calls grow exponentially; fibMemo computes each n once.",
+        "fibMemo skips most of the work by returning an approximate answer, which is why it can finish in just O(n) steps.",
+        "The two functions have the same time complexity, since memoization only changes how much memory the program uses.",
       ],
       answer: 1,
       why:

@@ -309,10 +309,10 @@ export const chapterSimpleSorts: Chapter = {
       kind: "quiz",
       question: "Why does bubble sort's best-case complexity become O(n) rather than O(n²)?",
       options: [
-        "Because bubble sort is always O(n) regardless of input",
-        "Because the swapped flag lets it detect a fully sorted array after just one pass and exit early",
-        "Because Java optimises the loop automatically",
-        "Bubble sort has no best-case difference from its worst case",
+        "Because bubble sort is always O(n) regardless of input, since each pass only compares neighbours",
+        "The swapped flag lets it detect a fully sorted array after one pass and stop early",
+        "Because Java optimises the loop automatically once it notices the array is already sorted",
+        "Bubble sort has no best-case difference from its worst case, since it always makes all the passes",
       ],
       answer: 1,
       why:
@@ -324,10 +324,10 @@ export const chapterSimpleSorts: Chapter = {
       kind: "quiz",
       question: "What is the main practical advantage of selection sort over the other two, according to this chapter?",
       options: [
-        "It's faster in the worst case",
-        "It uses less memory than the others",
-        "It makes at most n swaps total, which matters when swapping is expensive (e.g. large records)",
-        "It's the only one of the three that's stable",
+        "It's faster in the worst case, because it needs fewer comparisons than the other two sorts",
+        "It uses less memory than the others, since it needs no extra variables at all while sorting",
+        "It makes at most n swaps, which matters when swapping is expensive (e.g. large records)",
+        "It's the only one of the three sorts that is stable, because it never reorders equal elements",
       ],
       answer: 2,
       why:
@@ -339,11 +339,10 @@ export const chapterSimpleSorts: Chapter = {
       kind: "quiz",
       question: "In insertionSort, what does the inner while loop (`while (j >= 0 && arr[j] > key)`) do?",
       options: [
-        "It searches the whole array for the key using binary search",
-        "It shifts elements of the already-sorted prefix rightward to make room, stopping once it finds " +
-          "where key belongs",
-        "It swaps arr[j] and key on every iteration without moving anything else",
-        "It sorts the entire array in one call",
+        "It searches the whole sorted prefix for the key using binary search, then inserts it directly",
+        "It shifts elements of the sorted prefix right to make room, stopping where key belongs",
+        "It swaps arr[j] and key on every iteration without moving anything else in the array",
+        "It sorts the entire array in a single call to the Arrays.sort method in the standard library",
       ],
       answer: 1,
       why:

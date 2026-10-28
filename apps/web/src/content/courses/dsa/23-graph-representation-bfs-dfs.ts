@@ -381,12 +381,10 @@ export const chapterGraphRepresentationBfsDfs: Chapter = {
       kind: "quiz",
       question: "Why is a queue used for BFS but recursion (or an explicit stack) used for DFS?",
       options: [
-        "It's an arbitrary convention with no effect on the resulting order",
-        "A queue's FIFO order naturally explores all vertices at the current distance before moving farther " +
-          "out (ring by ring); a stack/recursion's LIFO order naturally commits to one path as deep as " +
-          "possible before backtracking",
-        "Queues are always faster than stacks in Java",
-        "DFS cannot be implemented with a queue under any circumstances",
+        "It's just a textbook convention: swapping the queue for a stack in BFS would still visit the vertices in the same order, ring by ring.",
+        "A queue's FIFO order finishes one distance level before the next; a stack's LIFO order goes deep first.",
+        "A queue is always faster than a stack in Java, which is why BFS uses one and DFS has to accept the slower structure.",
+        "DFS cannot be implemented with a queue under any circumstances, since a queue can hold only one vertex at a time.",
       ],
       answer: 1,
       why:
@@ -410,12 +408,10 @@ export const chapterGraphRepresentationBfsDfs: Chapter = {
       kind: "quiz",
       question: "Why is a `visited` array required for graph traversal, when tree traversals in earlier chapters didn't need one?",
       options: [
-        "It's just an optimization, not a correctness requirement",
-        "A tree has no cycles and each node has exactly one parent, so a traversal can never revisit a node; " +
-          "a graph can have cycles and multiple paths to the same vertex, so without tracking visited " +
-          "vertices, the traversal can loop forever",
-        "visited arrays are required only for directed graphs",
-        "Trees are always smaller than graphs, so visited tracking isn't needed",
+        "It's only an optimisation that saves time on large graphs; the traversal would still finish with the right result without it.",
+        "A tree never revisits a node; a graph has cycles and multiple paths, so without visited it can loop forever.",
+        "visited arrays are required only for directed graphs, because undirected edges can always be walked back along safely.",
+        "Trees are always smaller than graphs, so their traversals finish quickly and visited tracking is not worth the extra memory.",
       ],
       answer: 1,
       why:

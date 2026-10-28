@@ -424,11 +424,10 @@ export const chapterTreeBasicsAndTraversals: Chapter = {
       kind: "quiz",
       question: "Why does inorder traversal visit a binary search tree's nodes in ascending sorted order?",
       options: [
-        "Java automatically sorts tree nodes during traversal",
-        "Because inorder always visits the entire left subtree (all smaller values, by BST rule) before the " +
-          "node itself, then the entire right subtree (all larger values) — recursively true at every node",
-        "It's a coincidence specific to the example tree in this chapter",
-        "Inorder only works on already-sorted trees",
+        "Java automatically sorts the nodes into ascending order as the traversal reads them out of the tree, whatever shape the tree has.",
+        "Inorder visits the left subtree (smaller values), then the node, then the right subtree (larger values), at every node.",
+        "It's a coincidence specific to the example tree in this chapter, and trees with other shapes would not come out sorted.",
+        "Inorder works only on trees whose values were already sorted before they were inserted, which is why the output looks ordered.",
       ],
       answer: 1,
       why:
@@ -450,11 +449,10 @@ export const chapterTreeBasicsAndTraversals: Chapter = {
       kind: "quiz",
       question: "Why does level order traversal require a queue rather than recursion?",
       options: [
-        "It's just a stylistic preference — recursion would work identically",
-        "Because level order needs to process nodes in the exact order they're discovered across the whole " +
-          "tree (FIFO), which is what a queue provides; recursion naturally goes deep first, not row by row",
-        "Queues are always faster than recursive calls in Java",
-        "Recursion cannot visit tree nodes at all",
+        "It's just a stylistic preference: recursion would visit the nodes in exactly the same row-by-row order.",
+        "A queue gives the first-discovered-first-processed order that level order needs; recursion goes deep first.",
+        "Queues are always faster than recursive calls in Java, so the queue is chosen purely for speed.",
+        "Recursion cannot visit tree nodes at all, since method calls cannot follow the left and right links of a node.",
       ],
       answer: 1,
       why:

@@ -271,11 +271,10 @@ export const chapterBinarySearch: Chapter = {
       kind: "quiz",
       question: "Why is mid = low + (high - low) / 2 preferred over mid = (low + high) / 2?",
       options: [
-        "They behave differently for sorted arrays only",
-        "The first form avoids a potential integer overflow when low and high are both very large, which " +
-          "the second form can hit before the division even happens",
-        "The second form is faster to compute",
-        "There is no real difference; it's purely a style preference",
+        "They behave differently for sorted arrays only, and give identical midpoints for arrays that are not sorted.",
+        "The first form avoids a possible integer overflow when low and high are both very large.",
+        "The second form is slower to compute, because adding low and high takes more steps than subtracting them.",
+        "There is no real difference; it's purely a style preference, and both forms give the same result for every int.",
       ],
       answer: 1,
       why:

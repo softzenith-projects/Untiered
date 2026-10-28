@@ -297,10 +297,10 @@ export const chapterRecursionDsa: Chapter = {
       kind: "quiz",
       question: "What determines whether a recursive function's call count is O(n) or O(log n)?",
       options: [
-        "Whether the function returns a value or is void",
+        "Whether the function returns a value or is void, since void functions always make fewer calls",
         "Whether each call shrinks the input by a fixed amount (O(n)) or a fixed fraction (O(log n))",
-        "How many parameters the function takes",
-        "Whether the base case checks for zero or one",
+        "How many parameters the function takes, because every extra parameter doubles the number of calls",
+        "Whether the base case tests for zero or for one, as that decides how many calls are made",
       ],
       answer: 1,
       why:
@@ -311,7 +311,7 @@ export const chapterRecursionDsa: Chapter = {
     {
       kind: "quiz",
       question: "How many recursive calls does powerFast(base, 16) make, approximately?",
-      options: ["16", "8", "About 5 (log₂(16) = 4, plus the base case)", "256"],
+      options: ["16 calls, one for each unit of the exponent", "8 calls, because the exponent is only halved once", "About 5: log₂(16) = 4 halvings, plus the base case", "256 calls, because each call makes two more calls"],
       answer: 2,
       why:
         "powerFast halves the exponent each call: 16 -> 8 -> 4 -> 2 -> 1 -> 0, which is 5 halving steps " +
@@ -322,11 +322,10 @@ export const chapterRecursionDsa: Chapter = {
       kind: "quiz",
       question: "Why is recursion depth described as a separate cost from the total number of calls?",
       options: [
-        "They're always exactly equal, so the distinction is only theoretical",
-        "Depth measures how many calls are paused on the call stack at once (a space cost), which isn't " +
-          "always the same as the total number of calls ever made (a time cost)",
-        "Depth only applies to non-recursive functions",
-        "Java tracks depth and call count identically, so there's no real difference",
+        "They're always exactly equal, so the distinction is only theoretical and never matters in practice.",
+        "Depth is how many calls are paused on the stack at once (space), unlike total calls made (time).",
+        "Depth applies only to non-recursive functions, because recursive ones are measured by their call count.",
+        "Java tracks depth and call count identically, so there's no real difference between the two measures.",
       ],
       answer: 1,
       why:

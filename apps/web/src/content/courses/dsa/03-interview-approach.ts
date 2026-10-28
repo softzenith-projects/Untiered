@@ -280,10 +280,10 @@ export const chapterInterviewApproach: Chapter = {
       kind: "quiz",
       question: "Why write a brute-force solution first, even when you suspect a better one exists?",
       options: [
-        "It's required by convention and has no practical benefit",
-        "It confirms your understanding of the problem and gives you a baseline to optimise and test against",
-        "It's always the fastest solution to type, so it saves time",
-        "Interviewers only grade the brute-force attempt",
+        "It's required by convention, and has no practical benefit beyond making the interviewer comfortable",
+        "It confirms you understand the problem and gives you a baseline to optimise and test against",
+        "It's always the fastest solution to type, so it saves time compared to planning a better one",
+        "Interviewers only grade the brute-force attempt, so the optimised version earns no extra credit",
       ],
       answer: 1,
       why:
@@ -295,10 +295,10 @@ export const chapterInterviewApproach: Chapter = {
       kind: "quiz",
       question: "In twoSumFast, what does the HashMap seenIndexOf let the algorithm avoid doing?",
       options: [
-        "Avoid reading the target value",
+        "Avoid reading the target value from the input, since the map already stores it for each index",
         "Avoid rescanning the rest of the array for a matching value on every iteration",
-        "Avoid using indices entirely",
-        "Avoid handling negative numbers",
+        "Avoid using indices altogether, because the map returns the values themselves in their place",
+        "Avoid having to handle negative numbers separately, which would otherwise need a second pass",
       ],
       answer: 1,
       why:

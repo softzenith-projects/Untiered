@@ -343,10 +343,10 @@ export const chapterSlidingWindow: Chapter = {
       kind: "quiz",
       question: "In the fixed-size maxSumWindow, what does `windowSum += nums[end] - nums[end - k]` accomplish?",
       options: [
-        "It resets windowSum to zero and recomputes it",
-        "It adds the newly entered element and subtracts the element that just left the window, in one step",
-        "It sorts the current window",
-        "It computes the average of the window instead of its sum",
+        "It resets windowSum to zero and then recomputes the whole sum from scratch for the new window",
+        "It adds the newly entered element and subtracts the one that just left, in a single step",
+        "It sorts the current window first, so the largest element can be added to the running sum",
+        "It computes the average of the window instead of its sum, by dividing after each update",
       ],
       answer: 1,
       why:
@@ -357,11 +357,10 @@ export const chapterSlidingWindow: Chapter = {
       kind: "quiz",
       question: "In longestNoRepeat, why does the inner loop use `while (inWindow.contains(c))` instead of `if`?",
       options: [
-        "while and if behave identically here, so it doesn't matter",
-        "Because a single repeated character can require shrinking the window's left edge past more than " +
-          "one character before the window is valid again",
-        "while is required by Java syntax whenever a Set is involved",
-        "It's a stylistic choice with no effect on correctness",
+        "while and if behave identically here, so the choice makes no difference to the result",
+        "One repeated character can force the left edge to move past more than one character",
+        "while is required by Java syntax whenever a Set is used inside the loop condition",
+        "It's a stylistic choice with no effect on correctness, as an if would work as well",
       ],
       answer: 1,
       why:

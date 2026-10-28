@@ -293,11 +293,10 @@ export const chapterStringTechniques: Chapter = {
       kind: "quiz",
       question: "Why does isPalindrome use `left < right` rather than `left <= right` as its loop condition?",
       options: [
-        "It's a typo that happens to still work",
-        "When left equals right, that's the single middle character (for odd-length strings), which never " +
-          "needs comparing against itself",
-        "Because Java forbids using <= with string indices",
-        "Because it makes the check run in O(1) instead of O(n)",
+        "It's a typo that happens to still work, because the extra comparison is always harmless",
+        "When left equals right it's the single middle character of an odd-length string, which needs no comparison",
+        "Because Java forbids using <= with string indices, so the loop would not compile",
+        "Because it makes the check run in O(1) instead of O(n), by stopping the loop early",
       ],
       answer: 1,
       why:
@@ -325,10 +324,10 @@ export const chapterStringTechniques: Chapter = {
       kind: "quiz",
       question: "Why is the frequency-count approach to checking anagrams generally preferred over sorting both strings and comparing them?",
       options: [
-        "Sorting doesn't work correctly for this check",
-        "The frequency-count approach is O(n) while sorting both strings is O(n log n)",
-        "Frequency counting uses less code, which is the only advantage",
-        "Sorting can't be used on strings in Java",
+        "Sorting doesn't work correctly for this check, since sorted strings can differ for anagrams",
+        "Frequency counting is O(n), while sorting both strings is O(n log n)",
+        "Frequency counting uses less code, and that is its only advantage over sorting",
+        "Sorting can't be used on strings in Java, because String has no sort method of any kind",
       ],
       answer: 1,
       why:
