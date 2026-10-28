@@ -85,7 +85,7 @@ export function ArenaCoursePractice({ courseSlug }: { courseSlug: string }) {
         <div className="space-y-4"><p className="text-body text-ink-muted">No more live scenarios are unlocked for this course yet. More are on the way.</p><Button variant="ghost" onClick={() => setPlay(null)}>Back to course Arena</Button></div>
       ) : (
         <section aria-label="Scenario" className="space-y-6">
-          <div className="rounded-xl border border-line bg-surface-sunken px-6 py-5"><p className="eyebrow text-ink-muted">{play.scenario.context} · {play.scenario.estimatedMinutes} min</p><h2 className="mt-2 text-heading font-semibold text-ink">{play.scenario.title}</h2><p className="mt-2 text-body leading-relaxed text-ink-muted">{play.scenario.hook}</p></div>
+          <div className="rounded-xl border border-line bg-surface-sunken px-6 py-5"><p className="eyebrow text-ink-muted">{play.scenario.tier} · {play.scenario.estimatedMinutes} min</p><h2 className="mt-2 text-heading font-semibold text-ink">{play.scenario.title}</h2><p className="mt-2 text-body leading-relaxed text-ink-muted">{play.scenario.hook}</p><p className="mt-2 text-caption text-ink-subtle">{play.scenario.context}</p></div>
           {step.contextNote ? <p className="rounded-xl border-l-4 border-accent bg-accent-wash p-4 text-body text-ink">{step.contextNote}</p> : null}
           {step.systemState ? (
             <section aria-label="System map" className="rounded-2xl border border-line bg-surface-raised p-5 shadow-sm">

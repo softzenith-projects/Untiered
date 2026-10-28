@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.Instant
 import java.util.UUID
 
 @WebMvcTest(ScenarioArenaController::class)
@@ -35,12 +36,22 @@ class ScenarioArenaControllerTest {
     fun `course progress is scoped to authenticated user`() {
         given(repository.completedIds(USER, "dsa")).willReturn(setOf("dsa:done"))
         given(repository.conceptNames("dsa")).willReturn(listOf("dsa:trie" to "Trie lookup"))
+        given(repository.mastery(USER, "dsa")).willReturn(mapOf("dsa:trie" to ConceptScore(0.4, Instant.now())))
         mockMvc
             .perform(get("/api/v1/me/arena/scenarios/dsa").with(token()))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.scenariosDone").value(1))
             .andExpect(jsonPath("$.weakestConcepts[0].name").value("Trie lookup"))
         verify(repository).completedIds(USER, "dsa")
+    }
+
+    @Test
+    fun `a candidate who has answered nothing has no concepts to practise yet`() {
+        given(repository.conceptNames("dsa")).willReturn(listOf("dsa:heap" to "Heap", "dsa:trie" to "Trie lookup"))
+        mockMvc
+            .perform(get("/api/v1/me/arena/scenarios/dsa").with(token()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.weakestConcepts").isEmpty)
     }
 
     @Test

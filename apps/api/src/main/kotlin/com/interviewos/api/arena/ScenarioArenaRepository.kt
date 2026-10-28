@@ -192,9 +192,11 @@ class ScenarioArenaRepository(
     ) {
         jdbc
             .sql(
-                "update public.user_scenario_progress set current_step_id = :next, " +
-                    "status = case when :next is null then 'completed' else 'in_progress' end, " +
-                    "completed_at = case when :next is null then now() else null end " +
+                // The casts matter: PostgreSQL cannot infer a type for a bare null parameter in
+                // "is null", so without them finishing the last step of any scenario failed.
+                "update public.user_scenario_progress set current_step_id = cast(:next as text), " +
+                    "status = case when cast(:next as text) is null then 'completed' else 'in_progress' end, " +
+                    "completed_at = case when cast(:next as text) is null then now() else null end " +
                     "where user_id = :userId and scenario_id = :scenarioId",
             ).param("next", nextStepId)
             .param("userId", userId)
