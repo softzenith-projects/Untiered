@@ -3,6 +3,12 @@
 -- a round may still use. Object cleanup runs through the existing durable outbox.
 -- Rows with an invalid legacy storage key are deliberately left for manual review:
 -- the service role must never delete a path outside the owner's resume folder.
+-- The round-media migration narrowed this list after resume deletion was added.
+-- Restore the reason before any backfill or API cleanup can enqueue a resume job.
+alter table public.storage_deletion_jobs drop constraint storage_deletion_jobs_reason_check;
+alter table public.storage_deletion_jobs add constraint storage_deletion_jobs_reason_check
+  check (reason in ('candidate_deleted', 'retention_expired', 'account_deleted', 'round_finished', 'resume_deleted'));
+
 with ranked as (
   select id, user_id, storage_bucket, storage_path, parse_status,
          row_number() over (partition by user_id order by uploaded_at desc, id desc) as upload_rank,

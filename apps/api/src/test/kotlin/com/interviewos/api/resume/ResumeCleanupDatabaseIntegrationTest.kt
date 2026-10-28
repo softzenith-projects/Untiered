@@ -107,7 +107,7 @@ class ResumeCleanupDatabaseIntegrationTest {
                 insert into public.resumes
                        (id, user_id, storage_bucket, storage_path, original_filename, parse_status, uploaded_at, parsed_at)
                 values (:id, :u, 'resumes', :path, :filename, cast(:status as public.resume_parse_status), :at,
-                        case when :status = 'parsed' then :at else null end)
+                        cast(:parsedAt as timestamptz))
                 """.trimIndent(),
             ).param("id", id)
             .param("u", userId)
@@ -115,6 +115,7 @@ class ResumeCleanupDatabaseIntegrationTest {
             .param("filename", "$name.pdf")
             .param("status", status)
             .param("at", java.sql.Timestamp.from(Instant.parse(at)))
+            .param("parsedAt", if (status == "parsed") java.sql.Timestamp.from(Instant.parse(at)) else null)
             .update()
         return id
     }
