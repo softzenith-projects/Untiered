@@ -91,7 +91,7 @@ export function ChallengeCard({
         <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">{challenge.moduleTitle}</span>
       </div>
 
-      <h2 ref={headingRef} tabIndex={-1} className="text-title text-balance text-ink outline-none whitespace-pre-line">
+      <h2 ref={headingRef} tabIndex={-1} className="text-title text-balance text-ink whitespace-pre-line outline-none focus:shadow-none focus-visible:shadow-none">
         {challenge.prompt}
       </h2>
 

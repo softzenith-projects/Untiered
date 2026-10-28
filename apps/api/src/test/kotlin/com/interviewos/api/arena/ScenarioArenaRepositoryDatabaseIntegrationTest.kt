@@ -40,7 +40,7 @@ class ScenarioArenaRepositoryDatabaseIntegrationTest {
     @Test
     fun `weak concept names exclude draft-only campaigns`() {
         val names = repository.conceptNames("system-design").map { it.second }
-        assertTrue("Database Indexes" in names)
+        assertTrue("Database indexes" in names)
         assertFalse("Data residency" in names)
     }
 
