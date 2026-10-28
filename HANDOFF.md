@@ -2,52 +2,69 @@
 
 ## Task
 
-Make in-app navigation between tabs feel instant (owner's request in session; PRD §13; no task file). Earlier today: the landing page revamp (`feat/landing-revamp`, merged at 48b2837).
+Make the four courses uniform in text, format and interactive boxes. Improve course content, and use fanout.sh to improve system design. This was the owner's request in session, with no task file (PRD §07).
+
+Earlier the same day, all merged: landing page revamp, fast in-app navigation, landing loop rounds, sign-in layout, and the logo chip.
 
 ## What I built
 
-- `components/app-chrome.tsx`: the signed-in bar, backdrop and footer, mounted once in `app/layout.tsx` and shown on shell routes (`isShellPath`). It used to be rendered by every page and every `loading.tsx`, so each click rebuilt it twice.
-- `components/app-shell.tsx`: now only the page body (`<main>` width and padding). Pages are unchanged.
-- `components/rail-nav.tsx`: top-bar links use `prefetch` (full page, not just the skeleton).
-- `next.config.ts`: `experimental.staleTimes.dynamic = 60`, so a page visited in the last minute is served from the router cache.
-- `components/dashboard-panel.tsx`: remembers the last dashboard (keyed to the token, memory only) and paints it on return visits while refetching. `forgetDashboard()` runs with `forgetAccount()` on sign-out.
-- Tests: `app-chrome.test.tsx` (route matching, the same bar element survives a page change, interview room stays bare) and three return-visit tests in `dashboard-panel.identity.test.tsx`.
+- **One box system.** `components/courses/lesson-box.tsx` provides `LessonNote` and `LessonPanel`, plus shared buttons.
+  - Every block kind, in every course, now uses one radius, border, padding and label style: picture, remember, mistakes, interview, concept, trace, comparison, steps, visualiser, code, playground, quiz, agent lab and architecture lab.
+  - Colour only marks meaning: blue for ideas, green for concepts, red for mistakes.
+  - "Never forget" is now "Remember this", the name in the course brief.
+  - Code blocks always show a header.
+  - `lesson-box.test.tsx` checks every box kind uses the shared frame.
+- **Quiz answer position.** The correct option was second in about 78% of Java, DSA and AI Agents quizzes, and first in every system design quiz.
+  - `lib/quiz-order.ts` shows options in a fixed shuffled order seeded from the question. The course and the Arena (`lib/arena/derive.ts`) both use it.
+  - Tests check that no position holds more than 40% of answers and that no quiz repeats an option.
+- **Quiz answer length.** The correct option was the longest in 64% of Java, 96% of DSA and 93% of AI Agents quizzes.
+  - Two `builder` agents rewrote the wrong options, bringing this to 32%, 33% and 10% respectively.
+  - I checked every correct option they reworded and fixed the two problems I found:
+    - The smolagents quiz's correct answer had been replaced by a false statement.
+    - The heap quiz never said the array starts at index 0, so it had two defensible answers.
+- **System design rewritten.** The course was generated from a fill-in template: about eight short strings stitched into identical sentences, with the second quiz word-for-word the same in every chapter.
+  - It is now split into one file per module, with every chapter a full `LessonSpec` (`system-design/lesson.ts`) in the same shape as the other courses.
+  - I wrote `caching-layers` as the model chapter. Two `builder` agents wrote the other 55, and I read all 165 of their quizzes.
+  - The old template and the details file are deleted.
+- **New module "Inside the data layer"** (`data-internals.ts`), original writing: unique IDs, storage engines (WAL, B-tree, LSM), and Bloom filters and sketches. The course is now 5 modules and 59 chapters.
+- **One chapter shape for all four courses**, enforced by `content/courses/course-uniformity.test.ts`:
+  - Each chapter opens with prose, then a heading, then the picture.
+  - It closes with mistakes, remember this, the interview angle and three quizzes, then any practice section.
+  - DSA's "Practice problems" blocks were moved after the quizzes, by script, as a pure reorder of 586 identical lines.
 
 ## Assumptions I made
 
-- Ruled out auth latency: the Supabase project signs JWTs with ES256 (JWKS checked), so the proxy's `getClaims` verifies locally with no network call.
-- A 60-second router cache is safe because personal data is fetched client-side, not baked into server payloads, and sign-out calls `router.refresh()`.
-- On a return visit the dashboard can show the previous allowance or round list for the moment before the refetch lands, for example right after finishing a round. I judged that better than a blank skeleton on every visit.
+- **fanout.sh** is a paid course with no reuse licence, and our `THIRD_PARTY_NOTICES.md` already excludes proprietary material.
+  - I compared only its public module headings against our chapter list, which identified the three gap topics.
+  - No lesson material was opened, copied or paraphrased. The notices file records this.
+- "Uniform content" means the same chapter shape and box vocabulary across courses. I kept each course's own voice and its heading wording ("The tiffin box analogy" against "The picture: …").
+- The system design integrity tests pinned the old template's literal strings. I restated them by intent: a real glossary before the walkthrough, a unique worked example of at least 80 characters, a two-sided trade-off, and one walkthrough.
+- One commit (20533d1) also contains the template deletion. Its message describes only the reorder, because the separate cleanup commit failed on a pathspec.
 
 ## What I could NOT verify
 
-- Felt latency in a real signed-in browser. **Next does not prefetch in `next dev`, and dev compiles each route on first visit, so judge speed on a production build (`npm run build && npm run start`) or a deployment.**
-- Each page body still fetches its own data (dashboard, courses progress) from the API on first visit. That depends on API latency from where it is hosted.
+- **The real chapter page.** The auth guard blocks it, and the permission system refused a local bypass.
+  - I rendered four real chapters through `BlockRenderer` with the built CSS and checked screenshots.
+  - The full page, with its header and guided-lesson mode, still needs a look.
+- **The system design content** needs a domain read. Every quiz key was checked, but 59 chapters of prose were not proofread line by line. The writers flagged these illustrative figures:
+  - 5% canary traffic
+  - 2 s index lag
+  - 30 s leases and circuit-breaker timings
+- **Leftover agent worktrees.** `C:/tmp/uquiz` and `C:/tmp/uquizai` would not delete. Remove them with `git worktree remove --force <path>`.
 
 ## Verification status
 
-- typecheck / lint / tests (3,120) / build: pass locally. CI run 40646873741 passed all four jobs.
-- `next build` again stopped once on the Next.js security-advisory notice and passed on retry.
+- typecheck, lint, tests (3,181) and build: all pass locally.
+- CI run on 20533d1 passed all four jobs.
 
 ## Merge status
 
-- Merged `fix/fast-navigation` into `develop` at 0360c49. No migrations.
-
-## Follow-up: landing-page round lists (also 28 October)
-
-- Owner's correction applied in `components/landing/loop-picker.tsx`: Big Four technical hiring shares the service-IT tab (no case discussion); "Europe & abroad" and GCC lead with technical rounds; every panel says the rounds are typical, not a fixed list. The hero demo's Big Four turn is now techno-managerial (`sample-turn.tsx`).
-- The round names are product knowledge from the owner and the earlier page, not sourced per employer; worth a domain check.
-- Merged `fix/landing-loop-rounds` into `develop` at 1105ff2 after CI passed all four jobs.
-
-## Follow-up: sign-in layout and logo contrast (also 28 October)
-
-- `app/login/page.tsx`: navy panel pinned to viewport height, form card top-aligned, so switching Sign in / Create account moves nothing (measured in headless Edge at 1440x860: identical positions in both modes).
-- Logo on navy: the owner rejected recolouring the artwork. `BrandWordmark inverse` now shows the supplied light-surface wordmark on a white chip (sign-in panel, footer); the generated `wordmark-on-navy.png` was removed. The sign-in panel's three feature cards are white to match. Merged at 8235702.
-- Merged `fix/login-layout-logo` into `develop` at 129205f after CI passed all four jobs.
+- `feat/course-uniformity` merged into `develop` at 5a620b8 after green CI. No migrations.
+- 125 files changed (+7,842 / −2,341). This is far over the 800-line guide, but nearly all of it is course prose. A split by course would have been reviewable separately.
 
 ## Suggested next task
 
-- Act on the Next.js security advisory: run `next upgrade` on its own branch.
+- Proofread the system design chapters with someone who interviews for these roles, then add "build it yourself" playgrounds (Python) to the data-layer chapters.
 
 ## Open questions for you
 
