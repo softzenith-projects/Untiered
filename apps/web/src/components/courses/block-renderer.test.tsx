@@ -152,6 +152,13 @@ describe("BlockRenderer", () => {
     expect(wrappers[2]?.className).toContain("w-full");
   });
 
+  it("gives headings the full width so a short heading is not broken onto two lines", () => {
+    const { container } = render(
+      <BlockRenderer blocks={[{ kind: "h", text: "`System.out.println` vs `System.out.print`" }]} />,
+    );
+    expect(container.firstElementChild?.children[0]?.className).not.toContain("62ch");
+  });
+
   it("renders inline `code` and **bold** markers as their own elements", () => {
     render(<BlockRenderer blocks={[{ kind: "p", text: "See `Scanner` and **immutable**." }]} />);
 

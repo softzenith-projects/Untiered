@@ -10,7 +10,7 @@
     "atomic-stock"
   ],
   "estimated_minutes": 7,
-  "status": "live",
+  "status": "draft",
   "solution_brief": "Cart shows an estimate, not a promise. At Place order, atomically reserve one unit with a short expiry. The checkout path owns the critical counter; expired reservations return stock, and confirmed payment commits the order idempotently.",
   "steps": [
     {

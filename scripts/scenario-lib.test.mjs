@@ -10,8 +10,10 @@ const copy = () => structuredClone(base);
 test("all authored scenarios validate and have 5 ordered steps", () => {
   assert.equal(scenarios.length, 20);
   assert.equal(scenarios.filter((scenario) => scenario.course_slug === "ai-agents").length, 2);
-  assert.equal(scenarios.filter((scenario) => scenario.course_slug === "system-design" && scenario.status === "live").length, 12);
-  assert.equal(scenarios.filter((scenario) => scenario.course_slug === "system-design" && scenario.status === "draft").length, 2);
+  // limited-stock-checkout and password-change-sessions are drafts: maggi-flash-sale and
+  // the-other-phone tell the same stories in more depth, and a learner shouldn't meet each twice.
+  assert.equal(scenarios.filter((scenario) => scenario.course_slug === "system-design" && scenario.status === "live").length, 10);
+  assert.equal(scenarios.filter((scenario) => scenario.course_slug === "system-design" && scenario.status === "draft").length, 4);
   for (const scenario of scenarios) {
     assert.equal(scenario.steps.length, 5);
     assert.deepEqual(validateScenario(scenario, catalogue), []);

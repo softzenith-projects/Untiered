@@ -10,7 +10,6 @@ const TOP_PAD = 30;
  * `next: null` node gets a drawn "null" terminator instead of an arrow, so the end of the
  * list is a shape, not an absence. */
 export function ListViz({ frame }: { frame: ListFrame }) {
-  const n = frame.nodes.length;
   const widths = frame.nodes.map((node) => fitWidth(node.value, 14, BOX_W));
   const offsets = rowOffsets(widths, GAP);
   const width = widths.reduce((sum, w) => sum + w + GAP, 0) + 50;

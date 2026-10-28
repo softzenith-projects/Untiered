@@ -21,9 +21,12 @@ import { Table, TableScroll } from "@/components/ui/table";
  * Block kinds allowed to break out of the ~70ch prose column (task 052) — the diagrams,
  * code, tables and comparisons that want the reclaimed screen width. Everything else
  * (paragraphs, asides, lists) stays capped at prose width: a wide paragraph is genuinely
- * harder to read, so widening the page should not widen the sentence.
+ * harder to read, so widening the page should not widen the sentence. Headings are the
+ * exception: a short line gains nothing from the measure, and at heading size 62ch broke
+ * "System.out.println vs System.out.print" in two.
  */
 const FULL_BLEED_KINDS: ReadonlySet<Block["kind"]> = new Set([
+  "h",
   "viz",
   "code",
   "playground",
