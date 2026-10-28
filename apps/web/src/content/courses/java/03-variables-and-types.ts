@@ -192,10 +192,10 @@ export const chapterVariablesAndTypes: Chapter = {
       kind: "quiz",
       question: "What happens when `int score;` is declared inside `main` and then printed without being assigned a value?",
       options: [
-        "It prints 0, the default value for int.",
-        "It compiles and prints an unpredictable garbage value.",
+        "It prints 0, because Java gives every int variable the default value of zero.",
+        "It compiles and prints an unpredictable garbage value left over in memory.",
         "It fails to compile: a local variable must be initialised before it is read.",
-        "It prints `null`.",
+        "It prints null, since an uninitialised variable holds no value at all.",
       ],
       answer: 2,
       why:
@@ -216,10 +216,10 @@ export const chapterVariablesAndTypes: Chapter = {
       kind: "quiz",
       question: "What best describes a `String` variable in Java?",
       options: [
-        "A ninth primitive type, alongside the other eight.",
-        "A reference type: the variable holds directions to a String object, not the characters directly.",
-        "Exactly identical in behaviour to `char`, just longer.",
-        "A primitive type that is only sometimes treated specially.",
+        "A ninth primitive type, which Java adds to the other eight for working with text.",
+        "A reference type: the variable holds directions to a String object, not the characters themselves.",
+        "Exactly identical in behaviour to char, except that it can hold more than one character.",
+        "A primitive type that Java sometimes treats specially, so that it is stored directly in the variable.",
       ],
       answer: 1,
       why:

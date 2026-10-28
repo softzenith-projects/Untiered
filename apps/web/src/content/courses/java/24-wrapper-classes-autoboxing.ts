@@ -184,10 +184,10 @@ export const chapterWrapperClasses: Chapter = {
       kind: "quiz",
       question: "Why does `ArrayList<Integer>` work but `ArrayList<int>` fails to compile?",
       options: [
-        "int is spelled wrong in that context",
-        "Generics require an object type; Integer is int's wrapper object, autoboxed automatically when needed",
-        "ArrayList only holds Strings",
-        "int is deprecated",
+        "Primitive types can be stored only in arrays, never in any collection class, even through boxing.",
+        "Generics need an object type; Integer is int's wrapper, and autoboxing converts between them automatically.",
+        "ArrayList can hold only Strings, so both versions fail unless the element type is String.",
+        "int is deprecated in recent Java versions, so the compiler rejects it wherever generics appear.",
       ],
       answer: 1,
       why:

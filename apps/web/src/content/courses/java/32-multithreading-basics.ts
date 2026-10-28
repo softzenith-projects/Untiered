@@ -163,10 +163,10 @@ export const chapterMultithreading: Chapter = {
       kind: "quiz",
       question: "What's the difference between calling thread.start() and thread.run() directly?",
       options: [
-        "No difference — both start a new thread",
-        "start() launches the code on a genuinely new thread; run() just executes it on the current thread, with no concurrency",
-        "run() is faster than start()",
-        "start() can only be called once per program",
+        "No difference: both create a new thread, and run() is simply the older name for start().",
+        "start() launches the code on a new thread; run() just executes it on the current thread, with no concurrency.",
+        "run() is the method that creates the new thread, and start() just runs the code on the current one.",
+        "start() can be called only once per program, so a second thread must be launched with run() instead.",
       ],
       answer: 1,
       why:
@@ -177,10 +177,10 @@ export const chapterMultithreading: Chapter = {
       kind: "quiz",
       question: "Two threads both run `count++` on the same unsynchronized int field, 1000 times each. What's the safest expectation for the final count?",
       options: [
-        "Always exactly 2000",
-        "Possibly less than 2000, because count++ isn't atomic and increments can be lost to interleaving",
-        "Always exactly 1000",
-        "It will throw an exception",
+        "Always exactly 2000, because each count++ is a single step that can never be interrupted.",
+        "Possibly less than 2000, because count++ isn't atomic and some increments can be lost.",
+        "Always exactly 1000, because the second thread's updates simply overwrite those of the first.",
+        "It throws a ConcurrentModificationException, because two threads touch the same field at once.",
       ],
       answer: 1,
       why:
@@ -192,10 +192,10 @@ export const chapterMultithreading: Chapter = {
       kind: "quiz",
       question: "What does calling t1.join() in the main thread do?",
       options: [
-        "Starts t1 running",
-        "Makes main wait until t1 has finished before continuing",
-        "Merges t1's memory with main's",
-        "Stops t1 immediately",
+        "Starts t1 running, so that it begins work alongside the main thread.",
+        "Makes main wait until t1 has finished before it continues.",
+        "Merges t1's memory with main's, so both threads then share the same variables.",
+        "Stops t1 immediately, so that main can carry on without waiting for it.",
       ],
       answer: 1,
       why:

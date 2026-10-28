@@ -205,11 +205,10 @@ export const chapterTypeCasting: Chapter = {
       kind: "quiz",
       question: "Why does `double d = 42;` compile with no cast, while `int i = 42.0;` does not?",
       options: [
-        "Because Java only allows casting from int to double, never the reverse.",
-        "Because int to double is widening (always safe, automatic); double to int is narrowing " +
-          "(may lose the fractional part, so it needs an explicit cast).",
-        "Because 42.0 is not a valid double literal.",
-        "There is no real difference; both actually compile fine.",
+        "Because Java only allows casting from int to double, and never lets a double be converted to an int.",
+        "Widening int to double is safe and automatic; narrowing double to int can lose the fraction.",
+        "Because 42.0 is stored as a float, and a float can never be assigned to an int variable.",
+        "There is no real difference: Java inserts the needed conversion automatically in both statements.",
       ],
       answer: 1,
       why:
@@ -221,10 +220,9 @@ export const chapterTypeCasting: Chapter = {
       kind: "quiz",
       question: "`byte b = (byte) 200;` — what does `b` hold, and why?",
       options: [
-        "200, because byte can actually hold values up to 255.",
-        "127, because Java clamps out-of-range values to the type's maximum.",
-        "A value produced by wraparound (-56), because 200 doesn't fit in byte's -128..127 range and " +
-          "Java does not clamp.",
+        "200, because byte can actually hold values up to 255 when the number is cast explicitly.",
+        "127, because Java clamps any out-of-range value to the maximum of the target type.",
+        "-56: 200 doesn't fit in byte's -128..127 range, so it wraps around; Java does not clamp.",
         "It fails to compile.",
       ],
       answer: 2,

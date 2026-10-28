@@ -229,10 +229,10 @@ export const chapterHashMapHashSet: Chapter = {
       kind: "quiz",
       question: "A class overrides equals() to compare by value but never overrides hashCode(). What's the practical effect on a HashSet of that class?",
       options: [
-        "It works fine — equals() alone is enough",
-        "Equal objects can still be treated as distinct, since they may land in different buckets and never get compared",
+        "It works fine, because HashSet compares every pair of elements using equals() alone.",
+        "Equal objects may land in different buckets and never get compared, so they're treated as distinct.",
         "It fails to compile",
-        "The HashSet automatically generates a matching hashCode()",
+        "HashSet automatically generates a matching hashCode() from the fields that equals() compares.",
       ],
       answer: 1,
       why:
@@ -253,10 +253,10 @@ export const chapterHashMapHashSet: Chapter = {
       kind: "quiz",
       question: "What is `Objects.hash(x, y)` used for in the Point class?",
       options: [
-        "To compare two Points for equality directly",
-        "To produce a combined hash code from multiple fields, consistent with equals()",
-        "To sort a list of Points",
-        "It's unrelated to hashing despite the name",
+        "To compare two Points for equality directly, field by field, without calling equals().",
+        "To produce one combined hash code from several fields, consistent with equals().",
+        "To sort a list of Points by their hash values, so equal points sit side by side.",
+        "It's unrelated to hashing despite the name; it only builds a string from the fields.",
       ],
       answer: 1,
       why:

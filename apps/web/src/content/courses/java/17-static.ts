@@ -165,10 +165,10 @@ export const chapterStatic: Chapter = {
       kind: "quiz",
       question: "Why can't a static method reference an instance field directly?",
       options: [
-        "It's just a style rule enforced by convention",
-        "A static method may run with no object created yet, so there is no instance field to refer to",
-        "Instance fields are always private",
-        "It actually can — this is a myth",
+        "It is only a naming and style rule, and the compiler would accept the code with just a warning.",
+        "A static method may run when no object exists yet, so there is no instance field for it to refer to.",
+        "Instance fields are always private, and static methods can never see private members of their class.",
+        "It actually can: this is a myth, and a static method may read any instance field it can see.",
       ],
       answer: 1,
       why:

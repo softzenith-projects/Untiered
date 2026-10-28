@@ -182,10 +182,10 @@ export const chapterPolymorphism: Chapter = {
       kind: "quiz",
       question: "A Shape variable holds a Circle object. Calling shapeVar.area() runs whose area() — Shape's or Circle's?",
       options: [
-        "Shape's, because that's the variable's declared type",
-        "Circle's, because Java resolves overridden methods based on the actual object at run time",
-        "It fails to compile",
-        "It depends on which class was compiled first",
+        "Shape's, because Java uses the variable's declared type to choose which area() runs.",
+        "Circle's, because Java picks the overridden method from the actual object at run time.",
+        "It fails to compile, because a Shape variable may not hold a Circle object.",
+        "It depends on which class was compiled first, because Java picks the earlier-compiled version.",
       ],
       answer: 1,
       why:

@@ -245,8 +245,8 @@ export const chapterMethods: Chapter = {
       answer: 1,
       why:
         "Overloading requires different parameter types or counts — the return type alone never " +
-        "distinguishes an overload (ruling out the first option), and a parameter's *name* is irrelevant " +
-        "to its signature (ruling out the third). calc(int,int) and calc(double,double) genuinely differ " +
+        "distinguishes an overload (ruling out the pair that differ only in return type), and a parameter's *name* is irrelevant " +
+        "to its signature (ruling out the pair that differ only in parameter names). calc(int,int) and calc(double,double) genuinely differ " +
         "in parameter type, so they're a valid overload pair.",
     },
   ],
