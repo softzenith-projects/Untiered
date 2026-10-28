@@ -12,6 +12,7 @@ import type { Route } from "next";
  */
 export function AppShell({
   wide = false,
+  band,
   children,
 }: {
   /** Retained for route compatibility; page-level breadcrumb strips are intentionally hidden. */
@@ -20,9 +21,15 @@ export function AppShell({
   parent?: { label: string; href: Route };
   /** Gives document-like tools (such as the chapter reader) room for their own local navigation. */
   wide?: boolean;
+  /**
+   * A page hero drawn as a full-width navy band under the header, its content held to the
+   * same grid as everything else. Filling the margins with colour is what makes them read
+   * as a frame rather than as unused space; the content itself stays capped.
+   */
+  band?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  return (
+  const body = (
     /*
      * Wide enough to compose in, capped so a line of prose never runs the width of a
      * monitor. The page used to be a 768px column pinned to the left of whatever
@@ -30,11 +37,20 @@ export function AppShell({
      * an unused canvas.
      */
     <main
-      className={`mx-auto w-full flex-1 px-4 py-8 sm:px-6 md:px-12 md:py-14 ${
+      className={`page-gutter mx-auto w-full flex-1 py-8 md:py-14 ${
         wide ? "layout-wide" : "layout-content"
       }`}
     >
       {children}
     </main>
+  );
+  if (!band) return body;
+  return (
+    <>
+      <div className="page-band">
+        <div className="layout-content page-gutter mx-auto py-10 md:py-14">{band}</div>
+      </div>
+      {body}
+    </>
   );
 }

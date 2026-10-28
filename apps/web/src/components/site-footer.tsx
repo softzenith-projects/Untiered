@@ -21,7 +21,7 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t border-on-navy/10 bg-navy text-on-navy">
-      <div className="layout-content mx-auto grid gap-10 px-6 py-12 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:px-8">
+      <div className="layout-content page-gutter mx-auto grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
         <div>
           <Link href="/" className="inline-flex items-center focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-on-navy" aria-label="Untiered home">
             <BrandWordmark inverse />
@@ -46,7 +46,7 @@ export function SiteFooter() {
           />
         </nav>
       </div>
-      <div className="layout-content mx-auto flex flex-wrap justify-between gap-2 border-t border-on-navy/10 px-6 py-5 text-micro text-on-navy-muted lg:px-8">
+      <div className="layout-content page-gutter mx-auto flex flex-wrap justify-between gap-2 border-t border-on-navy/10 py-5 text-micro text-on-navy-muted">
         <span>© {new Date().getFullYear()} Untiered</span>
         <span>Your voice. Your progress. Your call.</span>
       </div>

@@ -11,7 +11,9 @@ vi.mock("@/components/arena/arena-course-practice", () => ({
     return <div>Scenario workspace</div>;
   },
 }));
-vi.mock("@/components/app-shell", () => ({ AppShell: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
+vi.mock("@/components/app-shell", () => ({
+  AppShell: ({ band, children }: { band?: React.ReactNode; children: React.ReactNode }) => <>{band}{children}</>,
+}));
 
 describe("scenario Arena pages", () => {
   it("links each course to its own Arena instead of serving a standalone daily set", () => {

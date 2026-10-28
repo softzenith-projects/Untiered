@@ -373,6 +373,15 @@
 
 @layer utilities {
   .layout-content { max-width: var(--layout-content); }
+  /*
+   * The one side gutter. Header, page body, full-width bands and footer all use it with
+   * the same max-width, so the logo's left edge and the avatar's right edge are the
+   * content edges on every page. Mismatched gutters left the body 24px inside the header
+   * and read as a misalignment rather than as a margin.
+   */
+  .page-gutter { padding-inline: 1rem; }
+  @media (min-width: 40rem) { .page-gutter { padding-inline: 1.5rem; } }
+  @media (min-width: 64rem) { .page-gutter { padding-inline: 2rem; } }
   .layout-wide { max-width: var(--layout-wide); }
   .layout-reader { max-width: var(--layout-reader); }
   .rounded-surface { border-radius: var(--radius-xl); }
@@ -537,6 +546,13 @@
     color: var(--on-navy);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-md);
+  }
+  /* The same navy, edge to edge under the header: a page hero as a band, not a card. */
+  .page-band {
+    background:
+      radial-gradient(circle at 84% 0%, rgba(255, 255, 255, 0.11), transparent 28%),
+      linear-gradient(135deg, var(--accent-strong), var(--navy-raised) 58%, var(--navy));
+    color: var(--on-navy);
   }
 
   .nav-scroll {

@@ -14,7 +14,7 @@ export default function HistoryPage() {
   requireFeature("reports");
   return (
     <AppShell breadcrumb="all rounds">
-      <div className="flex w-full max-w-5xl flex-col gap-8">
+      <div className="flex w-full flex-col gap-8">
         <header className="flex flex-col gap-2">
           <h1 className="text-display text-balance text-ink">Your rounds</h1>
           <p className="max-w-prose text-body text-ink-muted">
