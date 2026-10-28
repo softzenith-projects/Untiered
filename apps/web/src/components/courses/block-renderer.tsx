@@ -65,16 +65,17 @@ export function BlockRenderer({
   return (
     <div
       data-layout={layout}
-      className={layout === "expanded" ? "grid gap-6 lg:grid-cols-2" : "flex flex-col gap-8 sm:gap-10"}
+      className={layout === "expanded" ? "flex flex-col gap-6" : "flex flex-col gap-8 sm:gap-10"}
     >
       {blocks.map((block, index) => (
         <div
           key={index}
           className={
+            // Expanded used to be a two-column grid that put mistakes and the interview box
+            // side by side. "Remember this" always sits between them, so each got half the
+            // width beside an empty column and wrapped every few words. One full-width column.
             layout === "expanded"
-              ? block.kind === "pitfall" || block.kind === "interview"
-                ? "w-full max-w-full"
-                : "w-full max-w-full lg:col-span-2"
+              ? "w-full max-w-full"
               : FULL_BLEED_KINDS.has(block.kind)
                 ? "w-full max-w-full"
                 : "max-w-[62ch]"
