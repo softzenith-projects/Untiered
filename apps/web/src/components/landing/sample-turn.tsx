@@ -47,11 +47,11 @@ export const SAMPLES: readonly [Sample, ...Sample[]] = [
   {
     id: "consulting",
     tab: "Big Four",
-    round: "Client scenario",
-    question: "The client's CFO says the migration is over budget and blames your team. What do you do in the first meeting?",
-    answer: "I'd show them the timeline and explain the delays were mostly from their side changing the requirements.",
+    round: "Techno-managerial",
+    question: "The release is due Friday and a critical defect turns up on Wednesday. The client wants both. What do you do?",
+    answer: "I'd get the team to work over the weekend and fix it, so we can deliver everything together.",
     move: "challenge",
-    followUp: "You've opened by blaming the person paying you. What would you say first if you wanted to keep the account?",
+    followUp: "Weekend work fixes one week, not the problem. What do you tell the client about what ships on Friday?",
     real: false,
   },
   {
