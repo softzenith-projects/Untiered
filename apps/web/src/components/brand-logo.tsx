@@ -3,28 +3,29 @@ import Image from "next/image";
 /**
  * The supplied raster wordmarks have light and dark surface variants.
  *
- * On dark surfaces the "U" is drawn from `wordmark-on-navy.png`, not the supplied dark
- * variant: its gradient bottoms out in an indigo at 1.2:1 against our navy, so the letter
- * vanished into the hero and the sign-in panel. The on-navy file is the same artwork with
- * only the U's pixels lifted toward white, each just far enough to reach 3:1 (the WCAG
- * minimum for graphics) while keeping its hue. The supplied files are unchanged.
+ * On navy (`inverse`) the wordmark sits on a white chip rather than straight on the
+ * background: the "U" gradient ends in an indigo that is nearly the navy itself, so drawn
+ * directly it disappeared. The owner chose the chip over recolouring the artwork
+ * (28 October 2026) — the logo is always the supplied file, unaltered.
  */
 export function BrandWordmark({ inverse = false }: { inverse?: boolean }) {
   if (inverse) {
     return (
-      <Image
-        src="/brand/wordmark-on-navy.png"
-        alt="Untiered"
-        width={378}
-        height={82}
-        className="h-auto w-[9.5rem] sm:w-[10.5rem]"
-      />
+      <span className="inline-flex rounded-xl bg-on-navy px-3.5 py-2.5 shadow-[var(--shadow-md)]">
+        <Image
+          src="/brand/wordmark-light.png"
+          alt="Untiered"
+          width={378}
+          height={82}
+          className="h-auto w-[9.5rem] sm:w-[10.5rem]"
+        />
+      </span>
     );
   }
 
   return (
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcSet="/brand/wordmark-on-navy.png" />
+      <source media="(prefers-color-scheme: dark)" srcSet="/brand/wordmark-dark.png" />
       <Image
         src="/brand/wordmark-light.png"
         alt="Untiered"
