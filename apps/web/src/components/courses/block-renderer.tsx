@@ -14,6 +14,7 @@ import { AgentLab } from "@/components/courses/agent-lab";
 import { getScenario } from "@/lib/agent-lab/scenarios";
 import { ArchitectureLab } from "@/components/courses/architecture-lab";
 import { getArchitectureScenario } from "@/lib/architecture-lab/scenarios";
+import { LessonLabel, LessonList, LessonNote, LessonPanel } from "@/components/courses/lesson-box";
 import { Table, TableScroll } from "@/components/ui/table";
 
 /**
@@ -126,13 +127,11 @@ function BlockView({
 
     case "analogy":
       return (
-        <aside className="rounded-md border border-line bg-accent-wash px-5 py-4">
-          <p className="font-mono text-micro tracking-widest text-accent uppercase">The picture</p>
-          <p className="mt-2 text-heading text-ink"><InlineText text={block.title} /></p>
-          <p className="mt-2 text-body leading-relaxed text-ink">
+        <LessonNote tone="accent" label="The picture" title={block.title}>
+          <p className="text-body leading-relaxed text-ink">
             <InlineText text={block.text} />
           </p>
-        </aside>
+        </LessonNote>
       );
 
     case "code":
@@ -187,65 +186,39 @@ function BlockView({
 
     case "trace":
       return (
-        <div className="rounded-md border border-line">
-          <p className="border-b border-line bg-surface-sunken px-4 py-2 text-caption font-medium text-ink">
-            <InlineText text={block.title} />
-          </p>
-          <ol className="flex flex-col gap-2.5 px-4 py-4">
+        <LessonPanel label="Trace it" title={<InlineText text={block.title} />} as="div">
+          <ol className="flex flex-col gap-2.5">
             {block.steps.map((step, i) => (
               <li key={i} className="flex gap-3 text-body leading-relaxed text-ink">
-                <span className="shrink-0 font-mono text-micro text-ink-subtle">{String(i + 1).padStart(2, "0")}</span>
+                <span className="shrink-0 pt-0.5 font-mono text-micro text-ink-subtle">{String(i + 1).padStart(2, "0")}</span>
                 <span>
                   <InlineText text={step} />
                 </span>
               </li>
             ))}
           </ol>
-        </div>
+        </LessonPanel>
       );
 
     case "pitfall":
       return (
-        <div className="rounded-md border border-danger/30 bg-danger/5 px-5 py-4">
-          <p className="font-mono text-micro tracking-widest text-danger uppercase">Common mistakes</p>
-          <ul className="mt-2 list-disc space-y-2 pl-5 text-body leading-relaxed text-ink">
-            {block.items.map((item, i) => (
-              <li key={i}>
-                <InlineText text={item} />
-              </li>
-            ))}
-          </ul>
-        </div>
+        <LessonNote tone="danger" label="Common mistakes" as="div">
+          <LessonList items={block.items} />
+        </LessonNote>
       );
 
     case "remember":
       return (
-        <div className="rounded-md border border-accent/30 bg-accent-wash px-5 py-4">
-          <p className="font-mono text-micro tracking-widest text-accent uppercase">Never forget</p>
-          <ul className="mt-2 list-disc space-y-2 pl-5 text-body leading-relaxed text-ink">
-            {block.items.map((item, i) => (
-              <li key={i}>
-                <InlineText text={item} />
-              </li>
-            ))}
-          </ul>
-        </div>
+        <LessonNote tone="accent" label="Remember this" as="div">
+          <LessonList items={block.items} />
+        </LessonNote>
       );
 
     case "interview":
       return (
-        <aside className="rounded-md border border-accent/30 bg-accent-wash px-5 py-4">
-          <p className="font-mono text-micro font-semibold tracking-widest text-accent-strong uppercase">
-            How this comes up in interviews
-          </p>
-          <ul className="mt-2 list-disc space-y-2 pl-5 text-body leading-relaxed text-ink marker:text-accent-strong">
-            {block.items.map((item, i) => (
-              <li key={i}>
-                <InlineText text={item} />
-              </li>
-            ))}
-          </ul>
-        </aside>
+        <LessonNote tone="accent" label="How this comes up in interviews">
+          <LessonList items={block.items} />
+        </LessonNote>
       );
 
     case "quiz":
@@ -270,7 +243,7 @@ function BlockView({
       const scenario = getScenario(block.scenarioId);
       if (!scenario) {
         return (
-          <p className="rounded-md border border-danger/30 bg-danger/5 px-5 py-4 text-caption text-ink-muted">
+          <p className="rounded-xl border border-danger/25 bg-danger-wash px-5 py-4 text-caption text-ink-muted">
             This chapter refers to an agent lab scenario ({block.scenarioId}) that is not installed.
           </p>
         );
@@ -282,7 +255,7 @@ function BlockView({
       const scenario = getArchitectureScenario(block.scenarioId);
       if (!scenario) {
         return (
-          <p className="rounded-md border border-danger/30 bg-danger/5 px-5 py-4 text-caption text-ink-muted">
+          <p className="rounded-xl border border-danger/25 bg-danger-wash px-5 py-4 text-caption text-ink-muted">
             This chapter refers to an architecture lab scenario ({block.scenarioId}) that is not installed.
           </p>
         );
@@ -299,21 +272,18 @@ function BlockView({
             does. The playground is layered on top of this, never a replacement for it
             (task 049).
           */}
-          <figure className="flex flex-col gap-0 overflow-hidden rounded-md border border-line-strong">
-            <figcaption className="border-b border-line-strong bg-surface-sunken px-4 py-2 text-caption text-ink-muted">
-              Starter code · {block.language === "python" ? "Python" : "Java"}
-            </figcaption>
+          <LessonPanel label={`Starter code · ${block.language === "python" ? "Python" : "Java"}`} flush>
             <div className="relative">
               <StaticCode code={block.starter} html={highlightedHtml} />
               <CopyCodeButton code={block.starter} />
             </div>
             {block.expectedOutput ? (
-              <div className="border-t border-line-strong bg-surface-sunken px-4 py-3">
-                <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Expected output</p>
+              <div className="border-t border-line bg-surface-sunken px-5 py-3 sm:px-6">
+                <LessonLabel>Expected output</LessonLabel>
                 <pre className="mt-1 overflow-x-auto font-mono text-caption text-ink-muted">{block.expectedOutput}</pre>
               </div>
             ) : null}
-          </figure>
+          </LessonPanel>
 
           <PlaygroundLazy block={block} />
         </div>

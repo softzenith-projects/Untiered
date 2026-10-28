@@ -269,9 +269,9 @@ export const chapterWhyVectorSearchIsNotMagic: Chapter = {
       kind: "quiz",
       question: "A chunk reads \"pay a refund to a different account, even at the customer's request.\" The source says \"We cannot pay a refund to a different account.\" What went wrong?",
       options: [
-        "The embedding model mis-encoded the negation",
-        "The chunk boundary fell between \"cannot\" and its verb, so the stored passage states the opposite of the source",
-        "The model hallucinated the passage",
+        "The embedding model mis-encoded the negation, so the stored chunk carries the opposite meaning",
+        "The chunk boundary fell between \"cannot\" and its verb, so the stored passage says the opposite of the source",
+        "The model hallucinated the passage when it summarised the source, adding words that were never in it",
         "The similarity score was too low",
       ],
       answer: 1,
@@ -284,7 +284,7 @@ export const chapterWhyVectorSearchIsNotMagic: Chapter = {
       kind: "quiz",
       question: "Users search your support collection by order number. Pure vector search keeps returning general refund guides. What is the fix?",
       options: [
-        "A bigger embedding model",
+        "A bigger embedding model, which will learn to recognise order numbers as a distinct kind of meaning",
         "Hybrid search — combine keyword matching with vector similarity so exact identifiers surface",
         "A higher score floor",
         "More chunks",
@@ -298,7 +298,7 @@ export const chapterWhyVectorSearchIsNotMagic: Chapter = {
       kind: "quiz",
       question: "According to OWASP LLM08:2025, what is the risk in a multi-tenant RAG system?",
       options: [
-        "Embeddings become slower with more tenants",
+        "Embeddings become slower with more tenants, because every query has to be compared with every tenant's vectors",
         "Data from one user group can be retrieved for another group's queries — cross-context information leakage",
         "Tenants share the same embedding model",
         "Vector stores cannot support multiple tenants",

@@ -185,10 +185,10 @@ export const chapterClassesAndObjects: Chapter = {
       kind: "quiz",
       question: "What does `new Student()` actually do?",
       options: [
-        "Defines the Student class for the first time",
-        "Creates a new object in memory with default field values and returns a reference to it",
-        "Copies an existing Student object",
-        "Nothing, until a field is assigned",
+        "Declares the Student class to the compiler for the first time, so it must come before other code.",
+        "Creates a new object in memory with default field values and returns a reference to it.",
+        "Copies an existing Student object into a new place in memory, field by field.",
+        "Nothing visible, until a field is assigned a value; only then is memory set aside.",
       ],
       answer: 1,
       why:

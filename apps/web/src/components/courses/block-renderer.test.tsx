@@ -18,7 +18,7 @@ const ALL_KINDS: Block[] = [
   { kind: "table", head: ["A", "B"], rows: [["1", "2"]] },
   { kind: "trace", title: "Trace title", steps: ["step one", "step two"] },
   { kind: "pitfall", items: ["A common mistake"] },
-  { kind: "remember", items: ["Remember this"] },
+  { kind: "remember", items: ["A point worth keeping"] },
   { kind: "interview", items: ["Comes up as X"] },
   {
     kind: "quiz",
@@ -88,7 +88,7 @@ describe("BlockRenderer", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
     expect(screen.getByText("Trace title")).toBeInTheDocument();
     expect(screen.getByText("A common mistake")).toBeInTheDocument();
-    expect(screen.getByText("Remember this")).toBeInTheDocument();
+    expect(screen.getByText("A point worth keeping")).toBeInTheDocument();
     expect(screen.getByText("Comes up as X")).toBeInTheDocument();
     expect(screen.getByText("What is 2 + 2?")).toBeInTheDocument();
     expect(screen.getByText("A step-through array")).toBeInTheDocument();
@@ -183,7 +183,7 @@ describe("BlockRenderer", () => {
     expect(screen.getByText("Main explanation").closest("p")).toHaveClass("text-heading", "text-ink");
     expect(screen.getByText("Teaching point").closest("ul")).toHaveClass("text-heading", "text-ink");
     const interview = screen.getByText("How this comes up in interviews").closest("aside");
-    expect(interview).toHaveClass("border-accent/30", "bg-accent-wash");
+    expect(interview).toHaveClass("border-accent/25", "bg-accent-wash");
     expect(screen.getByText("How this comes up in interviews")).toHaveClass("text-accent-strong");
     expect(screen.getByText("Interview advice").closest("ul")).toHaveClass("text-body", "text-ink");
     expect(screen.getByText("Concept explanation").closest("p")).toHaveClass("text-body", "text-ink");

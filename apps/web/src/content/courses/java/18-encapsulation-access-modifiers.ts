@@ -179,10 +179,10 @@ export const chapterEncapsulation: Chapter = {
       kind: "quiz",
       question: "What happens if code outside the BankAccount class writes `acc.balance = 5000;` where balance is private?",
       options: [
-        "It works, silently overwriting balance",
-        "It compiles but throws an exception at run time",
-        "It fails to compile — private fields aren't visible outside the class",
-        "It works only if acc is public",
+        "It works, and silently overwrites balance, because Java only warns about private access.",
+        "It compiles but throws an exception at run time, when the private field is accessed.",
+        "It fails to compile: private fields aren't visible outside the class.",
+        "It works only if acc was itself declared public, which makes every field of it open.",
       ],
       answer: 2,
       why:
@@ -202,10 +202,10 @@ export const chapterEncapsulation: Chapter = {
       kind: "quiz",
       question: "Why does BankAccount provide deposit()/withdraw() methods instead of a plain setBalance(double) method?",
       options: [
-        "setBalance would be faster",
-        "Methods can validate the change (reject negative deposits, block overdrafts); a plain setter would let any value through",
-        "Java doesn't allow setters on double fields",
-        "There's no real difference",
+        "setBalance would be slower than a method, because every setter call goes through extra JVM checks.",
+        "Methods can validate the change, rejecting negative deposits and overdrafts; a plain setter lets any value in.",
+        "Java doesn't allow setter methods on double fields, so a differently named method is required.",
+        "There's no real difference, because a plain setter checks its argument automatically as well.",
       ],
       answer: 1,
       why:

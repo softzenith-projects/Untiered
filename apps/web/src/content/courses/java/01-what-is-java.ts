@@ -223,11 +223,10 @@ export const chapterWhatIsJava: Chapter = {
       kind: "quiz",
       question: "Why is Java described as neither purely compiled nor purely interpreted?",
       options: [
-        "Because Java has no compiler at all, only an interpreter.",
-        "Because `javac` compiles source to bytecode, and the JVM then interprets (and further " +
-          "optimises) that bytecode at run time — both steps happen.",
-        "Because different companies build Java differently, so it depends on the vendor.",
-        "Because Java code runs directly on the processor with no intermediate step.",
+        "Because Java has no compiler at all: the JVM reads the source text and interprets it directly.",
+        "Because javac compiles source to bytecode, and the JVM then interprets (and further optimises) that bytecode at run time.",
+        "Because different companies build Java differently, so whether it is compiled or interpreted depends on the vendor.",
+        "Because Java code runs straight on the processor with no intermediate step, like a C program.",
       ],
       answer: 1,
       why:

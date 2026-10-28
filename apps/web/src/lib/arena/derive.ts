@@ -1,5 +1,6 @@
 import type { Block, Chapter, Course } from "@/content/courses/types";
 import { cyrb53, mulberry32, shuffle } from "@/lib/arena/hash";
+import { orderedQuiz } from "@/lib/quiz-order";
 import type { Challenge, ChallengeKind } from "@/lib/arena/types";
 
 /**
@@ -119,6 +120,7 @@ function deriveMcq(loc: ChapterLoc, used: Set<string>): Challenge[] {
   const quizzes = loc.chapter.blocks.filter((b): b is QuizBlock => b.kind === "quiz");
   return quizzes.map((quiz) => {
     const base = challengeIdBase("mcq", loc.course.slug, loc.chapter.slug, quiz.question);
+    const shown = orderedQuiz(quiz);
     return {
       id: uniqueId(base, used),
       kind: "mcq" as const,
@@ -127,8 +129,8 @@ function deriveMcq(loc: ChapterLoc, used: Set<string>): Challenge[] {
       moduleTitle: loc.courseModule.title,
       context: lessonContext(loc),
       prompt: quiz.question,
-      options: quiz.options,
-      correctIndex: quiz.answer,
+      options: shown.options,
+      correctIndex: shown.answer,
       why: quiz.why,
     };
   });

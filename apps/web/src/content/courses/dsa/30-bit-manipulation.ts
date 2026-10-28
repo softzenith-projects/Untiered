@@ -264,32 +264,14 @@ export const chapterBitManipulation: Chapter = {
           "state spaces, like tracking which of a handful of rooms have been visited.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd check whether a given integer is a power of two, using the " +
-          "n & (n-1) trick from this chapter, and explain why it works.",
-        "Given an array where every element appears exactly three times except one that appears once, " +
-          "explain why the simple XOR trick from this chapter no longer works directly, and describe (in " +
-          "words) what would need to change.",
-        "Describe how you would use bits of an integer to represent a small set of flags (for example, which " +
-          "of 5 features a user has enabled), and how you'd check, add, and remove a flag.",
-        "Explain, in your own words, the difference between Java's `>>` and `>>>` operators, and describe a " +
-          "situation where using the wrong one would produce an incorrect result.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why does n & (n - 1) always clear exactly the lowest set bit of n?",
       options: [
-        "It's a coincidence that only works for even numbers",
-        "Subtracting 1 flips all trailing 0s to 1s and flips the lowest 1 to a 0; ANDing with the original " +
-          "keeps only bits that were 1 in both, which clears that lowest 1 while leaving every higher bit " +
-          "untouched",
-        "It always clears the highest set bit, not the lowest",
-        "It only works for powers of two",
+        "It's a coincidence that holds only for even numbers, where the trailing zeros give the subtraction something to borrow from.",
+        "Subtracting 1 flips the trailing 0s and the lowest 1; ANDing with n then clears that lowest 1.",
+        "It always clears the highest set bit instead, because subtracting 1 borrows from the leftmost 1 in the binary number first.",
+        "It only works when n is a power of two, which is the one case where n - 1 has every lower bit set to 1.",
       ],
       answer: 1,
       why:
@@ -300,11 +282,10 @@ export const chapterBitManipulation: Chapter = {
       kind: "quiz",
       question: "Why does XOR-ing every element of an array together find the value that appears an odd number of times, when every other value appears an even number of times?",
       options: [
-        "XOR happens to sort the array first",
-        "x ^ x = 0 for any x, and XOR is commutative/associative, so pairs of equal values cancel to 0 in " +
-          "any order, leaving only the odd-count value XOR-ed with 0, which equals itself",
-        "It only works if the array is sorted beforehand",
-        "It actually finds the maximum value, not the unpaired one",
+        "XOR happens to sort the array first, so the single unpaired value ends up alone at one end of it.",
+        "x ^ x = 0 and XOR is commutative, so equal pairs cancel in any order, leaving the odd-count value.",
+        "It only works if the array is sorted beforehand, because the equal values must sit next to each other to cancel.",
+        "It actually finds the maximum value in the array, not the unpaired one, because XOR keeps the larger bits.",
       ],
       answer: 1,
       why:
@@ -325,6 +306,22 @@ export const chapterBitManipulation: Chapter = {
       why:
         "`1 << i` creates a mask with only bit i set; ANDing it with n keeps only that position's value — " +
         "nonzero exactly when bit i was already 1, and 0 otherwise, which is a read, not a modification.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd check whether a given integer is a power of two, using the " +
+          "n & (n-1) trick from this chapter, and explain why it works.",
+        "Given an array where every element appears exactly three times except one that appears once, " +
+          "explain why the simple XOR trick from this chapter no longer works directly, and describe (in " +
+          "words) what would need to change.",
+        "Describe how you would use bits of an integer to represent a small set of flags (for example, which " +
+          "of 5 features a user has enabled), and how you'd check, add, and remove a flag.",
+        "Explain, in your own words, the difference between Java's `>>` and `>>>` operators, and describe a " +
+          "situation where using the wrong one would produce an incorrect result.",
+      ],
     },
   ],
 };

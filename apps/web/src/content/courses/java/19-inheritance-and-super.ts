@@ -191,7 +191,7 @@ export const chapterInheritance: Chapter = {
         "Manager's own computePay() result, causing infinite recursion",
         "Employee's original computePay(), i.e. just baseSalary",
         "0, because super methods can't be called from an override",
-        "It fails to compile",
+        "It fails to compile, since the compiler insists that equals() and hashCode() are overridden together.",
       ],
       answer: 1,
       why:

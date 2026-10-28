@@ -249,33 +249,14 @@ export const chapterBinarySearch: Chapter = {
           "mentions 'binary search' by name.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Trace binarySearch by hand on {1,3,5,7,9,11,13} for target=7, writing out low, high, and mid at " +
-          "each step, the same way the trace above does.",
-        "Describe, in your own words, why searching for the first position where a sorted array of 0s " +
-          "followed by 1s switches from 0 to 1 is really the same problem as smallestSquareRootAtLeast, " +
-          "just phrased differently.",
-        "Given a function that tells you whether a given speed is 'fast enough' to finish a task within a " +
-          "deadline (true for speeds at or above some threshold, false below it), describe how you'd binary " +
-          "search on the answer to find the minimum sufficient speed.",
-        "Explain, in your own words, what could go wrong if the yes/no condition used in binary search on " +
-          "the answer weren't monotonic (for example, if it were true, false, true, false as the candidate " +
-          "increased) — would the algorithm still give a reliably correct answer?",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why is mid = low + (high - low) / 2 preferred over mid = (low + high) / 2?",
       options: [
-        "They behave differently for sorted arrays only",
-        "The first form avoids a potential integer overflow when low and high are both very large, which " +
-          "the second form can hit before the division even happens",
-        "The second form is faster to compute",
-        "There is no real difference; it's purely a style preference",
+        "They behave differently for sorted arrays only, and give identical midpoints for arrays that are not sorted.",
+        "The first form avoids a possible integer overflow when low and high are both very large.",
+        "The second form is slower to compute, because adding low and high takes more steps than subtracting them.",
+        "There is no real difference; it's purely a style preference, and both forms give the same result for every int.",
       ],
       answer: 1,
       why:
@@ -314,6 +295,24 @@ export const chapterBinarySearch: Chapter = {
         "Because the goal is the smallest qualifying value, a mid that already satisfies the condition is " +
         "a candidate answer itself and must remain in play — excluding it with mid - 1 could skip past the " +
         "true answer, unlike plain binarySearch where an exact non-match is safely excludable.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Trace binarySearch by hand on {1,3,5,7,9,11,13} for target=7, writing out low, high, and mid at " +
+          "each step, the same way the trace above does.",
+        "Describe, in your own words, why searching for the first position where a sorted array of 0s " +
+          "followed by 1s switches from 0 to 1 is really the same problem as smallestSquareRootAtLeast, " +
+          "just phrased differently.",
+        "Given a function that tells you whether a given speed is 'fast enough' to finish a task within a " +
+          "deadline (true for speeds at or above some threshold, false below it), describe how you'd binary " +
+          "search on the answer to find the minimum sufficient speed.",
+        "Explain, in your own words, what could go wrong if the yes/no condition used in binary search on " +
+          "the answer weren't monotonic (for example, if it were true, false, true, false as the candidate " +
+          "increased) — would the algorithm still give a reliably correct answer?",
+      ],
     },
   ],
 };

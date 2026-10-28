@@ -287,8 +287,8 @@ export const chapterStoppingConditions: Chapter = {
       kind: "quiz",
       question: "In the pantry lab, why does the agent keep ordering after the job is done?",
       options: [
-        "The model is broken",
-        "The stock tool returns the same reading, because the pantry changes on delivery and not on order, and nothing told the agent it was finished",
+        "The model has a fault that makes it forget what it ordered a moment ago, so it orders the same items again",
+        "Stock only changes on delivery, so the reading never moves, and nothing tells the agent the job is finished",
         "The order tool is failing silently",
         "The step limit is too low",
       ],
@@ -302,7 +302,7 @@ export const chapterStoppingConditions: Chapter = {
       kind: "quiz",
       question: "Your agent has a step limit of 10 and one tool that issues refunds. What is missing?",
       options: [
-        "Nothing — ten steps is a reasonable cap",
+        "Nothing — ten steps is a reasonable cap, and the step limit already covers refunds and everything else",
         "A separate limit on irreversible actions, since ten steps could mean ten refunds",
         "A larger step limit, so it has room to finish",
         "A longer tool description",

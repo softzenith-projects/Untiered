@@ -177,10 +177,10 @@ export const chapterIfElseSwitch: Chapter = {
       question:
         "Given `int x = 70;` and the ladder `if (x >= 90) ... else if (x >= 60) ... else if (x >= 50) ... else ...`, which branch runs?",
       options: [
-        "The x >= 90 branch, because it's checked first.",
-        "The x >= 60 branch — the first condition (top to bottom) that x actually satisfies.",
-        "The x >= 50 branch, since 70 also satisfies it.",
-        "All three matching branches run, one after another.",
+        "The x >= 90 branch, because it is the first one written and so is checked first.",
+        "The x >= 60 branch, the first condition (top to bottom) that x satisfies.",
+        "The x >= 50 branch, since 70 satisfies that condition as well.",
+        "All three matching branches run, one after another, from the top down to the last match.",
       ],
       answer: 1,
       why:
@@ -191,10 +191,10 @@ export const chapterIfElseSwitch: Chapter = {
       kind: "quiz",
       question: "In a classic switch, what happens if a matching case has no `break` and isn't the last case?",
       options: [
-        "Nothing else runs — Java stops automatically after the first match.",
-        "It's a compile error — every case must end in break.",
-        "Execution falls through into the next case's code, whether or not that case's label matches.",
-        "The switch silently skips to the default case.",
+        "Nothing else runs, because Java stops automatically after the first matching case.",
+        "It's a compile error, because every case in a classic switch must end with break.",
+        "Execution falls through into the next case's code, whether or not that case matches.",
+        "The switch silently jumps ahead to the default case, skipping every case in between.",
       ],
       answer: 2,
       why:

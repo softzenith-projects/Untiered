@@ -307,7 +307,7 @@ export const chapterTheReactLoop: Chapter = {
       kind: "quiz",
       question: "In the loop above, where did the argument `RFD-9182` come from?",
       options: [
-        "The goal, which contained it",
+        "The goal, which already contained the refund id in its text",
         "The model's knowledge of refund id formats",
         "The observation returned by the first tool call",
         "The tool definition's example value",
@@ -321,7 +321,7 @@ export const chapterTheReactLoop: Chapter = {
       kind: "quiz",
       question: "According to the ReAct paper, what problem with chain-of-thought reasoning does the loop address?",
       options: [
-        "That it is too slow",
+        "That it is too slow, because writing out every reasoning step takes the model far too long to be practical",
         "Hallucination and error propagation, because reasoning alone never meets an external source",
         "That it uses too many tokens",
         "That it only works on maths problems",
@@ -336,7 +336,7 @@ export const chapterTheReactLoop: Chapter = {
       kind: "quiz",
       question: "You build a loop that calls tools but never appends the results to the conversation. What happens?",
       options: [
-        "The agent works, just more slowly",
+        "The agent works, just more slowly, because the model remembers what each tool returned without being told",
         "Each turn looks identical to the model, so it repeats the same call until something stops it",
         "The tools fail to execute",
         "The model falls back to its training data and answers correctly",

@@ -196,6 +196,22 @@ export const chapterHashing: Chapter = {
         "same underlying move: trade O(n) memory for turning an O(n) rescan into an O(1) lookup.",
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "Add a repeated word of your own to the sentence and run again — the dictionary catches it without " +
+        "a second pass over the whole list.",
+      starter:
+        'words = "the quick brown fox jumps over the lazy dog the fox runs".split()\n' +
+        "counts = {}\n" +
+        "for word in words:\n" +
+        "    counts[word] = counts.get(word, 0) + 1\n" +
+        "\n" +
+        "for word, count in sorted(counts.items()):\n" +
+        "    print(word, count)\n",
+      expectedOutput: "brown 1\ndog 1\nfox 2\njumps 1\nlazy 1\nover 1\nquick 1\nruns 1\nthe 3",
+    },
+    {
       kind: "pitfall",
       items: [
         "Using a mutable object as a HashMap key, or one whose `hashCode()`/`equals()` aren't consistent " +
@@ -237,45 +253,13 @@ export const chapterHashing: Chapter = {
       ],
     },
     {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "Add a repeated word of your own to the sentence and run again — the dictionary catches it without " +
-        "a second pass over the whole list.",
-      starter:
-        'words = "the quick brown fox jumps over the lazy dog the fox runs".split()\n' +
-        "counts = {}\n" +
-        "for word in words:\n" +
-        "    counts[word] = counts.get(word, 0) + 1\n" +
-        "\n" +
-        "for word, count in sorted(counts.items()):\n" +
-        "    print(word, count)\n",
-      expectedOutput: "brown 1\ndog 1\nfox 2\njumps 1\nlazy 1\nover 1\nquick 1\nruns 1\nthe 3",
-    },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Given a list of exam scores, describe, in your own words, a HashMap-based approach to find the " +
-          "single score that appears most often.",
-        "Given two arrays, describe a HashSet-based approach to find all values present in both — and " +
-          "explain why this beats checking every element of one array against every element of the other.",
-        "Describe how you'd adapt Two Sum's HashMap approach (from an earlier chapter) to instead count how " +
-          "many pairs of numbers sum to exactly a target, allowing duplicate values in the input.",
-        "Explain, in your own words, why a HashMap keyed on a student's roll number (a small, dense integer " +
-          "range like 1-60) could reasonably be replaced by a plain array instead — what's gained and what, " +
-          "if anything, is lost?",
-      ],
-    },
-    {
       kind: "quiz",
       question: "What is a hash collision?",
       options: [
-        "When a HashMap runs out of memory",
-        "When two different keys are hashed to the same bucket index",
-        "When a key is inserted twice with the same value",
-        "An error that only happens with String keys",
+        "When a HashMap runs out of memory and cannot accept any more keys",
+        "When two different keys map to the same bucket index",
+        "When a key is inserted twice with the same value, so the second put is repeated",
+        "An error that only happens with String keys, because other types hash differently",
       ],
       answer: 1,
       why:
@@ -302,17 +286,32 @@ export const chapterHashing: Chapter = {
       kind: "quiz",
       question: "In groupAnagrams, why does sorting each word's letters before using it as a map key work?",
       options: [
-        "Sorting is unrelated to correctness — it's only there for output formatting",
-        "Two words are anagrams exactly when their letters, sorted, produce the identical string, so the " +
-          "sorted form is a key shared by every word in the same anagram group",
-        "HashMap requires all keys to be sorted internally",
-        "Sorting makes the hash function run faster",
+        "Sorting is unrelated to correctness; it's only there so the groups are printed in a tidy order.",
+        "Anagrams have identical sorted letters, so the sorted form is a key shared by the whole group.",
+        "HashMap requires all of its keys to be sorted internally, so the letters must be sorted before use.",
+        "Sorting makes the hash function run faster, because shorter ordered strings need fewer steps to hash.",
       ],
       answer: 1,
       why:
         "Anagrams contain exactly the same letters in some order — sorting removes the 'order' part, so " +
         "every anagram of the same word produces an identical sorted string, which is exactly what makes " +
         "it a valid shared grouping key.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Given a list of exam scores, describe, in your own words, a HashMap-based approach to find the " +
+          "single score that appears most often.",
+        "Given two arrays, describe a HashSet-based approach to find all values present in both — and " +
+          "explain why this beats checking every element of one array against every element of the other.",
+        "Describe how you'd adapt Two Sum's HashMap approach (from an earlier chapter) to instead count how " +
+          "many pairs of numbers sum to exactly a target, allowing duplicate values in the input.",
+        "Explain, in your own words, why a HashMap keyed on a student's roll number (a small, dense integer " +
+          "range like 1-60) could reasonably be replaced by a plain array instead — what's gained and what, " +
+          "if anything, is lost?",
+      ],
     },
   ],
 };

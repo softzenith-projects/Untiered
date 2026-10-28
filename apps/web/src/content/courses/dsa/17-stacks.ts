@@ -275,6 +275,49 @@ export const chapterStacks: Chapter = {
           "using the LIFO property to hold operands or operators awaiting their turn.",
       ],
     },
+    {
+      kind: "quiz",
+      question: "Why can't a single counter (incrementing on '(' and decrementing on ')') correctly validate a string with multiple bracket types like ([{}])?",
+      options: [
+        "It can: counters and stacks are equivalent for this problem, so the counter is just simpler",
+        "A counter tracks only how many brackets are open, not which kind is waiting, so it misses a mismatch like ([)]",
+        "Counters are slower than stacks in Java, so the counter version would time out",
+        "Counters can only count upwards and never down, so a closing bracket cannot be recorded",
+      ],
+      answer: 1,
+      why:
+        "Validity depends on the most recently opened bracket matching the next one closed — that requires " +
+        "remembering an ordered sequence of *which* brackets are open, which only a stack captures.",
+    },
+    {
+      kind: "quiz",
+      question: "In nextGreater, why is the total time complexity O(n) despite the while loop nested inside the for loop?",
+      options: [
+        "Because the while loop never actually runs more than once in total, so the code is a single pass",
+        "Each index is pushed once and popped at most once overall, so pushes plus pops are bounded by 2n, not n times n",
+        "Because Java's ArrayDeque makes pop() take O(1) regardless of context, which alone guarantees O(n)",
+        "It isn't O(n): the nested loops mean it's actually O(n log n), because pops happen in sorted order",
+      ],
+      answer: 1,
+      why:
+        "Amortised analysis: summing the while loop's iterations across every outer-loop step never exceeds " +
+        "the total number of pops possible (n), since each index leaves the stack at most once.",
+    },
+    {
+      kind: "quiz",
+      question: "What does it mean for the index stack in nextGreater to be 'monotonic decreasing'?",
+      options: [
+        "The indices themselves are stored in decreasing numeric order from the bottom of the stack to the top",
+        "The values nums[index] that the stacked indices point to decrease from bottom to top, at all times",
+        "The stack shrinks by exactly one element every iteration, so its size falls steadily as the loop runs",
+        "Push operations happen less and less often as the loop moves along, so the stack ends up empty",
+      ],
+      answer: 1,
+      why:
+        "The invariant maintained is on the *values* pointed to, not the indices: whenever a new value " +
+        "would break that decreasing order, the stack pops until the order is restored, which is exactly " +
+        "what resolves each popped index's next-greater answer.",
+    },
     { kind: "h", text: "Practice problems" },
     {
       kind: "list",
@@ -290,52 +333,6 @@ export const chapterStacks: Chapter = {
         "Describe, in words, how to evaluate a postfix expression like '3 4 + 2 *' using a single stack of " +
           "numbers.",
       ],
-    },
-    {
-      kind: "quiz",
-      question: "Why can't a single counter (incrementing on '(' and decrementing on ')') correctly validate a string with multiple bracket types like ([{}])?",
-      options: [
-        "It can — counters and stacks are equivalent for this problem",
-        "A counter tracks only how many brackets are open, not which specific kind is waiting to close, so " +
-          "it can't detect a mismatch like ([)]",
-        "Counters are slower than stacks in Java",
-        "Counters can only count up, never down",
-      ],
-      answer: 1,
-      why:
-        "Validity depends on the most recently opened bracket matching the next one closed — that requires " +
-        "remembering an ordered sequence of *which* brackets are open, which only a stack captures.",
-    },
-    {
-      kind: "quiz",
-      question: "In nextGreater, why is the total time complexity O(n) despite the while loop nested inside the for loop?",
-      options: [
-        "Because the while loop never actually runs more than once total",
-        "Because each index is pushed exactly once and popped at most once across the entire run, so total " +
-          "pushes plus pops is bounded by 2n, not n times n",
-        "Because Java's ArrayDeque makes pop() take O(1) regardless of context, which alone guarantees O(n)",
-        "It isn't O(n) — it's actually O(n log n)",
-      ],
-      answer: 1,
-      why:
-        "Amortised analysis: summing the while loop's iterations across every outer-loop step never exceeds " +
-        "the total number of pops possible (n), since each index leaves the stack at most once.",
-    },
-    {
-      kind: "quiz",
-      question: "What does it mean for the index stack in nextGreater to be 'monotonic decreasing'?",
-      options: [
-        "The indices themselves are stored in decreasing numeric order",
-        "The values nums[index] that the stacked indices point to decrease from the bottom of the stack to " +
-          "the top, at all times",
-        "The stack shrinks by one element every iteration",
-        "Push operations happen less and less frequently over time",
-      ],
-      answer: 1,
-      why:
-        "The invariant maintained is on the *values* pointed to, not the indices: whenever a new value " +
-        "would break that decreasing order, the stack pops until the order is restored, which is exactly " +
-        "what resolves each popped index's next-greater answer.",
     },
   ],
 };

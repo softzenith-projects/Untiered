@@ -181,11 +181,10 @@ export const chapterFirstProgram: Chapter = {
       kind: "quiz",
       question: "Why must `main` be declared `static`?",
       options: [
-        "Purely a style convention with no technical reason.",
-        "Because the JVM calls `main` before any object of the class has been created, and `static` " +
-          "members don't need an object to be called.",
-        "Because `static` methods run faster than non-static ones.",
-        "Because `void` methods are required to also be `static`.",
+        "Purely a style convention that most programmers follow, with no technical reason behind it.",
+        "Because the JVM calls main before any object exists, and static members can be called without an object.",
+        "Because static methods run faster than non-static ones, and main has to start the program quickly.",
+        "Because every void method in a class is required by the compiler to also be static.",
       ],
       answer: 1,
       why:

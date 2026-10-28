@@ -294,10 +294,10 @@ export const chapterObservationsAndRecovery: Chapter = {
       kind: "quiz",
       question: "An agent calls the same tool with the same arguments five turns in a row. What is the most likely cause?",
       options: [
-        "The model is too small",
+        "The model is too small to remember the arguments it used on the previous turns of the loop",
         "The temperature is too low",
         "Nothing new is entering its context — the result or the error is not being fed back",
-        "The tool is too slow",
+        "The tool is too slow, so the model keeps timing out and asking for the same result again",
       ],
       answer: 2,
       why:
@@ -310,7 +310,7 @@ export const chapterObservationsAndRecovery: Chapter = {
       question: "A tool returns a 4,000-token log and your budget is 2,000. What is the best approach?",
       options: [
         "Drop the observation entirely to stay under budget",
-        "Keep the first 200 tokens",
+        "Keep the first 200 tokens and discard the rest, since logs always put the important lines at the start",
         "Summarise or filter it towards what the goal needs, keeping the lines that matter",
         "Raise the budget and send all of it, every turn, for the rest of the run",
       ],
@@ -324,7 +324,7 @@ export const chapterObservationsAndRecovery: Chapter = {
       kind: "quiz",
       question: "Why is a swallowed exception worse than a returned error?",
       options: [
-        "It is slower",
+        "It is slower, because the exception has to be caught and thrown away before the next turn can begin",
         "The agent sees an unchanged context, so it cannot know anything went wrong and repeats the call",
         "It breaks the tool registry",
         "It uses more tokens",

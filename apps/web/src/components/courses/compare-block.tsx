@@ -1,5 +1,6 @@
 import type { Block } from "@/content/courses/types";
 import { InlineText } from "@/components/courses/inline-text";
+import { LessonPanel } from "@/components/courses/lesson-box";
 
 type CompareBlockData = Extract<Block, { kind: "compare" }>;
 
@@ -25,23 +26,18 @@ export function CompareBlock({ block }: { block: CompareBlockData }) {
   const columnClass = GRID_COLS[block.columns.length] ?? "sm:grid-cols-2";
 
   return (
-    <figure className="rounded-md border border-line-strong bg-surface-raised p-1">
-      {block.title ? (
-        <figcaption className="px-4 pt-3 pb-1 text-caption font-medium text-ink">
-          <InlineText text={block.title} />
-        </figcaption>
-      ) : null}
-      <div className={`grid grid-cols-1 gap-3 p-3 ${columnClass}`}>
+    <LessonPanel label="Side by side" title={block.title ? <InlineText text={block.title} /> : undefined}>
+      <div className={`grid grid-cols-1 gap-3 ${columnClass}`}>
         {block.columns.map((column, i) => (
           <div
             key={column.label}
-            className="rounded-md border-t-4 bg-surface-sunken px-4 py-3"
+            className="rounded-lg border border-line border-t-4 bg-surface px-4 py-3"
             style={{ borderTopColor: COLUMN_ACCENTS[i % COLUMN_ACCENTS.length] }}
           >
             <p className="text-heading font-semibold text-ink">
               <InlineText text={column.label} />
             </p>
-            <ul className="mt-2 list-disc space-y-2 pl-5 text-body leading-relaxed text-ink marker:text-accent-strong">
+            <ul className="mt-2 list-disc space-y-2 pl-5 text-body leading-relaxed text-ink marker:text-ink-subtle">
               {column.items.map((item, j) => (
                 <li key={j}>
                   <InlineText text={item} />
@@ -51,6 +47,6 @@ export function CompareBlock({ block }: { block: CompareBlockData }) {
           </div>
         ))}
       </div>
-    </figure>
+    </LessonPanel>
   );
 }

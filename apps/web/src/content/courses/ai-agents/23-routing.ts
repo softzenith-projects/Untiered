@@ -208,8 +208,8 @@ export const chapterRouting: Chapter = {
       kind: "quiz",
       question: "Why is a small classification call often cheaper overall than sending everything to a large model?",
       options: [
-        "Small models are always more accurate",
-        "The classifier is one cheap call, and most requests then go to a cheap handler instead of an expensive one",
+        "Small models are always more accurate than large ones, so nothing is lost by sending every request to a small one",
+        "One cheap classification call lets most requests go to a cheap handler instead of an expensive one",
         "Classification calls are not billed",
         "The large model caches the classification",
       ],
@@ -224,7 +224,7 @@ export const chapterRouting: Chapter = {
       options: [
         "Route it to the general handler — that is what the label says",
         "Route it to the fallback, because the confidence is below the floor you set",
-        "Retry the classification at a higher temperature",
+        "Retry the classification at a higher temperature until it returns a label with higher confidence",
         "Route it to the most expensive handler to be safe",
       ],
       answer: 1,
@@ -236,7 +236,7 @@ export const chapterRouting: Chapter = {
       kind: "quiz",
       question: "When is routing the wrong pattern?",
       options: [
-        "When there are three or more categories",
+        "When there are three or more categories, because a classifier cannot tell more than two apart reliably",
         "When the categories are distinct and classification is reliable",
         "When the categories overlap, so the same input legitimately belongs to two of them",
         "When you want to use a cheaper model for easy cases",

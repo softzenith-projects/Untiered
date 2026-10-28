@@ -83,7 +83,7 @@ export function GuidedLessonControls({
         <header className="rounded-surface border border-line bg-surface-raised px-5 py-6 shadow-[var(--shadow-sm)] sm:px-8 sm:py-7">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="font-mono text-micro tracking-widest text-accent uppercase">Guided lesson</p>
+              <p className="font-mono text-micro font-semibold tracking-widest text-accent-strong uppercase">Guided lesson</p>
               <h2 id={`${lessonId}-title`} className="mt-2 text-title text-ink">Learn it. Try it. Make it yours.</h2>
               <p className="mt-2 max-w-[68ch] text-caption leading-relaxed text-ink-muted">Five short steps take you from the first idea to an answer you can explain.</p>
             </div>
@@ -115,16 +115,16 @@ export function GuidedLessonControls({
               <div className="relative flex items-start gap-4">
                 <span className={`mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl border ${visitedBeats.has(index) ? "border-accent bg-accent text-accent-contrast" : "border-accent/25 bg-accent-wash text-accent"}`}><BeatIcon beat={beat.key} /></span>
                 <div className="min-w-0">
-                  <p className="font-mono text-micro tracking-widest text-accent uppercase">Step {String(index + 1).padStart(2, "0")}</p>
+                  <p className="font-mono text-micro font-semibold tracking-widest text-accent-strong uppercase">Step {String(index + 1).padStart(2, "0")}</p>
                   <h3 id={`${lessonId}-${beat.key}-title`} className="mt-1 text-title text-ink">{beat.label}</h3>
                   <p className="mt-2 max-w-[68ch] text-body leading-relaxed text-ink-muted">{beat.description}</p>
                 </div>
               </div>
               <div className="relative mt-8 sm:pl-14">
-                {beat.content ?? <p className="max-w-[65ch] rounded-md border border-dashed border-line-strong bg-surface-sunken px-4 py-3 text-caption leading-relaxed text-ink-muted">This chapter does not need a separate activity for this section. Continue when you are ready.</p>}
+                {beat.content ?? <p className="max-w-[65ch] rounded-xl border border-dashed border-line-strong bg-surface-sunken px-5 py-4 text-caption leading-relaxed text-ink-muted">This chapter does not need a separate activity for this section. Continue when you are ready.</p>}
                 <div className="mt-9 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
                   <p className="font-mono text-micro text-ink-subtle">{beat.itemCount} lesson {beat.itemCount === 1 ? "item" : "items"}</p>
-                  {index < beats.length - 1 ? <button type="button" onClick={() => visitBeat(index + 1)} className="inline-flex min-h-11 items-center rounded-md bg-accent px-4 py-2 text-caption font-medium text-accent-contrast transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">Continue to {beats[index + 1]!.shortLabel} <span aria-hidden="true" className="ml-1">↓</span></button> : null}
+                  {index < beats.length - 1 ? <button type="button" onClick={() => visitBeat(index + 1)} className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 text-caption font-semibold text-accent-contrast transition-colors hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">Continue to {beats[index + 1]!.shortLabel} <span aria-hidden="true" className="ml-1">↓</span></button> : null}
                 </div>
               </div>
             </section>

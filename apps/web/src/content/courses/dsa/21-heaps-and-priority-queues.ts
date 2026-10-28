@@ -362,22 +362,6 @@ export const chapterHeapsAndPriorityQueues: Chapter = {
           "currently-closest unvisited node next is exactly what a min-heap is built to answer fast.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd find the median of a running stream of numbers using two " +
-          "heaps (one max-heap for the smaller half, one min-heap for the larger half).",
-        "Given k sorted arrays, describe how a min-heap of size k finds the overall smallest remaining " +
-          "element across all arrays at each step, without merging them all into one array first.",
-        "Explain, in words, why building a heap from n elements all at once (heapify) is O(n), while " +
-          "inserting the same n elements one at a time is O(n log n) — what's different about the work done " +
-          "near the leaves versus near the root?",
-        "Describe how a max-heap could be used to repeatedly serve tasks by priority, where a higher number " +
-          "means more urgent, and explain what changes compared to the min-heap code in this chapter.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What does a min-heap actually guarantee about its structure?",
@@ -411,12 +395,29 @@ export const chapterHeapsAndPriorityQueues: Chapter = {
     },
     {
       kind: "quiz",
-      question: "For a node at index i in an array-backed heap, where are its two children?",
-      options: ["i-1 and i+1", "2i and 2i+1", "2i+1 and 2i+2", "i/2 and i*2"],
+      question: "In an array-backed heap with the root at index 0, where are the two children of the node at index i?",
+      options: ["i-1 and i+1 (the neighbours)", "2i and 2i+1", "2i+1 and 2i+2", "i/2 and i*2 (halved and doubled)"],
       answer: 2,
       why:
-        "The complete-binary-tree packing places a node's children at 2i+1 and 2i+2, and its parent at " +
+        "With the root at index 0, the complete-binary-tree packing places a node's children at 2i+1 and " +
+        "2i+2, and its parent at " +
         "(i-1)/2 (integer division) — the formulas push() and pop() both rely on directly.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd find the median of a running stream of numbers using two " +
+          "heaps (one max-heap for the smaller half, one min-heap for the larger half).",
+        "Given k sorted arrays, describe how a min-heap of size k finds the overall smallest remaining " +
+          "element across all arrays at each step, without merging them all into one array first.",
+        "Explain, in words, why building a heap from n elements all at once (heapify) is O(n), while " +
+          "inserting the same n elements one at a time is O(n log n) — what's different about the work done " +
+          "near the leaves versus near the root?",
+        "Describe how a max-heap could be used to repeatedly serve tasks by priority, where a higher number " +
+          "means more urgent, and explain what changes compared to the min-heap code in this chapter.",
+      ],
     },
   ],
 };

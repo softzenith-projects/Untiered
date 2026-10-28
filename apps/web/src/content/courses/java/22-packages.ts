@@ -164,10 +164,10 @@ export const chapterPackages: Chapter = {
       kind: "quiz",
       question: "A package-private method in com.school.util.MathUtils — can com.school.app.Main call it, even after importing MathUtils?",
       options: [
-        "Yes, import grants full access",
-        "No — package-private access doesn't extend to a different package, regardless of imports",
-        "Only if Main also declares package com.school.util",
-        "Only for static methods",
+        "Yes, because the import gives Main full access to every method in MathUtils.",
+        "No: package-private access doesn't extend to another package, whatever is imported.",
+        "Only if Main also declares package com.school.util at the top of its own file.",
+        "Only if the method is static, since imports expose the static methods of other packages.",
       ],
       answer: 1,
       why:

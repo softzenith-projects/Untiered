@@ -208,7 +208,7 @@ export const chapterEvaluatorOptimiser: Chapter = {
       kind: "quiz",
       question: "When is evaluator-optimiser particularly effective, according to Anthropic's guidance?",
       options: [
-        "When the task is open-ended and hard to specify",
+        "When the task is open-ended and hard to specify, because the evaluator can then work out the goal itself",
         "When there are clear evaluation criteria, and iterative refinement provides measurable value",
         "Whenever the first draft is unsatisfactory",
         "When you have two different models available",
@@ -222,7 +222,7 @@ export const chapterEvaluatorOptimiser: Chapter = {
       kind: "quiz",
       question: "Your criterion is \"the JSON must match this schema\". Who should evaluate it?",
       options: [
-        "A model, because it understands intent",
+        "A model, because it understands intent and can judge whether the shape of the JSON is acceptable",
         "Code, because a schema check is free, instant, exact and perfectly consistent",
         "Both, for redundancy",
         "A human reviewer",
@@ -236,7 +236,7 @@ export const chapterEvaluatorOptimiser: Chapter = {
       kind: "quiz",
       question: "Which feedback will the generator act on most reliably?",
       options: [
-        "\"Quality: 6/10\"",
+        "\"Quality: 6/10, so there is clearly still room to improve this draft before it is finished.\"",
         "\"This could be better.\"",
         "\"Missing a counter-argument; two sources cited, three required.\"",
         "\"Try again, more carefully.\"",

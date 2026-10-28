@@ -259,7 +259,7 @@ export const chapterShortAndLongTermMemory: Chapter = {
       kind: "quiz",
       question: "Your assistant summarises the conversation every turn, summarising the previous summary each time. What goes wrong?",
       options: [
-        "Nothing — this keeps the context small",
+        "Nothing goes wrong — this keeps the context small, and each pass makes the summary a little more accurate than before",
         "Detail is lost a little more on every pass, and you pay for a summarisation call every turn",
         "The summary grows without bound",
         "The model refuses after a few iterations",
@@ -273,7 +273,7 @@ export const chapterShortAndLongTermMemory: Chapter = {
       kind: "quiz",
       question: "Which of these belongs in long-term storage rather than the transcript?",
       options: [
-        "The user's current question",
+        "The user's current question, since it is the most important thing to remember for next time",
         "The corrected email address you established this session",
         "Which page of the help centre they were reading",
         "The one-time code they just typed",
@@ -291,7 +291,7 @@ export const chapterShortAndLongTermMemory: Chapter = {
         "A confidence score from the model",
         "An owner, access control, a retention period and a deletion path",
         "An embedding",
-        "A timestamp, and nothing more",
+        "A timestamp, so that you can tell how old the fact is — nothing more is needed",
       ],
       answer: 1,
       why:

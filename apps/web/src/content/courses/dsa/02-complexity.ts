@@ -243,6 +243,32 @@ export const chapterComplexity: Chapter = {
         "recurring theme in the chapters ahead.",
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "Run this as-is, then change the list `[10, 20, 40]` to `[10, 20, 40, 80]` and watch the quadratic " +
+        "count grow far faster than the linear one — that gap is what Big-O is naming.",
+      starter:
+        "def linear_work(n):\n" +
+        "    count = 0\n" +
+        "    for _ in range(n):\n" +
+        "        count += 1\n" +
+        "    return count\n" +
+        "\n" +
+        "\n" +
+        "def quadratic_work(n):\n" +
+        "    count = 0\n" +
+        "    for _ in range(n):\n" +
+        "        for _ in range(n):\n" +
+        "            count += 1\n" +
+        "    return count\n" +
+        "\n" +
+        "\n" +
+        "for n in [10, 20, 40]:\n" +
+        '    print(f"n={n}: linear={linear_work(n)}, quadratic={quadratic_work(n)}")\n',
+      expectedOutput: "n=10: linear=10, quadratic=100\nn=20: linear=20, quadratic=400\nn=40: linear=40, quadratic=1600",
+    },
+    {
       kind: "pitfall",
       items: [
         "Confusing Big-O with actual runtime — an O(n) algorithm with a huge constant factor can be slower " +
@@ -280,30 +306,43 @@ export const chapterComplexity: Chapter = {
       ],
     },
     {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "Run this as-is, then change the list `[10, 20, 40]` to `[10, 20, 40, 80]` and watch the quadratic " +
-        "count grow far faster than the linear one — that gap is what Big-O is naming.",
-      starter:
-        "def linear_work(n):\n" +
-        "    count = 0\n" +
-        "    for _ in range(n):\n" +
-        "        count += 1\n" +
-        "    return count\n" +
-        "\n" +
-        "\n" +
-        "def quadratic_work(n):\n" +
-        "    count = 0\n" +
-        "    for _ in range(n):\n" +
-        "        for _ in range(n):\n" +
-        "            count += 1\n" +
-        "    return count\n" +
-        "\n" +
-        "\n" +
-        "for n in [10, 20, 40]:\n" +
-        '    print(f"n={n}: linear={linear_work(n)}, quadratic={quadratic_work(n)}")\n',
-      expectedOutput: "n=10: linear=10, quadratic=100\nn=20: linear=20, quadratic=400\nn=40: linear=40, quadratic=1600",
+      kind: "quiz",
+      question: "What does Big-O notation primarily describe?",
+      options: [
+        "The exact number of seconds a program takes to run on a given machine",
+        "How the amount of work grows as the input size grows, ignoring constant factors",
+        "How much disk space the source code file takes up once it has been compiled",
+        "The programming language's raw execution speed compared to other languages",
+      ],
+      answer: 1,
+      why:
+        "Big-O captures the shape of growth — how work scales as n grows — deliberately ignoring constant " +
+        "multipliers and machine-specific runtime, which is why it works as a language-independent measure.",
+    },
+    {
+      kind: "quiz",
+      question: "A function has one loop over n elements, followed by a separate, second loop over the same n elements. What is its time complexity?",
+      options: ["O(n²), because there are two loops, so the work is multiplied", "O(2n), which must be kept separate from O(n) in the final answer", "O(n), since the two loops add rather than nest", "O(log n)"],
+      answer: 2,
+      why:
+        "Two loops that run one after another (not nested) add their costs: O(n) + O(n) simplifies to O(n) " +
+        "under Big-O's rule of dropping constant factors. Nesting one loop inside another is what produces " +
+        "O(n²), not simply having two loops in the same function.",
+    },
+    {
+      kind: "quiz",
+      question: "Why do interviews generally expect worst-case complexity rather than best-case?",
+      options: [
+        "Because best-case complexity is mathematically undefined, so it cannot be written in Big-O notation",
+        "A guarantee that holds only on lucky input isn't a reliable guarantee for real use",
+        "Because worst-case is always the same as average-case, so only one of them needs stating",
+        "Because best-case analysis applies only to sorting algorithms and not to other kinds of code",
+      ],
+      answer: 1,
+      why:
+        "Worst-case complexity describes what you can rely on no matter what input arrives — a solution " +
+        "that's fast only when the input happens to be favourable doesn't give you a dependable guarantee, " +
+        "which is what interviewers, and production systems, actually need.",
     },
     { kind: "h", text: "Practice problems" },
     {
@@ -323,45 +362,6 @@ export const chapterComplexity: Chapter = {
         "Describe a real situation (not necessarily code) where you'd accept using more memory in exchange " +
           "for a faster result, and one where you'd refuse that trade — explain what makes the difference.",
       ],
-    },
-    {
-      kind: "quiz",
-      question: "What does Big-O notation primarily describe?",
-      options: [
-        "The exact number of seconds a program takes to run",
-        "How the amount of work grows as the input size grows, ignoring constant factors",
-        "How much disk space the source code file takes up",
-        "The programming language's execution speed",
-      ],
-      answer: 1,
-      why:
-        "Big-O captures the shape of growth — how work scales as n grows — deliberately ignoring constant " +
-        "multipliers and machine-specific runtime, which is why it works as a language-independent measure.",
-    },
-    {
-      kind: "quiz",
-      question: "A function has one loop over n elements, followed by a separate, second loop over the same n elements. What is its time complexity?",
-      options: ["O(n²), because there are two loops", "O(2n), which must be kept separate from O(n)", "O(n), since the two loops add rather than nest", "O(log n)"],
-      answer: 2,
-      why:
-        "Two loops that run one after another (not nested) add their costs: O(n) + O(n) simplifies to O(n) " +
-        "under Big-O's rule of dropping constant factors. Nesting one loop inside another is what produces " +
-        "O(n²), not simply having two loops in the same function.",
-    },
-    {
-      kind: "quiz",
-      question: "Why do interviews generally expect worst-case complexity rather than best-case?",
-      options: [
-        "Because best-case complexity is mathematically undefined",
-        "Because a guarantee that only holds on lucky input isn't a reliable guarantee for real use",
-        "Because worst-case is always the same as average-case",
-        "Because best-case only applies to sorting algorithms",
-      ],
-      answer: 1,
-      why:
-        "Worst-case complexity describes what you can rely on no matter what input arrives — a solution " +
-        "that's fast only when the input happens to be favourable doesn't give you a dependable guarantee, " +
-        "which is what interviewers, and production systems, actually need.",
     },
   ],
 };

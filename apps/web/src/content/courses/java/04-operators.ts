@@ -188,11 +188,10 @@ export const chapterOperators: Chapter = {
       kind: "quiz",
       question: "In `boolean ok = (x != null) && (x.length() > 0);`, why does the order of the two checks matter?",
       options: [
-        "It doesn't matter — Java always evaluates both sides of &&.",
-        "Because of short-circuiting: if x is null, the left side is false and x.length() is never " +
-          "evaluated, avoiding a crash.",
-        "Because && only works with numbers, not method calls.",
-        "Because Java evaluates the right side of && before the left side.",
+        "It doesn't matter, because Java always evaluates both sides of && before it decides the result.",
+        "Because of short-circuiting: if x is null the left side is false, so x.length() is never evaluated.",
+        "Because && accepts method calls only on its right side, so the null check has to come first.",
+        "Because Java evaluates the right side of && before the left, so the null check must come last.",
       ],
       answer: 1,
       why:

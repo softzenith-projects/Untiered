@@ -179,6 +179,20 @@ export const chapterArraysInMemory: Chapter = {
       ],
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "`values[2]` reads one slot directly, no matter how long the list is. Inserting at the front shifts " +
+        "every existing element along. Try `values.append(60)` instead of the insert and compare.",
+      starter:
+        "values = [10, 20, 30, 40, 50]\n" +
+        'print("values[2] =", values[2])\n' +
+        "\n" +
+        "values.insert(0, 5)\n" +
+        'print("after inserting 5 at the front:", values)\n',
+      expectedOutput: "values[2] = 30\nafter inserting 5 at the front: [5, 10, 20, 30, 40, 50]",
+    },
+    {
       kind: "pitfall",
       items: [
         "Assuming all array operations are O(1) because indexing is — insertion and deletion away from the " +
@@ -214,18 +228,48 @@ export const chapterArraysInMemory: Chapter = {
       ],
     },
     {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "`values[2]` reads one slot directly, no matter how long the list is. Inserting at the front shifts " +
-        "every existing element along. Try `values.append(60)` instead of the insert and compare.",
-      starter:
-        "values = [10, 20, 30, 40, 50]\n" +
-        'print("values[2] =", values[2])\n' +
-        "\n" +
-        "values.insert(0, 5)\n" +
-        'print("after inserting 5 at the front:", values)\n',
-      expectedOutput: "values[2] = 30\nafter inserting 5 at the front: [5, 10, 20, 30, 40, 50]",
+      kind: "quiz",
+      question: "Why is reading array[i] an O(1) operation regardless of the array's size?",
+      options: [
+        "Because Java caches every array in a fast memory area, so each read is answered instantly",
+        "The element's address is computed directly from the base address and index, with no scanning",
+        "Because arrays are always small in practice, so scanning them never takes noticeable time",
+        "Because array[i] secretly uses binary search internally, which keeps the lookup very short",
+      ],
+      answer: 1,
+      why:
+        "Contiguous, same-sized storage means the address of any element can be calculated directly (base " +
+        "+ i × element size) without inspecting any other element — that calculation takes the same " +
+        "time whether the array holds 5 elements or 5 million.",
+    },
+    {
+      kind: "quiz",
+      question: "Why does inserting a value near the start of an array typically cost O(n)?",
+      options: [
+        "Because Java recompiles the array's type each time a value is inserted into it, which takes time",
+        "Every element from the insertion point onward must shift one slot to keep the array contiguous",
+        "Because array insertion always requires sorting the whole array first, so a sort is hidden inside",
+        "It doesn't cost O(n): inserting anywhere in an array is O(1), because the index is already known",
+      ],
+      answer: 1,
+      why:
+        "To keep the block of memory contiguous and preserve order, every element from the target index " +
+        "to the end must move one slot over — for an insert near the front, that can mean shifting " +
+        "almost the whole array.",
+    },
+    {
+      kind: "quiz",
+      question: "Which operation is the exception that stays O(1) even though it modifies the array's contents?",
+      options: [
+        "Inserting at the very start, since the index is known",
+        "Deleting the middle element, since nothing needs to move",
+        "Appending at the end, when spare capacity already exists",
+        "Reversing the whole array in place, because swaps are constant time",
+      ],
+      answer: 2,
+      why:
+        "Appending to the end, with room already reserved, touches only the one new slot — there are no " +
+        "later elements that need to shift to make room, unlike inserting anywhere before the end.",
     },
     { kind: "h", text: "Practice problems" },
     {
@@ -241,52 +285,6 @@ export const chapterArraysInMemory: Chapter = {
         "Describe a real scenario where you'd pick a structure that supports fast insertion anywhere over a " +
           "plain array, and explain what you'd be trading away to get it.",
       ],
-    },
-    {
-      kind: "quiz",
-      question: "Why is reading array[i] an O(1) operation regardless of the array's size?",
-      options: [
-        "Because Java caches every array in memory automatically",
-        "Because the element's memory address is computed directly from the base address and index, with " +
-          "no scanning",
-        "Because arrays are always small in practice",
-        "Because array[i] secretly uses binary search internally",
-      ],
-      answer: 1,
-      why:
-        "Contiguous, same-sized storage means the address of any element can be calculated directly (base " +
-        "+ i × element size) without inspecting any other element — that calculation takes the same " +
-        "time whether the array holds 5 elements or 5 million.",
-    },
-    {
-      kind: "quiz",
-      question: "Why does inserting a value near the start of an array typically cost O(n)?",
-      options: [
-        "Because Java recompiles the array's type",
-        "Because every element from the insertion point onward must shift one slot to keep the array " +
-          "contiguous",
-        "Because array insertion always requires sorting first",
-        "It doesn't — inserting anywhere in an array is O(1)",
-      ],
-      answer: 1,
-      why:
-        "To keep the block of memory contiguous and preserve order, every element from the target index " +
-        "to the end must move one slot over — for an insert near the front, that can mean shifting " +
-        "almost the whole array.",
-    },
-    {
-      kind: "quiz",
-      question: "Which operation is the exception that stays O(1) even though it modifies the array's contents?",
-      options: [
-        "Inserting at the very start",
-        "Deleting the middle element",
-        "Appending at the end, when spare capacity already exists",
-        "Reversing the whole array",
-      ],
-      answer: 2,
-      why:
-        "Appending to the end, with room already reserved, touches only the one new slot — there are no " +
-        "later elements that need to shift to make room, unlike inserting anywhere before the end.",
     },
   ],
 };

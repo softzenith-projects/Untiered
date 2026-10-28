@@ -255,7 +255,7 @@ export const chapterMultiAgentAndHandoffs: Chapter = {
       kind: "quiz",
       question: "In the OpenAI Agents SDK's documented loop, what happens when the LLM requests a handoff?",
       options: [
-        "The run ends and a new run starts from scratch",
+        "The run ends and a brand-new run starts from scratch with the second agent as the only one",
         "The runner updates the current agent and input, and re-runs the loop",
         "The handoff is queued until the current agent finishes",
         "Both agents run in parallel from then on",
@@ -269,10 +269,10 @@ export const chapterMultiAgentAndHandoffs: Chapter = {
       kind: "quiz",
       question: "What is the most defensible reason to split one agent into several?",
       options: [
-        "It looks more sophisticated in a design review",
+        "It looks more sophisticated in a design review, which helps when you need others to approve the design",
         "The parts need genuinely different permissions — one can issue refunds, another is read-only",
         "It reduces the number of model calls",
-        "Each agent can then have a name and a personality",
+        "Each agent can then have its own name and personality, which makes users trust the answers more",
         ],
       answer: 1,
       why:
@@ -283,7 +283,7 @@ export const chapterMultiAgentAndHandoffs: Chapter = {
       kind: "quiz",
       question: "Your agents hand back and forth without resolving the request. What is the fix?",
       options: [
-        "A better system prompt telling them to cooperate",
+        "A better system prompt that tells the agents firmly to cooperate and not to hand the request back",
         "A handoff limit in the runtime, plus an allow-list of which agent may hand to which",
         "More agents, so there is always one that can help",
         "A larger model for each agent",

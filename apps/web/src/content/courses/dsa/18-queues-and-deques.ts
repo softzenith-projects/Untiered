@@ -237,21 +237,6 @@ export const chapterQueuesAndDeques: Chapter = {
           "problem signals two pointers.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you would implement a FIFO queue using two LIFO stacks, and how " +
-          "many stack operations a single dequeue costs in the worst case versus amortised over many calls.",
-        "Adapt this chapter's sliding-window-maximum approach in words to instead track the sliding-window " +
-          "*minimum* — what changes about the monotonic deque's ordering rule?",
-        "Explain how a deque can be used to check whether a string reads the same forwards and backwards " +
-          "(a palindrome), comparing characters from both ends inward.",
-        "Describe, in your own words, a scenario (outside interviews) where FIFO order is the wrong choice " +
-          "and a priority-based structure (covered in the next module) would be more appropriate.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What does FIFO mean for a queue, and how does it differ from a stack's LIFO?",
@@ -286,16 +271,30 @@ export const chapterQueuesAndDeques: Chapter = {
       kind: "quiz",
       question: "Why does removing from the front of an ArrayList-backed structure cost O(n), while ArrayDeque's poll() is O(1)?",
       options: [
-        "ArrayList and ArrayDeque are actually implemented identically",
-        "ArrayList must shift every remaining element one position left to close the gap; ArrayDeque tracks " +
-          "a head index internally and simply advances it",
-        "ArrayDeque doesn't actually support removal from the front",
-        "ArrayList is always O(1) for any removal",
+        "ArrayList and ArrayDeque are actually implemented identically, so the cost is the same",
+        "ArrayList shifts every remaining element left to close the gap; ArrayDeque just advances a head index",
+        "ArrayDeque doesn't support removal from the front, so it needs a different structure",
+        "ArrayList removal is always O(1), whichever position the removed element is at",
       ],
       answer: 1,
       why:
         "ArrayDeque is a circular buffer with head/tail pointers, so removing from either end is just an " +
         "index update; ArrayList must physically shift every subsequent element to keep indices contiguous.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you would implement a FIFO queue using two LIFO stacks, and how " +
+          "many stack operations a single dequeue costs in the worst case versus amortised over many calls.",
+        "Adapt this chapter's sliding-window-maximum approach in words to instead track the sliding-window " +
+          "*minimum* — what changes about the monotonic deque's ordering rule?",
+        "Explain how a deque can be used to check whether a string reads the same forwards and backwards " +
+          "(a palindrome), comparing characters from both ends inward.",
+        "Describe, in your own words, a scenario (outside interviews) where FIFO order is the wrong choice " +
+          "and a priority-based structure (covered in the next module) would be more appropriate.",
+      ],
     },
   ],
 };
