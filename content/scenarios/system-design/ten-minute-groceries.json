@@ -133,17 +133,12 @@
         "nodes": [
           "customer-address",
           "store-router",
-          "serviceable-areas",
           "store-stock-db"
         ],
         "links": [
           [
             "customer-address",
             "store-router"
-          ],
-          [
-            "store-router",
-            "serviceable-areas"
           ],
           [
             "store-router",

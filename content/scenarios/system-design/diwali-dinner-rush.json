@@ -181,22 +181,17 @@
       "system_state": {
         "nodes": [
           "customers",
-          "cdn / cache",
           "app-servers",
           "menu-db"
         ],
         "links": [
           [
-            "customers",
-            "cdn / cache"
-          ],
-          [
-            "cdn / cache",
-            "app-servers"
-          ],
-          [
             "app-servers",
             "menu-db"
+          ],
+          [
+            "customers",
+            "app-servers"
           ]
         ]
       },

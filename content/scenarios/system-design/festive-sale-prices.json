@@ -47,7 +47,7 @@
         },
         {
           "id": "b",
-          "text": "Start the update at 23:00 on the quiet side so most prices are already new by midnight"
+          "text": "Start the same update at 23:00 so most prices are new by midnight"
         },
         {
           "id": "c",
@@ -179,8 +179,7 @@
         "nodes": [
           "customers",
           "checkout-service",
-          "price-service",
-          "quote-store(expiry)"
+          "price-service"
         ],
         "links": [
           [
@@ -190,10 +189,6 @@
           [
             "checkout-service",
             "price-service"
-          ],
-          [
-            "checkout-service",
-            "quote-store(expiry)"
           ]
         ]
       },

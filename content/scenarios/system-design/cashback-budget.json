@@ -169,7 +169,7 @@
         },
         {
           "id": "d",
-          "text": "Use a key built from campaign and user with a unique constraint, written in one transaction with the budget draw"
+          "text": "A unique campaign-and-user key, saved with the budget draw"
         }
       ],
       "correct_option_id": "d",
@@ -188,17 +188,12 @@
         "nodes": [
           "signup",
           "cashback-service",
-          "identity-index",
           "credit-ledger"
         ],
         "links": [
           [
             "signup",
             "cashback-service"
-          ],
-          [
-            "cashback-service",
-            "identity-index"
           ],
           [
             "cashback-service",
@@ -240,23 +235,9 @@
         "nodes": [
           "budget-shards",
           "credit-ledger",
-          "wallet-service",
-          "reconciliation-job"
+          "wallet-service"
         ],
-        "links": [
-          [
-            "budget-shards",
-            "reconciliation-job"
-          ],
-          [
-            "credit-ledger",
-            "reconciliation-job"
-          ],
-          [
-            "wallet-service",
-            "reconciliation-job"
-          ]
-        ]
+        "links": []
       },
       "options": [
         {
