@@ -16,12 +16,12 @@ Fix the security and privacy findings from the codebase audit (user request; no 
 - Keep the latest parsed resume alongside the latest upload so a failed replacement does not remove the candidate's last usable resume.
 - Historical avatar objects that are more than one hour old and unreferenced by a profile are superseded; newer objects are excluded to avoid active-upload races.
 - Invalid legacy storage paths remain for manual review rather than risking deletion outside the user's folder.
-- The configured AI cap protects optional preparation calls only; the provider billing budget remains the hard limit and must be configured separately.
+- The owner chose a $10/day app cap for optional preparation calls; the provider billing budget remains the hard limit and must also be configured.
 
 ## What I could NOT verify
 - Local Docker was unavailable, so the database integration tests and migration were verified only by CI.
 - The linked database migration has not been applied. Apply it with the eventual reviewed merge, then confirm it appears on both sides of `npm run supabase -- migration list --linked`.
-- A positive `AI_DAILY_SPEND_CAP_MICRO_USD` still needs an owner-selected value in the VM environment. Configure the provider-side Gemini billing budget too.
+- The deployment template now sets the owner-approved $10/day app cap. The VM environment and provider-side Gemini billing budget still need configuration.
 - Production Turnstile needs the Vercel site key and the matching secret configured in Supabase Auth; I did not change production settings.
 - Actual storage deletion and upload behavior against production Supabase were not run.
 
@@ -34,7 +34,7 @@ Fix the security and privacy findings from the codebase audit (user request; no 
 - Branch `fix/private-file-lifecycle` pushed; PR #129 opened against `develop` for human review because this changes personal-data deletion. Not merged and migration not applied.
 
 ## Suggested next task
-- Review PR #129 after its latest CI is green. Apply its migration with the reviewed merge; set the owner-chosen AI cap and configure both Turnstile keys before opening signup.
+- Review PR #129 after its latest CI is green. Apply its migration with the reviewed merge; configure the $10/day cap, Gemini billing budget, and both Turnstile keys before opening signup.
 
 ## Open questions for you
-- What positive global daily AI cap should be enforced for optional preparation calls?
+- Confirm the provider-side Gemini billing budget and configure Turnstile in Supabase Auth before public signup.
