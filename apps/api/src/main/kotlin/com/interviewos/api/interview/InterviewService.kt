@@ -11,6 +11,7 @@ import com.interviewos.api.ai.PlannedQuestion
 import com.interviewos.api.ai.RoundContext
 import com.interviewos.api.ai.TurnTranscript
 import com.interviewos.api.bank.BankQuestion
+import com.interviewos.api.billing.BillingProperties
 import com.interviewos.api.common.ApiException
 import com.interviewos.api.resume.CandidateBackground
 import com.interviewos.api.resume.ResumeService
@@ -56,6 +57,7 @@ class InterviewService(
     private val objectMapper: ObjectMapper,
     private val questionSpeech: QuestionSpeech,
     private val entitlementProperties: EntitlementProperties,
+    private val billingProperties: BillingProperties,
     private val roundsProperties: RoundsProperties,
     private val retentionProperties: RetentionProperties,
     private val bankRounds: BankRoundPlanner,
@@ -83,6 +85,9 @@ class InterviewService(
             dailyMinuteLimit = decision.daily.minuteLimit,
             remainingRoundsToday = decision.daily.remainingRounds,
             remainingMinutesToday = decision.daily.remainingMinutes,
+            creditBalance = decision.creditBalance,
+            funding = decision.funding?.name?.lowercase(),
+            purchasable = decision.purchasable,
         )
     }
 
@@ -93,8 +98,8 @@ class InterviewService(
     ): EntitlementDecision {
         val (roundsToday, minutesToday) = repository.practiceUsageSince(userId, startOfToday())
         return Entitlement.evaluate(
-            completedSessions = repository.countCompletedSessions(userId),
-            paidSessionCredits = repository.countPaidSessionCredits(userId),
+            completedFreeSessions = repository.countCompletedFreeSessions(userId),
+            creditBalance = repository.creditBalance(userId),
             sessionInProgress = openSessionId != null,
             freeRounds = entitlementProperties.freeRounds,
             daily =
@@ -105,6 +110,7 @@ class InterviewService(
                     minuteLimit = entitlementProperties.dailyMinutes,
                 ),
             requestedMinutes = requestedMinutes,
+            purchasable = billingProperties.enabled,
         )
     }
 
@@ -350,10 +356,12 @@ class InterviewService(
     }
 
     /**
-     * The entitlement check and the session row, together.
+     * The entitlement check, the session row and what pays for it, together.
      *
      * These have to share a transaction: two starts racing for the same candidate would
-     * otherwise both see "no round in progress" and both create one.
+     * otherwise both see "no round in progress" and both create one, or both spend the
+     * same last credit. The candidate's row is locked first so the second start waits and
+     * then reads the first one's charge.
      */
     private fun admitAndInsert(
         userId: UUID,
@@ -362,6 +370,7 @@ class InterviewService(
         resolution: ArchetypeResolution,
         declaredStage: DeclaredStage?,
     ): UUID {
+        repository.lockForAdmission(userId)
         val decision = evaluateEntitlement(userId, requestedMinutes = request.durationMinutes)
         if (!decision.allowed) {
             log
@@ -409,8 +418,19 @@ class InterviewService(
             }
         // Same transaction as the check above, so two racing starts cannot both fit in
         // the last minutes of the day. Planned minutes, because the clock is what ends a
-        // round and so the plan is what it can cost.
-        repository.recordPracticeUsage(userId, sessionId, request.durationMinutes)
+        // round and so the plan is what it can cost. A paid round is charged a credit at
+        // start instead, and leaves the free allowance untouched.
+        if (decision.funding == Entitlement.Funding.CREDIT) {
+            repository.spendCredit(userId, sessionId)
+        } else {
+            repository.recordPracticeUsage(userId, sessionId, request.durationMinutes)
+        }
+        log
+            .atInfo()
+            .addKeyValue("user_id", userId)
+            .addKeyValue("session_id", sessionId)
+            .addKeyValue("funding", decision.funding?.name?.lowercase())
+            .log("Round admitted")
         return sessionId
     }
 

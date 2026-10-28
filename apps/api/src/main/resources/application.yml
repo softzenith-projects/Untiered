@@ -171,6 +171,17 @@ interviewos:
   #
   # entitlement:
   #   free-rounds: 1
+  #
+  # Paid interviews, sold as credit packs through Razorpay (BillingProperties). Off until
+  # both keys are set: until then the start screen says Pro is coming, as before. The
+  # packs and their prices live in BillingProperties.DEFAULT_PACKS and can be overridden
+  # here as `packs:`. Credits only add to the free allowance above -- free practice is
+  # always spent first.
+  billing:
+    razorpay:
+      key-id: ${RAZORPAY_KEY_ID:}
+      key-secret: ${RAZORPAY_KEY_SECRET:}
+      webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
   retention:
     # How long a round's report, transcript and recordings are kept before being cleared.
     #

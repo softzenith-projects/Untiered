@@ -28,13 +28,16 @@ class DailyAllowanceTest {
         daily: DailyUsage,
         requestedMinutes: Int? = null,
         sessionInProgress: Boolean = false,
+        creditBalance: Int = 0,
+        purchasable: Boolean = false,
     ) = Entitlement.evaluate(
-        completedSessions = 5,
-        paidSessionCredits = 0,
+        completedFreeSessions = 5,
+        creditBalance = creditBalance,
         sessionInProgress = sessionInProgress,
         freeRounds = null,
         daily = daily,
         requestedMinutes = requestedMinutes,
+        purchasable = purchasable,
     )
 
     @Test
@@ -88,6 +91,34 @@ class DailyAllowanceTest {
         val decision = evaluate(today(rounds = 2, minutes = 60), sessionInProgress = true)
 
         assertEquals(Entitlement.Reason.SESSION_IN_PROGRESS, decision.reason)
+    }
+
+    @Test
+    fun `a credit pays for the round once today's free practice is used`() {
+        val decision = evaluate(today(rounds = 2, minutes = 60), requestedMinutes = 45, creditBalance = 3)
+
+        assertTrue(decision.allowed)
+        assertEquals(Entitlement.Funding.CREDIT, decision.funding)
+        assertEquals(3, decision.creditBalance)
+    }
+
+    /** 20 minutes left: a 45-minute round needs a credit, a 20-minute one is still free. */
+    @Test
+    fun `a round longer than the free minutes left is paid for, a short one is not`() {
+        val long = evaluate(today(rounds = 1, minutes = 40), requestedMinutes = 45, creditBalance = 1)
+        val short = evaluate(today(rounds = 1, minutes = 40), requestedMinutes = 20, creditBalance = 1)
+
+        assertEquals(Entitlement.Funding.CREDIT, long.funding)
+        assertEquals(Entitlement.Funding.FREE, short.funding)
+    }
+
+    @Test
+    fun `where buying is open the daily refusal says so instead of Pro coming soon`() {
+        val decision = evaluate(today(rounds = 2, minutes = 10), purchasable = true)
+
+        assertFalse(decision.allowed)
+        assertTrue(decision.message.contains("Buy an interview"))
+        assertFalse(decision.message.contains("coming soon"))
     }
 
     @Test

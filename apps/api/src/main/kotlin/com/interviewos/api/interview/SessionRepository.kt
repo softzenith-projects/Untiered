@@ -56,12 +56,63 @@ class SessionRepository(
             .update()
     }
 
-    fun countCompletedSessions(userId: UUID): Int =
+    /**
+     * Completed rounds the free allowance paid for — the lifetime free tier counts these and
+     * nothing else, so a candidate who bought interviews before using the free one keeps it.
+     */
+    fun countCompletedFreeSessions(userId: UUID): Int =
         jdbcClient
-            .sql("select count(*) from public.sessions where user_id = :u and status = 'completed'")
+            .sql(
+                """
+                select count(*) from public.sessions s
+                 where s.user_id = :u and s.status = 'completed'
+                   and not exists (
+                     select 1 from public.interview_credits c
+                      where c.session_id = s.id and c.user_id = :u and c.reason = 'consume'
+                   )
+                """.trimIndent(),
+            ).param("u", userId)
+            .query(Int::class.java)
+            .single()
+
+    /** Paid interviews not yet spent: the sum of the credit ledger. */
+    fun creditBalance(userId: UUID): Int =
+        jdbcClient
+            .sql("select coalesce(sum(delta), 0) from public.interview_credits where user_id = :u")
             .param("u", userId)
             .query(Int::class.java)
             .single()
+
+    /**
+     * Serialises every start for one candidate until the calling transaction ends, so two
+     * racing starts cannot both read the same last credit.
+     *
+     * `for no key update`, not `for update`: the stronger lock would also block the
+     * `for key share` every foreign key to this user takes (see `UserRepository.provision`).
+     */
+    fun lockForAdmission(userId: UUID) {
+        jdbcClient
+            .sql("select id from public.users where id = :u for no key update")
+            .param("u", userId)
+            .query(UUID::class.java)
+            .optional()
+    }
+
+    /** Spends one credit on [sessionId]. Charged once per session by a unique index. */
+    fun spendCredit(
+        userId: UUID,
+        sessionId: UUID,
+    ) {
+        jdbcClient
+            .sql(
+                """
+                insert into public.interview_credits (user_id, delta, reason, session_id)
+                values (:u, -1, 'consume', :s)
+                """.trimIndent(),
+            ).param("u", userId)
+            .param("s", sessionId)
+            .update()
+    }
 
     /**
      * How much interviewing this product has actually done, across everyone.
@@ -87,13 +138,6 @@ class SessionRepository(
                     reportsGenerated = rs.getLong("reports"),
                 )
             }.single()
-
-    fun countPaidSessionCredits(userId: UUID): Int =
-        jdbcClient
-            .sql("select count(*) from public.payments where user_id = :u and status = 'paid'")
-            .param("u", userId)
-            .query(Int::class.java)
-            .single()
 
     fun findOpenSessionId(userId: UUID): UUID? =
         jdbcClient
@@ -282,10 +326,11 @@ class SessionRepository(
     }
 
     /**
-     * A provider or server failure must not use up the candidate's daily allowance.
-     * The status transition and refund are one statement, so a racing completion cannot
-     * turn a completed round into a free one. A deleted round has no session to update;
-     * its usage row is deliberately left in place.
+     * A provider or server failure must not use up the candidate's daily allowance, or the
+     * interview they paid for: the free usage row is removed and a spent credit is handed
+     * back. The status transition and refund are one statement, so a racing completion
+     * cannot turn a completed round into a free one. A deleted round has no session to
+     * update; its usage row and its charge are deliberately left in place.
      */
     fun failSessionAndRefundUsage(
         sessionId: UUID,
@@ -303,9 +348,19 @@ class SessionRepository(
                   delete from public.practice_usage p using failed f
                    where p.session_id = f.id and p.user_id = :u
                   returning p.id
+                ), credit_returned as (
+                  insert into public.interview_credits (user_id, delta, reason, session_id)
+                  select :u, 1, 'refund', f.id from failed f
+                   where exists (
+                     select 1 from public.interview_credits c
+                      where c.session_id = f.id and c.user_id = :u and c.reason = 'consume'
+                   )
+                  on conflict do nothing
+                  returning id
                 )
                 select exists(select 1 from failed) as changed,
-                       (select count(*) from refunded) as refunded_count
+                       (select count(*) from refunded) as refunded_count,
+                       (select count(*) from credit_returned) as credits_returned
                 """.trimIndent(),
             ).param("id", sessionId)
             .param("u", userId)

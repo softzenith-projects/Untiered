@@ -40,6 +40,9 @@ class SecurityConfig {
                 // public landing page before anyone has signed in.
                 it.requestMatchers(HttpMethod.GET, "/api/v1/usage").permitAll()
                 it.requestMatchers(HttpMethod.POST, "/api/v1/email/unsubscribe/*").permitAll()
+                // Razorpay has no user token. The signature over the body admits it instead,
+                // and BillingService refuses every delivery that does not carry a valid one.
+                it.requestMatchers(HttpMethod.POST, "/api/v1/billing/razorpay/webhook").permitAll()
                 it.anyRequest().authenticated()
             }.oauth2ResourceServer { resourceServer ->
                 resourceServer.jwt { }

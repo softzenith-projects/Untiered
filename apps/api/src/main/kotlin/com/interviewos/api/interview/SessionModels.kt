@@ -228,6 +228,12 @@ data class EntitlementView(
      * progress" next to a disabled Start button and no way back into the round.
      */
     val openSessionId: UUID? = null,
+    /** Paid interviews bought and not yet spent. */
+    val creditBalance: Int = 0,
+    /** What would pay for a round started now — `free` or `credit` — or null when none may start. */
+    val funding: String? = null,
+    /** Whether interviews can be bought here; false until Razorpay keys are configured. */
+    val purchasable: Boolean = false,
 )
 
 /**
