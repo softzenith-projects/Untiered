@@ -55,13 +55,13 @@ Branch `feat/razorpay-credit-packs`.
   keys. Order creation, capture and the webhook are tested with Razorpay mocked at the
   boundary. A test-mode purchase (`rzp_test_` keys, card 4111 1111 1111 1111) end to end
   is needed before live keys.
-- `CreditLedgerDatabaseIntegrationTest` (10 tests on the real SQL) runs only in CI's
-  Supabase job. There is no local Docker here, so I have not seen it pass yet.
 - Visual design of the pack cards and the reworked `/upgrade` layout.
 
 ## Verification status
-- API `./gradlew ktlintCheck test build`: pass (DB integration tests skipped locally, see above).
+- API `./gradlew ktlintCheck test build`: pass.
 - Web typecheck / lint / test (3,203) / build: pass.
+- CI on PR #130: every job green, including `database`, which ran
+  `CreditLedgerDatabaseIntegrationTest` against every migration applied.
 
 ## Merge status
 - **PR opened, not merged**, because it touches payments, which CLAUDE.md lists as a
