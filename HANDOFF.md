@@ -28,7 +28,7 @@ Fix the security and privacy findings from the codebase audit (user request; no 
 ## Verification status
 - Backend: `ktlintCheck test build` passed locally.
 - Frontend: `typecheck`, `lint`, 3,187 tests, and `build` passed locally; build used CI placeholder public environment values.
-- CI PR #129 at commit `8a20a61`: API, web, image, and database jobs all passed, including migration application and database integration tests. Later fail-closed spend and CAPTCHA changes are locally verified; CI is pending for those commits.
+- CI PR #129 at commit `c838690`: API, web, image, and database jobs all passed, including migration application and database integration tests.
 
 ## Merge status
 - Branch `fix/private-file-lifecycle` pushed; PR #129 opened against `develop` for human review because this changes personal-data deletion. Not merged and migration not applied.
