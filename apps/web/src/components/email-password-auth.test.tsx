@@ -128,6 +128,16 @@ describe("EmailPasswordAuth", () => {
     await waitFor(() => expect(screen.getAllByRole("button", { name: "Create account" })[1]).toBeDisabled());
   });
 
+  it("blocks account creation when Turnstile is required but not configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_REQUIRE_TURNSTILE", "true");
+    render(<EmailPasswordAuth next="/dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(screen.getByText(/security verification is unavailable/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Create account" })[1]).toBeDisabled();
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
   it("requires a CAPTCHA token for password reset when the challenge is configured", async () => {
     vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "public-site-key");
     render(<EmailPasswordAuth next="/dashboard" />);

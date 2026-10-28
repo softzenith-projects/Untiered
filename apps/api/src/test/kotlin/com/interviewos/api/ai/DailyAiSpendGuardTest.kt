@@ -29,6 +29,14 @@ class DailyAiSpendGuardTest {
     }
 
     @Test
+    fun `production budget requirement rejects a disabled cap`() {
+        assertFailsWith<IllegalArgumentException> {
+            AiBudgetProperties(dailyCapMicroUsd = 0, requireDailyCap = true)
+        }
+        AiBudgetProperties(dailyCapMicroUsd = 1, requireDailyCap = true)
+    }
+
+    @Test
     fun `optional work stops at the cap while essential calls continue`() {
         val spend = Spend().apply { total = 1_000 }
         val alerts = mutableListOf<String>()
