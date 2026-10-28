@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { CONTACT_EMAIL_DISPLAY, LEGAL } from "@/lib/legal";
+import { CONTACT_EMAIL_DISPLAY, DAILY_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Terms of use",
@@ -48,10 +48,10 @@ export default function TermsPage() {
 
       <LegalSection id="free" title="Free practice and limits">
         <p>
-          Practice interviews are currently free, up to {LEGAL.dailyRounds} rounds and{" "}
-          {LEGAL.dailyMinutes} minutes a day, reset at midnight India time. We may change these
-          limits, or introduce paid plans, and will say so on the site before a change affects you.
-          Courses and the Arena are free.
+          Practice interviews are currently free, up to {DAILY_ROUNDS_TEXT} and{" "}
+          {LEGAL.dailyMinutes} minutes a day, reset at midnight India time. We are working on a Pro
+          mode with more practice. We may change these limits, or introduce paid plans, and will
+          say so on the site before a change affects you. Courses and the Arena are free.
         </p>
       </LegalSection>
 

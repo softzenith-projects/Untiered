@@ -72,9 +72,6 @@ function SiteHeader({ mockInterviewsEnabled, coursesEnabled }: { mockInterviewsE
         <Link href="/" className="flex min-h-11 items-center gap-2.5 focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" aria-label="Untiered home">
           <span className="sm:hidden"><BrandMark /></span>
           <span className="hidden sm:block"><BrandWordmark /></span>
-          <span className="hidden font-mono text-micro tracking-widest text-ink-subtle uppercase sm:inline">
-            beta
-          </span>
         </Link>
         <nav aria-label="Site" className="hidden items-center gap-8 md:flex">
           {mockInterviewsEnabled ? (
@@ -243,19 +240,43 @@ function HeroVisual() {
   );
 }
 
-/** True employer names we cover, as text wordmarks — no logos we do not own the rights to. */
+/**
+ * True employer names we cover, as text wordmarks — no logos we do not own the rights to.
+ * Every name here is a row in `public.companies`; the "more" count is the rest of that
+ * table (91 in production on 27 October 2026), rounded down so it stays true.
+ */
 function EmployerStrip() {
   const employers = [
+    "Google",
+    "Amazon",
+    "Microsoft",
+    "Meta",
+    "Apple",
+    "Netflix",
+    "Uber",
+    "Atlassian",
+    "Salesforce",
+    "Stripe",
+    "Adyen",
+    "PayPal",
+    "Goldman Sachs",
+    "JPMorgan Chase",
+    "McKinsey & Company",
+    "Flipkart",
+    "Zomato",
+    "Swiggy",
+    "Razorpay",
+    "Paytm",
+    "PhonePe",
+    "CRED",
+    "Zerodha",
+    "Meesho",
+    "Zoho",
+    "Freshworks",
     "TCS",
     "Infosys",
     "Accenture",
     "Deloitte",
-    "Google",
-    "Amazon",
-    "Microsoft",
-    "Zoho",
-    "SAP",
-    "Razorpay",
   ];
   return (
     <section className="border-b border-line bg-surface-sunken">
@@ -263,12 +284,13 @@ function EmployerStrip() {
         <p className="pb-4 text-center font-mono text-micro tracking-widest text-ink-subtle uppercase">
           Rounds built for interviews at
         </p>
-        <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+        <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
           {employers.map((name) => (
             <li key={name} className="text-heading font-bold text-ink-muted">
               {name}
             </li>
           ))}
+          <li className="text-heading font-bold text-accent">and 60+ more</li>
         </ul>
       </div>
     </section>

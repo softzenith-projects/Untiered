@@ -47,8 +47,6 @@ Set these **Production** variables before building:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Existing publishable/anon key; public by design |
 | `NEXT_PUBLIC_API_BASE_URL` | `https://api.untiered.tech` |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Site key paired with Supabase Auth secret |
-| `NEXT_PUBLIC_LEGAL_OPERATOR_NAME` | Owner-approved legal operator name |
-| `NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME` | Owner-approved grievance contact name |
 | `NEXT_PUBLIC_FEATURE_MOCK_INTERVIEWS` | `true` only when API and AI budgets are ready |
 
 The legal details need the owner's judgement. Do not publish their placeholder text as a finished legal page. Other feature flags may retain repo defaults. Public `NEXT_PUBLIC_*` values are compiled into the bundle; changing them requires redeployment. Keep Preview deployments away from production Supabase credentials until their callback URLs and access policy are defined. Do not put `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_PASSWORD`, or `GEMINI_API_KEY` in Vercel.

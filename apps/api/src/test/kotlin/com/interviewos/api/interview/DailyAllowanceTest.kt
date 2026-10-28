@@ -7,10 +7,18 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The daily free allowance: 2 rounds and 60 planned minutes a day (owner, 7 Oct 2026).
- * It bounds the model bill while there is no paid tier.
+ * The daily allowance arithmetic, exercised at two rounds so the round and minute limits can
+ * be hit independently. The shipped default is pinned separately below.
  */
 class DailyAllowanceTest {
+    /** The terms page promises this; `apps/web/src/lib/legal.ts` states the same numbers. */
+    @Test
+    fun `the default allowance is the one the terms state`() {
+        val defaults = EntitlementProperties()
+        assertEquals(1, defaults.dailyRounds)
+        assertEquals(60, defaults.dailyMinutes)
+    }
+
     private fun today(
         rounds: Int,
         minutes: Int,
