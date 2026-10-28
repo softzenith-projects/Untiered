@@ -631,11 +631,60 @@
   .chapter-layout-grid { grid-template-columns: 17rem minmax(0, 1fr) 15rem; gap: var(--space-8); }
 }
 
+/* Landing page motion: the employer strip, the demo's waveform, and content arriving. */
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+.marquee {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee-track {
+  width: max-content;
+  animation: marquee 70s linear infinite;
+}
+
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+.wave-bar {
+  transform-origin: center;
+  animation: wave 720ms var(--ease-product) infinite;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rise-in {
+  animation: rise-in var(--motion-slow) var(--ease-product) both;
+}
+
 /*
  * Someone who has turned motion down has done so for a reason, and none of this carries
  * information that the text beside it does not already carry.
  */
 @media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .wave-bar {
+    animation: none;
+  }
+
+  /* A still strip shows every name once, wrapped, instead of a cut-off row. */
+  .marquee { mask-image: none; }
+  .marquee-track { width: auto; justify-content: center; }
+  .marquee-track > ul { flex-shrink: 1; flex-wrap: wrap; justify-content: center; padding-inline: 1rem; }
+  .marquee-duplicate { display: none; }
+
   *,
   *::before,
   *::after {
