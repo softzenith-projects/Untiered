@@ -93,6 +93,7 @@ interviewos:
       # Set below the Google Cloud spend cap. Zero is disabled until the owner chooses a limit.
       daily-cap-micro-usd: ${AI_DAILY_SPEND_CAP_MICRO_USD:0}
       per-user-daily-cap-micro-usd: ${AI_PER_USER_DAILY_CAP_MICRO_USD:2000000}
+      require-daily-cap: ${AI_DAILY_SPEND_CAP_REQUIRED:false}
     # The models to try, in order. Each is offered only the calls it can actually serve
     # (see FallbackInterviewAi) -- a text-only model is never handed a recording of
     # somebody's voice.

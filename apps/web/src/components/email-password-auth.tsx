@@ -14,6 +14,8 @@ type Mode = "sign-in" | "sign-up" | "forgot";
 
 export function EmailPasswordAuth({ next }: { next: string }) {
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
+  const turnstileRequired =
+    process.env.NEXT_PUBLIC_REQUIRE_TURNSTILE === "true" || process.env.NODE_ENV === "production";
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("sign-in");
   const [email, setEmail] = useState("");
@@ -25,6 +27,7 @@ export function EmailPasswordAuth({ next }: { next: string }) {
   const [success, setSuccess] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [challengeAttempt, setChallengeAttempt] = useState(0);
+  const challengeRequiredForMode = Boolean(turnstileSiteKey) || (turnstileRequired && mode !== "sign-in");
 
   function changeMode(value: Mode) {
     setMode(value);
@@ -46,8 +49,12 @@ export function EmailPasswordAuth({ next }: { next: string }) {
       setError("Passwords do not match.");
       return;
     }
-    if (turnstileSiteKey && !captchaToken) {
-      setError("Complete the security check before continuing.");
+    if (challengeRequiredForMode && (!turnstileSiteKey || !captchaToken)) {
+      setError(
+        turnstileSiteKey
+          ? "Complete the security check before continuing."
+          : "Security verification is unavailable. Please try again later.",
+      );
       return;
     }
 
@@ -153,10 +160,13 @@ export function EmailPasswordAuth({ next }: { next: string }) {
             <span>Email me the daily question, occasional platform news, and reminders if I stop visiting. I can change this anytime.</span>
           </label>
         ) : null}
+        {turnstileRequired && !turnstileSiteKey && mode !== "sign-in" ? (
+          <Alert tone="error">Security verification is unavailable. Please try again later.</Alert>
+        ) : null}
         {turnstileSiteKey ? <TurnstileChallenge key={challengeAttempt} siteKey={turnstileSiteKey} onToken={setCaptchaToken} /> : null}
         {error ? <Alert tone="error">{error}</Alert> : null}
         {success ? <Alert tone="success">{success}</Alert> : null}
-        <Button type="submit" disabled={pending || (Boolean(turnstileSiteKey) && !captchaToken)} aria-busy={pending} className="w-full">
+        <Button type="submit" disabled={pending || (challengeRequiredForMode && (!turnstileSiteKey || !captchaToken))} aria-busy={pending} className="w-full">
           {pending ? "Please wait…" : mode === "sign-up" ? "Create account" : mode === "forgot" ? "Send reset link" : "Sign in with email"}
         </Button>
       </form>

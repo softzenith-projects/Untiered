@@ -10,11 +10,19 @@ import java.util.UUID
 
 @ConfigurationProperties(prefix = "interviewos.ai.budget")
 data class AiBudgetProperties(
-    /** Zero leaves the in-app guard inactive until the owner sets a daily dollar limit. */
+    /** Zero leaves the optional-call guard inactive unless [requireDailyCap] is enabled. */
     val dailyCapMicroUsd: Long = 0,
     /** Two dollars per candidate per India-time day, independently of the project-wide cap. */
     val perUserDailyCapMicroUsd: Long = 2_000_000,
-)
+    /** Production deployments set this so a missing optional-call budget prevents startup. */
+    val requireDailyCap: Boolean = false,
+) {
+    init {
+        require(!requireDailyCap || dailyCapMicroUsd > 0) {
+            "AI_DAILY_SPEND_CAP_MICRO_USD must be greater than zero when AI_DAILY_SPEND_CAP_REQUIRED is true"
+        }
+    }
+}
 
 data class AiFallbackRate(
     val total: Long,
