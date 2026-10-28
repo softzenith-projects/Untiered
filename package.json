@@ -14,7 +14,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "scenario:check": "node --test scripts/scenario-lib.test.mjs && node scripts/load-scenarios.mjs --check --with-system-state supabase/migrations/20261028120000_arena_festive_scenarios.sql",
+    "scenario:check": "node --test scripts/scenario-lib.test.mjs && node scripts/load-scenarios.mjs --check --with-system-state supabase/migrations/20261028130000_arena_scenario_fixes.sql",
     "supabase": "node --env-file-if-exists=.env scripts/supabase.mjs",
     "db:login": "npm run supabase -- login",
     "db:link": "npm run supabase -- link --project-ref moeronogmgtmbdnzfzgu",

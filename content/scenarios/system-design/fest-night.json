@@ -220,7 +220,7 @@
       "kind": "probe",
       "step_type": "design_choice",
       "prompt": "A script is calling the buy endpoint hundreds of times a second from a handful of accounts to grab tickets for resale, while thousands of real students share one campus Wi-Fi IP. What should the rate limit be keyed on?",
-      "context_note": "The site is fast and correct. The abusive traffic comes from a few accounts, but the honest traffic arrives from one shared IP.",
+      "context_note": "The site is fast and correct now, and on sale night the buy endpoint is suddenly getting far more calls than there are students.",
       "system_state": {
         "nodes": [
           "students",
