@@ -1,71 +1,61 @@
-# Handoff — 28 October 2026
+# Handoff — 28 October 2026 (second run)
 
 ## Task
-
-Make the four courses uniform in text, format and interactive boxes. Improve course content, and use fanout.sh to improve system design. This was the owner's request in session, with no task file (PRD §07).
-
-Earlier the same day, all merged: landing page revamp, fast in-app navigation, landing loop rounds, sign-in layout, and the logo chip.
+The owner asked for four fixes in session, with no task file (PRD §07):
+- Fix overlapping visualiser boxes.
+- Stop short headings breaking onto two lines.
+- Review and fix every Arena question.
+- Replace the long mock-interview example prompts with short ones.
 
 ## What I built
-
-- **One box system.** `components/courses/lesson-box.tsx` provides `LessonNote` and `LessonPanel`, plus shared buttons.
-  - Every block kind, in every course, now uses one radius, border, padding and label style: picture, remember, mistakes, interview, concept, trace, comparison, steps, visualiser, code, playground, quiz, agent lab and architecture lab.
-  - Colour only marks meaning: blue for ideas, green for concepts, red for mistakes.
-  - "Never forget" is now "Remember this", the name in the course brief.
-  - Code blocks always show a header.
-  - `lesson-box.test.tsx` checks every box kind uses the shared frame.
-- **Quiz answer position.** The correct option was second in about 78% of Java, DSA and AI Agents quizzes, and first in every system design quiz.
-  - `lib/quiz-order.ts` shows options in a fixed shuffled order seeded from the question. The course and the Arena (`lib/arena/derive.ts`) both use it.
-  - Tests check that no position holds more than 40% of answers and that no quiz repeats an option.
-- **Quiz answer length.** The correct option was the longest in 64% of Java, 96% of DSA and 93% of AI Agents quizzes.
-  - Two `builder` agents rewrote the wrong options, bringing this to 32%, 33% and 10% respectively.
-  - I checked every correct option they reworded and fixed the two problems I found:
-    - The smolagents quiz's correct answer had been replaced by a false statement.
-    - The heap quiz never said the array starts at index 0, so it had two defensible answers.
-- **System design rewritten.** The course was generated from a fill-in template: about eight short strings stitched into identical sentences, with the second quiz word-for-word the same in every chapter.
-  - It is now split into one file per module, with every chapter a full `LessonSpec` (`system-design/lesson.ts`) in the same shape as the other courses.
-  - I wrote `caching-layers` as the model chapter. Two `builder` agents wrote the other 55, and I read all 165 of their quizzes.
-  - The old template and the details file are deleted.
-- **New module "Inside the data layer"** (`data-internals.ts`), original writing: unique IDs, storage engines (WAL, B-tree, LSM), and Bloom filters and sketches. The course is now 5 modules and 59 chapters.
-- **One chapter shape for all four courses**, enforced by `content/courses/course-uniformity.test.ts`:
-  - Each chapter opens with prose, then a heading, then the picture.
-  - It closes with mistakes, remember this, the interview angle and three quizzes, then any practice section.
-  - DSA's "Practice problems" blocks were moved after the quizzes, by script, as a pure reorder of 586 identical lines.
+- **Visualiser boxes fit their labels.** `components/courses/viz/viz-tokens.ts` now has `fitWidth` and `rowOffsets`.
+  - Queue/stack, array and linked-list boxes size to their text. They used to be fixed at 44–64px, so "Roll number: 21" spilled over its neighbour.
+  - The call stack widens for long frames.
+  - Graph node annotations ("0 · dist 4") sit under the circle instead of across it.
+  - Tests are in `viz/viz-fit.test.tsx`.
+- **Headings.**
+  - Section headings dropped from display size to title size.
+  - They are no longer held in the 62ch prose column (`block-renderer.tsx`), so "`System.out.println` vs `System.out.print`" fits on one line.
+- **Mock interview examples** (`new-interview-form.tsx`). The four long first-person prompts are now short pills: "SDE 1 at Amazon", "Software Engineer at Microsoft", "Systems Engineer at Infosys" and "Analyst at Deloitte".
+- **Arena.** All 100 steps across 20 scenarios were reviewed and rewritten where needed:
+  - **Root bug:** the Arena shuffles options, but explanations said "A is right, B invents…", which pointed at the wrong cards. Explanations now name options by content.
+  - Prompts state the situation and ask one question.
+  - Each context note is the new fact the question builds on.
+  - Joke options are replaced with real mistakes (e.g. "the users' phones", "store seats in cookies").
+  - The correct option is no longer usually the longest.
+  - "System so far" maps no longer show the component a step is asking you to add.
+  - The feedback label reads "Key point" (was "Bottleneck"), and "Best answer" shows only after a wrong answer.
+  - I rewrote Java, DSA and AI Agents. Two `builder` agents rewrote system design, and I read all 70 of those steps.
+- **Validator** (`scripts/scenario-lib.mjs` and its test):
+  - Rejects explanations that cite options by letter.
+  - Fails any course where the right answer is the strictly longest option in more than 40% of steps.
+- **Duplicate scenarios.** `limited-stock-checkout` and `password-change-sessions` are now `draft`.
+  - `maggi-flash-sale` and `the-other-phone` tell the same stories (340 Maggi packets; the old phone still logged in) in more depth, so a learner met each story twice.
+  - Learners already partway through one of them can still finish it, because resume is by id.
+- **Migration** `20261028000000_arena_question_rewrite.sql`, generated by `load-scenarios.mjs` for all courses. `npm run scenario:check` now checks it.
 
 ## Assumptions I made
-
-- **fanout.sh** is a paid course with no reuse licence, and our `THIRD_PARTY_NOTICES.md` already excludes proprietary material.
-  - I compared only its public module headings against our chapter list, which identified the three gap topics.
-  - No lesson material was opened, copied or paraphrased. The notices file records this.
-- "Uniform content" means the same chapter shape and box vocabulary across courses. I kept each course's own voice and its heading wording ("The tiffin box analogy" against "The picture: …").
-- The system design integrity tests pinned the old template's literal strings. I restated them by intent: a real glossary before the walkthrough, a unique worked example of at least 80 characters, a two-sided trade-off, and one walkthrough.
-- One commit (20533d1) also contains the template deletion. Its message describes only the reorder, because the separate cleanup commit failed on a pathspec.
+- "Boxes" meant the step-through visualiser cells, as in the owner's screenshot. I checked every visualiser's longest label in the content.
+- Retiring the two duplicate scenarios was within "fix them if needed". Set them back to `live` and regenerate the migration if you disagree.
+- Three system design answers are defensible but arguable, and the explanations say why:
+  - **otp-at-midnight step 4:** check provider A's status before failing over, rather than failing over at once and accepting a duplicate code.
+  - **follow-the-sun step 2:** read your own writes from the home region or a caught-up replica.
+  - **tatkal-1000 step 5:** refund the late payment automatically.
 
 ## What I could NOT verify
-
-- **The real chapter page.** The auth guard blocks it, and the permission system refused a local bypass.
-  - I rendered four real chapters through `BlockRenderer` with the built CSS and checked screenshots.
-  - The full page, with its header and guided-lesson mode, still needs a look.
-- **The system design content** needs a domain read. Every quiz key was checked, but 59 chapters of prose were not proofread line by line. The writers flagged these illustrative figures:
-  - 5% canary traffic
-  - 2 s index lag
-  - 30 s leases and circuit-breaker timings
-- **Leftover agent worktrees.** `C:/tmp/uquiz` and `C:/tmp/uquizai` would not delete. Remove them with `git worktree remove --force <path>`.
+- **The real chapter and Arena pages while signed in.** I checked the println step-through, the Dijkstra graph and both headings by rendering `BlockRenderer` with the built CSS and screenshotting it in headless Edge.
+- **A domain read of the system design scenarios** by someone who interviews for these roles.
 
 ## Verification status
-
-- typecheck, lint, tests (3,181) and build: all pass locally.
-- CI run on 20533d1 passed all four jobs.
+- Web: typecheck, lint, tests (3,186) and build pass locally. `scenario:check` passes.
+- CI run 40676885338: all four jobs green. The two earlier red runs on this branch were mid-rewrite, with the new letter check correctly failing on content not yet fixed.
 
 ## Merge status
-
-- `feat/course-uniformity` merged into `develop` at 5a620b8 after green CI. No migrations.
-- 125 files changed (+7,842 / −2,341). This is far over the 800-line guide, but nearly all of it is course prose. A split by course would have been reviewable separately.
+- `fix/arena-and-lesson-polish` merged into `develop` at dbb9433.
+- Migration 20261028000000 applied with `npm run db:push` before the merge.
 
 ## Suggested next task
-
-- Proofread the system design chapters with someone who interviews for these roles, then add "build it yourself" playgrounds (Python) to the data-layer chapters.
+- Add a check that a step's "System so far" map doesn't introduce the component its own correct answer names. This is reviewed by hand today.
 
 ## Open questions for you
-
 - None blocking.
