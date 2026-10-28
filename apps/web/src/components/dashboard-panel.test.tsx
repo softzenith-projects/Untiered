@@ -122,7 +122,8 @@ describe("DashboardView deletion and retention", () => {
     await userEvent.click(screen.getByRole("button", { name: /^confirm deleting the Infosys/i }));
 
     expect(await screen.findByText(/could not be deleted/i)).toBeInTheDocument();
-    expect(screen.getByText(/Infosys · Systems Engineer/)).toBeInTheDocument();
+    const history = within(screen.getByRole("region", { name: /recent interviews/i }));
+    expect(history.getByText(/Infosys · Systems Engineer/)).toBeInTheDocument();
   });
 
   /**
@@ -307,5 +308,122 @@ describe("DashboardView daily allowance", () => {
     expect(screen.getByRole("heading", { name: /today.s free practice is used/i })).toBeInTheDocument();
     expect(screen.getByText(/pro · coming soon/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /start an interview/i })).toHaveAttribute("aria-disabled", "true");
+  });
+});
+
+describe("DashboardView first run", () => {
+  const allowed = {
+    allowed: true,
+    reason: "allowed" as const,
+    message: "Every round is free while we are building this.",
+    remainingFree: null,
+    dailyRoundLimit: null,
+    dailyMinuteLimit: null,
+    remainingRoundsToday: null,
+    remainingMinutesToday: null,
+    openSessionId: null,
+  };
+
+  it("gives a new candidate a checklist ticked from their account", () => {
+    render(<DashboardView entitlement={allowed} sessions={[]} readiness={[]} loaded resumeUploaded={false} />);
+
+    const band = within(screen.getByRole("region", { name: /get interview-ready/i }));
+    expect(band.getByText("1 of 4 done")).toBeInTheDocument();
+    expect(band.getByText(/create your account/i)).toHaveTextContent(/done/);
+    expect(band.getByText(/upload your resume/i)).toHaveTextContent(/to do/);
+    expect(band.getByRole("link", { name: "Upload resume" })).toHaveAttribute("href", "/profile#resume");
+    expect(band.getByRole("link", { name: "Start interview" })).toHaveAttribute("href", "/interview/new");
+  });
+
+  it("ticks the resume step once one is uploaded", () => {
+    render(<DashboardView entitlement={allowed} sessions={[]} readiness={[]} loaded resumeUploaded />);
+
+    const band = within(screen.getByRole("region", { name: /get interview-ready/i }));
+    expect(band.getByText("2 of 4 done")).toBeInTheDocument();
+    expect(band.queryByRole("link", { name: "Upload resume" })).not.toBeInTheDocument();
+  });
+
+  it("offers quick starts that prefill the setup form", () => {
+    render(<DashboardView entitlement={allowed} sessions={[]} readiness={[]} loaded />);
+
+    const quick = within(screen.getByRole("region", { name: /quick start/i }));
+    expect(quick.getByRole("link", { name: /Deloitte\s*Business Analyst/ })).toHaveAttribute(
+      "href",
+      "/interview/new?company=Deloitte&role=Business+Analyst",
+    );
+  });
+
+  it("does not show a quota band when no daily limit is active", () => {
+    render(<DashboardView entitlement={allowed} sessions={[]} readiness={[]} loaded />);
+
+    expect(screen.queryByText(/focused rounds/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(allowed.message)).not.toBeInTheDocument();
+  });
+});
+
+describe("DashboardView open round", () => {
+  it("resumes the round the server names even when the session list came back empty", () => {
+    render(
+      <DashboardView
+        entitlement={{
+          allowed: false,
+          reason: "session_in_progress",
+          message: "You already have an interview in progress. Finish or leave it before starting another.",
+          remainingFree: null,
+          dailyRoundLimit: 1,
+          dailyMinuteLimit: 60,
+          remainingRoundsToday: 1,
+          remainingMinutesToday: 60,
+          openSessionId: "open-1",
+        }}
+        sessions={[]}
+        readiness={[]}
+        loaded
+      />,
+    );
+
+    const resume = screen.getAllByRole("link", { name: /resume interview/i })[0]!;
+    expect(resume).toHaveAttribute("href", "/interview/open-1");
+    expect(resume).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByRole("region", { name: /quick start/i })).not.toBeInTheDocument();
+  });
+
+  it("treats a created round in the list as open when the server did not say", () => {
+    render(<DashboardView entitlement={null} sessions={[round({ id: "c1", status: "created" })]} readiness={[]} loaded />);
+
+    expect(screen.getAllByRole("link", { name: /resume interview/i })[0]).toHaveAttribute("href", "/interview/c1");
+  });
+});
+
+describe("DashboardView next round", () => {
+  it("names the latest round and what its reports keep flagging", () => {
+    render(
+      <DashboardView
+        entitlement={null}
+        sessions={[round({ id: "r1", companyName: "Amazon", roleTitle: "SDE" })]}
+        readiness={[
+          {
+            companyName: "Amazon",
+            roleTitle: "SDE",
+            sessionsCompleted: 2,
+            firstAttemptAt: "2026-09-01T10:00:00Z",
+            latestAttemptAt: "2026-09-05T10:00:00Z",
+            firstAverageScore: 50,
+            latestAverageScore: 60,
+            recurringWeaknesses: ["trade-off reasoning"],
+          },
+        ]}
+        loaded
+      />,
+    );
+
+    const band = within(screen.getByRole("region", { name: "Amazon · SDE" }));
+    expect(band.getByText(/keep flagging trade-off reasoning/i)).toBeInTheDocument();
+    expect(band.getByRole("link", { name: /practise again/i })).toHaveAttribute(
+      "href",
+      "/interview/new?company=Amazon&role=SDE",
+    );
+    expect(band.getByRole("link", { name: /read last report/i })).toHaveAttribute("href", "/report/r1");
+    expect(screen.queryByRole("region", { name: /get interview-ready/i })).not.toBeInTheDocument();
   });
 });

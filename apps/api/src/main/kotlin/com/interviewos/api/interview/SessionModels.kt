@@ -222,6 +222,12 @@ data class EntitlementView(
     val dailyMinuteLimit: Int? = null,
     val remainingRoundsToday: Int? = null,
     val remainingMinutesToday: Int? = null,
+    /**
+     * The round that blocks a new one, when there is one. Sent so a client can always offer
+     * "Resume" — without it, a dashboard whose session list failed to load showed "in
+     * progress" next to a disabled Start button and no way back into the round.
+     */
+    val openSessionId: UUID? = null,
 )
 
 /**

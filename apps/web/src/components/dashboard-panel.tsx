@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { DailyLimitNotice, isDailyLimitReached } from "@/components/daily-limit-notice";
-import { deleteSession, fetchEntitlement, fetchMe, fetchReadiness, fetchSessions, SESSION_PAGE_SIZE } from "@/lib/api";
+import { deleteSession, fetchEntitlement, fetchMe, fetchProfile, fetchReadiness, fetchSessions, SESSION_PAGE_SIZE } from "@/lib/api";
 import { featureEnabled } from "@/lib/flags";
 import { useAccessToken } from "@/lib/use-access-token";
 
@@ -38,6 +38,7 @@ export function DashboardPanel() {
       sessions={visible.sessions}
       readiness={visible.readiness}
       loaded={visible.loaded}
+      resumeUploaded={visible.resumeUploaded}
       onDelete={handleDelete}
     />
   );
@@ -169,13 +170,16 @@ function useRoundData() {
       mockInterviewsEnabled ? fetchEntitlement({ accessToken }) : Promise.resolve(null),
       mockInterviewsEnabled || reportsEnabled ? fetchSessions({ accessToken }) : Promise.resolve([]),
       fetchMe({ accessToken }),
-    ]).then(([ent, list, candidate]) => {
+      // Only the first-run checklist reads this, to tick "Upload your resume" from fact.
+      mockInterviewsEnabled ? fetchProfile({ accessToken }) : Promise.resolve(null),
+    ]).then(([ent, list, candidate, profile]) => {
       if (!active) return;
       const sessions = list.status === "fulfilled" ? list.value : [];
       setDashboard((current) => ({
         ownerToken: accessToken,
         entitlement: ent.status === "fulfilled" ? ent.value : null,
         me: candidate.status === "fulfilled" ? candidate.value : null,
+        resumeUploaded: profile.status === "fulfilled" && profile.value ? profile.value.resume !== null : null,
         sessions,
         nextOffset: sessions.length,
         hasMore: sessions.length === SESSION_PAGE_SIZE,
@@ -289,6 +293,7 @@ interface DashboardState {
   ownerToken: string | null;
   entitlement: EntitlementView | null;
   me: MeResponse | null;
+  resumeUploaded: boolean | null;
   sessions: SessionSummary[];
   nextOffset: number;
   hasMore: boolean;
@@ -303,6 +308,7 @@ function emptyDashboard(ownerToken: string | null): DashboardState {
     ownerToken,
     entitlement: null,
     me: null,
+    resumeUploaded: null,
     sessions: [],
     nextOffset: 0,
     hasMore: false,
@@ -320,6 +326,11 @@ function emptyDashboard(ownerToken: string | null): DashboardState {
  * history you want to look at. A page that can only be seen by signing in, finishing a
  * round and waiting for a report is a page whose layout never actually gets checked — and
  * this one had gone a long way wrong without anybody being able to see it.
+ *
+ * The navy band changes with where the candidate is. Before a first finished round it is
+ * a checklist ticked from real data, plus one-click starts; after, it names the next round
+ * from their own history. The allowance used to hold this band, and a quota is the least
+ * useful thing to show somebody who has not yet seen what the product does.
  */
 export function DashboardView({
   entitlement,
@@ -327,6 +338,7 @@ export function DashboardView({
   sessions,
   readiness,
   loaded,
+  resumeUploaded = null,
   onDelete,
 }: {
   entitlement: EntitlementView | null;
@@ -334,6 +346,8 @@ export function DashboardView({
   sessions: SessionSummary[];
   readiness: ReadinessGroup[];
   loaded: boolean;
+  /** Null when unknown — the profile could not be read, or has not been yet. */
+  resumeUploaded?: boolean | null;
   onDelete?: (id: string) => Promise<void>;
 }) {
   const mockInterviewsEnabled = featureEnabled("mockInterviews");
@@ -342,10 +356,13 @@ export function DashboardView({
   const arenaEnabled = featureEnabled("arena");
   const visibleSessions = reportsEnabled ? sessions : [];
   const visibleReadiness = reportsEnabled ? readiness : [];
-  const openSession = mockInterviewsEnabled ? sessions.find((s) => s.status === "in_progress") : undefined;
-  const primaryHref = (openSession ? `/interview/${openSession.id}` : "/interview/new") as Route;
-  const primaryLabel = openSession ? "Resume interview" : "Start an interview";
-  const disabled = !openSession && entitlement?.allowed === false;
+  const openSessionId = mockInterviewsEnabled ? findOpenSessionId(entitlement, sessions) : null;
+  const primaryHref = (openSessionId ? `/interview/${openSessionId}` : "/interview/new") as Route;
+  const primaryLabel = openSessionId ? "Resume interview" : "Start an interview";
+  const disabled = !openSessionId && entitlement?.allowed === false;
+  const canStart = !openSessionId && !disabled;
+  const completed = sessions.filter((s) => s.status === "completed");
+  const lastCompleted = completed[0];
   const { greeting, dateLabel } = useTimeBoundGreeting();
   const firstName = formatFirstName(me?.displayName);
 
@@ -359,50 +376,32 @@ export function DashboardView({
               <h1 id="next-interview" className="mt-2 max-w-3xl text-display text-balance text-ink">
                 {greeting}{firstName ? `, ${firstName}` : ""}.
               </h1>
-              <p className="mt-2 max-w-2xl text-body text-ink-muted">
-                {sessions.length === 0
-                  ? "Your first focused round is ready when you are."
-                  : "Your dedicated preparation will pay off — keep the momentum going."}
-              </p>
+              <p className="mt-2 max-w-2xl text-body text-ink-muted">{headerLine(openSessionId, lastCompleted)}</p>
             </div>
-            <Link
-              href={primaryHref}
-              aria-disabled={disabled}
-              className={`action-primary min-h-12 shrink-0 px-6 text-body ${disabled ? "pointer-events-none opacity-50" : ""}`}
-            >
-              {primaryLabel} <span aria-hidden>→</span>
-            </Link>
+            <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+              <Link
+                href={primaryHref}
+                aria-disabled={disabled}
+                className={`action-primary min-h-12 px-6 text-body ${disabled ? "pointer-events-none opacity-50" : ""}`}
+              >
+                {primaryLabel} <span aria-hidden>→</span>
+              </Link>
+              <AllowanceLine entitlement={entitlement} loaded={loaded} />
+            </div>
           </header>
-
-          <section aria-labelledby="practice-allowance" className="hero-band overflow-hidden px-6 py-7 sm:px-9 sm:py-8">
-            <div className="grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-14">
-              <div>
-            <p className="eyebrow text-accent-on-navy">Today&apos;s practice</p>
-            <h2 id="practice-allowance" className="mt-3 text-title text-on-navy">
-              {entitlement?.dailyRoundLimit !== null && entitlement?.dailyRoundLimit !== undefined
-                ? `${entitlement.dailyRoundLimit} focused rounds, at your pace.`
-                : "Practise the round you need, when you need it."}
-            </h2>
-            <p className="mt-2 max-w-xl text-caption text-on-navy-muted">
-              {loaded && entitlement
-                ? entitlement.allowed
-                  ? entitlement.dailyRoundLimit !== null || entitlement.dailyMinuteLimit !== null
-                    ? `${entitlement.message} The full report is included.`
-                    : entitlement.remainingFree === null
-                      ? "Every round is free while we are building this. The full report is included."
-                      : "Your report is included with the round."
-                  : entitlement.message
-                : "Your practice availability will appear here."}
-            </p>
-              </div>
-
-              <AllowanceMeters entitlement={entitlement} loaded={loaded} />
-            </div>
-          </section>
 
           {loaded && entitlement && isDailyLimitReached(entitlement) ? (
             <DailyLimitNotice entitlement={entitlement} />
           ) : null}
+
+          {lastCompleted ? (
+            <NextRound last={lastCompleted} readiness={visibleReadiness} canStart={canStart} reportsEnabled={reportsEnabled} />
+          ) : (
+            <>
+              <GettingStarted resumeUploaded={resumeUploaded} primaryHref={primaryHref} resuming={openSessionId !== null} />
+              {canStart ? <QuickStart /> : null}
+            </>
+          )}
         </>
       ) : (
         <header className="hero-band flex flex-col items-start gap-5 px-7 py-9 sm:px-10">
@@ -478,6 +477,244 @@ export function DashboardView({
   );
 }
 
+/**
+ * The round that blocks a new one. The server's answer wins when it gave one: it counts a
+ * `created` round as open too, and it is still right when the session list failed to load,
+ * which is how a candidate once saw "in progress" beside a disabled Start and no way back.
+ */
+export function findOpenSessionId(entitlement: EntitlementView | null, sessions: SessionSummary[]): string | null {
+  if (entitlement?.openSessionId !== undefined) return entitlement.openSessionId;
+  return sessions.find((s) => s.status === "in_progress" || s.status === "created")?.id ?? null;
+}
+
+function headerLine(openSessionId: string | null, lastCompleted: SessionSummary | undefined): string {
+  if (openSessionId) return "You have a round in progress. Pick it up where you left off.";
+  if (!lastCompleted) return "Pick a company and role, answer out loud, and get a report on what to work on.";
+  return `Your last round was ${lastCompleted.companyName} · ${lastCompleted.roleTitle}.`;
+}
+
+/**
+ * Today's allowance as one line under the action it limits. Said only while a daily limit
+ * is active and practice remains: a used-up day has its own notice, and an open round is
+ * answered by the Resume button.
+ */
+function AllowanceLine({ entitlement, loaded }: { entitlement: EntitlementView | null; loaded: boolean }) {
+  if (!loaded || !entitlement?.allowed) return null;
+  if (entitlement.dailyRoundLimit === null && entitlement.dailyMinuteLimit === null) return null;
+  return <p className="text-caption text-ink-subtle sm:text-right">{entitlement.message}</p>;
+}
+
+interface StartStep {
+  label: string;
+  detail: string;
+  done: boolean;
+  href?: Route;
+  action?: string;
+}
+
+/**
+ * The first-run checklist. Every tick is read from the account, never from a click on the
+ * checklist itself, so it cannot claim a step the candidate has not taken. It only shows
+ * before a first finished round, so the last two steps are never done here.
+ */
+function GettingStarted({
+  resumeUploaded,
+  primaryHref,
+  resuming,
+}: {
+  resumeUploaded: boolean | null;
+  primaryHref: Route;
+  resuming: boolean;
+}) {
+  const steps: StartStep[] = [
+    { label: "Create your account", detail: "Signed in and ready.", done: true },
+    {
+      label: "Upload your resume",
+      detail: "So the interviewer can ask about your own projects.",
+      done: resumeUploaded === true,
+      href: "/profile#resume" as Route,
+      action: "Upload resume",
+    },
+    {
+      label: "Take your first mock interview",
+      detail: "Pick a company and role, then answer out loud in your browser.",
+      done: false,
+      href: primaryHref,
+      action: resuming ? "Resume interview" : "Start interview",
+    },
+    {
+      label: "Read your feedback report",
+      detail: "Each score is tied to something you actually said.",
+      done: false,
+    },
+  ];
+  const doneCount = steps.filter((step) => step.done).length;
+  const nextIndex = steps.findIndex((step) => !step.done);
+
+  return (
+    <section aria-labelledby="getting-started" className="hero-band overflow-hidden px-6 py-7 sm:px-9 sm:py-8">
+      <div className="grid gap-7 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14">
+        <div>
+          <p className="eyebrow text-accent-on-navy">Getting started</p>
+          <h2 id="getting-started" className="mt-3 text-title text-on-navy">
+            Get interview-ready in four steps.
+          </h2>
+          <p className="mt-2 text-caption text-on-navy-muted">
+            {doneCount} of {steps.length} done
+          </p>
+          <div
+            role="progressbar"
+            aria-label="Getting started progress"
+            aria-valuemin={0}
+            aria-valuemax={steps.length}
+            aria-valuenow={doneCount}
+            className="mt-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-on-navy/15"
+          >
+            <span className="block h-full rounded-full bg-positive" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+          </div>
+        </div>
+
+        <ol className="flex flex-col gap-3">
+          {steps.map((step, index) => (
+            <li
+              key={step.label}
+              className={`flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl px-4 py-3 ${index === nextIndex ? "bg-on-navy/12" : "bg-on-navy/5"}`}
+            >
+              <span
+                aria-hidden
+                className={`grid size-8 shrink-0 place-items-center rounded-full text-caption font-bold ${step.done ? "bg-positive text-positive-contrast" : "border border-on-navy/30 text-on-navy"}`}
+              >
+                {step.done ? (
+                  <svg viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-[3]">
+                    <polyline points="5,13 10,18 19,7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={`text-body font-semibold ${step.done ? "text-on-navy-muted" : "text-on-navy"}`}>
+                  {step.label}
+                  <span className="sr-only">{step.done ? " — done" : " — to do"}</span>
+                </p>
+                <p className="text-caption text-on-navy-muted">{step.detail}</p>
+              </div>
+              {!step.done && step.href && step.action ? (
+                <Link
+                  href={step.href}
+                  className={`${index === nextIndex ? "action-primary" : "action-on-dark"} shrink-0 px-4 py-2 text-caption`}
+                >
+                  {step.action}
+                </Link>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Pairings that open the setup form already filled in. They are a shortcut, not a claim:
+ * the names say nothing about how these employers interview, and the round is still the
+ * candidate's choice on the next screen. The spread is deliberate — product, services and
+ * a non-engineering function — because that coverage is the product.
+ */
+export const QUICK_STARTS: readonly { company: string; role: string }[] = [
+  { company: "Google", role: "Software Engineer" },
+  { company: "Amazon", role: "SDE" },
+  { company: "Microsoft", role: "Software Engineer" },
+  { company: "TCS", role: "Software Engineer" },
+  { company: "Infosys", role: "Systems Engineer" },
+  { company: "Deloitte", role: "Business Analyst" },
+];
+
+export function quickStartHref(company: string, role: string): Route {
+  return `/interview/new?${new URLSearchParams({ company, role }).toString()}` as Route;
+}
+
+function QuickStart() {
+  return (
+    <section aria-labelledby="quick-start" className="flex flex-col gap-4 rounded-2xl border border-line bg-surface-raised p-5 shadow-[var(--shadow-sm)] sm:p-6">
+      <div className="flex flex-col gap-1">
+        <h2 id="quick-start" className="text-heading text-ink">Quick start</h2>
+        <p className="text-caption text-ink-muted">Pick one to fill in the setup. You choose the round on the next screen.</p>
+      </div>
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {QUICK_STARTS.map(({ company, role }) => (
+          <li key={`${company}-${role}`}>
+            <Link
+              href={quickStartHref(company, role)}
+              className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-md)]"
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-body font-semibold text-ink">{company}</span>
+                <span className="block truncate text-caption text-ink-subtle">{role}</span>
+              </span>
+              <span aria-hidden className="text-accent">→</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * After a first finished round, the band names the next one from the candidate's own
+ * history: the latest company and role, and what their reports keep flagging there.
+ */
+function NextRound({
+  last,
+  readiness,
+  canStart,
+  reportsEnabled,
+}: {
+  last: SessionSummary;
+  readiness: ReadinessGroup[];
+  canStart: boolean;
+  reportsEnabled: boolean;
+}) {
+  const group = readiness.find((g) => g.companyName === last.companyName && g.roleTitle === last.roleTitle);
+  const weaknesses = group?.recurringWeaknesses ?? [];
+  const score = group?.latestAverageScore ?? null;
+  const reportHref = reportsEnabled && last.hasReport && !last.reportExpired ? (`/report/${last.id}` as Route) : null;
+
+  let summary = "Run it again to see what changes between attempts.";
+  if (weaknesses.length > 0) {
+    summary = `Your reports keep flagging ${weaknesses.slice(0, 3).join(", ")}. Another round shows whether that has moved.`;
+  } else if (group && score !== null) {
+    summary = `Latest score ${score}% over ${group.sessionsCompleted} ${group.sessionsCompleted === 1 ? "attempt" : "attempts"}. Run it again to see what changes.`;
+  }
+
+  return (
+    <section aria-labelledby="next-round" className="hero-band overflow-hidden px-6 py-7 sm:px-9 sm:py-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-14">
+        <div className="min-w-0">
+          <p className="eyebrow text-accent-on-navy">Your next round</p>
+          <h2 id="next-round" className="mt-3 text-title text-on-navy">
+            {last.companyName} · {last.roleTitle}
+          </h2>
+          <p className="mt-2 max-w-2xl text-body text-on-navy-muted">{summary}</p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-3">
+          {canStart ? (
+            <Link href={quickStartHref(last.companyName, last.roleTitle)} className="action-primary px-5">
+              Practise again <span aria-hidden>→</span>
+            </Link>
+          ) : null}
+          {reportHref ? (
+            <Link href={reportHref} className="action-on-dark px-5">
+              Read last report
+            </Link>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /** Browser-local greeting, refreshed so a dashboard left open crosses day-parts correctly. */
 function useTimeBoundGreeting(): { greeting: string; dateLabel: string } {
   const [greeting, setGreeting] = useState("Welcome back");
@@ -517,58 +754,6 @@ function formatLocalDate(date: Date): string {
     day: "numeric",
     month: "long",
   }).format(date);
-}
-
-function AllowanceMeters({ entitlement, loaded }: { entitlement: EntitlementView | null; loaded: boolean }) {
-  if (!loaded || !entitlement) {
-    return <p role="status" className="text-caption text-on-navy-muted">Loading today&apos;s allowance…</p>;
-  }
-
-  const meters = [
-    entitlement.dailyRoundLimit === null
-      ? null
-      : {
-          label: "Interviews",
-          used: Math.max(0, entitlement.dailyRoundLimit - (entitlement.remainingRoundsToday ?? 0)),
-          limit: entitlement.dailyRoundLimit,
-        },
-    entitlement.dailyMinuteLimit === null
-      ? null
-      : {
-          label: "Practice time",
-          used: Math.max(0, entitlement.dailyMinuteLimit - (entitlement.remainingMinutesToday ?? 0)),
-          limit: entitlement.dailyMinuteLimit,
-        },
-  ].filter((meter): meter is { label: string; used: number; limit: number } => meter !== null);
-
-  if (meters.length === 0) {
-    return (
-      <div className="rounded-2xl border border-on-navy/12 bg-on-navy/8 px-5 py-4">
-        <p className="eyebrow text-accent-on-navy">Open access</p>
-        <p className="mt-2 text-caption text-on-navy">No daily round or minute limit is active.</p>
-      </div>
-    );
-  }
-
-  return (
-    <dl className="grid gap-4">
-      {meters.map((meter) => {
-        const percent = meter.limit === 0 ? 0 : Math.min(100, (meter.used / meter.limit) * 100);
-        const unit = meter.label === "Practice time" ? " min" : "";
-        return (
-          <div key={meter.label}>
-            <div className="flex items-center justify-between gap-4 text-caption">
-              <dt className="text-on-navy-muted">{meter.label}</dt>
-              <dd className="font-semibold text-on-navy">{meter.used} of {meter.limit}{unit} used</dd>
-            </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-on-navy/15" aria-hidden>
-              <span className="block h-full rounded-full bg-accent-2" style={{ width: `${percent}%` }} />
-            </div>
-          </div>
-        );
-      })}
-    </dl>
-  );
 }
 
 /** How many rounds the dashboard lists before pointing at the full history. */

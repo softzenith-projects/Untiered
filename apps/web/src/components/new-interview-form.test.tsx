@@ -146,6 +146,14 @@ describe("NewInterviewForm", () => {
     expect(composeRound).not.toHaveBeenCalled();
   });
 
+  it("opens a dashboard quick start with company and role filled in, still editable", () => {
+    render(<NewInterviewForm initialCompany="Deloitte" initialRole="Business Analyst" />);
+
+    expect(screen.getByRole("textbox", { name: /company/i })).toHaveValue("Deloitte");
+    expect(screen.getByRole("textbox", { name: /^role\b/i })).toHaveValue("Business Analyst");
+    expect(composeRound).not.toHaveBeenCalled();
+  });
+
   it("opens a catalogue round with that interview type already selected", () => {
     render(<NewInterviewForm initialRoundType="system_design" />);
 

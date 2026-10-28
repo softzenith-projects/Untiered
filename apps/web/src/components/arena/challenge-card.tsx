@@ -96,7 +96,8 @@ export function ChallengeCard({
       </h2>
 
       {challenge.context ? (
-        <p className="rounded-xl border border-line bg-surface-sunken px-4 py-3 text-body leading-relaxed text-ink-muted">
+        // A side note, not a box: a rounded, bordered, sunken panel read as a text field to type into.
+        <p className="border-l-2 border-accent/40 pl-4 text-caption leading-relaxed text-ink-muted">
           {challenge.context}
         </p>
       ) : null}

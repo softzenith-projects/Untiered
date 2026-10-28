@@ -39,6 +39,8 @@ export interface EntitlementView {
   dailyMinuteLimit: number | null;
   remainingRoundsToday: number | null;
   remainingMinutesToday: number | null;
+  /** The round blocking a new one (`created` or `in_progress`), so a client can always offer Resume. */
+  openSessionId?: string | null;
 }
 
 export interface TurnView {

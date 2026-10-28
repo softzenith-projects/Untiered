@@ -165,6 +165,25 @@ class InterviewStateTransitionTest {
         assertFalse(mockingDetails(harness.ai).invocations.any())
     }
 
+    @Test
+    fun `entitlement names the open round so a client can always resume it`() {
+        given(harness.repository.findOpenSessionId(candidate)).willReturn(sessionId)
+
+        val view = harness.service.entitlement(candidate)
+
+        assertFalse(view.allowed)
+        assertEquals("session_in_progress", view.reason)
+        assertEquals(sessionId, view.openSessionId)
+    }
+
+    @Test
+    fun `entitlement carries no open round when none is open`() {
+        val view = harness.service.entitlement(candidate)
+
+        assertEquals("allowed", view.reason)
+        assertEquals(null, view.openSessionId)
+    }
+
     private fun givenRunningTurn() {
         given(harness.repository.findSession(sessionId, candidate)).willReturn(session(status = "in_progress"))
         given(harness.repository.findTurn(sessionId, candidate, 2)).willReturn(
