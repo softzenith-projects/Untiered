@@ -94,6 +94,7 @@ class ResumeService(
             } catch (e: AiUnavailableException) {
                 log.warn("Could not parse resume {} for {}", id, userId, e)
                 repository.markFailed(id, userId, e.message ?: "The parser was unavailable.")
+                pruneSuperseded(userId)
                 // The file is stored and the row exists, so this is recoverable by
                 // re-reading rather than re-uploading. The candidate is told plainly.
                 throw ApiException.upstreamUnavailable(
@@ -102,6 +103,7 @@ class ResumeService(
             }
 
         repository.markParsed(id, userId, objectMapper.writeValueAsString(parsed))
+        pruneSuperseded(userId)
         repository.recordDetectedSkills(
             userId,
             parsed.detectedSkills
@@ -137,7 +139,7 @@ class ResumeService(
         userId: UUID,
         id: UUID,
     ) {
-        val resume = repository.findLatest(userId)?.takeIf { it.id == id } ?: throw ApiException.notFound()
+        val resume = repository.findById(userId, id) ?: throw ApiException.notFound()
         // The service role bypasses storage RLS. A path read from a mutable database row
         // must never be used to delete an object outside this caller's resume folder.
         if (resume.storageBucket != storageProperties.resumeBucket ||
@@ -147,6 +149,13 @@ class ResumeService(
             throw ApiException.conflict("This resume could not be deleted safely. Please contact support.", "invalid_resume_storage_scope")
         }
         if (!repository.enqueueAndDelete(id, userId, resume.storageBucket, resume.storagePath)) throw ApiException.notFound()
+    }
+
+    private fun pruneSuperseded(userId: UUID) {
+        // A database failure here should not turn an otherwise successful parse into an
+        // apparent upload failure. The scheduled sweep retries the same operation.
+        runCatching { repository.enqueueAndDeleteSuperseded(userId, storageProperties.resumeBucket) }
+            .onFailure { log.error("Could not queue superseded resume cleanup for {}", userId, it) }
     }
 
     /**
