@@ -1,48 +1,45 @@
-# Handoff — 26 October 2026
+# Handoff — 28 October 2026
 
 ## Task
 
-Finish Untiered SES email integration and resolve PR #121's lockfile conflict (owner's pasted requests; PRD §05 and §15; no task file).
+Revamp the landing page: less verbose, interactive, modern, not "AI-generated looking" (owner's request in session; PRD §11; no task file).
 
 ## What I built
 
-- Extended the existing draft lifecycle-email PR #121 rather than adding another email service. `SesEmailSender.kt` now sends responsive HTML and plain text through the AWS SDK SES v2, with the verified sender and support Reply-To. `LifecycleEmailJob.kt` uses the existing durable queue for bounded transient retries and records permanent or ambiguous failures without sensitive logs.
-- `20261026000000_ses_delivery_retries.sql` adds claim and retry state. The older lifecycle migration remains unchanged.
-- Added branded Supabase Auth confirmation, recovery, and email-change templates, local Auth rate limits, and tests for templates, CAPTCHA reset flow, MIME content, SES errors, configuration, and outbox retry state.
-- Updated `.env.example`, `deploy/api.env.example`, `application.yml`, and `docs/lifecycle-email-operations.md` for separate API SES v2 and Supabase Auth SMTP configuration in Sydney. The existing SNS email subscription remains the manual bounce/complaint monitor.
-- Patched Next.js and its ESLint config from 16.4.0 to 16.4.3 after the production build blocked on a documented critical advisory. No new web dependency was introduced.
-- Merged the latest `origin/develop` into the PR branch and resolved the sole conflict, `package-lock.json`, with develop's lockfile. Develop already carries Next.js 16.4.3 and newer audit overrides; the resolved lockfile exactly matches its blob.
+- `apps/web/src/app/page.tsx`: cut from eight sections of paragraphs to six short ones, one line of copy each. VoiceSection, TranscriptSample, Coverage and HowItWorks are gone. What they said is now shown by the interactive pieces below.
+- `components/landing/sample-turn.tsx`: the hero demo. The visitor picks an interview type (Service IT / Product / Big Four / Europe) and presses play. The answer types in word by word over a live waveform, the drawn interviewer (`InterviewerPresence`) switches between listening, thinking and speaking, and the follow-up appears tagged *challenge*, *probe* or *interrupts*.
+- `components/landing/loop-picker.tsx`: pick an archetype to see its rounds in order. Replaces the coverage grid and "How it works".
+- `components/landing/report-preview.tsx`: a sample report. Clicking a competency score shows the quote it was scored on.
+- `components/landing/segmented-tabs.tsx`: a shared pill tablist following the ARIA tabs pattern (arrow keys, Home/End, one tab stop).
+- Employer strip is now a scrolling marquee that pauses on hover. Under reduced motion it is still and wrapped, with each name shown once.
+- Course cards reuse `CourseArtwork` from the catalogue. The Arena is a single compact row.
+- `globals.css`: `marquee`, `wave-bar` and `rise-in` animations, all disabled under `prefers-reduced-motion`.
+- `components/landing/landing.test.tsx`: 9 behaviour and a11y tests (playback, reduced motion, screen-reader text, keyboard tabs, real vs illustrative labels, loop rounds, quote reveal).
 
 ## Assumptions I made
 
-- Supabase Auth remains the owner of registration, verification, and reset tokens. Its hosted custom SMTP settings send those messages through SES; the Kotlin API uses SES v2 for its own queued lifecycle messages. Routing Auth through a new backend hook would duplicate token handling and create another sensitive queue.
-- Explicit SES 429/5xx and ThrottlingException responses are retryable; SDK client failures are ambiguous and require manual review. Three total attempts are the limit, without an exactly-once claim.
-- Hosted Supabase settings and templates need a human to apply. The repository's `config.toml` only configures local Supabase Auth. The owner's stated SNS and suppression setup is taken as reported, not remotely verified.
-- PR #121 is already over the 800-line review guideline. Keeping this follow-up on it avoids duplicating the existing queue, preferences, and signup flow; the SES transport and retry migration depend on those unmerged changes.
+- **Fixed a false claim.** The old page said "every round is free … as many times as you want", but `2be9314` set the allowance to one round a day. The hero and CTA now read `DAILY_ROUNDS_TEXT` from `lib/legal.ts`, the same constant the terms use.
+- Only the service-IT exchange and its "operational depth 2/5" score come from a real session (the page always said so). The other three exchanges and three report rows were written by me to show the format, and the UI labels them that way. None of them claims anything about a named employer.
+- "Not AI-looking" was read as: no gradient text, glows, sparkle icons or icon-grid feature walls. Solid navy, crisp cards, and UI that looks like the real product.
 
 ## What I could NOT verify
 
-- No live AWS call or mailbox-simulator send was made, per the owner's instruction. SES credentials, quota, sender reputation, actual inbox MIME, callbacks, SNS delivery, and account-level suppression remain unverified.
-- The owner reports applying the migrations. `npm run supabase -- migration list --linked` still cannot verify the remote from this worktree: it has no linked project ref or `.env`. Confirm both email rows have a remote entry before merging into `develop`.
-- Hosted Supabase Auth SMTP, rate limits, CAPTCHA, and HTML templates need manual deployment. Confirm Auth mail has a plain-text MIME alternative during the controlled mailbox test; Supabase's template editor accepts HTML only.
-- Legal/consent wording and final inbox appearance need owner review. `npm install` still reported dependency advisories outside this focused patch update.
+- **Visual design.** I have not seen it rendered. Please look at `/` on desktop and phone width, in light and dark mode, and check the marquee speed and the playback pacing (110 ms per word, 0.9 s "thinking").
+- Whether the illustrative exchanges read as realistic interviewer behaviour (owner judgement, per CLAUDE.md).
 
 ## Verification status
 
-- Web: `npm run typecheck` pass; `npm run lint` pass; `npm run test` pass (85 files, 3,089 tests); standard `npm run build` pass with CI placeholder environment after Next.js 16.4.3 patch.
-- API: `./gradlew.bat ktlintCheck test build` pass. SES sender tests 4/4 pass. Migrated-PostgreSQL tests guarded by `TEST_DB_URL` skipped locally; the CI database job passed them.
-- Repository: `npm run scenario:check` pass; `node --test scripts/*.test.mjs` pass (85 tests, including two new Auth config/template checks). Frontend bundle/static scan found no AWS variable references. No live email, AI call, or migration application occurred.
-- Earlier [CI runs 40319915682](https://github.com/softzenith-projects/Untiered/actions/runs/40319915682) and [40320569790](https://github.com/softzenith-projects/Untiered/actions/runs/40320569790) passed all four jobs. After the develop merge, `npm install --package-lock-only --ignore-scripts --offline --no-audit --no-fund` passed; an incidental optional-peer rewrite was discarded. A local clean install was stopped after a Windows sandbox write error and a long retry. The new PR CI run must validate clean install, tests, and builds before merge.
+- typecheck / lint / tests (3,101 + 9 new) / build: all pass locally.
+- The first `next build` stopped on a Next.js security-advisory notice and passed on retry. The notice recommends upgrading Next.js (currently 16.4.3). I did not upgrade; that is a separate dependency change.
 
 ## Merge status
 
-- Draft [PR #121](https://github.com/softzenith-projects/Untiered/pull/121) on `feat/lifecycle-emails` targets `develop`. It remains unmerged for human review because it changes auth and personal-data handling. No push to `main`.
-- The PR description still describes the former SMTP sender. The GitHub connector returned 403 when updating it, and local `gh` credentials are invalid. This handoff and the current diff describe the SES v2 implementation.
+- Merged `feat/landing-revamp` into `develop` at 48b2837 after CI run 40644895466 passed all four jobs (web, api, database, images). No migrations in this change.
 
 ## Suggested next task
 
-- Verify both migration rows on the linked Supabase project, review PR #121 and update its description, configure hosted Supabase SMTP/rate limits/CAPTCHA/templates, then merge into `develop` only after new CI passes; test SES simulator and Auth callbacks with the owner's explicit live-test approval before setting `EMAIL_ENABLED=true`.
+- Act on the Next.js security advisory: run `next upgrade` on its own branch.
 
 ## Open questions for you
 
-- Confirm the production SES send-rate/daily quota and whether Supabase Auth mail includes a plain-text MIME alternative. The sender, region, support address, and app hosting are now specified by the owner.
+- None blocking.
