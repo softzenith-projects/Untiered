@@ -1,0 +1,317 @@
+{
+  "course_slug": "system-design",
+  "slug": "toss-time-teams",
+  "title": "Toss-Time Teams",
+  "hook": "You run a fantasy-cricket app where team edits lock at the toss, and millions of people rush to change their eleven in the final ten minutes. After the lock, every ball changes the points and everyone wants to see their rank.",
+  "context": "Fantasy-cricket app with 2 crore teams across thousands of contests, one lock time per match, and live scoring after the toss.",
+  "tier": "intermediate",
+  "concept_ids": [
+    "server-authoritative-time",
+    "spike-absorption",
+    "atomic-stock",
+    "incremental-aggregation",
+    "sorted-set-leaderboard"
+  ],
+  "estimated_minutes": 12,
+  "status": "live",
+  "solution_brief": "Decide the lock on the server using its own clock at the moment a save arrives, never on the phone. Absorb the last-minute write spike by stamping arrival time and queueing saves for workers that write at the database's pace. Fill contest spots with one atomic conditional update so the count can never pass capacity. After the lock, store points per player rather than per team, so a ball touches a few rows and team totals are summed on demand. Serve exact ranks from a sorted set for the top teams and approximate the long tail from a score histogram.",
+  "steps": [
+    {
+      "kind": "initial",
+      "step_type": "design_choice",
+      "prompt": "The lock is 7:00 pm. Some users save at 6:59:58 and a few phones run minutes behind, so those users insist they still had time. Where should your app decide whether a team edit is allowed?",
+      "context_note": "Teams lock at the toss, and a late edit that is accepted gives that user an unfair advantage over everyone else in the contest.",
+      "system_state": {
+        "nodes": [
+          "app",
+          "api-server",
+          "teams-db"
+        ],
+        "links": [
+          [
+            "app",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "teams-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "In the app, by comparing the phone's clock with the lock time shown on screen"
+        },
+        {
+          "id": "b",
+          "text": "On the server, by comparing the moment the save arrives, on the server's own clock, with the lock time"
+        },
+        {
+          "id": "c",
+          "text": "In the app, after fetching the lock time once at launch and then counting down against the phone's own clock until the lock"
+        },
+        {
+          "id": "d",
+          "text": "At the gateway, by trusting the timestamp that the app attaches to each save request as its time of sending"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "The server clock is the one clock every user is measured against, and the user cannot change it. A countdown that starts from the server's time still ends on the phone's clock, and a timestamp sent by the app can be edited by whoever holds the phone.",
+      "bottleneck_note": "A deadline is only fair if it is checked against a clock the user cannot touch.",
+      "concept_ids": [
+        "server-authoritative-time"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Saves peak at about 30,000 per second in the last minute, while the teams database sustains about 5,000 writes per second. What should the save path do with the extra load?",
+      "context_note": "Users now trust the server clock, so they rush even harder to save in the final minute. Roughly 18 lakh saves arrive in that minute alone, and the match starts about half an hour after the lock.",
+      "system_state": {
+        "nodes": [
+          "app",
+          "load-balancer",
+          "api-server",
+          "teams-db"
+        ],
+        "links": [
+          [
+            "app",
+            "load-balancer"
+          ],
+          [
+            "load-balancer",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "teams-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Return a try-again error whenever the database is busy, and let the app keep retrying until it gets through"
+        },
+        {
+          "id": "b",
+          "text": "Size the database for 30,000 writes per second and keep it that large all year"
+        },
+        {
+          "id": "c",
+          "text": "Serialise every save through one server holding a lock, so writes go in strict order"
+        },
+        {
+          "id": "d",
+          "text": "Stamp the arrival time, queue the save durably, and let workers write at the database's pace"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "A save that arrives before the lock is valid even if a worker writes it a few minutes later, so the arrival time is stamped first and the queue only delays the write. About 15 lakh saves are left waiting after the peak minute, which 5,000 writes per second clears in around five minutes, well before the match starts. Rejecting and retrying turns every failure into more traffic at the worst moment, and a database sized for a ten-minute spike sits idle the rest of the year.",
+      "bottleneck_note": "When a spike is short and the work can wait, queue it instead of rejecting it or buying for the peak.",
+      "concept_ids": [
+        "spike-absorption"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "debug",
+      "prompt": "A contest has 1,00,000 spots and the join code reads the filled count, inserts the entry if the count is lower, then adds one to the count. The contest ends with 1,00,412 entries. What is the right fix?",
+      "context_note": "Most contests fill in the final minute, when thousands of join requests for the same contest run at the same moment on different servers.",
+      "code_snippet": "filled = db.get(\"contest:{id}:filled\")\nif filled < capacity:\n    db.insert_entry(contest_id, user_id)\n    db.set(\"contest:{id}:filled\", filled + 1)\nelse:\n    reject()",
+      "language": "python",
+      "system_state": {
+        "nodes": [
+          "app",
+          "load-balancer",
+          "api-server",
+          "save-queue",
+          "save-workers",
+          "teams-db",
+          "contest-db"
+        ],
+        "links": [
+          [
+            "app",
+            "load-balancer"
+          ],
+          [
+            "load-balancer",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "save-queue"
+          ],
+          [
+            "save-queue",
+            "save-workers"
+          ],
+          [
+            "save-workers",
+            "teams-db"
+          ],
+          [
+            "api-server",
+            "contest-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Replace the read-then-write with one conditional update that raises the count only where it is below capacity, and add the entry only when that update succeeds"
+        },
+        {
+          "id": "b",
+          "text": "Read the count a second time just before the insert, to shrink the window between check and write"
+        },
+        {
+          "id": "c",
+          "text": "Run fewer join servers at lock time so fewer requests overlap"
+        },
+        {
+          "id": "d",
+          "text": "Let the contest overfill, then remove the latest entries and refund the fee"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Two servers can both read 99,999 and both pass the check, so the check and the increment have to be a single step the database performs atomically. Checking twice only narrows the window, and with thousands of joins per second it still gets hit. Removing entries afterwards leaves people who were told they were in out of the contest.",
+      "bottleneck_note": "Never check a limit and then update it in two steps; let one atomic operation do both.",
+      "concept_ids": [
+        "atomic-stock"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "The match is on and a ball is bowled about every 35 seconds. Recomputing the total for all 2 crore teams takes about 90 seconds. What should you store and compute so that points keep up with the ball?",
+      "context_note": "Now that the lock has passed, scoring starts. Each ball changes the points of only a few players, such as the batter, the bowler and a fielder, but every team contains eleven players.",
+      "system_state": {
+        "nodes": [
+          "app",
+          "api-server",
+          "teams-db",
+          "contest-db",
+          "score-feed",
+          "scoring-service"
+        ],
+        "links": [
+          [
+            "app",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "teams-db"
+          ],
+          [
+            "api-server",
+            "contest-db"
+          ],
+          [
+            "score-feed",
+            "scoring-service"
+          ],
+          [
+            "scoring-service",
+            "teams-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "After every ball, recompute and rewrite the stored total of every team, spread across many more servers"
+        },
+        {
+          "id": "b",
+          "text": "Cache each team's total for five minutes and refresh it when the cache expires"
+        },
+        {
+          "id": "c",
+          "text": "Keep points per player, update only the players in the ball, and sum a team's eleven when needed"
+        },
+        {
+          "id": "d",
+          "text": "Append a points row for every team after every ball and add all of those rows up whenever a total is asked for"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "A ball changes at most a few player rows, so the write is tiny, and summing eleven values from a small in-memory table is cheap whenever a total is needed. Rewriting 2 crore team totals each ball repeats 22 crore player lookups and falls behind, and a five-minute cache shows scores that are about eight balls stale.",
+      "bottleneck_note": "Store the small thing that changes, and derive the big thing from it on demand.",
+      "concept_ids": [
+        "incremental-aggregation"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Users want to see their rank out of 2 crore teams as it moves, and the top of the contest shown in real time. How should ranks be served?",
+      "context_note": "Player points now live in a small table, so a team's total is cheap, but a ball moves about 1.2 crore team totals, and putting each one into one huge ranking is still too much work every 35 seconds.",
+      "system_state": {
+        "nodes": [
+          "app",
+          "api-server",
+          "teams-db",
+          "contest-db",
+          "score-feed",
+          "scoring-service",
+          "player-points-store"
+        ],
+        "links": [
+          [
+            "app",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "teams-db"
+          ],
+          [
+            "api-server",
+            "contest-db"
+          ],
+          [
+            "score-feed",
+            "scoring-service"
+          ],
+          [
+            "scoring-service",
+            "player-points-store"
+          ],
+          [
+            "api-server",
+            "player-points-store"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Re-sort all 2 crore teams after every ball and store each team's exact rank"
+        },
+        {
+          "id": "b",
+          "text": "Keep a sorted set with exact ranks for the top few lakh teams, and estimate everyone else's rank from a histogram of score buckets, labelled as approximate"
+        },
+        {
+          "id": "c",
+          "text": "Show ranks only when the match ends, when scores stop changing"
+        },
+        {
+          "id": "d",
+          "text": "Work out a rank when it is asked for by counting the teams with a higher total in a full scan"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "People look at the top of the table and at their own position, and nobody can tell whether they are 1,24,05,310th or 1,24,06,000th. A sorted set gives exact ranks where precision matters, and a small histogram of scores gives a good estimate for the long tail at almost no cost. Scanning 2 crore teams for every request melts the database as soon as a few lakh users refresh together.",
+      "bottleneck_note": "Be exact where people look, and approximate, honestly labelled, where nobody can tell the difference.",
+      "concept_ids": [
+        "sorted-set-leaderboard"
+      ]
+    }
+  ]
+}

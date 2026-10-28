@@ -1,0 +1,327 @@
+{
+  "course_slug": "system-design",
+  "slug": "match-stream",
+  "title": "The Final, Live",
+  "hook": "You run a live-video app and tonight it streams a cricket final to about 2 crore people at the same time. The audience arrives in a rush at the toss, many on weak mobile networks, and a short outage mid-match sends everyone back at once.",
+  "context": "Live-video app with 2 crore concurrent viewers at peak, a stream ladder from 240p to 1080p, and a subscription check on every start.",
+  "tier": "advanced",
+  "concept_ids": [
+    "cdn",
+    "origin-shield",
+    "adaptive-bitrate",
+    "entitlement-caching",
+    "reconnect-storms",
+    "graceful-degradation"
+  ],
+  "estimated_minutes": 14,
+  "status": "live",
+  "solution_brief": "Cut the stream into segments of a few seconds and serve them from CDN edges, with edges filling from a small shield tier so the origin sees roughly one request per segment. Publish several renditions so players switch quality by themselves when the network weakens. Cache each viewer's entitlement with a short expiry and pre-scale before the toss rather than hitting the billing store on every start. Make retries use exponential backoff with random jitter so a recovery is not flattened by everyone returning together. When capacity runs short, lower the top quality for everyone before turning any viewer away.",
+  "steps": [
+    {
+      "kind": "initial",
+      "step_type": "design_choice",
+      "prompt": "At 2 crore viewers averaging 3 Mbps you need about 60 Tbps of delivery, and your origin is one small cluster sized for 200 requests per second. How should the video reach viewers?",
+      "context_note": "You have 800 edge locations, 6 quality levels and 4-second segments, so each new segment starts out uncached everywhere.",
+      "system_state": {
+        "nodes": [
+          "encoder",
+          "origin",
+          "player"
+        ],
+        "links": [
+          [
+            "encoder",
+            "origin"
+          ],
+          [
+            "origin",
+            "player"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Cut the stream into segments served from CDN edges, and let each edge fetch a missing segment straight from the origin"
+        },
+        {
+          "id": "b",
+          "text": "Cut the stream into segments served from CDN edges, and let edges fill from a small shield tier that asks the origin once per segment"
+        },
+        {
+          "id": "c",
+          "text": "Hold a persistent connection from every viewer to a streaming server cluster that you scale out"
+        },
+        {
+          "id": "d",
+          "text": "Run a full copy of the origin in each region and send each viewer to the nearest one"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Segments are the same bytes for everyone, so edges can serve them near the viewer, but when a new segment appears all 800 edges miss together: 800 x 6 levels / 4 s is about 1,200 origin requests per second, six times what the origin handles. A shield tier of a few nodes merges those misses, so the origin sees around 6 requests per second. Edges that go straight to the origin skip that protection.",
+      "bottleneck_note": "A CDN removes load only if its cache misses are collapsed before they reach the origin.",
+      "concept_ids": [
+        "cdn",
+        "origin-shield"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Around 40 percent of viewers are on mobile networks that swing between 3 Mbps and 800 kbps, and their video freezes whenever the speed drops. How should the stream adapt?",
+      "context_note": "Delivery now scales, but every viewer is still pulling the same 1080p stream of about 5 Mbps, which the weaker connections cannot sustain.",
+      "system_state": {
+        "nodes": [
+          "encoder",
+          "origin",
+          "shield",
+          "cdn-edge",
+          "player"
+        ],
+        "links": [
+          [
+            "encoder",
+            "origin"
+          ],
+          [
+            "origin",
+            "shield"
+          ],
+          [
+            "shield",
+            "cdn-edge"
+          ],
+          [
+            "cdn-edge",
+            "player"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Make the player buffer much more before it starts playing, so it can ride out the slow stretches of the network"
+        },
+        {
+          "id": "b",
+          "text": "Ask the server to measure each viewer's speed and drop the viewers whose connection is too slow to cope"
+        },
+        {
+          "id": "c",
+          "text": "Encode a ladder from 240p to 1080p in aligned segments, and let the player pick each segment's rung"
+        },
+        {
+          "id": "d",
+          "text": "Encode the whole stream at a low 1 Mbps for everyone, so nobody ever freezes"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "With aligned segments at several qualities, a player can move down a rung between two segments when its speed falls and back up when it recovers, so the picture softens instead of freezing. Extra buffering adds delay behind the live action and still fails on a long dip, and a single 1 Mbps stream makes the good connections look poor for no reason.",
+      "bottleneck_note": "Let the client choose quality segment by segment, because it alone sees its own network.",
+      "concept_ids": [
+        "adaptive-bitrate"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "About 1.5 crore people start the stream within three minutes of the toss, and each start checks the subscription in a billing store that serves 20,000 reads per second. What do you do about that check?",
+      "context_note": "Video delivery is solid, but starting a stream needs a check that the user's plan is active, which is about 83,000 checks per second at the toss.",
+      "system_state": {
+        "nodes": [
+          "encoder",
+          "origin",
+          "shield",
+          "cdn-edge",
+          "player",
+          "login-service",
+          "billing-store"
+        ],
+        "links": [
+          [
+            "encoder",
+            "origin"
+          ],
+          [
+            "origin",
+            "shield"
+          ],
+          [
+            "shield",
+            "cdn-edge"
+          ],
+          [
+            "cdn-edge",
+            "player"
+          ],
+          [
+            "player",
+            "login-service"
+          ],
+          [
+            "login-service",
+            "billing-store"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Cache each entitlement for a few minutes in a fast store, and scale login up before the toss"
+        },
+        {
+          "id": "b",
+          "text": "Check the billing store on every single start, and add more servers only after errors begin to appear"
+        },
+        {
+          "id": "c",
+          "text": "Skip the check for everyone during the first ten minutes and verify subscriptions afterwards"
+        },
+        {
+          "id": "d",
+          "text": "Put every viewer in a queue and admit them in turn at 20,000 a second"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "An entitlement changes rarely, so a copy that may be a few minutes old answers almost every check without touching billing, and the toss time is known so servers can be started early. Waiting for errors means servers arrive after the damage, and admitting 20,000 a second would make the last viewers wait 12 minutes while the match has started.",
+      "bottleneck_note": "If an answer rarely changes, cache it, and warm up for spikes you can see coming.",
+      "concept_ids": [
+        "entitlement-caching"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "A fault in the ingest path stops the stream for 90 seconds. Players retry every second, so 1.2 crore of them hammer the edges the moment it comes back. How should players retry?",
+      "context_note": "Entitlement checks hold up, but the outage means a large audience reconnects together, and the first retry wave knocked the recovered stream over again.",
+      "system_state": {
+        "nodes": [
+          "encoder",
+          "origin",
+          "shield",
+          "cdn-edge",
+          "player",
+          "login-service",
+          "entitlement-cache"
+        ],
+        "links": [
+          [
+            "encoder",
+            "origin"
+          ],
+          [
+            "origin",
+            "shield"
+          ],
+          [
+            "shield",
+            "cdn-edge"
+          ],
+          [
+            "cdn-edge",
+            "player"
+          ],
+          [
+            "player",
+            "login-service"
+          ],
+          [
+            "login-service",
+            "entitlement-cache"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Retry every second for the quickest possible recovery, since viewers hate waiting for the picture"
+        },
+        {
+          "id": "b",
+          "text": "Have the server push a reconnect message to all players together once the stream is healthy again"
+        },
+        {
+          "id": "c",
+          "text": "Stop automatic retries and ask the viewer to tap Rejoin"
+        },
+        {
+          "id": "d",
+          "text": "Retry with exponential backoff and random jitter, up to a cap such as 30 seconds"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "Backoff makes each player wait longer after every failure, and the random jitter spreads their attempts over time, so 1.2 crore reconnects arrive as a ramp instead of a single wall. Fixed one-second retries keep every player in step, and a push to everybody simply recreates the same wall on the server's schedule.",
+      "bottleneck_note": "Randomised, growing retry delays turn a synchronised stampede into a manageable ramp.",
+      "concept_ids": [
+        "reconnect-storms"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "tradeoff",
+      "prompt": "In the last over, demand reaches 2.6 crore viewers against edge capacity of about 66 Tbps. At today's mix of qualities that serves 2.2 crore, so what should you do about the shortfall?",
+      "context_note": "Retries are now spread out, but edge bandwidth is nearly saturated, and demand is 40 lakh viewers above what current bitrates allow.",
+      "system_state": {
+        "nodes": [
+          "encoder",
+          "origin",
+          "shield",
+          "cdn-edge",
+          "player",
+          "login-service",
+          "entitlement-cache"
+        ],
+        "links": [
+          [
+            "encoder",
+            "origin"
+          ],
+          [
+            "origin",
+            "shield"
+          ],
+          [
+            "shield",
+            "cdn-edge"
+          ],
+          [
+            "cdn-edge",
+            "player"
+          ],
+          [
+            "player",
+            "login-service"
+          ],
+          [
+            "login-service",
+            "entitlement-cache"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Turn away the newest 40 lakh viewers to connect, so that everyone already watching keeps full quality"
+        },
+        {
+          "id": "b",
+          "text": "Let the edges overload and serve whichever requests they manage to"
+        },
+        {
+          "id": "c",
+          "text": "Remove the top rung of the ladder for all viewers, so the average falls to about 2.4 Mbps"
+        },
+        {
+          "id": "d",
+          "text": "Lower quality only for viewers who joined in the last ten minutes"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "2.6 crore viewers at 2.4 Mbps is about 62 Tbps, which fits under 66 Tbps, so a slightly softer picture lets everyone watch the final over. Turning away 40 lakh viewers leaves them with nothing and sends them into repeated retries, and an overloaded edge fails unpredictably for people at every quality.",
+      "bottleneck_note": "When capacity runs short, lower quality for all before refusing anyone.",
+      "concept_ids": [
+        "graceful-degradation"
+      ]
+    }
+  ]
+}
