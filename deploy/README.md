@@ -22,7 +22,7 @@ Set Site URL to `https://untiered.tech` and allow `https://untiered.tech/auth/ca
 
 Provision the VM with a **static public IP**, Docker Engine and Compose plugin, SSH key access, and firewall inbound TCP 22 restricted to the operator's IP plus TCP 80/443 from the internet. Do not expose port 8080 or Postgres. Add an `A` record for `api.untiered.tech` pointing to that static IP and wait for it to resolve before starting Caddy. Caddy obtains and renews HTTPS certificates; its data volume must persist across releases.
 
-Copy `deploy/compose.yaml`, `deploy/Caddyfile`, `deploy/.env.example`, and `deploy/api.env.example` into one private directory on the VM. Rename the examples to `.env` and `api.env`; fill the values, set both files to mode `600`, and keep them outside Git. `DATABASE_URL` uses Supabase's **session pooler on port 5432** with TLS. `WEB_ALLOWED_ORIGINS=https://untiered.tech`. Choose `AI_DAILY_SPEND_CAP_MICRO_USD` and confirm the provider-side Gemini budget before opening interviews; the app limit guards only optional calls and is not a hard bill cap. Leave the optional second AI provider key empty for the first release.
+Copy `deploy/compose.yaml`, `deploy/Caddyfile`, `deploy/.env.example`, and `deploy/api.env.example` into one private directory on the VM. Rename the examples to `.env` and `api.env`; fill the values, set both files to mode `600`, and keep them outside Git. `DATABASE_URL` uses Supabase's **session pooler on port 5432** with TLS. `WEB_ALLOWED_ORIGINS=https://untiered.tech`. The owner approved an initial `AI_DAILY_SPEND_CAP_MICRO_USD=10000000` ($10/day) for optional AI preparation calls. Startup fails when `AI_DAILY_SPEND_CAP_REQUIRED=true` and the value is missing or zero. The app limit guards optional calls only, so also configure the provider-side Gemini budget before opening interviews. Leave the optional second AI provider key empty for the first release.
 
 Build the API image on a machine with enough memory from the verified release checkout, then transfer the saved image to the VM. Building the Gradle image on a 2 GB VM may exhaust its memory. Example, substituting the verified 12-character SHA for `<sha>`:
 
@@ -47,6 +47,7 @@ Set these **Production** variables before building:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Existing publishable/anon key; public by design |
 | `NEXT_PUBLIC_API_BASE_URL` | `https://api.untiered.tech` |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Site key paired with Supabase Auth secret |
+| `NEXT_PUBLIC_REQUIRE_TURNSTILE` | Explicit opt-in for non-production deploys; production builds require CAPTCHA automatically |
 | `NEXT_PUBLIC_FEATURE_MOCK_INTERVIEWS` | `true` only when API and AI budgets are ready |
 
 The legal details need the owner's judgement. Do not publish their placeholder text as a finished legal page. Other feature flags may retain repo defaults. Public `NEXT_PUBLIC_*` values are compiled into the bundle; changing them requires redeployment. Keep Preview deployments away from production Supabase credentials until their callback URLs and access policy are defined. Do not put `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_PASSWORD`, or `GEMINI_API_KEY` in Vercel.
