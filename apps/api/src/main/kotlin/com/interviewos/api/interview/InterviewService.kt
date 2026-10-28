@@ -98,7 +98,7 @@ class InterviewService(
     ): EntitlementDecision {
         val (roundsToday, minutesToday) = repository.practiceUsageSince(userId, startOfToday())
         return Entitlement.evaluate(
-            completedFreeSessions = repository.countCompletedFreeSessions(userId),
+            freeRoundsUsed = repository.countFreeRoundsStarted(userId),
             creditBalance = repository.creditBalance(userId),
             sessionInProgress = openSessionId != null,
             freeRounds = entitlementProperties.freeRounds,

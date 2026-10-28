@@ -45,6 +45,8 @@ class CreditLedgerDatabaseIntegrationTest {
     fun deleteUsers() {
         for (id in listOf(userId, otherUserId)) {
             jdbc.sql("delete from public.storage_deletion_jobs where user_id = :u").param("u", id).update()
+            // Payments outlive the account by design, so the test removes its own.
+            jdbc.sql("delete from public.payments where user_id = :u").param("u", id).update()
             jdbc.sql("delete from auth.users where id = :u").param("u", id).update()
         }
     }
@@ -135,16 +137,61 @@ class CreditLedgerDatabaseIntegrationTest {
     }
 
     @Test
-    fun `only rounds no credit paid for count against the lifetime free tier`() {
+    fun `only free rounds started count against the lifetime free tier`() {
         grant(1)
         val paid = openSession()
         sessions.spendCredit(userId, paid)
         assertTrue(sessions.markSessionStatus(paid, userId, "completed"))
-        assertEquals(0, sessions.countCompletedFreeSessions(userId))
+        assertEquals(0, sessions.countFreeRoundsStarted(userId))
 
-        val free = openSession()
-        assertTrue(sessions.markSessionStatus(free, userId, "completed"))
-        assertEquals(1, sessions.countCompletedFreeSessions(userId))
+        // Leaving a free round still uses it, as leaving a paid one does.
+        val abandoned = openSession()
+        sessions.recordPracticeUsage(userId, abandoned, 30)
+        assertTrue(sessions.markSessionStatus(abandoned, userId, "abandoned"))
+        assertEquals(1, sessions.countFreeRoundsStarted(userId))
+
+        // A round that failed on our side is handed back.
+        val failed = openSession()
+        sessions.recordPracticeUsage(userId, failed, 30)
+        assertTrue(sessions.failSessionAndRefundUsage(failed, userId))
+        assertEquals(1, sessions.countFreeRoundsStarted(userId))
+    }
+
+    @Test
+    fun `deleting the account keeps its payment history, detached, and deletes its credits`() {
+        val orderId = "order_${UUID.randomUUID()}"
+        billing.insertOrder(userId, orderId, fivePack, "INR")
+        assertTrue(billing.markPaidAndGrant(orderId, "pay_1", userId = userId))
+
+        jdbc.sql("delete from auth.users where id = :u").param("u", userId).update()
+
+        val kept =
+            jdbc
+                .sql("select user_id, status::text, amount_minor from public.payments where provider_order_id = :o")
+                .param("o", orderId)
+                .query { rs, _ -> Triple(rs.getObject("user_id"), rs.getString(2), rs.getLong(3)) }
+                .single()
+        assertEquals(Triple(null, "paid", 89_900L), kept)
+        assertEquals(0, count("public.interview_credits", "user_id", userId))
+        jdbc.sql("delete from public.payments where provider_order_id = :o").param("o", orderId).update()
+    }
+
+    @Test
+    fun `a payment landing after the account was deleted is recorded and grants nothing`() {
+        val orderId = "order_${UUID.randomUUID()}"
+        billing.insertOrder(userId, orderId, fivePack, "INR")
+        jdbc.sql("delete from auth.users where id = :u").param("u", userId).update()
+
+        assertFalse(billing.markPaidAndGrant(orderId, "pay_1", amountPaise = 89_900))
+        assertEquals(
+            "paid",
+            jdbc
+                .sql("select status::text from public.payments where provider_order_id = :o")
+                .param("o", orderId)
+                .query(String::class.java)
+                .single(),
+        )
+        jdbc.sql("delete from public.payments where provider_order_id = :o").param("o", orderId).update()
     }
 
     @Test
@@ -199,4 +246,15 @@ class CreditLedgerDatabaseIntegrationTest {
             .param("email", email)
             .update()
     }
+
+    private fun count(
+        table: String,
+        column: String,
+        id: UUID,
+    ): Int =
+        jdbc
+            .sql("select count(*) from $table where $column = :id")
+            .param("id", id)
+            .query(Int::class.java)
+            .single()
 }

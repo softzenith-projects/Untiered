@@ -4,12 +4,12 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { PremiumOffer } from "@/components/premium-offer";
 import { ProFeatureRequestForm } from "@/components/pro-feature-request-form";
-import { DAILY_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
+import { FREE_ROUNDS_TEXT } from "@/lib/legal";
 
 export const metadata: Metadata = { title: "Upgrade" };
 
 const INCLUDED_NOW = [
-  `${DAILY_ROUNDS_TEXT} of mock interview a day, up to ${LEGAL.dailyMinutes} minutes`,
+  `Your first ${FREE_ROUNDS_TEXT}, up to 60 minutes each`,
   "The complete evidence-backed report",
   "All enabled courses and Arena practice",
   "English and Hindi-English interviews",
@@ -32,7 +32,7 @@ export default function UpgradePage() {
           </h1>
           <p className="mt-3 max-w-2xl text-body text-on-navy-muted">
             Every interview, free or paid, comes with the full evidence-backed report. Paid
-            interviews are for practising beyond your free allowance.
+            interviews are for practising beyond your first {FREE_ROUNDS_TEXT}.
           </p>
         </header>
 
@@ -41,7 +41,7 @@ export default function UpgradePage() {
             <p className="pill pill-positive w-fit">Your current plan</p>
             <h2 id="current-access" className="mt-5 text-title text-ink">Free access</h2>
             <p className="mt-2 text-body text-ink-muted">
-              The core product is open while Untiered proves what helps candidates improve.
+              Enough to see what a real round and its report are like before you pay for any.
             </p>
             <ul className="mt-6 grid gap-3">
               {INCLUDED_NOW.map((item) => (

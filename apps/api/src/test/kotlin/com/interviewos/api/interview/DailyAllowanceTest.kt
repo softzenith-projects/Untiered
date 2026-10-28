@@ -8,17 +8,10 @@ import kotlin.test.assertTrue
 
 /**
  * The daily allowance arithmetic, exercised at two rounds so the round and minute limits can
- * be hit independently. The shipped default is pinned separately below.
+ * be hit independently. It is off in the shipped configuration — the lifetime free rounds
+ * replaced it, and `EntitlementTest` pins that — but stays available as a switch.
  */
 class DailyAllowanceTest {
-    /** The terms page promises this; `apps/web/src/lib/legal.ts` states the same numbers. */
-    @Test
-    fun `the default allowance is the one the terms state`() {
-        val defaults = EntitlementProperties()
-        assertEquals(1, defaults.dailyRounds)
-        assertEquals(60, defaults.dailyMinutes)
-    }
-
     private fun today(
         rounds: Int,
         minutes: Int,
@@ -31,7 +24,7 @@ class DailyAllowanceTest {
         creditBalance: Int = 0,
         purchasable: Boolean = false,
     ) = Entitlement.evaluate(
-        completedFreeSessions = 5,
+        freeRoundsUsed = 5,
         creditBalance = creditBalance,
         sessionInProgress = sessionInProgress,
         freeRounds = null,

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { CONTACT_EMAIL_DISPLAY, DAILY_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
+import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Terms of use",
@@ -48,10 +48,10 @@ export default function TermsPage() {
 
       <LegalSection id="free" title="Free practice and limits">
         <p>
-          Practice interviews are free up to {DAILY_ROUNDS_TEXT} and {LEGAL.dailyMinutes} minutes
-          a day, reset at midnight India time. Beyond that, you can buy paid interviews (below). We
-          may change these limits and will say so on the site before a change affects you. Courses
-          and the Arena are free.
+          Your first {FREE_ROUNDS_TEXT} are free, each with its full report. A free interview is
+          used when it starts, as a paid one is, and is returned if it fails because of a fault on
+          our side. After that, you can buy paid interviews (below). We may change these limits and
+          will say so on the site before a change affects you. Courses and the Arena are free.
         </p>
       </LegalSection>
 
@@ -71,7 +71,11 @@ export default function TermsPage() {
             still uses it. If an interview fails because of a fault on our side, the paid interview
             is returned to your account automatically.
           </li>
-          <li>Paid interviews do not expire while your account exists. Deleting your account deletes any you have not used.</li>
+          <li>
+            Paid interviews do not expire while your account exists. Deleting your account deletes
+            any you have not used. A record of your payments is kept for tax and accounting, as the
+            privacy policy describes.
+          </li>
           <li>
             If you were charged but did not receive your interviews, or want a refund for a pack you
             have not used any of, write to {CONTACT_EMAIL_DISPLAY} within {LEGAL.refundWindowDays}{" "}
@@ -90,7 +94,7 @@ export default function TermsPage() {
         <ul className="list-disc space-y-2 pl-5">
           <li>use the service to get help during a real interview or assessment;</li>
           <li>upload a resume or recording of anyone but yourself, or other people&rsquo;s personal information without their permission;</li>
-          <li>try to get around the daily limits or payments, for example with automated scripts or many accounts;</li>
+          <li>try to get around the free limit or payments, for example with automated scripts or many accounts;</li>
           <li>copy or resell the courses, questions or reports, or scrape the service;</li>
           <li>attack, overload or try to access parts of the service or data that are not yours.</li>
         </ul>

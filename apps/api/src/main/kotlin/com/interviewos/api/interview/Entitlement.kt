@@ -3,7 +3,7 @@ package com.interviewos.api.interview
 /**
  * Whether a candidate may start another interview, and what pays for it.
  *
- * Entitlement is derived from what actually happened — completed sessions, the credit
+ * Entitlement is derived from what actually happened — the free rounds started, the credit
  * ledger and the rounds started today — rather than stored as a flag, so it cannot
  * drift out of sync with reality (CLAUDE.md: progress is derived, not declared).
  *
@@ -11,29 +11,30 @@ package com.interviewos.api.interview
  *
  * 1. **One interview at a time.** Not commercial, and stays whatever the plan: two live
  *    sessions would race each other's turns.
- * 2. **Lifetime free rounds**, when `interviewos.entitlement.free-rounds` is set. It
- *    counts *complete free* interviews, because the report is what sells the product and
- *    an abandoned round never showed it.
- * 3. **The daily allowance**: rounds started today, then planned minutes used today, then
- *    whether the requested round fits in what is left. Started, not completed, because the
- *    model is paid for from the first question — an abandoned round has already cost money.
+ * 2. **Lifetime free rounds** (`interviewos.entitlement.free-rounds`, 3 by owner decision
+ *    on 29 October 2026). Counted when a free round *starts*, exactly as a paid credit is
+ *    spent: the model is paid for from the first question, and counting only completed
+ *    rounds would make start-and-leave unlimited free practice. A round that fails on our
+ *    side is handed back, as a credit is.
+ * 3. **The daily allowance**, when configured (off by default): rounds started today, then
+ *    planned minutes used today, then whether the requested round fits in what is left.
  * 4. **A paid credit**, only once the free allowance says no. Free practice is always
  *    spent first, so a candidate who bought a pack never pays for a round the product
  *    would have given them anyway.
  */
 object Entitlement {
     /**
-     * @param completedFreeSessions completed rounds that no credit paid for.
+     * @param freeRoundsUsed free rounds started and not handed back after a failure.
      * @param creditBalance paid interview credits not yet spent.
      * @param purchasable whether credits can be bought here, which decides what a refusal
      *   tells the candidate to do next.
-     * @param freeRounds how many completed rounds a candidate gets free, or null for no
+     * @param freeRounds how many rounds a candidate gets free for life, or null for no
      *   lifetime limit at all.
      * @param requestedMinutes the length of the round being started, or null when only
      *   asking whether a round could be started at all (the dashboard).
      */
     fun evaluate(
-        completedFreeSessions: Int,
+        freeRoundsUsed: Int,
         creditBalance: Int,
         sessionInProgress: Boolean,
         freeRounds: Int?,
@@ -41,7 +42,7 @@ object Entitlement {
         requestedMinutes: Int? = null,
         purchasable: Boolean = false,
     ): EntitlementDecision {
-        val remaining = remainingFree(freeRounds, completedFreeSessions)
+        val remaining = remainingFree(freeRounds, freeRoundsUsed)
         val balance = creditBalance.coerceAtLeast(0)
 
         fun decision(
@@ -58,7 +59,7 @@ object Entitlement {
         )
 
         if (sessionInProgress) return decision(Reason.SESSION_IN_PROGRESS)
-        val freeRefusal = freeRefusal(completedFreeSessions, freeRounds, daily, requestedMinutes)
+        val freeRefusal = freeRefusal(freeRoundsUsed, freeRounds, daily, requestedMinutes)
         if (freeRefusal == null) return decision(Reason.ALLOWED, Funding.FREE)
         if (balance > 0) return decision(Reason.ALLOWED, Funding.CREDIT)
         // With nothing to pay for it, the candidate is told why the free allowance said no —
@@ -68,12 +69,12 @@ object Entitlement {
 
     /** Why the free allowance alone cannot cover this round, or null when it can. */
     private fun freeRefusal(
-        completedFreeSessions: Int,
+        freeRoundsUsed: Int,
         freeRounds: Int?,
         daily: DailyUsage,
         requestedMinutes: Int?,
     ): Reason? {
-        if (freeRounds != null && completedFreeSessions >= freeRounds) return Reason.FREE_TIER_EXHAUSTED
+        if (freeRounds != null && freeRoundsUsed >= freeRounds) return Reason.FREE_TIER_EXHAUSTED
         if (daily.remainingRounds == 0) return Reason.DAILY_ROUNDS_REACHED
         if (daily.remainingMinutes == 0) return Reason.DAILY_MINUTES_REACHED
         val minutesLeft = daily.remainingMinutes
@@ -86,8 +87,8 @@ object Entitlement {
     /** Null means there is no allowance to count down — not that none is left. */
     private fun remainingFree(
         freeRounds: Int?,
-        completedFreeSessions: Int,
-    ): Int? = freeRounds?.let { (it - completedFreeSessions).coerceAtLeast(0) }
+        freeRoundsUsed: Int,
+    ): Int? = freeRounds?.let { (it - freeRoundsUsed).coerceAtLeast(0) }
 
     /** What pays for an admitted round. */
     enum class Funding {
@@ -164,7 +165,8 @@ data class EntitlementDecision(
                         }
 
                         else -> {
-                            "You can start an interview.${paidHeld()}"
+                            "You have $remainingFree free ${if (remainingFree == 1) "interview" else "interviews"} " +
+                                "left.${paidHeld()}"
                         }
                     }
                 }
@@ -175,9 +177,9 @@ data class EntitlementDecision(
 
                 Entitlement.Reason.FREE_TIER_EXHAUSTED -> {
                     if (purchasable) {
-                        "Your free interview has been used. Buy an interview to keep practising."
+                        "You have used your free interviews. Buy an interview to keep practising."
                     } else {
-                        "Your free interview has been used. Upgrade to continue practising."
+                        "You have used your free interviews. Paid interviews are coming soon."
                     }
                 }
 

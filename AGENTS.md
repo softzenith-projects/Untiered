@@ -214,7 +214,8 @@ Resumes, interview audio, and transcripts are personal data. Treat them accordin
 
 - Recording requires explicit user consent captured before the session starts.
 - Every user-data table needs a clear owner column and row-level security.
-- Account deletion must actually delete, including storage objects.
+- Account deletion must actually delete, including storage objects. The one exception is
+  payment records, kept detached for tax and refunds (owner, 29 October 2026).
 - Community-contributed interview reports are anonymised before they enter the
   shared corpus — never store them in a form that can be traced to a user.
 - **Do not write scrapers.** Bulk scraping of LeetCode, Blind, Reddit, Glassdoor,
@@ -320,12 +321,13 @@ interviewbit.com: a bright, confident, polished learning-platform look.
   what it sees" — the two came apart when video stopped being uploaded, and conflating
   them again is how a report ends up claiming someone "maintained good eye contact" when
   nothing watched them. That is fabricated evidence, the same failure as an invented quote.
-- **Free practice first, paid interviews beyond it** (owner, 28 October 2026). The free
-  tier is the daily allowance in `EntitlementProperties` (no lifetime gate —
-  `interviewos.entitlement.free-rounds` stays unset; **do not "restore" it** without the
-  owner). Beyond it, candidates buy **interview credits** in packs: 1 for ₹199, 5 for ₹899,
-  10 for ₹1,499, tax-inclusive (`BillingProperties.DEFAULT_PACKS`). Every interview, free
-  or paid, includes the full report, because the report is what sells the product.
+- **Three free interviews for life, then paid ones** (owner, 28–29 October 2026). The
+  free tier is `interviewos.entitlement.free-rounds: 3`, counted when each free round
+  *starts* (one `practice_usage` row each) and handed back if it fails on our side. The
+  daily allowance is off. Beyond the three, candidates buy **interview credits** in packs:
+  1 for ₹199, 5 for ₹899, 10 for ₹1,499, tax-inclusive (`BillingProperties.DEFAULT_PACKS`).
+  Every interview, free or paid, includes the full report, because the report is what
+  sells the product. `apps/web/src/lib/legal.ts` states the free number; change both.
   - A credit is spent **when the round starts**, only after the free allowance says no
     (`Entitlement.Funding`), and handed back automatically if the round ends `failed`
     (our fault). Leaving a round does not hand it back.
@@ -334,6 +336,9 @@ interviewbit.com: a bright, confident, polished learning-platform look.
   - The server prices every order; the browser names a pack, never an amount. Credits are
     granted only after the Razorpay signature *and* a captured payment of the order's
     exact amount are checked, by the confirm call or the signed webhook, whichever is first.
+  - **Payment records survive account deletion**, detached (`payments.user_id` is
+    `on delete set null`), for tax and refunds. This is the one deliberate exception to
+    "account deletion must actually delete"; unused credits are still deleted.
 - **Payments: Razorpay.** Buying is off until `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`
   are set. Live keys, price changes, and refund terms are the owner's decision.
 - **Community interview reports and salary data are later phases.** Do not scaffold

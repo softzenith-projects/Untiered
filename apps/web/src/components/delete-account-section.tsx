@@ -81,7 +81,7 @@ export function DeleteAccountSection() {
           <li>your resume, your profile photo and your profile details</li>
           <li>your course and Arena progress</li>
           <li>your email preferences and delivery history</li>
-          <li>any paid interviews you have not used, and your purchase history</li>
+          <li>any paid interviews you have not used (a record of payments is kept for tax, without your name or email)</li>
           <li>your sign-in — signing in with Google again starts a new, empty account</li>
         </ul>
         <label htmlFor={inputId} className="flex max-w-sm flex-col gap-1.5">

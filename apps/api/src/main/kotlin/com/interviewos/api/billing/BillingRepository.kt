@@ -81,6 +81,10 @@ class BillingRepository(
      * update through, and the one-grant-per-payment index catches anything that slips past.
      * When [amountPaise] is given — the webhook path — an order is only paid by a payment of
      * exactly its own amount. Returns true when this call granted the credits.
+     *
+     * An order whose account was deleted before the payment landed is marked paid and
+     * grants nothing — there is nobody left to hold the credits. That payment is a refund
+     * to make by hand from the Razorpay dashboard.
      */
     fun markPaidAndGrant(
         orderId: String,
@@ -105,7 +109,7 @@ class BillingRepository(
                       returning id, user_id, credits
                     ), granted as (
                       insert into public.interview_credits (user_id, delta, reason, payment_id)
-                      select user_id, credits, 'purchase', id from paid
+                      select user_id, credits, 'purchase', id from paid where user_id is not null
                       on conflict do nothing
                       returning id
                     )

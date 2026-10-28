@@ -57,21 +57,14 @@ class SessionRepository(
     }
 
     /**
-     * Completed rounds the free allowance paid for — the lifetime free tier counts these and
-     * nothing else, so a candidate who bought interviews before using the free one keeps it.
+     * Free rounds started, for the lifetime free tier: one `practice_usage` row each. A paid
+     * round writes none, a round that failed on our side has had its row removed, and a
+     * deleted round keeps its row — so deleting rounds does not buy more free ones.
      */
-    fun countCompletedFreeSessions(userId: UUID): Int =
+    fun countFreeRoundsStarted(userId: UUID): Int =
         jdbcClient
-            .sql(
-                """
-                select count(*) from public.sessions s
-                 where s.user_id = :u and s.status = 'completed'
-                   and not exists (
-                     select 1 from public.interview_credits c
-                      where c.session_id = s.id and c.user_id = :u and c.reason = 'consume'
-                   )
-                """.trimIndent(),
-            ).param("u", userId)
+            .sql("select count(*) from public.practice_usage where user_id = :u")
+            .param("u", userId)
             .query(Int::class.java)
             .single()
 

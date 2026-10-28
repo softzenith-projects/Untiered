@@ -32,7 +32,7 @@ export function DailyLimitNotice({
   onPurchased?: (overview: BillingOverview) => void;
 }) {
   const heading =
-    entitlement.reason === "free_tier_exhausted" ? "Your free interview is used" : "Today’s free practice is used";
+    entitlement.reason === "free_tier_exhausted" ? "Your free interviews are used" : "Today’s free practice is used";
   return (
     <section
       aria-labelledby="daily-limit-heading"

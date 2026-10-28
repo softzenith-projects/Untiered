@@ -16,7 +16,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SessionLink } from "@/components/session-link";
 import { fetchUsage } from "@/lib/api";
 import { courseEnabled, featureEnabled } from "@/lib/flags";
-import { DAILY_ROUNDS_TEXT } from "@/lib/legal";
+import { FREE_ROUNDS_TEXT } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Untiered — talent has no tiers",
@@ -142,7 +142,7 @@ function Hero({
           </div>
           {mockInterviewsEnabled ? (
             <ul className="flex flex-wrap gap-x-5 gap-y-2 text-caption text-on-navy-muted">
-              {[`${DAILY_ROUNDS_TEXT} free every day`, "Full report included", "No card"].map((item) => (
+              {[`${FREE_ROUNDS_TEXT} free`, "Full report included", "No card to start"].map((item) => (
                 <li key={item} className="flex items-center gap-1.5">
                   <CheckIcon />
                   {item}
@@ -396,7 +396,7 @@ function CtaBand({
             {mockInterviewsEnabled ? "Start an interview" : coursesEnabled ? "Explore courses" : arenaEnabled ? "Open the Arena" : "Sign in"}
           </ActionLink>
           {mockInterviewsEnabled ? (
-            <span className="text-caption text-on-navy-muted">{DAILY_ROUNDS_TEXT} free every day · no card</span>
+            <span className="text-caption text-on-navy-muted">{FREE_ROUNDS_TEXT} free · no card to start</span>
           ) : null}
         </div>
       </div>

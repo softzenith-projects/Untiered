@@ -13,15 +13,15 @@ export const LEGAL = {
   dataRegion: "India (Mumbai, ap-south-1)",
   /** Kept in step with `interviewos.retention.reports-kept-for` on the API. */
   reportRetentionDays: 28,
-  /** Kept in step with `EntitlementProperties` on the API (owner, 27 October 2026). */
-  dailyRounds: 1,
-  dailyMinutes: 60,
+  /** Kept in step with `EntitlementProperties.freeRounds` on the API (owner, 29 October 2026). */
+  freeRounds: 3,
   /** How long after paying an unused pack can be refunded. Needs the owner's sign-off. */
   refundWindowDays: 7,
-  lastUpdated: "28 October 2026",
+  lastUpdated: "29 October 2026",
 } as const;
 
 export const CONTACT_EMAIL_DISPLAY = LEGAL.contactEmail;
 
-/** "1 round" or "2 rounds", so the allowance reads correctly at any setting. */
-export const DAILY_ROUNDS_TEXT = `${LEGAL.dailyRounds} ${LEGAL.dailyRounds === 1 ? "round" : "rounds"}`;
+/** "1 mock interview" or "3 mock interviews", so the allowance reads correctly at any setting. */
+const freeRounds: number = LEGAL.freeRounds;
+export const FREE_ROUNDS_TEXT = `${freeRounds} mock ${freeRounds === 1 ? "interview" : "interviews"}`;

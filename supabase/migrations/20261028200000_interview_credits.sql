@@ -20,6 +20,17 @@ alter table public.payments
   add column credits integer check (credits > 0),
   add column paid_at timestamptz;
 
+-- A payment record outlives the account that made it (owner, 29 October 2026): what was
+-- bought, for how much, when, and Razorpay's references are kept for tax, accounting and
+-- refunds. Deleting the account detaches the row instead of deleting it, so nothing left
+-- names the person — the Razorpay ids lead back only through Razorpay's own records. The
+-- account's unused credits are still deleted with it (interview_credits cascades).
+alter table public.payments alter column user_id drop not null;
+alter table public.payments drop constraint payments_user_id_fkey;
+alter table public.payments
+  add constraint payments_user_id_fkey
+  foreign key (user_id) references public.users (id) on delete set null;
+
 comment on column public.payments.plan is 'The credit pack bought (interviewos.billing.packs[].id).';
 comment on column public.payments.credits is 'Interview credits the pack grants once the payment is captured.';
 

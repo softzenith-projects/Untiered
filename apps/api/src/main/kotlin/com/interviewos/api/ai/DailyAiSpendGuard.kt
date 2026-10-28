@@ -12,8 +12,13 @@ import java.util.UUID
 data class AiBudgetProperties(
     /** Zero leaves the optional-call guard inactive unless [requireDailyCap] is enabled. */
     val dailyCapMicroUsd: Long = 0,
-    /** Two dollars per candidate per India-time day, independently of the project-wide cap. */
-    val perUserDailyCapMicroUsd: Long = 2_000_000,
+    /**
+     * Five dollars per candidate per India-time day, independently of the project-wide cap
+     * (owner, 29 Oct 2026). A round costs about $0.085, or about $0.34 when it falls back to
+     * the dearer model, so this is about fifteen fallen-back rounds — room for a candidate
+     * working through a pack in one day, and still a ceiling on an abused account.
+     */
+    val perUserDailyCapMicroUsd: Long = 5_000_000,
     /** Production deployments set this so a missing optional-call budget prevents startup. */
     val requireDailyCap: Boolean = false,
 ) {

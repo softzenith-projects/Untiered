@@ -109,7 +109,9 @@ class BillingService(
         val receipt = "ut_" + UUID.randomUUID().toString().replace("-", "")
         val orderId =
             try {
-                gateway.createOrder(pack.pricePaise, CURRENCY, receipt, mapOf("pack" to pack.id))
+                // The product note tells this site's payments apart in a Razorpay account
+                // shared with another product.
+                gateway.createOrder(pack.pricePaise, CURRENCY, receipt, mapOf("product" to "untiered", "pack" to pack.id))
             } catch (e: PaymentGatewayException) {
                 log.warn("Could not create a Razorpay order", e)
                 throw ApiException.upstreamUnavailable("Payments could not be reached just now. Nothing was charged — try again.")

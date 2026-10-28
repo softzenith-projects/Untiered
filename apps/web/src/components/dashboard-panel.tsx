@@ -510,13 +510,15 @@ function headerLine(openSessionId: string | null, lastCompleted: SessionSummary 
 }
 
 /**
- * Today's allowance as one line under the action it limits. Said only while a daily limit
- * is active and practice remains: a used-up day has its own notice, and an open round is
- * answered by the Resume button.
+ * The allowance as one line under the action it limits: free interviews left, today's
+ * practice, or the paid interviews held. Said only while practice remains: a used-up
+ * allowance has its own notice, and an open round is answered by the Resume button.
  */
 function AllowanceLine({ entitlement, loaded }: { entitlement: EntitlementView | null; loaded: boolean }) {
   if (!loaded || !entitlement?.allowed) return null;
-  if (entitlement.dailyRoundLimit === null && entitlement.dailyMinuteLimit === null) return null;
+  const limited =
+    entitlement.remainingFree !== null || entitlement.dailyRoundLimit !== null || entitlement.dailyMinuteLimit !== null;
+  if (!limited && entitlement.creditBalance === 0) return null;
   return <p className="text-caption text-ink-subtle sm:text-right">{entitlement.message}</p>;
 }
 

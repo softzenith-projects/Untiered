@@ -47,10 +47,10 @@ describe("legal pages", () => {
     expect(screen.getAllByText(/help@untiered\.tech/).length).toBe(2);
   });
 
-  it("states the same daily allowance the API enforces", () => {
+  it("states the same free allowance the API enforces", () => {
     render(<TermsPage />);
 
-    expect(screen.getByText(/up to 1 round and\s+60 minutes a day/i)).toBeInTheDocument();
+    expect(screen.getByText(/your first 3 mock interviews are free/i)).toBeInTheDocument();
   });
 
   it("links every legal page from the others", () => {

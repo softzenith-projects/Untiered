@@ -15,7 +15,7 @@ class EntitlementTest {
     fun `with no allowance configured there is no limit`() {
         val tenRoundsIn =
             Entitlement.evaluate(
-                completedFreeSessions = 10,
+                freeRoundsUsed = 10,
                 creditBalance = 0,
                 sessionInProgress = false,
                 freeRounds = null,
@@ -35,7 +35,7 @@ class EntitlementTest {
         // Not a commercial restriction: two live sessions would race each other's turns.
         val decision =
             Entitlement.evaluate(
-                completedFreeSessions = 3,
+                freeRoundsUsed = 3,
                 creditBalance = 0,
                 sessionInProgress = true,
                 freeRounds = null,
@@ -48,16 +48,23 @@ class EntitlementTest {
 
     @Test
     fun `a new candidate gets the configured allowance`() {
-        val decision = evaluate(completedFreeSessions = 0)
+        val decision = evaluate(freeRoundsUsed = 0)
 
         assertTrue(decision.allowed)
-        assertEquals(1, decision.remainingFree)
+        assertEquals(3, decision.remainingFree)
         assertEquals(Entitlement.Funding.FREE, decision.funding)
+        assertEquals("You have 3 free interviews left.", decision.message)
     }
 
     @Test
-    fun `the free interview is used up once one is completed`() {
-        val decision = evaluate(completedFreeSessions = 1)
+    fun `each free round started counts down the three`() {
+        assertEquals(1, evaluate(freeRoundsUsed = 2).remainingFree)
+        assertEquals("You have 1 free interview left.", evaluate(freeRoundsUsed = 2).message)
+    }
+
+    @Test
+    fun `the free interviews are used up once three have started`() {
+        val decision = evaluate(freeRoundsUsed = 3)
 
         assertFalse(decision.allowed)
         assertEquals(Entitlement.Reason.FREE_TIER_EXHAUSTED, decision.reason)
@@ -65,17 +72,17 @@ class EntitlementTest {
     }
 
     @Test
-    fun `an abandoned interview does not consume the free one`() {
-        // Abandoned sessions never reach `completed`, so they are not counted. The
-        // candidate never saw a report, which is the thing the free tier exists to show.
-        val decision = evaluate(completedFreeSessions = 0)
-
-        assertTrue(decision.allowed)
+    fun `the shipped allowance is three free rounds for life and no daily limit`() {
+        // The terms state these numbers (`apps/web/src/lib/legal.ts`).
+        val defaults = EntitlementProperties()
+        assertEquals(3, defaults.freeRounds)
+        assertNull(defaults.dailyRounds)
+        assertNull(defaults.dailyMinutes)
     }
 
     @Test
     fun `a credit pays for an interview once the free one is used`() {
-        val decision = evaluate(completedFreeSessions = 1, creditBalance = 1)
+        val decision = evaluate(freeRoundsUsed = 3, creditBalance = 1)
 
         assertTrue(decision.allowed)
         assertEquals(Entitlement.Funding.CREDIT, decision.funding)
@@ -86,7 +93,7 @@ class EntitlementTest {
     fun `free practice is spent before a credit`() {
         // A candidate who bought a pack before their first round must not pay for the round
         // the product would have given them anyway.
-        val decision = evaluate(completedFreeSessions = 0, creditBalance = 5)
+        val decision = evaluate(freeRoundsUsed = 0, creditBalance = 5)
 
         assertTrue(decision.allowed)
         assertEquals(Entitlement.Funding.FREE, decision.funding)
@@ -95,7 +102,7 @@ class EntitlementTest {
 
     @Test
     fun `with no credits left the free refusal stands`() {
-        val decision = evaluate(completedFreeSessions = 4, creditBalance = 0)
+        val decision = evaluate(freeRoundsUsed = 4, creditBalance = 0)
 
         assertFalse(decision.allowed)
         assertEquals(Entitlement.Reason.FREE_TIER_EXHAUSTED, decision.reason)
@@ -103,10 +110,10 @@ class EntitlementTest {
 
     @Test
     fun `a refusal offers buying only where buying is possible`() {
-        val closed = evaluate(completedFreeSessions = 1, purchasable = false)
-        val open = evaluate(completedFreeSessions = 1, purchasable = true)
+        val closed = evaluate(freeRoundsUsed = 3, purchasable = false)
+        val open = evaluate(freeRoundsUsed = 3, purchasable = true)
 
-        assertTrue(closed.message.contains("Upgrade"))
+        assertTrue(closed.message.contains("coming soon"))
         assertTrue(open.message.contains("Buy an interview"))
         assertTrue(open.purchasable)
     }
@@ -115,7 +122,7 @@ class EntitlementTest {
     fun `a negative balance is never offered as credit`() {
         // The ledger cannot go below zero through this code, but a hand-written correction
         // could; it must read as nothing to spend rather than as a debt that admits rounds.
-        val decision = evaluate(completedFreeSessions = 1, creditBalance = -2)
+        val decision = evaluate(freeRoundsUsed = 3, creditBalance = -2)
 
         assertFalse(decision.allowed)
         assertEquals(0, decision.creditBalance)
@@ -123,7 +130,7 @@ class EntitlementTest {
 
     @Test
     fun `only one interview may run at a time`() {
-        val decision = evaluate(completedFreeSessions = 0, sessionInProgress = true)
+        val decision = evaluate(freeRoundsUsed = 0, sessionInProgress = true)
 
         assertFalse(decision.allowed)
         assertEquals(Entitlement.Reason.SESSION_IN_PROGRESS, decision.reason)
@@ -131,7 +138,7 @@ class EntitlementTest {
 
     @Test
     fun `an in-progress session blocks even a paying candidate`() {
-        val decision = evaluate(completedFreeSessions = 1, creditBalance = 5, sessionInProgress = true)
+        val decision = evaluate(freeRoundsUsed = 1, creditBalance = 5, sessionInProgress = true)
 
         assertFalse(decision.allowed)
         assertEquals(Entitlement.Reason.SESSION_IN_PROGRESS, decision.reason)
@@ -139,20 +146,20 @@ class EntitlementTest {
 
     @Test
     fun `remaining free never goes negative`() {
-        assertEquals(0, evaluate(completedFreeSessions = 9).remainingFree)
+        assertEquals(0, evaluate(freeRoundsUsed = 9).remainingFree)
     }
 
-    /** The allowance the PRD describes, and what `free-rounds: 1` would restore. */
+    /** The shipped allowance: three free rounds for life (owner, 29 October 2026). */
     private fun evaluate(
-        completedFreeSessions: Int,
+        freeRoundsUsed: Int,
         creditBalance: Int = 0,
         sessionInProgress: Boolean = false,
         purchasable: Boolean = false,
     ) = Entitlement.evaluate(
-        completedFreeSessions = completedFreeSessions,
+        freeRoundsUsed = freeRoundsUsed,
         creditBalance = creditBalance,
         sessionInProgress = sessionInProgress,
-        freeRounds = 1,
+        freeRounds = 3,
         purchasable = purchasable,
     )
 }
