@@ -207,7 +207,7 @@ export const chapterPromptChaining: Chapter = {
       kind: "quiz",
       question: "What makes a chain better than the same work in one prompt?",
       options: [
-        "It uses fewer tokens overall",
+        "It uses fewer tokens overall, because each short prompt carries less repeated instruction than one long one",
         "It is faster",
         "Code can check the intermediate result and stop before the expensive next step",
         "The model concentrates better on shorter prompts",
@@ -221,7 +221,7 @@ export const chapterPromptChaining: Chapter = {
       kind: "quiz",
       question: "According to Anthropic's guidance, when is prompt chaining ideal?",
       options: [
-        "When the number of steps cannot be predicted",
+        "When the number of steps cannot be predicted in advance and the model must choose each one",
         "When the task can be easily and cleanly decomposed into fixed subtasks",
         "When latency is the primary constraint",
         "When you have several models available",

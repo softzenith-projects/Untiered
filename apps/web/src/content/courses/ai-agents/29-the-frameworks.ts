@@ -281,7 +281,7 @@ export const chapterTheFrameworks: Chapter = {
       kind: "quiz",
       question: "When does the OpenAI Agents SDK's runner consider an output final?",
       options: [
-        "When the model stops producing tokens",
+        "When the model stops producing tokens, whether or not it has requested any tool or handoff",
         "When it produces text output with the desired type and there are no tool calls",
         "After `max_turns` iterations",
         "When a guardrail passes",
@@ -296,7 +296,7 @@ export const chapterTheFrameworks: Chapter = {
       question: "What is smolagents' documented argument for writing actions as code rather than JSON?",
       options: [
         "Code is shorter than JSON",
-        "Code is composable, handles objects, is general, and is well represented in models' training data",
+        "JSON cannot express function calls at all, so code is the only way to tell a model which tool to use next",
         "JSON cannot express function calls",
         "Code runs faster",
       ],

@@ -308,8 +308,8 @@ export const chapterPromptInjectionAndSecurity: Chapter = {
       kind: "quiz",
       question: "Why is a strongly worded system prompt not a defence against prompt injection?",
       options: [
-        "Because system prompts are optional",
-        "Because system and user content become one token sequence, so there is no boundary for the injected text to cross",
+        "Because system prompts are optional, and most models ignore them entirely whenever a user message disagrees",
+        "Because system and user content become one token sequence, so there is no boundary for injected text to cross",
         "Because the model reads the last message first",
         "Because system prompts are not sent on every turn",
       ],
@@ -322,7 +322,7 @@ export const chapterPromptInjectionAndSecurity: Chapter = {
       kind: "quiz",
       question: "Which of these is indirect prompt injection?",
       options: [
-        "A user typing \"ignore your instructions\" into the chat box",
+        "A user typing \"ignore your instructions\" into the chat box of the application, to make it break its rules",
         "A web page the agent fetched containing hidden text that instructs it to exfiltrate data",
         "A developer changing the system prompt",
         "A model producing malformed JSON",
@@ -340,7 +340,7 @@ export const chapterPromptInjectionAndSecurity: Chapter = {
         "Excessive functionality, excessive permissions, excessive autonomy",
         "Excessive cost, excessive latency, excessive tokens",
         "Excessive prompting, excessive retrieval, excessive memory",
-        "Excessive agents, excessive tools, excessive handoffs",
+        "Excessive agents, excessive tools, excessive handoffs between cooperating agents",
       ],
       answer: 0,
       why:

@@ -328,7 +328,7 @@ export const chapterWhatATransformerIs: Chapter = {
       kind: "quiz",
       question: "In self-attention, what determines how much one position contributes to another's output?",
       options: [
-        "How close the two positions are in the sequence",
+        "How close the two positions are in the sequence, with nearby tokens always weighted more heavily",
         "The softmax of the dot product between one position's query and the other's key",
         "The order in which the tokens were generated",
         "A fixed table set when the model was designed",
@@ -342,7 +342,7 @@ export const chapterWhatATransformerIs: Chapter = {
       kind: "quiz",
       question: "What did *Attention Is All You Need* say the Transformer dispenses with?",
       options: [
-        "Training data and supervision",
+        "Training data, and the need for labelled examples",
         "Recurrence and convolutions, entirely",
         "Tokenization",
         "Positional information",
@@ -357,7 +357,7 @@ export const chapterWhatATransformerIs: Chapter = {
       kind: "quiz",
       question: "Why does doubling the context length cost more than twice as much in the attention layers?",
       options: [
-        "Because the vocabulary has to be re-learned",
+        "Because the model has to learn a larger vocabulary every time the context gets longer, which doubles the training cost of each layer",
         "Because every position attends to every position, so the number of comparisons grows with the square of the length",
         "Because the embedding table doubles",
         "Because the model has to run twice",

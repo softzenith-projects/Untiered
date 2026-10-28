@@ -232,8 +232,8 @@ export const chapterWhenPromptingStopsWorking: Chapter = {
       kind: "quiz",
       question: "A model keeps inventing order numbers for your customers. You have rewritten the prompt four times. What is the correct next step?",
       options: [
-        "A fifth rewrite, more forcefully worded",
-        "Lower the temperature to zero",
+        "A fifth rewrite, with the instruction worded far more forcefully and repeated in the system prompt",
+        "Lower the temperature to zero so the model stops guessing and only produces numbers it is sure of",
         "Connect a tool that looks the order up, so the real number can enter the context",
         "Add three more few-shot examples of order lookups",
       ],
@@ -249,7 +249,7 @@ export const chapterWhenPromptingStopsWorking: Chapter = {
       options: [
         "The assistant says a refund was processed on a date nobody checked",
         "The assistant writes its summaries in five paragraphs when you wanted three bullets",
-        "The assistant quotes last year's price as current",
+        "The assistant quotes last year's price as though it were the current one, because its training ended before the change",
         "The assistant says it has cancelled a booking that is still active",
       ],
       answer: 1,
@@ -263,7 +263,7 @@ export const chapterWhenPromptingStopsWorking: Chapter = {
       options: [
         "All four",
         "Recency, for publicly published information — and nothing about your private data",
-        "Knowledge, including private systems",
+        "Knowledge, including private systems such as your own customer database and order records",
         "Verification",
       ],
       answer: 1,

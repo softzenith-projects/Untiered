@@ -214,7 +214,7 @@ export const chapterWhatIsALanguageModel: Chapter = {
         "Because the model verified that trains always go to somewhere",
         "Because \"to\" is the only word the model ever saw after \"train\" in its tiny training text",
         "Because 1.0 is the default when a model is unsure",
-        "Because the sentences were grammatically correct",
+        "Because both sentences in its training text were grammatically correct, which the model rewards with full probability",
       ],
       answer: 1,
       why:
@@ -228,7 +228,7 @@ export const chapterWhatIsALanguageModel: Chapter = {
       options: [
         "It has a hidden connection to your bank",
         "It produced text that looks like a plausible balance, because that is what follows such a question in its training data",
-        "It guessed randomly from 0 to 100",
+        "It picked a number at random between zero and one hundred, because a random number is all it can produce without data",
         "It refused, and the number came from elsewhere",
       ],
       answer: 1,
@@ -240,7 +240,7 @@ export const chapterWhatIsALanguageModel: Chapter = {
       kind: "quiz",
       question: "Which of these does scale (a much bigger model, much more data) genuinely improve?",
       options: [
-        "The guarantee that any individual factual claim is correct",
+        "The guarantee that any single claim it makes about the world will be correct",
         "The model's awareness of what it does not know",
         "How much and how subtly the prediction can be conditioned on its context",
         "Its access to information created after training",

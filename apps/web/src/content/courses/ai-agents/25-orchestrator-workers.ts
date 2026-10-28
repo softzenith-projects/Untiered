@@ -213,7 +213,7 @@ export const chapterOrchestratorWorkers: Chapter = {
       kind: "quiz",
       question: "What distinguishes orchestrator-workers from parallelisation by sectioning?",
       options: [
-        "It uses more models",
+        "It uses a larger number of different models, because each subtask is sent to its own specialised model",
         "The subtasks are determined by the orchestrator from the specific input, rather than being pre-defined",
         "It runs the subtasks sequentially",
         "It requires a vector database",
@@ -227,7 +227,7 @@ export const chapterOrchestratorWorkers: Chapter = {
       kind: "quiz",
       question: "Why does this pattern need a fan-out cap when sectioning does not?",
       options: [
-        "Workers are more expensive than sections",
+        "Workers are more expensive than sections, because each worker is always a larger model than any of the sections",
         "The number of calls is decided by the model, so without a cap one request can cost an unbounded amount",
         "Workers run for longer",
         "The orchestrator retries automatically",
@@ -244,7 +244,7 @@ export const chapterOrchestratorWorkers: Chapter = {
         "In the orchestrator, before the workers run",
         "In the synthesis step, which must reconcile rather than concatenate",
         "Nowhere — the model will resolve it",
-        "In each worker, which should check what the others did",
+        "In each worker, which should look at what the others did and change its own rename to match",
       ],
       answer: 1,
       why:

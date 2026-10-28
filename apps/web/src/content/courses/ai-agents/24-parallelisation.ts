@@ -198,7 +198,7 @@ export const chapterParallelisation: Chapter = {
       kind: "quiz",
       question: "You run the same classification five times at temperature 0 and all five agree. What have you learned?",
       options: [
-        "That the answer is almost certainly correct",
+        "That the answer is almost certainly correct, because five independent runs have all reached it",
         "Nothing — with no variation between runs, the agreement is an artefact of determinism",
         "That the model is confident",
         "That the threshold should be raised",
@@ -227,7 +227,7 @@ export const chapterParallelisation: Chapter = {
       kind: "quiz",
       question: "For a content-safety check, why might \"1 of 5 votes says unsafe\" be a better rule than a majority?",
       options: [
-        "Because one vote is cheaper to compute",
+        "Because one vote is cheaper to compute than a majority, which needs every one of the five votes counted before it can decide",
         "Because a false block is an inconvenience while a false allow may not be — the threshold encodes which error you prefer",
         "Because majorities are statistically invalid",
         "Because safety models are usually wrong",

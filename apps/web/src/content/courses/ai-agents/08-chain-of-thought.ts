@@ -241,10 +241,10 @@ export const chapterChainOfThought: Chapter = {
       kind: "quiz",
       question: "What was the specific headline result reported in arXiv:2201.11903 on GSM8K?",
       options: [
-        "A fine-tuned model beat all prompting approaches",
-        "A 540B-parameter model prompted with eight chain-of-thought exemplars reached state-of-the-art accuracy, surpassing a finetuned GPT-3 with a verifier",
+        "A finetuned GPT-3 with a verifier still beat every chain-of-thought prompted model, however large",
+        "A 540B-parameter model given eight chain-of-thought examples beat a finetuned GPT-3 with a verifier",
         "Chain of thought made no difference on maths problems",
-        "Self-consistency was required for any improvement at all",
+        "Self-consistency voting was required before chain of thought improved any result",
       ],
       answer: 1,
       why:
@@ -256,7 +256,7 @@ export const chapterChainOfThought: Chapter = {
       question:
         "A model explains its answer in five clear steps and the answer is wrong. What does the explanation reliably tell you?",
       options: [
-        "Exactly which internal computation went wrong",
+        "Exactly which internal computation went wrong, because each written step mirrors one step the model computed",
         "That the model was biased by something it did not mention",
         "Something you can read and check — but not a guaranteed account of why it answered as it did",
         "Nothing at all; the steps are random",
@@ -274,7 +274,7 @@ export const chapterChainOfThought: Chapter = {
         "Because the majority vote needs an odd number of samples",
         "Because at temperature 0 every sample is the same, so agreement is 100% and measures nothing",
         "Because low temperature disables chain of thought",
-        "It does not — temperature is unrelated",
+        "It does not — temperature is unrelated, since the votes are counted the same way however the samples were produced",
       ],
       answer: 1,
       why:
