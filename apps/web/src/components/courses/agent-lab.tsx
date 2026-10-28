@@ -3,6 +3,7 @@
 import { useCallback, useId, useMemo, useState } from "react";
 
 import { defaultSettings, runAgentLab, systemPromptText } from "@/lib/agent-lab/run";
+import { LESSON_BUTTON, LESSON_BUTTON_PRIMARY, LessonLabel } from "@/components/courses/lesson-box";
 import type { LabFrame, LabScenario, LabSettings, LabTrace } from "@/lib/agent-lab/types";
 
 /**
@@ -68,10 +69,10 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
   return (
     <section
       aria-labelledby={`${baseId}-title`}
-      className="flex flex-col overflow-hidden rounded-md border border-line-strong bg-surface-raised"
+      className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface-raised"
     >
-      <div className="border-b-2 border-highlight bg-highlight/10 px-5 py-3">
-        <p className="font-mono text-micro tracking-widest text-ink uppercase">Simulation — no model is called</p>
+      <div className="border-b border-line bg-warning-wash px-5 py-3 sm:px-6">
+        <LessonLabel>Simulation — no model is called</LessonLabel>
         <p className="mt-1 text-caption leading-relaxed text-ink-muted">
           This lab runs a <strong className="font-medium text-ink">scripted agent in your browser</strong>. There
           is no AI model behind it, nothing you choose or click is sent anywhere, and the same settings always
@@ -80,22 +81,22 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
         </p>
       </div>
 
-      <div className="border-b border-line-strong px-5 py-4">
-        <p className="font-mono text-micro tracking-widest text-accent uppercase">Agent lab</p>
-        <h3 id={`${baseId}-title`} className="mt-1 text-heading text-ink">
+      <div className="border-b border-line bg-surface-sunken px-5 py-4 sm:px-6">
+        <LessonLabel>Agent lab</LessonLabel>
+        <h3 id={`${baseId}-title`} className="mt-1 text-heading font-semibold text-ink">
           {scenario.title}
         </h3>
         <p className="mt-2 text-caption leading-relaxed text-ink-muted">{scenario.brief}</p>
-        <p className="mt-3 rounded-md border border-line bg-surface-sunken px-3.5 py-2.5 text-caption text-ink">
-          <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Goal </span>
+        <p className="mt-3 rounded-lg border border-line bg-surface-sunken px-3.5 py-2.5 text-caption text-ink">
+          <span className="font-mono text-micro font-semibold tracking-widest text-ink-subtle uppercase">Goal </span>
           {scenario.goal}
         </p>
       </div>
 
       <div className="grid gap-0 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <div className="flex flex-col gap-5 border-b border-line-strong px-5 py-4 lg:border-r lg:border-b-0">
+        <div className="flex flex-col gap-5 border-b border-line px-5 py-4 lg:border-r lg:border-b-0">
           <fieldset>
-            <legend className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
+            <legend className="font-mono text-micro font-semibold tracking-widest text-ink-subtle uppercase">
               Tools the agent may use
             </legend>
             <div className="mt-2.5 flex flex-col gap-3">
@@ -103,7 +104,7 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
                 const on = settings.enabledTools.includes(tool.name);
                 const chosen = settings.descriptionChoice[tool.name] ?? tool.descriptions[0]?.id;
                 return (
-                  <div key={tool.name} className="rounded-md border border-line px-3.5 py-3">
+                  <div key={tool.name} className="rounded-lg border border-line px-3.5 py-3">
                     <label className="flex items-start gap-2.5 text-caption text-ink">
                       <input
                         type="checkbox"
@@ -160,7 +161,7 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
           </fieldset>
 
           <fieldset>
-            <legend className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
+            <legend className="font-mono text-micro font-semibold tracking-widest text-ink-subtle uppercase">
               System prompt
             </legend>
             <p className="mt-1.5 text-micro leading-relaxed text-ink-subtle">
@@ -183,13 +184,13 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
                 </div>
               ))}
             </div>
-            <pre className="mt-2.5 overflow-x-auto rounded-md border border-line bg-surface-sunken px-3 py-2.5 font-mono text-micro leading-relaxed whitespace-pre-wrap text-ink-muted">
+            <pre className="mt-2.5 overflow-x-auto rounded-lg border border-line bg-surface-sunken px-3 py-2.5 font-mono text-micro leading-relaxed whitespace-pre-wrap text-ink-muted">
               {prompt}
             </pre>
           </fieldset>
 
           <fieldset>
-            <legend className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Step limit</legend>
+            <legend className="font-mono text-micro font-semibold tracking-widest text-ink-subtle uppercase">Step limit</legend>
             <p className="mt-1.5 text-micro leading-relaxed text-ink-subtle">
               The most thought → action → observation cycles the loop is allowed before it is cut off.
             </p>
@@ -197,7 +198,7 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
               {scenario.stepLimits.map((limit) => (
                 <label
                   key={limit}
-                  className={`cursor-pointer rounded-md border px-3 py-1.5 text-caption transition-colors ${
+                  className={`cursor-pointer rounded-lg border px-3 py-1.5 text-caption transition-colors ${
                     settings.stepLimit === limit
                       ? "border-accent bg-accent-wash text-ink"
                       : "border-line text-ink-muted hover:bg-surface-sunken"
@@ -235,14 +236,14 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
             <button
               type="button"
               onClick={handleRun}
-              className="rounded-lg bg-accent px-4 py-2 text-caption font-medium text-accent-contrast transition hover:bg-accent-strong"
+              className={LESSON_BUTTON_PRIMARY}
             >
               Run the agent
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="rounded-md border border-line-strong px-3.5 py-2 text-caption text-ink-muted transition-colors hover:bg-surface-sunken"
+              className={LESSON_BUTTON}
             >
               Reset everything
             </button>
@@ -251,14 +252,14 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
 
         <div className="flex min-h-[18rem] flex-col px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Trace</p>
+            <p className="font-mono text-micro font-semibold tracking-widest text-ink-subtle uppercase">Trace</p>
             {trace ? (
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setRevealed((r) => Math.max(1, r - 1))}
                   disabled={revealed <= 1}
-                  className="rounded-md border border-line-strong px-3 py-1.5 text-micro text-ink-muted transition-colors hover:bg-surface-sunken disabled:opacity-40"
+                  className={LESSON_BUTTON}
                 >
                   Back
                 </button>
@@ -266,7 +267,7 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
                   type="button"
                   onClick={() => setRevealed((r) => Math.min(trace.frames.length, r + 1))}
                   disabled={finished}
-                  className="rounded-md bg-accent px-3 py-1.5 text-micro font-medium text-accent-contrast transition hover:bg-accent-strong disabled:opacity-40"
+                  className={LESSON_BUTTON_PRIMARY}
                 >
                   Next frame
                 </button>
@@ -274,7 +275,7 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
                   type="button"
                   onClick={() => setRevealed(trace.frames.length)}
                   disabled={finished}
-                  className="rounded-md border border-line-strong px-3 py-1.5 text-micro text-ink-muted transition-colors hover:bg-surface-sunken disabled:opacity-40"
+                  className={LESSON_BUTTON}
                 >
                   Show all
                 </button>
@@ -298,7 +299,7 @@ export function AgentLab({ scenario }: { scenario: LabScenario }) {
               </ol>
 
               {finished ? (
-                <div role="status" className="mt-4 rounded-md border border-line bg-surface-sunken px-4 py-3">
+                <div role="status" className="mt-4 rounded-lg border border-line bg-surface-sunken px-4 py-3">
                   <p className="text-caption font-medium text-ink">
                     {OUTCOME_LINE[trace.outcome]} · {trace.stepsUsed}{" "}
                     {trace.stepsUsed === 1 ? "step" : "steps"} used of {settings.stepLimit} allowed.
@@ -354,8 +355,8 @@ function FrameView({ frame }: { frame: LabFrame }) {
             : "border-line bg-surface-sunken";
 
   return (
-    <div className={`rounded-md border px-3.5 py-2.5 ${tone}`}>
-      <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
+    <div className={`rounded-lg border px-3.5 py-2.5 ${tone}`}>
+      <p className="font-mono text-micro font-semibold tracking-widest text-ink-subtle uppercase">
         Step {frame.step} · {FRAME_LABEL[frame.kind]}
         {frame.kind === "action" && frame.wrong ? " · wrong call" : ""}
         {frame.kind === "observation" && frame.error ? " · error" : ""}

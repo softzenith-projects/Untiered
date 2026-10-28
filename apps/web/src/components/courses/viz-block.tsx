@@ -4,6 +4,7 @@ import { useEffect, useId, useState, type KeyboardEvent } from "react";
 
 import type { Block } from "@/content/courses/types";
 import { InlineText } from "@/components/courses/inline-text";
+import { LESSON_BUTTON, LessonPanel } from "@/components/courses/lesson-box";
 import { ArrayViz } from "@/components/courses/viz/array-viz";
 import { ListViz } from "@/components/courses/viz/list-viz";
 import { SeqViz } from "@/components/courses/viz/seq-viz";
@@ -60,20 +61,14 @@ export function VizBlock({ block }: { block: VizBlockData }) {
   const note = noteAt(block.viz, step);
 
   return (
-    <figure className="rounded-md border border-line-strong bg-surface-raised px-5 py-4">
-      <figcaption>
-        <p className="font-mono text-micro tracking-widest text-accent uppercase">Step through</p>
-        <p className="mt-1 text-heading text-ink">
-          <InlineText text={block.title} />
+    <LessonPanel label="Step through" title={<InlineText text={block.title} />}>
+      {block.caption ? (
+        <p className="text-caption leading-relaxed text-ink-muted">
+          <InlineText text={block.caption} />
         </p>
-        {block.caption ? (
-          <p className="mt-1 text-caption leading-relaxed text-ink-muted">
-            <InlineText text={block.caption} />
-          </p>
-        ) : null}
-      </figcaption>
+      ) : null}
 
-      <div className="mt-4 flex justify-center rounded-md bg-surface-sunken px-3 py-5" onKeyDown={handleKeyDown}>
+      <div className={`${block.caption ? "mt-4 " : ""}flex justify-center rounded-lg border border-line bg-surface px-3 py-5`} onKeyDown={handleKeyDown}>
         <ShapeView viz={block.viz} step={step} />
       </div>
 
@@ -89,7 +84,7 @@ export function VizBlock({ block }: { block: VizBlockData }) {
             goTo(step - 1);
           }}
           disabled={step === 0}
-          className="rounded-md border border-line-strong px-3 py-1.5 text-caption text-ink-muted transition-colors hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-40"
+          className={LESSON_BUTTON}
         >
           Previous
         </button>
@@ -97,7 +92,7 @@ export function VizBlock({ block }: { block: VizBlockData }) {
           <button
             type="button"
             onClick={() => setPlaying((p) => !p)}
-            className="rounded-md border border-line-strong px-3 py-1.5 text-caption text-ink-muted transition-colors hover:bg-surface-sunken"
+            className={LESSON_BUTTON}
           >
             {playing ? "Pause" : "Play"}
           </button>
@@ -109,7 +104,7 @@ export function VizBlock({ block }: { block: VizBlockData }) {
             goTo(step + 1);
           }}
           disabled={step === total - 1}
-          className="rounded-md border border-line-strong px-3 py-1.5 text-caption text-ink-muted transition-colors hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-40"
+          className={LESSON_BUTTON}
         >
           Next
         </button>
@@ -119,7 +114,7 @@ export function VizBlock({ block }: { block: VizBlockData }) {
             setPlaying(false);
             goTo(0);
           }}
-          className="rounded-md border border-line-strong px-3 py-1.5 text-caption text-ink-muted transition-colors hover:bg-surface-sunken"
+          className={LESSON_BUTTON}
         >
           Reset
         </button>
@@ -143,7 +138,7 @@ export function VizBlock({ block }: { block: VizBlockData }) {
           />
         </div>
       </div>
-    </figure>
+    </LessonPanel>
   );
 }
 

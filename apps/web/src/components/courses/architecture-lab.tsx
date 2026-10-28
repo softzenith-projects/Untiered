@@ -5,6 +5,7 @@ import type { DragEndEvent } from "@dnd-kit/react";
 import { useId, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
+import { LESSON_BUTTON, LESSON_BUTTON_PRIMARY, LessonLabel } from "@/components/courses/lesson-box";
 import type {
   ArchitectureCheck,
   ArchitectureComponent,
@@ -40,7 +41,7 @@ function DraggableComponent({
   return (
     <article
       ref={ref}
-      className={`rounded-xl border bg-surface-raised p-3 shadow-sm transition motion-reduce:transition-none ${
+      className={`rounded-lg border bg-surface-raised p-3 transition motion-reduce:transition-none ${
         result ? (result.correct ? "border-positive/50" : "border-danger/50") : "border-line"
       } ${isDragging ? "opacity-50 shadow-lg" : "opacity-100"}`}
       data-component-id={component.id}
@@ -96,7 +97,7 @@ function DropZone({
   return (
     <section
       ref={ref}
-      className={`min-h-40 rounded-2xl border-2 border-dashed p-4 transition motion-reduce:transition-none ${
+      className={`min-h-40 rounded-lg border-2 border-dashed p-4 transition motion-reduce:transition-none ${
         isDropTarget ? "border-accent bg-accent-wash" : "border-line bg-surface-sunken/70"
       }`}
       aria-label={zone ? `${zone.label} drop zone` : "Unplaced components"}
@@ -167,10 +168,10 @@ export function ArchitectureLab({ scenario }: { scenario: ArchitectureScenario }
   );
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-line-strong bg-surface-raised shadow-sm" aria-labelledby={headingId}>
-      <div className="border-b border-line bg-gradient-to-br from-accent-wash to-surface-raised px-5 py-5 sm:px-6">
-        <p className="font-mono text-micro tracking-widest text-accent uppercase">Architecture challenge</p>
-        <h2 id={headingId} className="mt-2 text-heading text-ink">{scenario.title}</h2>
+    <section className="overflow-hidden rounded-xl border border-line bg-surface-raised" aria-labelledby={headingId}>
+      <div className="border-b border-line bg-surface-sunken px-5 py-4 sm:px-6">
+        <LessonLabel>Architecture lab</LessonLabel>
+        <h3 id={headingId} className="mt-1 text-heading font-semibold text-ink">{scenario.title}</h3>
         <p className="mt-2 max-w-3xl text-body leading-relaxed text-ink-muted">{scenario.brief}</p>
         <p className="mt-3 text-caption text-ink-muted">
           Drag the cards, use the keyboard on each <strong>Move</strong> button, or use the always-visible selects.
@@ -193,14 +194,14 @@ export function ArchitectureLab({ scenario }: { scenario: ArchitectureScenario }
         <button
           type="button"
           onClick={checkDesign}
-          className="rounded-lg bg-accent px-4 py-2.5 text-caption font-semibold text-accent-contrast outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 motion-reduce:transition-none"
+          className={LESSON_BUTTON_PRIMARY}
         >
           Check architecture
         </button>
         <button
           type="button"
           onClick={resetDesign}
-          className="rounded-lg border border-line-strong bg-surface-raised px-4 py-2.5 text-caption font-semibold text-ink outline-none transition hover:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 motion-reduce:transition-none"
+          className={LESSON_BUTTON}
         >
           Reset
         </button>

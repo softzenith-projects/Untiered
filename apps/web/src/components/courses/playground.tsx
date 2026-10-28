@@ -9,6 +9,7 @@ import { matchesExpected } from "@/lib/browser-python";
 import { getRunner } from "@/lib/course-code-runner";
 import type { Block } from "@/content/courses/types";
 import { InlineText } from "@/components/courses/inline-text";
+import { LESSON_BUTTON, LESSON_BUTTON_PRIMARY, LessonLabel, LessonPanel } from "@/components/courses/lesson-box";
 import { CopyCodeButton } from "@/components/courses/copy-code-button";
 
 type PlaygroundBlockData = Extract<Block, { kind: "playground" }>;
@@ -80,15 +81,12 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
   }, [block.starter]);
 
   return (
-    <figure className="rounded-md border border-line-strong bg-surface-raised">
-      <figcaption className="border-b border-line-strong bg-surface-sunken px-4 py-3">
-        <p className="font-mono text-micro tracking-widest text-accent uppercase">Try it yourself</p>
-        {block.prompt ? (
-          <p className="mt-1 text-caption leading-relaxed text-ink-muted">
-            <InlineText text={block.prompt} />
-          </p>
-        ) : null}
-      </figcaption>
+    <LessonPanel label="Try it yourself" flush>
+      {block.prompt ? (
+        <p className="border-b border-line px-5 py-3 text-body leading-relaxed text-ink sm:px-6">
+          <InlineText text={block.prompt} />
+        </p>
+      ) : null}
 
       <div className="min-h-[8rem]">
         <CodeMirror
@@ -100,13 +98,13 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-line-strong px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3 sm:px-6">
         <CopyCodeButton code={source} />
 
         <button
           type="button"
           onClick={handleReset}
-          className="rounded-md border border-line-strong px-3 py-1.5 text-caption text-ink-muted transition-colors hover:bg-surface-sunken"
+          className={LESSON_BUTTON}
         >
           Reset to original
         </button>
@@ -117,7 +115,7 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
             onClick={() => void handleRun()}
             disabled={phase !== "idle"}
             aria-describedby={outputId}
-            className="rounded-lg bg-accent px-3.5 py-1.5 text-caption font-medium text-accent-contrast transition hover:bg-accent-strong disabled:opacity-50"
+            className={LESSON_BUTTON_PRIMARY}
           >
             {phase === "loading" ? "Loading Python…" : phase === "running" ? "Running…" : "Run"}
           </button>
@@ -133,20 +131,20 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
         )}
       </div>
 
-      <div id={outputId} role="status" aria-live="polite" className="border-t border-line-strong px-4 py-3">
+      <div id={outputId} role="status" aria-live="polite" className="border-t border-line bg-surface-sunken px-5 py-3 sm:px-6">
         {!result && <p className="text-caption text-ink-subtle">Run to see what this prints.</p>}
         {result?.message && <p className="text-caption text-ink-muted">{result.message}</p>}
         {result && !result.message && (
           <div className="flex flex-col gap-2">
             <div>
-              <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Output</p>
+              <LessonLabel>Output</LessonLabel>
               <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap font-mono text-caption text-ink">
                 {result.stdout || "(nothing printed)"}
               </pre>
             </div>
             {result.stderr ? (
               <div>
-                <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Error</p>
+                <LessonLabel tone="danger">Error</LessonLabel>
                 <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap font-mono text-caption text-danger">
                   {result.stderr}
                 </pre>
@@ -160,6 +158,6 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
           </div>
         )}
       </div>
-    </figure>
+    </LessonPanel>
   );
 }
