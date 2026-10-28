@@ -45,7 +45,7 @@
         },
         {
           "id": "b",
-          "text": "On the server, by comparing the moment the save arrives, on the server's own clock, with the lock time"
+          "text": "On the server, by when the save arrives on the server clock"
         },
         {
           "id": "c",
@@ -162,7 +162,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Replace the read-then-write with one conditional update that raises the count only where it is below capacity, and add the entry only when that update succeeds"
+          "text": "One conditional update that counts the join only while below capacity"
         },
         {
           "id": "b",
@@ -295,7 +295,7 @@
         },
         {
           "id": "b",
-          "text": "Keep a sorted set with exact ranks for the top few lakh teams, and estimate everyone else's rank from a histogram of score buckets, labelled as approximate"
+          "text": "Exact ranks from a sorted set for the top, histogram estimates below"
         },
         {
           "id": "c",

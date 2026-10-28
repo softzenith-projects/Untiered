@@ -114,7 +114,7 @@
         },
         {
           "id": "b",
-          "text": "Average the ratio over several windows, move the price only when the change stays beyond a threshold, limit the step per minute, and cap the maximum"
+          "text": "Average over windows, move only past a threshold, limit steps, cap it"
         },
         {
           "id": "c",
@@ -185,7 +185,7 @@
         },
         {
           "id": "c",
-          "text": "Store each quote with an id, price and expiry, make booking carry the id, and re-quote after expiry"
+          "text": "Issue a quote id with price and expiry that the booking carries"
         },
         {
           "id": "d",

@@ -8,11 +8,11 @@ const base = scenarios.find((s) => s.course_slug === "dsa");
 const copy = () => structuredClone(base);
 
 test("all authored scenarios validate and have 5 ordered steps", () => {
-  assert.equal(scenarios.length, 20);
+  assert.equal(scenarios.length, 28);
   assert.equal(scenarios.filter((scenario) => scenario.course_slug === "ai-agents").length, 2);
   // limited-stock-checkout and password-change-sessions are drafts: maggi-flash-sale and
   // the-other-phone tell the same stories in more depth, and a learner shouldn't meet each twice.
-  assert.equal(scenarios.filter((scenario) => scenario.course_slug === "system-design" && scenario.status === "live").length, 10);
+  assert.equal(scenarios.filter((scenario) => scenario.course_slug === "system-design" && scenario.status === "live").length, 18);
   assert.equal(scenarios.filter((scenario) => scenario.course_slug === "system-design" && scenario.status === "draft").length, 4);
   for (const scenario of scenarios) {
     assert.equal(scenario.steps.length, 5);

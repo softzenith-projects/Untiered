@@ -110,7 +110,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Copy to each member's inbox for small groups, and for very large groups store the message once and let members fetch it when they open the group"
+          "text": "Copy into inboxes for small groups; store once for very large ones"
         },
         {
           "id": "b",

@@ -46,7 +46,7 @@
         },
         {
           "id": "b",
-          "text": "Cut the stream into segments served from CDN edges, and let edges fill from a small shield tier that asks the origin once per segment"
+          "text": "Segments on CDN edges, filled through a small shield tier"
         },
         {
           "id": "c",
