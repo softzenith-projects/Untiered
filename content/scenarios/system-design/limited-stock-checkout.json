@@ -20,11 +20,11 @@
       "options": [
         {
           "id": "a",
-          "text": "A non-binding intent: the cart can show availability but holds no stock."
+          "text": "Intent only: the cart shows availability but holds no stock."
         },
         {
           "id": "b",
-          "text": "A 30-minute reservation, so nobody loses the item they just chose."
+          "text": "A 30-minute reservation, so nobody loses the item they have just chosen."
         },
         {
           "id": "c",
@@ -54,7 +54,7 @@
         },
         {
           "id": "c",
-          "text": "Process orders in the order of the click times their browsers report."
+          "text": "Process orders in the order of the click times that their browsers report."
         }
       ],
       "correct_option_id": "a",
@@ -98,7 +98,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Refuse the reservation based on the real counter and say the estimate has changed."
+          "text": "Refuse the reservation on the real counter and say the estimate changed."
         },
         {
           "id": "b",

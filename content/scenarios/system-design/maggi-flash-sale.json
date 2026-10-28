@@ -54,7 +54,7 @@
         },
         {
           "id": "d",
-          "text": "Never hold stock, and cancel orders for anything oversold."
+          "text": "Never hold stock, and cancel orders for anything that turns out to be oversold."
         }
       ],
       "correct_option_id": "b",
@@ -93,7 +93,7 @@
         },
         {
           "id": "b",
-          "text": "Serve an approximate value from a short-lived cache and check real stock only when the order is placed."
+          "text": "Serve an approximate value from a short-lived cache; check real stock when ordering."
         },
         {
           "id": "c",
@@ -101,7 +101,7 @@
         },
         {
           "id": "d",
-          "text": "Hide availability entirely until the customer reaches checkout."
+          "text": "Hide availability entirely until the customer reaches checkout and the stock is reserved."
         }
       ],
       "correct_option_id": "b",
@@ -140,7 +140,7 @@
         },
         {
           "id": "b",
-          "text": "One atomic decrement that applies only while stock is at least 1, with 'not applied' meaning sold out."
+          "text": "One atomic decrement that applies only while stock is at least 1."
         },
         {
           "id": "c",
@@ -188,7 +188,7 @@
         },
         {
           "id": "b",
-          "text": "Give each reservation a short expiry, so an unpaid hold returns to available on its own."
+          "text": "Give each reservation a short expiry so unpaid holds return on their own."
         },
         {
           "id": "c",
@@ -196,7 +196,7 @@
         },
         {
           "id": "d",
-          "text": "Run a daily report of abandoned reservations and release them by hand."
+          "text": "Run a daily report of abandoned reservations and release them by hand each morning."
         }
       ],
       "correct_option_id": "b",
@@ -235,11 +235,11 @@
         },
         {
           "id": "b",
-          "text": "Wording that softens as stock falls, ending with 'availability confirmed at checkout'."
+          "text": "Wording that softens as stock falls, ending in 'confirmed at checkout'."
         },
         {
           "id": "c",
-          "text": "The exact live count, refreshed every second."
+          "text": "The exact live count, refreshed every second on every product page view."
         },
         {
           "id": "d",

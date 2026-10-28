@@ -90,19 +90,19 @@
       "options": [
         {
           "id": "a",
-          "text": "Switch to a different database engine that rejects duplicate sales."
+          "text": "Switch to a different database engine that rejects duplicate sales when two requests collide."
         },
         {
           "id": "b",
-          "text": "Replace the read and the write with one UPDATE ... WHERE id = ? AND status = 'available', and sell only if one row changed."
+          "text": "Use one UPDATE ... WHERE status = 'available' and sell only if one row changed."
         },
         {
           "id": "c",
-          "text": "Add a 100 ms delay between the read and the write."
+          "text": "Add a 100 ms delay between the read and the write so the first request can finish."
         },
         {
           "id": "d",
-          "text": "Wrap the read and the write in a transaction at the default isolation level."
+          "text": "Wrap the read and the write in a transaction at the default isolation level so they run together."
         }
       ],
       "correct_option_id": "b",
@@ -142,7 +142,7 @@
       "options": [
         {
           "id": "a",
-          "text": "A fresh random request id on every attempt, so each call can be traced."
+          "text": "A fresh random request id on every attempt, so each call can be traced in the logs."
         },
         {
           "id": "b",
@@ -150,7 +150,7 @@
         },
         {
           "id": "c",
-          "text": "One idempotency key per order, reused on every retry and enforced as unique."
+          "text": "One idempotency key per order, reused on every retry."
         },
         {
           "id": "d",
@@ -194,11 +194,11 @@
       "options": [
         {
           "id": "a",
-          "text": "The listing page for 15 to 30 seconds, with the buy step still using the database."
+          "text": "The listing page for 15 to 30 seconds; the buy step still uses the database."
         },
         {
           "id": "b",
-          "text": "The seat-availability check used by the buy step, for 30 seconds."
+          "text": "The seat-availability check the buy step relies on, for 30 seconds, to cut database load."
         },
         {
           "id": "c",
@@ -256,7 +256,7 @@
       "options": [
         {
           "id": "a",
-          "text": "The IP address, with a low limit of a few requests per minute."
+          "text": "The IP address, with a low limit of a few requests per minute for each address."
         },
         {
           "id": "b",

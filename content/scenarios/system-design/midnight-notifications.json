@@ -41,7 +41,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Split the audience into batches on a queue and let many workers process them, recording progress per batch."
+          "text": "Put audience batches on a queue, let many workers send them, and track progress per batch."
         },
         {
           "id": "b",
@@ -88,11 +88,11 @@
       "options": [
         {
           "id": "a",
-          "text": "Retry immediately until the provider accepts the request."
+          "text": "Retry immediately until the provider accepts the request, since the limit is temporary."
         },
         {
           "id": "b",
-          "text": "Share one limiter set to the provider's rate, back off with jitter on 429s, and let the queue hold the backlog."
+          "text": "Share one limiter at the provider's rate, back off with jitter, and queue the rest."
         },
         {
           "id": "c",
@@ -140,11 +140,11 @@
       "options": [
         {
           "id": "a",
-          "text": "Keep one queue and process everything first-come, first-served."
+          "text": "Keep one queue and process everything first-come, first-served, so that nothing gets skipped."
         },
         {
           "id": "b",
-          "text": "Use separate queues for transactional and promotional messages, with sending capacity reserved for the critical one."
+          "text": "Separate critical and promotional queues, with sending capacity reserved for the critical one."
         },
         {
           "id": "c",
@@ -193,7 +193,7 @@
       "options": [
         {
           "id": "a",
-          "text": "Give each (campaign, user) message a stable id, use the provider's dedupe key if it has one, and reconcile unclear attempts before retrying."
+          "text": "Use a stable id per message with a provider dedupe key, and reconcile unclear attempts."
         },
         {
           "id": "b",
@@ -205,7 +205,7 @@
         },
         {
           "id": "d",
-          "text": "Lengthen the queue's visibility timeout so batches are never redelivered."
+          "text": "Lengthen the queue's visibility timeout so that batches are not redelivered while workers run."
         }
       ],
       "correct_option_id": "a",
@@ -245,11 +245,11 @@
       "options": [
         {
           "id": "a",
-          "text": "Send all 10 million at exactly 12:00:00 and autoscale the API when the traffic arrives."
+          "text": "Send all 10 million at exactly 12:00:00 and rely on autoscaling to add API capacity as traffic arrives."
         },
         {
           "id": "b",
-          "text": "Stagger the sends over 10 to 15 minutes, pre-warm the sale pages in a cache, and load test for the click burst."
+          "text": "Stagger sends over 10 to 15 minutes, pre-warm the sale pages, and load test for the burst."
         },
         {
           "id": "c",

@@ -48,11 +48,11 @@
       "options": [
         {
           "id": "a",
-          "text": "Let any region write any account, and merge conflicting writes afterwards."
+          "text": "Let any region write any account, and merge conflicting writes whenever replicas sync up."
         },
         {
           "id": "b",
-          "text": "Give each account a home region that owns its writes, with replicas elsewhere for reads and recovery."
+          "text": "Give each account a home region that owns its writes, with replicas elsewhere."
         },
         {
           "id": "c",
@@ -105,7 +105,7 @@
         },
         {
           "id": "b",
-          "text": "Read balances and recent transactions from the home region, or only from a replica that has reached the user's last write."
+          "text": "Read balances from the home region or from a replica that has seen the user's last write."
         },
         {
           "id": "c",
@@ -113,7 +113,7 @@
         },
         {
           "id": "d",
-          "text": "Keep the last known balance on the user's device and show it first."
+          "text": "Keep the last known balance on the user's device and show it first until the app refreshes."
         }
       ],
       "correct_option_id": "b",
@@ -148,7 +148,7 @@
         },
         {
           "id": "b",
-          "text": "Debit the sender into an in-flight state, send a uniquely identified credit event, and reverse the debit if the credit fails."
+          "text": "Debit into an in-flight state, send a credit event with a unique id, and reverse if it fails."
         },
         {
           "id": "c",
@@ -187,11 +187,11 @@
       "options": [
         {
           "id": "a",
-          "text": "Have the old primary poll the new one every few seconds and step down when it notices."
+          "text": "Have the old primary poll the new one every few seconds and step down as soon as it notices a newer leader."
         },
         {
           "id": "b",
-          "text": "Number each leadership term with an increasing epoch and have storage reject writes carrying an older epoch."
+          "text": "Give each leadership term an increasing epoch, and have storage reject writes from older epochs."
         },
         {
           "id": "c",
@@ -251,7 +251,7 @@
         },
         {
           "id": "b",
-          "text": "Replicate EU accounts only to other EU locations, route users to their home region, and share only anonymised data globally."
+          "text": "Keep EU data on EU replicas only, route users to their home region, and share only anonymised data."
         },
         {
           "id": "c",
@@ -259,7 +259,7 @@
         },
         {
           "id": "d",
-          "text": "Keep full replication but strip names and emails from the copies outside the EU."
+          "text": "Keep full replication but strip names, emails and phone numbers from every copy held outside the EU."
         }
       ],
       "correct_option_id": "b",
