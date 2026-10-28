@@ -70,6 +70,25 @@ The owner asked for four fixes in session, with no task file (PRD §07):
   - no horizontal overflow
   - no console errors
 
+## Later still: signed-in end-to-end pass (merged at 276f921)
+- **Test account.** The owner approved a test account, `naman.kaushik06+untiered-e2e@gmail.com`, created through the admin API. Its password is only in the session scratchpad, not the repo.
+  - Supabase enforces a captcha on password sign-in, and local `.env` has no `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, so **the email/password form cannot sign anyone in locally**.
+  - The test signed in with an admin-minted magic-link token, turned into the app's own cookies.
+- **Fixed:**
+  - **No scenario could be finished, in any course.** The last answer returned 500: `advance()` used a bare null parameter in `is null`, which PostgreSQL rejects. The parameter is now cast, and `ScenarioArenaRepositoryDatabaseIntegrationTest` finishes a scenario.
+  - **"Concepts to practise"** showed the first three concepts alphabetically for a new user. It now shows only concepts the user has answered.
+  - **The scenario card** showed its context sentence as an all-caps label. It now shows tier · minutes, with the context as a line of text.
+  - **fest-night step 5's context note** gave away the answer.
+  - **The chapter reader** had a different header (New interview / Sign out). It now uses the app's `AppHeader` at reader width.
+  - **The guided "Explain and remember" step** put Common mistakes and the interview box at half width beside an empty column.
+- **Migration** `20261028130000_arena_scenario_fixes.sql` was applied.
+- **Checked and fine:**
+  - Signed-in pages load with no console or network errors and no phone overflow: dashboard, courses, chapters, Arena (all courses), interview setup, history, profile, questions, daily challenge, rounds.
+  - Arena steps 1–4 play correctly on desktop and phone, including feedback, Best answer and Key point.
+- **Not checked live:**
+  - **The finish fix in the running app.** The owner's local API on :3001 still runs the old code. A second API on :3002 could not get a database connection, because the Supabase session pooler is capped at 15 clients, so it was stopped. **Restart the API (and redeploy) to pick up the fix.**
+  - **A mock round.** None was started, since that is live Gemini spend.
+
 ## Suggested next task
 - Add a check that a step's "System so far" map doesn't introduce the component its own correct answer names. This is reviewed by hand today.
 
