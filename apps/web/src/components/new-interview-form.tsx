@@ -17,15 +17,16 @@ import { useAccessToken } from "@/lib/use-access-token";
 
 
 /**
- * Real sentences, not placeholder poetry. Each one is a round this actually runs, and
- * naming Infosys and a techno-managerial panel beside Google says more about coverage
- * than a paragraph of copy would.
+ * Short, neutral starting points: a role and an employer, nothing more. Long first-person
+ * sentences ("I always fumble the escalation questions") read as if they were somebody
+ * else's round, and every candidate saw the same four. One product company, one more, a
+ * service firm and a Big Four firm still show the range without telling a story.
  */
 const EXAMPLES = [
-  "Infosys MR round next Tuesday — 5 years, Java backend, and I always fumble the escalation questions.",
-  "Google L4 system design in six weeks. I haven't interviewed in four years.",
-  "Deloitte consultant case round. First time doing a case, I have no idea how to structure one.",
-  "HR round at Adyen — Amsterdam, and I need to talk about relocation and notice period.",
+  "SDE 1 at Amazon",
+  "Software Engineer at Microsoft",
+  "Systems Engineer at Infosys",
+  "Analyst at Deloitte",
 ];
 
 /**
@@ -371,7 +372,7 @@ export function NewInterviewForm({
           placeholder={
             campus
               ? "Optional — add a company, branch, or placement round if you know it."
-              : "Infosys MR round next Tuesday. 5 years, Java backend."
+              : "SDE 1 at Amazon, Java backend, 2 years of experience."
           }
           className="w-full resize-none rounded-xl border border-line bg-surface px-5 py-4 text-body text-ink shadow-[var(--shadow-sm)] placeholder:text-ink-subtle transition-colors focus:border-accent focus:outline-none"
         />
@@ -438,17 +439,17 @@ export function NewInterviewForm({
         </p>
       ) : null}
 
-      <section className="flex flex-col gap-4 rounded-2xl border border-line bg-surface-raised p-5 sm:p-6">
-        <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
-          Or start from one of these
+      <section aria-labelledby="composer-examples" className="flex flex-wrap items-center gap-2">
+        <p id="composer-examples" className="text-caption text-ink-muted">
+          For example:
         </p>
-        <ul className="grid gap-2">
+        <ul className="flex flex-wrap gap-2">
           {EXAMPLES.map((example) => (
             <li key={example}>
               <button
                 type="button"
                 onClick={() => setQuery(example)}
-                className="w-full rounded-xl border border-line bg-surface-raised px-4 py-3 text-left text-caption text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-wash hover:text-ink"
+                className="rounded-full border border-line bg-surface-raised px-3.5 py-1.5 text-caption text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-wash hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {example}
               </button>

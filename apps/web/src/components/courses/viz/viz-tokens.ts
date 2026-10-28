@@ -31,3 +31,23 @@ export const STATE_STROKE: Record<CellState, string> = {
   done: "var(--accent-2)",
   visiting: "var(--highlight)",
 };
+
+/**
+ * How wide a box must be to hold `text` in the monospace face at `fontSize`. SVG text never
+ * wraps or clips, so a fixed-width box overflows the moment a lesson puts a word in it
+ * ("Roll number: 21" spilled across its neighbours). Boxes size to their label instead,
+ * never narrower than `min`.
+ */
+export function fitWidth(text: string | number, fontSize: number, min: number): number {
+  return Math.max(min, Math.ceil(String(text).length * fontSize * 0.62) + 16);
+}
+
+/** Left edge of each box in a row of boxes of the given widths, `gap` apart. */
+export function rowOffsets(widths: number[], gap: number): number[] {
+  let x = 0;
+  return widths.map((w) => {
+    const left = x;
+    x += w + gap;
+    return left;
+  });
+}

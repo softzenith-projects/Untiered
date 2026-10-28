@@ -119,7 +119,7 @@ function BlockView({
       return (
         <h2
           id={anchorId(block.text)}
-          className="font-editorial scroll-mt-24 max-w-[22ch] text-display text-balance text-ink"
+          className="font-editorial scroll-mt-24 text-title text-ink"
         >
           <InlineText text={block.text} />
         </h2>
