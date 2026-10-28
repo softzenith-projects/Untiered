@@ -239,41 +239,46 @@ export function NewInterviewForm({
               </div>
             </div>
 
-            <Field label="Company (optional)" hint="Leave this blank for employer-neutral practice.">
-              <Input
-                value={structuredCompany}
-                onChange={(event) => setStructuredCompany(event.target.value)}
-                placeholder="Amazon"
-                autoComplete="organization"
-                maxLength={120}
-              />
-            </Field>
-            <div className="flex flex-wrap gap-2" aria-label="Suggested companies">
-              {["Amazon", "Google", "Microsoft", "Infosys", "Deloitte"].map((company) => (
-                <button
-                  key={company}
-                  type="button"
-                  onClick={() => setStructuredCompany(company)}
-                  className="min-h-11 rounded-full border border-line bg-surface-raised px-3 py-2 text-caption text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-wash hover:text-ink"
-                >
-                  {company}
-                </button>
-              ))}
-            </div>
+            {/* Side by side from `sm`: at the page grid's width one field per row ran ~700px for a name or a job title. */}
+            <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-3">
+                <Field label="Company (optional)" hint="Leave this blank for employer-neutral practice.">
+                  <Input
+                    value={structuredCompany}
+                    onChange={(event) => setStructuredCompany(event.target.value)}
+                    placeholder="Amazon"
+                    autoComplete="organization"
+                    maxLength={120}
+                  />
+                </Field>
+                <div className="flex flex-wrap gap-2" aria-label="Suggested companies">
+                  {["Amazon", "Google", "Microsoft", "Infosys", "Deloitte"].map((company) => (
+                    <button
+                      key={company}
+                      type="button"
+                      onClick={() => setStructuredCompany(company)}
+                      className="min-h-11 rounded-full border border-line bg-surface-raised px-3 py-2 text-caption text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-wash hover:text-ink"
+                    >
+                      {company}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            <Field
-              label={campus ? "Role (optional for freshers)" : "Role"}
-              hint={campus ? "It is fine if campus hiring has not named a role yet." : "Use the title you are preparing to interview for."}
-            >
-              <Input
-                value={structuredRole}
-                onChange={(event) => setStructuredRole(event.target.value)}
-                placeholder="Software Development Engineer"
-                autoComplete="organization-title"
-                required={!campus}
-                maxLength={120}
-              />
-            </Field>
+              <Field
+                label={campus ? "Role (optional for freshers)" : "Role"}
+                hint={campus ? "It is fine if campus hiring has not named a role yet." : "Use the title you are preparing to interview for."}
+              >
+                <Input
+                  value={structuredRole}
+                  onChange={(event) => setStructuredRole(event.target.value)}
+                  placeholder="Software Development Engineer"
+                  autoComplete="organization-title"
+                  required={!campus}
+                  maxLength={120}
+                />
+              </Field>
+            </div>
 
             <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl bg-surface-sunken px-4 py-3 focus-within:ring-2 focus-within:ring-accent">
               <Checkbox
