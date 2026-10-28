@@ -1,0 +1,352 @@
+{
+  "course_slug": "system-design",
+  "slug": "new-years-eve-surge",
+  "title": "New Year's Eve Surge",
+  "hook": "You run a cab app, and on New Year's Eve demand in some areas jumps far past the number of cabs nearby. You must work out a price multiplier for every area each minute, and keep it fair, stable and believable to riders and drivers alike.",
+  "context": "Cab app in a metro with about 2 lakh active drivers pinging every 4 seconds, and ride requests peaking near midnight.",
+  "tier": "advanced",
+  "concept_ids": [
+    "geospatial-index",
+    "windowed-aggregation",
+    "hysteresis-smoothing",
+    "price-quotes",
+    "stale-data-handling",
+    "herding-effects"
+  ],
+  "estimated_minutes": 14,
+  "status": "live",
+  "solution_brief": "Map every ride request and driver ping to a geospatial cell and count demand and supply per cell in short windows with a stream processor, rather than querying the database. Smooth the result with a moving average, a change threshold and a cap so prices do not flicker. Give the rider a quote id with the price and an expiry, and honour that price at booking. Attach a window timestamp to every cell and, when it is too old, fade the multiplier toward normal instead of trusting it. Count drivers already heading to a cell as supply, and show drivers a forward-looking signal, so they do not all rush the same hotspot.",
+  "steps": [
+    {
+      "kind": "initial",
+      "step_type": "design_choice",
+      "prompt": "About 2 lakh drivers ping every 4 seconds, which is 50,000 location events per second, and riders open the app thousands of times a minute. How should you compute demand and supply for each area every minute?",
+      "context_note": "Prices should follow the balance between riders asking for cabs and cabs available, but only for small areas, because a whole-city number hides the hotspots.",
+      "system_state": {
+        "nodes": [
+          "rider-app",
+          "driver-app",
+          "api-server",
+          "rides-db"
+        ],
+        "links": [
+          [
+            "rider-app",
+            "api-server"
+          ],
+          [
+            "driver-app",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "rides-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Every minute, query the rides database for the requests and the idle drivers within a set radius of each point on the map"
+        },
+        {
+          "id": "b",
+          "text": "Sample 1 percent of events and scale up the city-wide ratio of requests to cabs"
+        },
+        {
+          "id": "c",
+          "text": "Compute the balance for each rider when they open the app, by counting the drivers around them"
+        },
+        {
+          "id": "d",
+          "text": "Map each event to a cell about a kilometre across, and count requests and idle drivers per cell in one-minute windows"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "Mapping each event to a cell turns an expensive spatial search into a cheap key, and the stream processor keeps running counts without querying the database, so 50,000 events a second cost almost nothing. A radius query across the whole city every minute competes with live bookings, and a single city-wide ratio cannot tell a busy stadium from a quiet suburb.",
+      "bottleneck_note": "Turn location into a cell key, then aggregate it as a stream instead of querying it.",
+      "concept_ids": [
+        "geospatial-index",
+        "windowed-aggregation"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "The multiplier for one cell goes 1.2x, 2.8x, 1.1x, 2.5x over four minutes as a few cabs happen to drive in and out. How do you keep prices steady?",
+      "context_note": "Cell counts are now computed every minute, but they are small numbers near the edges of a cell, so one cab more or less moves the ratio a lot and riders see the price flicker.",
+      "system_state": {
+        "nodes": [
+          "rider-app",
+          "driver-app",
+          "api-server",
+          "rides-db",
+          "event-stream",
+          "cell-aggregator"
+        ],
+        "links": [
+          [
+            "rider-app",
+            "api-server"
+          ],
+          [
+            "driver-app",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "rides-db"
+          ],
+          [
+            "api-server",
+            "event-stream"
+          ],
+          [
+            "event-stream",
+            "cell-aggregator"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Publish the raw multiplier every minute, because it is the most accurate number"
+        },
+        {
+          "id": "b",
+          "text": "Average the ratio over several windows, move the price only when the change stays beyond a threshold, limit the step per minute, and cap the maximum"
+        },
+        {
+          "id": "c",
+          "text": "Make the window one hour long, so that short swings average out"
+        },
+        {
+          "id": "d",
+          "text": "Round every multiplier to the nearest whole number"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Averaging removes one-cab noise, a threshold with a limited step stops the price from reacting to every small wobble (hysteresis), and a cap keeps it fair even in a real shortage. A one-hour window is steady but misses a surge until it is almost over, and rounding to whole numbers still jumps between 2x and 3x at a boundary.",
+      "bottleneck_note": "Smooth noisy signals and make prices change only when the change is real and bounded.",
+      "concept_ids": [
+        "hysteresis-smoothing"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "A rider sees a fare of ₹420 at 11:58 pm and requests a cab. A driver accepts two minutes later, after the multiplier has changed, and the rider is charged ₹560. How should the price be handled?",
+      "context_note": "Prices are smooth now, but they still change from minute to minute, and a rider's decision takes longer than a minute.",
+      "system_state": {
+        "nodes": [
+          "rider-app",
+          "driver-app",
+          "api-server",
+          "rides-db",
+          "event-stream",
+          "cell-aggregator",
+          "price-store"
+        ],
+        "links": [
+          [
+            "rider-app",
+            "api-server"
+          ],
+          [
+            "driver-app",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "rides-db"
+          ],
+          [
+            "api-server",
+            "event-stream"
+          ],
+          [
+            "event-stream",
+            "cell-aggregator"
+          ],
+          [
+            "cell-aggregator",
+            "price-store"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Charge whatever multiplier is in force when the ride ends, and show a note that prices may change meanwhile"
+        },
+        {
+          "id": "b",
+          "text": "Freeze surge across the whole city for five minutes at a time"
+        },
+        {
+          "id": "c",
+          "text": "Store each quote with an id, price and expiry, make booking carry the id, and re-quote after expiry"
+        },
+        {
+          "id": "d",
+          "text": "Recalculate the price again at pickup, and ask the rider to accept the new price before the ride starts"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "A quote id ties the price a rider saw to the booking they make, so the promise can be kept for the length of the expiry, and an expired quote is refreshed openly instead of being slipped in. A disclaimer still lets the final charge differ from the screen, and freezing the whole city sets one price for areas whose demand is very different.",
+      "bottleneck_note": "Anything a user agrees to must be stored with an id and an expiry, not recomputed later.",
+      "concept_ids": [
+        "price-quotes"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "The stream processor falls behind, and at 12:10 am the newest data for one cell is 9 minutes old. Its price is stuck at 3x though demand there has dropped. How should the pricing service treat data this old?",
+      "context_note": "Quotes are locked to a stored price, so a wrong price now stays on riders for the whole expiry, and the aggregator's lag means the stored prices are out of date.",
+      "system_state": {
+        "nodes": [
+          "rider-app",
+          "driver-app",
+          "api-server",
+          "rides-db",
+          "event-stream",
+          "cell-aggregator",
+          "price-store",
+          "quote-store"
+        ],
+        "links": [
+          [
+            "rider-app",
+            "api-server"
+          ],
+          [
+            "driver-app",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "rides-db"
+          ],
+          [
+            "api-server",
+            "event-stream"
+          ],
+          [
+            "event-stream",
+            "cell-aggregator"
+          ],
+          [
+            "cell-aggregator",
+            "price-store"
+          ],
+          [
+            "api-server",
+            "quote-store"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Use the latest computed value whatever its age, since it is the best figure the system has available to it"
+        },
+        {
+          "id": "b",
+          "text": "Stop quoting prices in any cell until the aggregator has caught up"
+        },
+        {
+          "id": "c",
+          "text": "Recompute every cell from scratch from the rides database whenever any cell is late"
+        },
+        {
+          "id": "d",
+          "text": "Keep the window time with each cell price, and once it is a few windows old, fade toward 1x and alert"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "A price carries the time of the data behind it, so the service can see that it is stale and stop trusting it; moving toward the normal fare is the safe direction when the data cannot be verified. Using a nine-minute-old 3x keeps charging riders for a rush that is over, and blocking all quotes in the cell turns a lag into a lost ride for everyone.",
+      "bottleneck_note": "Every derived number should carry its own age, and the system should decide what to do when it is too old.",
+      "concept_ids": [
+        "stale-data-handling"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "At 11:55 pm drivers see a red hotspot near a stadium and 4,000 of them head there for demand that needs 600, while nearby cells empty out. How should the app share surge with drivers?",
+      "context_note": "Prices are now stable and fresh, but a surge map that every driver sees is also an instruction, and thousands of drivers follow the same one.",
+      "system_state": {
+        "nodes": [
+          "rider-app",
+          "driver-app",
+          "api-server",
+          "rides-db",
+          "event-stream",
+          "cell-aggregator",
+          "price-store",
+          "quote-store",
+          "freshness-check"
+        ],
+        "links": [
+          [
+            "rider-app",
+            "api-server"
+          ],
+          [
+            "driver-app",
+            "api-server"
+          ],
+          [
+            "api-server",
+            "rides-db"
+          ],
+          [
+            "api-server",
+            "event-stream"
+          ],
+          [
+            "event-stream",
+            "cell-aggregator"
+          ],
+          [
+            "cell-aggregator",
+            "price-store"
+          ],
+          [
+            "api-server",
+            "quote-store"
+          ],
+          [
+            "price-store",
+            "freshness-check"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Show drivers a more detailed and more frequently refreshed live map of surge, so they can choose well"
+        },
+        {
+          "id": "b",
+          "text": "Hide surge from drivers entirely and decide placement only through dispatch"
+        },
+        {
+          "id": "c",
+          "text": "Pay a flat bonus to any driver who enters the hotspot"
+        },
+        {
+          "id": "d",
+          "text": "Count drivers already heading to a cell as supply, and show a forward-looking signal built on that"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "If supply on the way is counted, the hotspot looks full once enough drivers are heading there and the signal sends the rest to neighbouring cells, which is what spreads them out. A more detailed live map makes every driver react to the same snapshot, and a flat bonus pulls in even more of them. Hiding surge removes a signal drivers value without fixing how they are placed.",
+      "bottleneck_note": "When many people react to the same signal, include their reaction in the signal.",
+      "concept_ids": [
+        "herding-effects"
+      ]
+    }
+  ]
+}

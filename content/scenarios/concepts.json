@@ -11,6 +11,12 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "adaptive-bitrate",
+          "name": "Adaptive Bitrate",
+          "tier": "foundations",
+          "prerequisite_concept_ids": []
+        },
+        {
           "id": "async-sending",
           "name": "Async Sending",
           "tier": "intermediate",
@@ -41,6 +47,14 @@
           "name": "Atomic updates",
           "tier": "foundations",
           "prerequisite_concept_ids": []
+        },
+        {
+          "id": "backpressure",
+          "name": "Backpressure",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "message-queues"
+          ]
         },
         {
           "id": "brute-force-protection",
@@ -85,6 +99,12 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "content-addressed-storage",
+          "name": "Content-Addressed Storage",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
           "id": "cross-region-transactions",
           "name": "Cross Region Transactions",
           "tier": "expert",
@@ -109,6 +129,14 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "entitlement-caching",
+          "name": "Entitlement Caching",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "caching"
+          ]
+        },
+        {
           "id": "failover-and-fencing",
           "name": "Failover and fencing",
           "tier": "expert",
@@ -130,6 +158,18 @@
           "id": "geospatial-index",
           "name": "Geospatial indexing",
           "tier": "foundations",
+          "prerequisite_concept_ids": []
+        },
+        {
+          "id": "graceful-degradation",
+          "name": "Graceful Degradation",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
+          "id": "herding-effects",
+          "name": "Herding Effects",
+          "tier": "advanced",
           "prerequisite_concept_ids": []
         },
         {
@@ -157,6 +197,12 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "hysteresis-smoothing",
+          "name": "Hysteresis and Smoothing",
+          "tier": "advanced",
+          "prerequisite_concept_ids": []
+        },
+        {
           "id": "idempotency",
           "name": "Idempotency",
           "tier": "foundations",
@@ -178,6 +224,12 @@
           "id": "idempotent-sends",
           "name": "Idempotent Sends",
           "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
+          "id": "incremental-aggregation",
+          "name": "Incremental Aggregation",
+          "tier": "advanced",
           "prerequisite_concept_ids": []
         },
         {
@@ -223,6 +275,14 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "origin-shield",
+          "name": "Origin Shield",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "cdn"
+          ]
+        },
+        {
           "id": "otp-lifecycle",
           "name": "OTP lifecycle",
           "tier": "intermediate",
@@ -243,6 +303,12 @@
         {
           "id": "polling-vs-push",
           "name": "Polling Vs Push",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
+          "id": "price-quotes",
+          "name": "Price Quotes",
           "tier": "intermediate",
           "prerequisite_concept_ids": []
         },
@@ -307,6 +373,12 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "receipt-coalescing",
+          "name": "Receipt Coalescing",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
           "id": "reconciliation",
           "name": "Reconciliation",
           "tier": "advanced",
@@ -337,6 +409,12 @@
           "prerequisite_concept_ids": []
         },
         {
+          "id": "server-authoritative-time",
+          "name": "Server-Authoritative Time",
+          "tier": "foundations",
+          "prerequisite_concept_ids": []
+        },
+        {
           "id": "server-sent-events",
           "name": "Server-sent events",
           "tier": "intermediate",
@@ -351,6 +429,26 @@
         {
           "id": "sessions-vs-jwt",
           "name": "Sessions vs JWT",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
+          "id": "sorted-set-leaderboard",
+          "name": "Sorted-Set Leaderboards",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": []
+        },
+        {
+          "id": "spike-absorption",
+          "name": "Spike Absorption",
+          "tier": "intermediate",
+          "prerequisite_concept_ids": [
+            "message-queues"
+          ]
+        },
+        {
+          "id": "stale-data-handling",
+          "name": "Stale Data Handling",
           "tier": "intermediate",
           "prerequisite_concept_ids": []
         },
@@ -409,6 +507,14 @@
           "name": "Virtual Waiting Room",
           "tier": "intermediate",
           "prerequisite_concept_ids": []
+        },
+        {
+          "id": "windowed-aggregation",
+          "name": "Windowed Aggregation",
+          "tier": "advanced",
+          "prerequisite_concept_ids": [
+            "write-heavy-ingestion"
+          ]
         },
         {
           "id": "write-heavy-ingestion",

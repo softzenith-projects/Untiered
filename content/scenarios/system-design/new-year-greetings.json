@@ -1,0 +1,352 @@
+{
+  "course_slug": "system-design",
+  "slug": "new-year-greetings",
+  "title": "Happy New Year, 00:00",
+  "hook": "You run a messaging app, and at exactly midnight on 1 January everybody sends greetings at once, about ten times the normal traffic. The same festive image is forwarded to crores of people, and every message triggers delivery and read receipts on top.",
+  "context": "Messaging app with about 5 lakh messages per second at the midnight peak, group chats of every size, and image forwarding.",
+  "tier": "intermediate",
+  "concept_ids": [
+    "message-queues",
+    "backpressure",
+    "fan-out",
+    "content-addressed-storage",
+    "receipt-coalescing",
+    "graceful-degradation"
+  ],
+  "estimated_minutes": 13,
+  "status": "live",
+  "solution_brief": "Take sends into a durable queue and acknowledge them once queued, with a depth limit that tells clients to slow down instead of letting a backlog grow without bound. Fan out on write for small groups and keep one copy per large group that members read from. Store media under its content hash so a forwarded image exists once and each message holds a reference. Send read and delivery receipts in batches as a single 'read up to here' marker per conversation. When load is still too high, shed typing indicators, last-seen and presence first and protect sending and delivery.",
+  "steps": [
+    {
+      "kind": "initial",
+      "step_type": "design_choice",
+      "prompt": "Normally your app handles 50,000 messages per second, and at midnight it will see about 5 lakh per second for several minutes. Sends currently write straight to a database that tops out near 1 lakh writes per second. How should the send path take in the burst?",
+      "context_note": "The midnight peak is predictable to the minute, but it is ten times the usual load and lasts only a few minutes.",
+      "system_state": {
+        "nodes": [
+          "sender-app",
+          "gateway",
+          "chat-service",
+          "message-db"
+        ],
+        "links": [
+          [
+            "sender-app",
+            "gateway"
+          ],
+          [
+            "gateway",
+            "chat-service"
+          ],
+          [
+            "chat-service",
+            "message-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Grow the message database until it can take 5 lakh writes per second, and keep it at that size all year, so midnight needs no special handling"
+        },
+        {
+          "id": "b",
+          "text": "Hold the burst in a buffer in each chat server's memory and write it out when the database is free"
+        },
+        {
+          "id": "c",
+          "text": "Queue sends durably with a depth limit, acknowledge once queued, and tell clients to slow down near the limit"
+        },
+        {
+          "id": "d",
+          "text": "Fail the writes the database cannot take and have the app retry them straight away"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "A durable queue lets the app say 'sent' quickly and lets workers write at a rate the database can sustain, and the depth limit stops it turning into a backlog of about 12 crore messages after five minutes that would reach people half an hour late. Buffers in server memory vanish if a server restarts, and immediate retries add load exactly when the database is struggling.",
+      "bottleneck_note": "Queues absorb bursts, but only a limit on queue depth keeps the delay bounded.",
+      "concept_ids": [
+        "message-queues",
+        "backpressure"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "People post greetings into groups ranging from 20 family members to communities of 5 lakh members. How should a group message reach its members?",
+      "context_note": "Sends are now queued and acknowledged. Copying each group message into every member's inbox works for a family group, but one message to 5 lakh members is 5 lakh writes.",
+      "system_state": {
+        "nodes": [
+          "sender-app",
+          "gateway",
+          "chat-service",
+          "send-queue",
+          "message-workers",
+          "message-db"
+        ],
+        "links": [
+          [
+            "sender-app",
+            "gateway"
+          ],
+          [
+            "gateway",
+            "chat-service"
+          ],
+          [
+            "chat-service",
+            "send-queue"
+          ],
+          [
+            "send-queue",
+            "message-workers"
+          ],
+          [
+            "message-workers",
+            "message-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Copy to each member's inbox for small groups, and for very large groups store the message once and let members fetch it when they open the group"
+        },
+        {
+          "id": "b",
+          "text": "Copy the message into every member's inbox for every group, because reads then stay simple"
+        },
+        {
+          "id": "c",
+          "text": "Store each message once for every group, and make every member's app read the group log, whatever the size"
+        },
+        {
+          "id": "d",
+          "text": "Copy to every member's inbox, but allow large groups only one message per minute"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Copying on write makes reads fast and costs little when a group has 20 members, but it becomes crores of writes a minute when large groups all say Happy New Year. Reading from one group log removes that cost but makes every open of a small chat do extra work, so the split is by group size. Throttling large groups just makes people think the app is broken at midnight.",
+      "bottleneck_note": "Choose fan-out on write or on read by how many people a message reaches, not once for the whole system.",
+      "concept_ids": [
+        "fan-out"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "One greeting image of about 400 KB is forwarded 2 crore times. Storing a separate copy for each forward would take around 8 TB. How should media be stored?",
+      "context_note": "Group delivery is under control, but forwarded images are the heaviest thing in each message, and almost all of them are the exact same file.",
+      "system_state": {
+        "nodes": [
+          "sender-app",
+          "gateway",
+          "chat-service",
+          "send-queue",
+          "message-workers",
+          "message-db",
+          "media-store"
+        ],
+        "links": [
+          [
+            "sender-app",
+            "gateway"
+          ],
+          [
+            "gateway",
+            "chat-service"
+          ],
+          [
+            "chat-service",
+            "send-queue"
+          ],
+          [
+            "send-queue",
+            "message-workers"
+          ],
+          [
+            "message-workers",
+            "message-db"
+          ],
+          [
+            "chat-service",
+            "media-store"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep a separate copy of the file for every forward, so that deleting one message can never touch another message"
+        },
+        {
+          "id": "b",
+          "text": "Delete forwarded images from storage after 24 hours to keep the total small"
+        },
+        {
+          "id": "c",
+          "text": "Compress every image more aggressively before it is stored"
+        },
+        {
+          "id": "d",
+          "text": "Name each file by a hash of its contents, store it once, and let every message hold a reference"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "Two identical files have the same hash, so the second forward can send just the hash and the server finds the file already there; 2 crore forwards then store roughly 400 KB plus 2 crore small references. Access is still checked on the message, not the file. Heavier compression only shaves a fraction off each copy, and expiring the file after a day breaks messages that people reopen later.",
+      "bottleneck_note": "When the same bytes are stored many times, address them by content and store them once.",
+      "concept_ids": [
+        "content-addressed-storage"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Each message leads to a delivered receipt and later a read receipt, so 5 lakh messages per second become up to 15 lakh events per second. How should receipts be sent?",
+      "context_note": "Media is now stored once, but the extra traffic from receipts is nearly double the messages themselves, and receipts only need to be correct, not instant.",
+      "system_state": {
+        "nodes": [
+          "sender-app",
+          "gateway",
+          "chat-service",
+          "send-queue",
+          "message-workers",
+          "message-db",
+          "media-store",
+          "receipt-service"
+        ],
+        "links": [
+          [
+            "sender-app",
+            "gateway"
+          ],
+          [
+            "gateway",
+            "chat-service"
+          ],
+          [
+            "chat-service",
+            "send-queue"
+          ],
+          [
+            "send-queue",
+            "message-workers"
+          ],
+          [
+            "message-workers",
+            "message-db"
+          ],
+          [
+            "chat-service",
+            "media-store"
+          ],
+          [
+            "chat-service",
+            "receipt-service"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Send every receipt the instant it happens, so ticks update immediately"
+        },
+        {
+          "id": "b",
+          "text": "Have each device report 'read up to message N' for a conversation every few seconds, and merge those into one update per conversation"
+        },
+        {
+          "id": "c",
+          "text": "Poll the database for the read state of every message the sender has sent"
+        },
+        {
+          "id": "d",
+          "text": "Stop sending read receipts for good and keep only delivery"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "A read marker for message N already implies that everything before it has been read, so one small update replaces dozens of separate receipts. Ticks that arrive a few seconds late are barely noticed. Sending each receipt immediately keeps the full 15 lakh events per second, and removing read receipts altogether takes away a feature people expect.",
+      "bottleneck_note": "Where only the latest state matters, send a batched marker instead of every event.",
+      "concept_ids": [
+        "receipt-coalescing"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "tradeoff",
+      "prompt": "Even with all of that, the system is still close to its limit at 12:02 am. Which features should you switch off or slow down first?",
+      "context_note": "Queues, fan-out rules, media dedupe and batched receipts are all in place, yet load is still above what the chat servers can sustain.",
+      "system_state": {
+        "nodes": [
+          "sender-app",
+          "gateway",
+          "chat-service",
+          "send-queue",
+          "message-workers",
+          "message-db",
+          "media-store",
+          "receipt-service",
+          "presence-service"
+        ],
+        "links": [
+          [
+            "sender-app",
+            "gateway"
+          ],
+          [
+            "gateway",
+            "chat-service"
+          ],
+          [
+            "chat-service",
+            "send-queue"
+          ],
+          [
+            "send-queue",
+            "message-workers"
+          ],
+          [
+            "message-workers",
+            "message-db"
+          ],
+          [
+            "chat-service",
+            "media-store"
+          ],
+          [
+            "chat-service",
+            "receipt-service"
+          ],
+          [
+            "chat-service",
+            "presence-service"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Delay delivery in one-to-one chats for a few minutes so that busy groups keep their speed"
+        },
+        {
+          "id": "b",
+          "text": "Reject sends from a randomly chosen third of users until the midnight peak has fully passed"
+        },
+        {
+          "id": "c",
+          "text": "Pause typing indicators, last-seen and online status first; keep sending and delivering"
+        },
+        {
+          "id": "d",
+          "text": "Stop delivering media altogether, since images are by far the largest payloads in the system"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "Typing indicators and online status cost a lot of small events and nobody misses them for ten minutes, whereas a greeting that arrives is the whole reason people opened the app. Rejecting sends from random users makes some people's midnight fail outright, and delaying one-to-one chats hurts the most personal messages.",
+      "bottleneck_note": "Decide in advance what to shed, starting with what users miss least.",
+      "concept_ids": [
+        "graceful-degradation"
+      ]
+    }
+  ]
+}
