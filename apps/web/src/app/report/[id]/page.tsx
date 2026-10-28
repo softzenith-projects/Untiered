@@ -25,12 +25,12 @@ export default async function ReportPage({
     <AppShell>
       {/*
         * Task 053: `max-w-3xl` forced the whole report into one narrow column, including
-        * the new side-by-side summary at the top. `max-w-6xl` gives that summary room to
-        * sit in two columns from `lg` up while every prose paragraph inside still wraps at
+        * the side-by-side summary at the top. The sheet now fills the shared page grid, so
+        * its edges line up with the header's; every prose paragraph inside still wraps at
         * its own `max-w-prose` — widening the sheet does not widen the line length text is
         * actually read at.
         */}
-      <div className="w-full max-w-6xl">
+      <div className="w-full">
         <ReportView sessionId={id} detailed={detail === "1"} />
       </div>
     </AppShell>

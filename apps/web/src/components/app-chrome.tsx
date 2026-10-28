@@ -68,7 +68,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 export function AppHeader({ width = "layout-content" }: { width?: "layout-content" | "layout-reader" }) {
   return (
     <header className="z-sticky sticky top-0 border-b border-line bg-surface-raised/95 shadow-[var(--shadow-sm)] backdrop-blur-xl">
-      <div className={`${width} mx-auto flex flex-wrap items-center gap-x-5 px-4 sm:flex-nowrap sm:px-6 lg:px-8`}>
+      <div className={`${width} page-gutter mx-auto flex flex-wrap items-center gap-x-5 sm:flex-nowrap`}>
         <Link
           href="/dashboard"
           className="flex shrink-0 items-center py-3.5 focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"

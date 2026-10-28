@@ -29,7 +29,7 @@ export default function RoundsPage() {
   requireFeature("mockInterviews");
   return (
     <AppShell breadcrumb="rounds">
-      <div className="flex max-w-5xl flex-col gap-12">
+      <div className="flex flex-col gap-12">
         <header className="-mx-6 flex flex-col gap-5 rounded-2xl border border-accent/20 bg-accent-wash px-6 py-10 shadow-[var(--shadow-sm)] sm:mx-0 sm:px-10">
           <p className="w-fit rounded-full bg-surface-raised px-3 py-1 font-mono text-micro tracking-widest text-accent-strong uppercase shadow-[var(--shadow-sm)]">
             All rounds · {ROUND_CATALOGUE.length}
