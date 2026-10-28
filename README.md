@@ -59,7 +59,7 @@ Then set the `DATABASE_*` values in `.env`, taking the password from **Settings 
 Database**:
 
 ```
-DATABASE_URL=jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+DATABASE_URL=jdbc:postgresql://aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0
 DATABASE_USER=postgres.<project-ref>
 DATABASE_PASSWORD=<database password>
 ```
@@ -69,9 +69,13 @@ Two things that will otherwise cost you an afternoon:
 - **Use the pooler host, not `db.<ref>.supabase.co`.** The direct host is IPv6-only, and
   most networks cannot reach it. The CLI reports this as
   `IPv6 is not supported on your current network`.
-- **Use port 5432, not 6543.** Both are on the pooler host; 6543 is transaction mode,
-  which gives each statement a different backend and breaks the server-side prepared
-  statements the JDBC driver uses. 5432 is session mode.
+- **On a laptop, use port 6543 with `prepareThreshold=0`, not 5432.** Both ports are on
+  the pooler host. 5432 is session mode: each API holds its connections (up to 10) for as
+  long as it runs, and the project's session pool is 15 clients shared with production, so
+  two laptops running `npm run dev` can starve the deployed API. 6543 is transaction mode,
+  which lends a connection per transaction. `prepareThreshold=0` is required there: it
+  stops the JDBC driver using server-side prepared statements, which transaction mode
+  cannot carry between transactions. The deployed API stays on 5432.
 
 **Local stack** (needs Docker; gives you Postgres, Auth, Storage and Studio):
 
