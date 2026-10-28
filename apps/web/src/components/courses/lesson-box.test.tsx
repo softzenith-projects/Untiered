@@ -16,7 +16,7 @@ const BOXED: Block[] = [
   { kind: "compare", title: "Compare", columns: [{ label: "A", items: ["x"] }] },
   { kind: "steps", title: "Steps", steps: [{ label: "one", text: "do" }] },
   { kind: "code", code: "int x = 1;" },
-  { kind: "viz", title: "Viz", viz: { type: "array", frames: [{ cells: [1, 2], note: "start" }] } },
+  { kind: "viz", title: "Viz", viz: { type: "array", frames: [{ cells: [{ value: 1 }, { value: 2 }], note: "start" }] } },
 ];
 
 describe("lesson boxes", () => {
