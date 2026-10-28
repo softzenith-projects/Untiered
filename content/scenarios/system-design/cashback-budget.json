@@ -1,0 +1,268 @@
+{
+  "course_slug": "system-design",
+  "slug": "cashback-budget",
+  "title": "Cashback Budget Race",
+  "hook": "During a sale your payments app promises 100 rupees cashback to the first users, until a 50 lakh rupee budget is used up. That is 50,000 cashbacks, and thousands of users will try for them in the first few minutes.",
+  "context": "Payments app where one shared budget, retries and fake accounts all push against a hard spending limit.",
+  "tier": "advanced",
+  "concept_ids": [
+    "atomic-decrement",
+    "hot-counter",
+    "budget-chunks",
+    "idempotency-keys",
+    "abuse-detection",
+    "reconciliation"
+  ],
+  "estimated_minutes": 13,
+  "status": "live",
+  "solution_brief": "Never read-check-write the budget: decrement it with one conditional statement so it can not go below zero. Because one row serialises every credit, split the budget into chunks (for example 100 shards of 50,000 rupees) and let each request draw from a shard, moving on when one is empty. Make each credit idempotent with a key built from campaign and user, committed in the same transaction as the budget draw. Enforce one cashback per verified identity such as phone and bank account, not per account. After the sale, reconcile shard totals against the credit ledger and fix gaps with explicit adjustments.",
+  "steps": [
+    {
+      "kind": "initial",
+      "step_type": "design_choice",
+      "prompt": "Version one reads the remaining budget, checks that it is at least ₹100, and then writes back the budget minus ₹100. After a rehearsal with 5,000 simultaneous users, ₹52 lakh of cashback was paid out of a ₹50 lakh budget. What went wrong?",
+      "context_note": "Before the sale, a load rehearsal has shown that the budget can be overspent even though every individual check passed.",
+      "system_state": {
+        "nodes": [
+          "users",
+          "cashback-service",
+          "budget-db",
+          "wallet-service"
+        ],
+        "links": [
+          [
+            "users",
+            "cashback-service"
+          ],
+          [
+            "cashback-service",
+            "budget-db"
+          ],
+          [
+            "cashback-service",
+            "wallet-service"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Read replicas returned an old budget figure, so the fix is to read from the primary"
+        },
+        {
+          "id": "b",
+          "text": "Rounding errors in the rupee amounts added up across thousands of requests"
+        },
+        {
+          "id": "c",
+          "text": "Retries from the clients caused some credits to be applied twice"
+        },
+        {
+          "id": "d",
+          "text": "Check and write were separate, so many requests passed before any write landed"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "With a read, a check and then a write, ten requests can all read ₹100 remaining, all pass, and all write, so the check protects nothing. The check and the decrement must be one atomic conditional statement, such as decrementing only where remaining is at least 100. Reading from the primary does not close the gap between the read and the write, and the overspend here scales with concurrency rather than with retries or rounding.",
+      "bottleneck_note": "A check that is separate from the update it guards is not a limit.",
+      "concept_ids": [
+        "atomic-decrement"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "The conditional decrement is correct, but all 50,000 cashbacks decrement the same budget row. Throughput stalls at about 400 credits a second while 3,000 arrive each second and p99 latency passes 5 seconds. What should change?",
+      "context_note": "The budget is now safe, yet every credit queues on a single hot row.",
+      "system_state": {
+        "nodes": [
+          "users",
+          "cashback-service",
+          "budget-row",
+          "wallet-service"
+        ],
+        "links": [
+          [
+            "users",
+            "cashback-service"
+          ],
+          [
+            "cashback-service",
+            "budget-row"
+          ],
+          [
+            "cashback-service",
+            "wallet-service"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Split the budget into chunks, such as 100 shards of ₹50,000, drawn per request"
+        },
+        {
+          "id": "b",
+          "text": "Move to a larger database instance so the single row can be updated faster"
+        },
+        {
+          "id": "c",
+          "text": "Skip the check for the first 40,000 users and correct the total when the sale ends"
+        },
+        {
+          "id": "d",
+          "text": "Send every request through one worker that updates the row in order"
+        }
+      ],
+      "correct_option_id": "a",
+      "explanation": "Splitting the budget into 100 shards of ₹50,000 each gives 500 cashbacks per shard, so the 3,000 requests a second spread over many rows and contention drops sharply, while no shard can overspend its own chunk. A bigger instance does not shorten a row lock, skipping the check risks overspend, and a single worker is exactly the same serial bottleneck.",
+      "bottleneck_note": "When one counter is the bottleneck, give it a fixed share per shard so each stays safe on its own.",
+      "concept_ids": [
+        "hot-counter",
+        "budget-chunks"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "A user's cashback request times out at the wallet service, the app retries, and 2% of users end up with ₹200 instead of ₹100. Disabling retries would leave some users with nothing. How should the credit be made safe to retry?",
+      "context_note": "The budget now scales, but the credit call to the wallet can fail in an unknown way and get repeated.",
+      "system_state": {
+        "nodes": [
+          "users",
+          "cashback-service",
+          "budget-shards",
+          "wallet-service",
+          "credit-ledger"
+        ],
+        "links": [
+          [
+            "users",
+            "cashback-service"
+          ],
+          [
+            "cashback-service",
+            "budget-shards"
+          ],
+          [
+            "cashback-service",
+            "wallet-service"
+          ],
+          [
+            "cashback-service",
+            "credit-ledger"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Wait five seconds before each retry so that the first attempt has time to finish"
+        },
+        {
+          "id": "b",
+          "text": "Check the user's wallet balance before retrying and skip the credit if it looks higher"
+        },
+        {
+          "id": "c",
+          "text": "Remove the retry and ask users who did not receive cashback to contact support"
+        },
+        {
+          "id": "d",
+          "text": "A unique campaign-and-user key, saved with the budget draw"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "A deterministic key means a repeated request finds the existing record and returns its result instead of crediting again, and committing it with the budget draw keeps the budget and the credit consistent. A delay only narrows the race, a balance check cannot tell this credit from a deposit or other credits, and removing retries trades duplicates for lost cashback.",
+      "bottleneck_note": "A retry is safe only when the operation can recognise a request it has already done.",
+      "concept_ids": [
+        "idempotency-keys"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "One person created 300 accounts with fresh email addresses and took ₹30,000 of the budget. The rule is one cashback per user, and you can see a handful of phone numbers and bank accounts repeated across those accounts. How should the rule be enforced?",
+      "context_note": "Credits are idempotent per account, but an attacker simply creates more accounts.",
+      "system_state": {
+        "nodes": [
+          "signup",
+          "cashback-service",
+          "credit-ledger"
+        ],
+        "links": [
+          [
+            "signup",
+            "cashback-service"
+          ],
+          [
+            "cashback-service",
+            "credit-ledger"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Add a unique constraint on email address, so each address can claim only once in the sale"
+        },
+        {
+          "id": "b",
+          "text": "Allow one claim per IP address, since fake accounts usually share one network connection"
+        },
+        {
+          "id": "c",
+          "text": "One claim per verified phone and bank account, with linked account clusters reviewed"
+        },
+        {
+          "id": "d",
+          "text": "Add a CAPTCHA to the claim button and keep one claim per account"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "Email addresses cost nothing to create, so the limit has to sit on something expensive to fake, a verified phone and a bank account, with clusters of accounts sharing them flagged for review before the credit is released. IP limits block whole households and offices on shared connections while a determined person rotates addresses, and a CAPTCHA only slows down a script.",
+      "bottleneck_note": "Tie a one-per-person rule to a costly identity, not to something free to create.",
+      "concept_ids": [
+        "abuse-detection"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "The sale has ended. Shard counters say ₹49.8 lakh was drawn, but the wallet credit ledger sums to ₹49.6 lakh, and a few hundred requests had unknown outcomes during timeouts. What do you do with the ₹20,000 gap?",
+      "context_note": "The sale is over, and the totals held in different places no longer agree.",
+      "system_state": {
+        "nodes": [
+          "budget-shards",
+          "credit-ledger",
+          "wallet-service"
+        ],
+        "links": []
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Edit the shard counters down so that the totals match and the books can be closed"
+        },
+        {
+          "id": "b",
+          "text": "Match every draw to its credit, then fix each difference with an adjusting entry"
+        },
+        {
+          "id": "c",
+          "text": "Credit the full ₹100 again to every user who claimed, so that nobody ends up short"
+        },
+        {
+          "id": "d",
+          "text": "Ignore the gap, since it is only 0.4% of the budget and nobody is likely to notice"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "The credit ledger and wallet results are the evidence of what was really paid, so each budget draw is matched to a credit and every difference is resolved with a visible adjustment such as completing a missing credit or returning an unused draw. Editing counters destroys the audit trail, ignoring the gap hides money that is either owed or lost, and re-crediting everyone would double pay the users who already got theirs.",
+      "bottleneck_note": "Reconcile by matching each record to its evidence and record corrections instead of rewriting totals.",
+      "concept_ids": [
+        "reconciliation"
+      ]
+    }
+  ]
+}

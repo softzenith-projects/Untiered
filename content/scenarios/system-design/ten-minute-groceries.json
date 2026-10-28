@@ -1,0 +1,281 @@
+{
+  "course_slug": "system-design",
+  "slug": "ten-minute-groceries",
+  "title": "Ten-Minute Groceries",
+  "hook": "Your quick-commerce app promises groceries in 10 minutes from small dark stores in each neighbourhood. Customers keep getting orders with missing items, and at peak the 10 minutes is a promise nobody can keep.",
+  "context": "Quick-commerce app where a small store's shelf, pickers and riders limit what the software can promise.",
+  "tier": "advanced",
+  "concept_ids": [
+    "stock-drift",
+    "inventory-reservation",
+    "atomic-decrement",
+    "serviceable-store-routing",
+    "geospatial-index",
+    "capacity-gating",
+    "truthful-eta",
+    "honest-ux"
+  ],
+  "estimated_minutes": 14,
+  "status": "live",
+  "solution_brief": "Treat per-store stock as an estimate: correct it with picker not-found reports and cycle counts, and hide items below a small safety buffer. Reserve stock for a specific store at order time with an atomic conditional decrement. Choose the store among those whose serviceable area covers the address and that hold every item, then rank by estimated time. Limit accepted orders by the slowest stage, which is usually riders, and when capacity is gone widen the shown ETA or pause orders instead of keeping a 10 minute promise that cannot be met.",
+  "steps": [
+    {
+      "kind": "initial",
+      "step_type": "design_choice",
+      "prompt": "Pickers report that 6% of orders have an item the app showed in stock but the shelf did not have. The system count is received goods minus orders, and nothing tracks breakage, misplaced packs or miscounts. What should you do about the stock number?",
+      "context_note": "Each store is a small room with a few thousand items, and its stock figure drifts from the shelf throughout the day.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "app",
+          "store-stock-db",
+          "picker-app"
+        ],
+        "links": [
+          [
+            "customers",
+            "app"
+          ],
+          [
+            "app",
+            "store-stock-db"
+          ],
+          [
+            "store-stock-db",
+            "picker-app"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Run a full recount of every store each night and trust the figure until the next morning"
+        },
+        {
+          "id": "b",
+          "text": "Treat the count as an estimate: feed picker not-found reports back and hide items near zero"
+        },
+        {
+          "id": "c",
+          "text": "Keep showing the system count and send a refund coupon whenever an item turns out to be missing"
+        },
+        {
+          "id": "d",
+          "text": "Ask customers to report missing items after delivery and correct the count from their reports"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "The count is an inference, so the cheap fix is to learn from every pick: a not-found report lowers the count at once, a cycle count of fast movers corrects drift, and a small safety buffer stops the last one or two units being sold. A nightly recount is stale by lunch and costs labour, coupons compensate without fixing anything, and customer reports arrive after the damage.",
+      "bottleneck_note": "When a counter drifts from reality, correct it from the signals you already receive, and do not sell the last units.",
+      "concept_ids": [
+        "stock-drift"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Two customers add the last pack of eggs at one store to their carts and pay within the same second. Stock is only checked when the item is added to a cart, so both orders go through. How should the last unit be claimed?",
+      "context_note": "The count is now better, but a correct count still allows two buyers to take the same unit if nothing claims it at order time.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "order-service",
+          "store-stock-db",
+          "picker-app"
+        ],
+        "links": [
+          [
+            "customers",
+            "order-service"
+          ],
+          [
+            "order-service",
+            "store-stock-db"
+          ],
+          [
+            "store-stock-db",
+            "picker-app"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Check stock again when the picker starts and cancel whichever order is picked second"
+        },
+        {
+          "id": "b",
+          "text": "Cache the count in memory on each order server and decrement it locally"
+        },
+        {
+          "id": "c",
+          "text": "Reserve in that store's row at order time with a conditional decrement"
+        },
+        {
+          "id": "d",
+          "text": "Check stock at the payment step only, since that is when the customer is committed"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "A single conditional statement, which decrements only if the remaining quantity is large enough, makes the claim atomic, so exactly one of the two orders gets the last pack and the other is told immediately. Waiting for the picker means the customer has already been promised, local counters on many servers disagree, and a check at payment still leaves a window before the decrement.",
+      "bottleneck_note": "Claim scarce stock atomically at the moment of commitment, for a specific location.",
+      "concept_ids": [
+        "inventory-reservation",
+        "atomic-decrement"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "A customer's nearest store by straight-line distance is 600 m away but across a railway line with a 4 km ride, and it lacks two of the five items. Another store 1.1 km away by road has everything. How should the store be chosen?",
+      "context_note": "Reservations are safe, but the choice of which store to reserve from decides whether the order can be fulfilled at all.",
+      "system_state": {
+        "nodes": [
+          "customer-address",
+          "store-router",
+          "store-stock-db"
+        ],
+        "links": [
+          [
+            "customer-address",
+            "store-router"
+          ],
+          [
+            "store-router",
+            "store-stock-db"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Use the store with the smallest straight-line distance and substitute any missing items"
+        },
+        {
+          "id": "b",
+          "text": "Use the store with the most items in stock, whatever the distance from the address"
+        },
+        {
+          "id": "c",
+          "text": "Use the nearest store and split the missing items into a second order from another store"
+        },
+        {
+          "id": "d",
+          "text": "Keep stores that cover the address and hold every item, then rank by ride time"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "Eligibility is decided by what the store can actually do, which means a road-based serviceable area plus live stock for the whole basket, and only then do you rank on time. Straight line distance ignores barriers, the store with most stock may be too far for the promise, and splitting the order doubles riders and delivery cost for one customer.",
+      "bottleneck_note": "Filter by what is feasible first, and rank by cost only among the feasible choices.",
+      "concept_ids": [
+        "serviceable-store-routing",
+        "geospatial-index"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "One store has 3 pickers who each pack an order in about 3 minutes, and 4 riders who each complete a delivery round trip in about 15 minutes. Orders are arriving at 40 an hour. Which number should decide how many orders the store may accept?",
+      "context_note": "A store can only pass orders through its slowest stage, and your dashboards currently show just stock and picker load.",
+      "system_state": {
+        "nodes": [
+          "order-service",
+          "store-queue",
+          "pickers",
+          "riders"
+        ],
+        "links": [
+          [
+            "order-service",
+            "store-queue"
+          ],
+          [
+            "store-queue",
+            "pickers"
+          ],
+          [
+            "pickers",
+            "riders"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Picker throughput of 60 orders an hour, since packing is the first step in the chain"
+        },
+        {
+          "id": "b",
+          "text": "Rider throughput of 16 orders an hour, since that is the lowest of the stage rates"
+        },
+        {
+          "id": "c",
+          "text": "Arrival rate of 40 orders an hour, since the app should serve whatever is asked"
+        },
+        {
+          "id": "d",
+          "text": "The server request limit, since software is what accepts the orders"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "Pickers handle about 3 x 20 = 60 an hour, riders about 4 x 4 = 16 an hour, so riders are the bottleneck and 40 arrivals an hour leave 24 an hour unfulfilled. Admission has to follow the slowest stage, not the first one. Accepting the arrival rate simply builds a queue, and servers are not the limit here.",
+      "bottleneck_note": "System throughput equals the slowest stage, so gate admission on that stage.",
+      "concept_ids": [
+        "capacity-gating"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "tradeoff",
+      "prompt": "The store's riders are all busy and the queue is already 25 minutes long, but the app still says 10 minutes and accepts new orders. Customers wait over twice as long as promised. What should the app do?",
+      "context_note": "You now measure rider capacity, so the app can see that the shown promise is already impossible.",
+      "system_state": {
+        "nodes": [
+          "customer-app",
+          "store-queue",
+          "eta-service",
+          "riders"
+        ],
+        "links": [
+          [
+            "customer-app",
+            "store-queue"
+          ],
+          [
+            "store-queue",
+            "eta-service"
+          ],
+          [
+            "store-queue",
+            "riders"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Keep saying 10 minutes, since the brand promise matters, and compensate customers who wait"
+        },
+        {
+          "id": "b",
+          "text": "Route every extra order to the next nearest store so that none of them has to wait"
+        },
+        {
+          "id": "c",
+          "text": "Accept the order and silently leave the shown time as it is, then update it once rides begin"
+        },
+        {
+          "id": "d",
+          "text": "Show an ETA from the real backlog, or pause new orders until the queue is short"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "When capacity is gone the only true promise is a longer one, so the ETA is recomputed from the backlog or the store stops taking orders until the queue drains. Compensation after a known false promise pays for the lie, rerouting to farther stores breaks the serviceable-area rule and sends riders on long trips, and silent updates deceive the customer at the moment they decide.",
+      "bottleneck_note": "A fast-delivery promise is a capacity claim, so withdraw it when capacity is gone.",
+      "concept_ids": [
+        "truthful-eta",
+        "honest-ux"
+      ]
+    }
+  ]
+}
