@@ -54,6 +54,22 @@ The owner asked for four fixes in session, with no task file (PRD §07):
 - `fix/arena-and-lesson-polish` merged into `develop` at dbb9433.
 - Migration 20261028000000 applied with `npm run db:push` before the merge.
 
+## Later the same session: eight new system design scenarios
+- **New scenarios** (all live, 5 steps each, Indian context):
+  - diwali-dinner-rush, festive-sale-prices, ten-minute-groceries, cashback-budget
+  - toss-time-teams, new-year-greetings, match-stream, new-years-eve-surge
+- **Who wrote them:** two `builder` agents wrote them. I reviewed every step and its arithmetic.
+- **Fixes after review:**
+  - Five "System so far" maps showed the component their own step asks for. I removed it from each.
+  - Eight correct options were padded until they gave themselves away. I shortened them.
+- **Concepts:** 24 new concepts, in Title Case to match the catalogue.
+- **No real companies.** The learner runs their own app, and no real company is named or described, per the rule against unsourced claims about real employers.
+- **Migration** `20261028120000_arena_festive_scenarios.sql` was applied before merging. It is merged at 57bbb95 after CI run 40680191061 passed.
+- **Signed-in E2E testing was not done.** Creating a test account through the Supabase admin API was refused by the permission system. It needs a test account from the owner (`E2E_EMAIL` / `E2E_PASSWORD` in `.env`) or their explicit go-ahead. Signed-out checks passed on desktop and phone:
+  - every protected route redirects to /login
+  - no horizontal overflow
+  - no console errors
+
 ## Suggested next task
 - Add a check that a step's "System so far" map doesn't introduce the component its own correct answer names. This is reviewed by hand today.
 
