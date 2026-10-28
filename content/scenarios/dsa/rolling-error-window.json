@@ -16,24 +16,24 @@
     {
       "kind": "initial",
       "step_type": "algo_choice",
-      "prompt": "Which structure supports adding a new timestamp and evicting the oldest?",
+      "prompt": "Events arrive in timestamp order. Which structure lets you add each new event and drop expired ones cheaply?",
       "options": [
         {
           "id": "a",
-          "text": "A deque"
+          "text": "A deque: add at the back, remove from the front"
         },
         {
           "id": "b",
-          "text": "An unsorted array with full scans"
+          "text": "An array list, removing expired events from index 0"
         },
         {
           "id": "c",
-          "text": "A recursion stack"
+          "text": "A stack: push new events, pop expired ones"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A supports append and front removal. B rescans history per event. C does not model a rolling window.",
-      "bottleneck_note": "Ordered input lets the oldest expired event sit at the front.",
+      "explanation": "Because events arrive in time order, the oldest is always at the front, and a deque adds at one end and removes at the other in constant time. Removing index 0 from an array list shifts every remaining element. A stack only gives access to the newest event, which is never the one that expires.",
+      "bottleneck_note": "With ordered input, the next thing to expire is always at the front.",
       "concept_ids": [
         "sliding-window"
       ]
@@ -41,33 +41,33 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "At timestamp t, which entries should be removed for a strict trailing 300-second interval (t-300, t]?",
+      "prompt": "A new event arrives at time t. Which events should be evicted from the front?",
       "options": [
         {
           "id": "a",
-          "text": "Entries with timestamp less than or equal to t-300"
+          "text": "Those with timestamp ≤ t − 300"
         },
         {
           "id": "b",
-          "text": "Only the newest entry"
+          "text": "Those with timestamp < t − 300"
         },
         {
           "id": "c",
-          "text": "Every entry older than t"
+          "text": "Only the single oldest event"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A matches the open lower bound. B keeps old events. C empties the useful window.",
-      "bottleneck_note": "Boundary choice matters at exactly five minutes.",
+      "explanation": "The window is (t − 300, t], open at the old end, so an event exactly 300 seconds old is outside it and must go. A strict less-than keeps it one event too long. Removing only one event per arrival falls behind after a burst.",
+      "bottleneck_note": "Decide whether the window's boundary is open or closed before writing the comparison.",
       "concept_ids": [
         "sliding-window"
       ],
-      "context_note": "The monitoring contract excludes events exactly 300 seconds old."
+      "context_note": "The alert counts errors in the last five minutes, and an event exactly 300 seconds old no longer counts."
     },
     {
       "kind": "probe",
       "step_type": "complexity",
-      "prompt": "A burst expires many entries at once. What is amortized work per event over the stream?",
+      "prompt": "Across a stream of N events, what is the amortised cost per event?",
       "options": [
         {
           "id": "a",
@@ -80,67 +80,71 @@
         {
           "id": "c",
           "text": "O(N log N)"
+        },
+        {
+          "id": "d",
+          "text": "O(log N)"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A holds because each event is inserted once and removed once. B charges a full history scan to every event. C assumes sorting that ordered input avoids.",
-      "bottleneck_note": "A single slow eviction does not change the total linear work.",
+      "explanation": "Each event is added once and removed at most once, so the total work across N events is O(N): constant per event on average, even though one arrival may do a lot. O(N) per event would mean rescanning the whole history every time.",
+      "bottleneck_note": "One expensive step doesn't raise the average when each item is removed only once.",
       "concept_ids": [
         "amortized-analysis"
       ],
-      "context_note": "The deque has already been maintained since startup."
+      "context_note": "After a burst, a single arrival evicts thousands of expired events at once."
     },
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "What changes if events arrive out of timestamp order?",
+      "prompt": "What breaks if you keep appending events in the order they arrive?",
       "options": [
         {
           "id": "a",
-          "text": "The front may no longer be the oldest; reorder within a bounded lateness window or use a time index"
+          "text": "The front is no longer guaranteed to be the oldest event"
         },
         {
           "id": "b",
-          "text": "Nothing; deque order is always timestamp order"
+          "text": "Nothing, because a deque keeps events sorted by timestamp"
         },
         {
           "id": "c",
-          "text": "Discard every event until the clock catches up"
+          "text": "The late event must be dropped, since it is out of order"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A names the broken invariant and a recovery. B confuses arrival with event time. C loses valid late events.",
-      "bottleneck_note": "Document whether the window uses event time or arrival time.",
+      "explanation": "Evicting from the front only works while the front is the oldest event; a late arrival sits behind newer ones and can outstay its window. A deque keeps insertion order, not timestamp order. The usual fixes are buffering for a bounded lateness or indexing by time, because dropping late events undercounts errors.",
+      "bottleneck_note": "Say whether the window runs on event time or arrival time.",
       "concept_ids": [
         "sliding-window"
       ],
-      "context_note": "A network delay makes an older event arrive after a newer one."
+      "context_note": "A network delay delivers an event stamped 10:00:05 after one stamped 10:00:09."
     },
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "A long quiet period follows a burst. When does the displayed count reach zero?",
+      "prompt": "Eviction only runs when a new event arrives. What does the alert show during those quiet ten minutes?",
       "options": [
         {
           "id": "a",
-          "text": "On a clock tick or read that evicts expired entries, even without a new event"
+          "text": "The burst's stale count, until something triggers eviction"
         },
         {
           "id": "b",
-          "text": "Only when the next error arrives"
+          "text": "Zero, because expired events remove themselves after 300 seconds"
         },
         {
           "id": "c",
-          "text": "Never; old timestamps stay in the deque forever"
+          "text": "Zero, because the deque is cleared whenever the window goes idle"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A maintains a truthful live count. B displays stale alerts through quiet periods. C ignores expiry entirely.",
-      "bottleneck_note": "An event-only update loop needs a timer or read-time eviction.",
+      "explanation": "Nothing expires by itself: entries leave only when code runs the eviction loop. If that loop runs only on arrivals, a quiet period freezes the last count on screen. Running eviction on a timer, or when the count is read, lets the alert fall to zero when it should.",
+      "bottleneck_note": "If eviction runs only on new events, a quiet period freezes the last count.",
       "concept_ids": [
         "sliding-window"
       ],
-      "context_note": "The UI must update while no errors arrive."
+      "context_note": "Errors stop completely for ten minutes after a burst."
     }
   ]
 }

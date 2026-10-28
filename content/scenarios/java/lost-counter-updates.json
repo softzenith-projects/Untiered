@@ -16,24 +16,28 @@
     {
       "kind": "initial",
       "step_type": "debug",
-      "prompt": "What race exists in the code?",
+      "prompt": "Eight threads call accepted() at the same time, and the total comes out lower than the number of calls. What goes wrong?",
       "options": [
         {
           "id": "a",
-          "text": "Two threads can read the same value and overwrite one another\u2019s increment"
+          "text": "Two threads read the same value, and one write overwrites the other"
         },
         {
           "id": "b",
-          "text": "The JVM always serializes ++ on shared fields"
+          "text": "count++ is a single atomic step, so the bug must be elsewhere"
         },
         {
           "id": "c",
-          "text": "The counter overflows after eight requests"
+          "text": "A long field cannot be shared safely between threads in Java"
+        },
+        {
+          "id": "d",
+          "text": "Each thread gets its own copy of the static field and its own total"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A is the lost-update race. B is false: ++ is read, add, write. C is unrelated to this small workload.",
-      "bottleneck_note": "volatile alone gives visibility, not atomic read-modify-write.",
+      "explanation": "count++ is three steps: read, add one, write. Nothing stops two threads interleaving them, so both read the same value, both write that value plus one, and one increment is lost. The threads do share the field; the problem is sharing it without an atomic update.",
+      "bottleneck_note": "A read-modify-write on shared state needs an atomic operation or a lock.",
       "concept_ids": [
         "concurrency"
       ],
@@ -43,7 +47,7 @@
     {
       "kind": "probe",
       "step_type": "predict_output",
-      "prompt": "If both threads read 7 before either writes, what value can the field hold after both increments?",
+      "prompt": "Both threads read 7 before either one writes. What does count hold after both finish?",
       "options": [
         {
           "id": "a",
@@ -56,96 +60,104 @@
         {
           "id": "c",
           "text": "14"
+        },
+        {
+          "id": "d",
+          "text": "7"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A occurs when both write 8. B needs serialized increments. C would require adding the old values rather than one each.",
-      "bottleneck_note": "The lost update is observable despite both handlers completing.",
+      "explanation": "Each thread computes 7 + 1 from the value it read and writes 8, so the second write repeats the first. Two increments ran and the counter moved by one. You only get 9 when one thread reads after the other has written.",
+      "bottleneck_note": "A lost update raises no error; the number is just quietly too small.",
       "concept_ids": [
         "atomicity"
       ],
-      "context_note": "Both workers have already read the old value.",
+      "context_note": "Trace one collision: count is 7, and two threads run count++ at the same moment.",
       "code_snippet": "long count = 7;\n// Thread A reads 7; Thread B reads 7\n// Each computes old + 1 and writes it.",
       "language": "java"
     },
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "Which replacement gives atomic increments and a consistent value on this JVM?",
+      "prompt": "What should replace the plain long counter?",
       "options": [
         {
           "id": "a",
-          "text": "AtomicLong.incrementAndGet()"
+          "text": "An AtomicLong, updated with incrementAndGet()"
         },
         {
           "id": "b",
-          "text": "volatile long with count++"
+          "text": "A volatile long, still updated with count++"
         },
         {
           "id": "c",
-          "text": "A plain long renamed total"
+          "text": "A long field read through a synchronized getter"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A performs an atomic update. B exposes writes but still loses simultaneous increments. C changes no behavior.",
-      "bottleneck_note": "Choose the primitive based on the required consistency of reads.",
+      "explanation": "incrementAndGet() performs the read, add and write as one atomic step, so no increment is lost. volatile only makes each write visible to other threads; count++ on a volatile field still loses updates. A synchronized getter protects the read, but the increments themselves still race.",
+      "bottleneck_note": "volatile gives visibility, not atomicity.",
       "concept_ids": [
         "atomicity"
       ],
-      "context_note": "The product needs an exact count at read time."
+      "context_note": "The product now needs the exact count every time the dashboard reads it."
     },
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "Contention grows to hundreds of threads, and the dashboard tolerates a non-atomic aggregate snapshot. What may improve throughput?",
+      "prompt": "The single AtomicLong has become a contention hot spot. What raises throughput?",
       "options": [
         {
           "id": "a",
-          "text": "LongAdder, whose cells reduce contention"
+          "text": "LongAdder, which spreads increments across cells"
         },
         {
           "id": "b",
-          "text": "Synchronize every unrelated request method"
+          "text": "Wrapping every request handler in synchronized"
         },
         {
           "id": "c",
-          "text": "Use a new AtomicLong in each request"
+          "text": "A new AtomicLong created inside each request"
+        },
+        {
+          "id": "d",
+          "text": "An AtomicInteger instead, since it is half the size"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A spreads increments across cells; sum is not an atomic snapshot. B broadens contention. C loses the shared total.",
-      "bottleneck_note": "LongAdder trades exact point-in-time reads for scalable updates.",
+      "explanation": "LongAdder gives contending threads separate cells to increment and adds them up when you call sum(), so threads stop fighting over one memory location. The catch is that sum() is not an exact snapshot while updates are in flight, which a dashboard can live with. A smaller integer still has one contended location, and a counter per request loses the shared total.",
+      "bottleneck_note": "LongAdder trades exact point-in-time reads for writes that scale.",
       "concept_ids": [
         "concurrency",
         "atomicity"
       ],
-      "context_note": "The exact-read requirement has been relaxed."
+      "context_note": "Hundreds of threads now increment the counter, and the dashboard only needs an approximate figure."
     },
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "The service now runs on three hosts. What does AtomicLong count?",
+      "prompt": "What does each host's AtomicLong now count?",
       "options": [
         {
           "id": "a",
-          "text": "Only increments in its own JVM; combine durable events or a shared counter for a global total"
+          "text": "Only the requests handled by that host's JVM"
         },
         {
           "id": "b",
-          "text": "All hosts automatically because the class is static"
+          "text": "Every request across all three hosts, since the field is static"
         },
         {
           "id": "c",
-          "text": "Only requests from the first thread"
+          "text": "Only the requests handled by the first worker thread"
         }
       ],
       "correct_option_id": "a",
-      "explanation": "A recognizes process boundaries. B confuses static per JVM with global state. C is unrelated to AtomicLong.",
-      "bottleneck_note": "Thread safety does not provide distributed coordination.",
+      "explanation": "static means one copy per class in each JVM, not one copy everywhere. Each host counts only its own traffic, so a global total has to be summed elsewhere, by a metrics system or a shared store.",
+      "bottleneck_note": "Thread safety stops at the process boundary; a global count needs aggregation.",
       "concept_ids": [
         "concurrency"
       ],
-      "context_note": "Traffic is load-balanced across three processes."
+      "context_note": "The service is scaled out to three hosts behind a load balancer."
     }
   ]
 }
