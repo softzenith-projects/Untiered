@@ -1,5 +1,4 @@
 import type { ChapterSource } from "@/content/courses/system-design/lesson";
-import { legacyDetails } from "@/content/courses/system-design/legacy-details";
 
 export const buildingBlocks: ChapterSource[] = [
   {
@@ -1034,114 +1033,1225 @@ export const buildingBlocks: ChapterSource[] = [
     ],
   },
   {
-    slug: "consistency-and-cap", title: "Consistency and Network Partitions", summary: "Decide what users may observe when copies cannot communicate.",
-    ...legacyDetails("consistency-and-cap"),
-    analogy: ["Two ticket counters after the phone line breaks", "Both counters can keep selling and risk duplicate seats, or one can stop until it can confirm availability. The broken link forces a choice."],
-    idea: "During a network partition, a distributed service cannot guarantee both every request succeeds and every response reflects one latest order. Real designs choose per operation and often offer session guarantees or conflict resolution.",
-    flow: ["write accepted", "copies diverge", "reconcile or reject"], best: "State the consistency users require for each operation, especially money, ownership and inventory.", check: "Check read-after-write, monotonic reads, conflict detection and partition behaviour.", pitfall: "Using CAP as a database ranking or claiming a system is simply consistent at all times.", interview: "Tell a user-visible partition story rather than only naming C, A and P.",
+    slug: "consistency-and-cap",
+    title: "Consistency and Network Partitions",
+    summary: "Decide what users may observe when copies cannot communicate.",
+    intro: [
+      "When data is kept in more than one place, the copies must agree. Consistency describes how closely they agree and how soon. Strong consistency means a read always sees the latest completed write. Eventual consistency means that copies may differ for a while but will agree if no new writes arrive. Sitting between them are practical promises, such as \"you always see your own latest change\".",
+      "The hard moment is a network partition, when two groups of machines are both running but cannot talk to each other. The CAP idea says that during such a partition a service must choose: refuse some requests to stay correct, or answer all requests and risk disagreeing copies. The choice is not made once for the whole product. It is made for each operation, depending on what an error would cost.",
+    ],
+    analogy: [
+      "Two ticket counters after the phone line breaks",
+      "Two counters sell seats for the same show and normally phone each other after each sale. When the line breaks, they can both keep selling and risk selling one seat twice, or one can stop until it can confirm. Either way, the broken line forces a choice.",
+    ],
+    glossary: [
+      ["consistency", "How closely different copies of the same data agree, and how quickly."],
+      ["eventual consistency", "A promise that copies will agree after a while if no new changes arrive."],
+      ["network partition", "A fault in which groups of working machines cannot communicate with each other."],
+      ["read-after-write", "A promise that after you save a change, your own next read shows it."],
+      ["conflict", "Two changes made to the same data on different copies that cannot both be applied as they stand."],
+    ],
+    walkthrough: {
+      title: "Follow a seat sale during a partition",
+      steps: [
+        { label: "Normal day", text: "Counter A and counter B both sell seats for a show and tell each other about every sale. Both always know which seats are gone." },
+        { label: "The link breaks", text: "The connection between A and B is cut. Both are working and customers are queueing, but neither can see the other's sales." },
+        { label: "Choice one: keep selling", text: "If both keep selling, a customer at each counter may be sold seat 14. The service stays available but two copies disagree." },
+        { label: "Choice two: pause", text: "If B refuses sales until the link returns, no seat is sold twice, but B's customers wait or are turned away. The service stays correct but not available at B." },
+      ],
+    },
+    example: {
+      title: "Worked example: different promises for different actions",
+      text: "A shopping app has three operations. Showing the product list can be eventually consistent: if a price is a few seconds old, nobody is harmed, so the app stays available during a partition. Updating a user's profile should offer read-after-write, so people see their own change straight away, even if others see it a moment later. Taking payment or reserving the last item must not be wrong, so during a partition it is better to show \"try again shortly\" than to risk charging twice or overselling. One product, three different choices, each tied to what an error would cost.",
+    },
+    tradeoff: {
+      title: "Correct answers against always answering",
+      gain: {
+        label: "Staying consistent gives",
+        items: [
+          "Everyone sees the same latest data",
+          "No double sales or conflicting updates",
+          "Simple reasoning for the people building the product",
+        ],
+      },
+      cost: {
+        label: "Staying available gives",
+        items: [
+          "Requests are answered even when machines cannot reach each other",
+          "Lower delay, because no waiting for far-away copies",
+          "But copies may differ, and conflicts must be detected and resolved later",
+        ],
+      },
+    },
+    pitfalls: [
+      "Using CAP as a ranking of databases, or claiming a system is simply consistent at all times.",
+      "Choosing one setting for the whole product when money and ownership need different guarantees from a news feed.",
+      "Allowing conflicting writes with no plan to detect or resolve them afterwards.",
+    ],
+    remember: [
+      "A partition forces a choice between answering and being sure.",
+      "Choose per operation, by the cost of being wrong.",
+      "Money, ownership and stock lean towards correctness.",
+      "Feeds, counts and lists can often be slightly old.",
+    ],
+    interview: [
+      "Tell a user-visible partition story, such as two counters selling one seat, instead of just naming C, A and P.",
+      "Say which operations you would protect with strong consistency, which you would relax, and how conflicts are resolved.",
+    ],
+    quizzes: [
+      {
+        question: "During a partition, a bank app must show balances and also move money. Which approach is most sensible?",
+        options: [
+          "Treat both exactly the same, whichever way it goes",
+          "Allow transfers on any copy so that nobody is refused",
+          "Refuse all balance views until the partition heals",
+          "Be strict for transfers and relax for balance views",
+        ],
+        answer: 3,
+        why: "A wrong transfer is expensive, while a slightly old balance is merely inconvenient and can carry a note. Choosing per operation protects what matters most.",
+      },
+      {
+        question: "Two copies of a document are edited at the same time during a partition. When the link returns, they differ. What is this called?",
+        options: [
+          "A conflict, to be detected and resolved",
+          "A cache hit, which the system always prefers",
+          "A shard, which is a normal split of data",
+          "A health check, which compares the two copies",
+        ],
+        answer: 0,
+        why: "Two changes to the same data made without seeing each other conflict. The system needs a rule, such as the latest edit wins or a merge, or must ask a person.",
+      },
+      {
+        question: "A user posts a comment, reloads, and it is missing. A minute later it appears. What was missing?",
+        options: [
+          "Durability, because the comment was lost and restored",
+          "Read-after-write, since they missed their own edit",
+          "Availability, since the whole site was down for a minute",
+          "Throughput, since too few comments were handled at once",
+        ],
+        answer: 1,
+        why: "The change was saved but a copy that had not yet received it answered the read. Read-after-write is the promise that you see your own changes straight away.",
+      },
+    ],
   },
   {
-    slug: "transactions-and-concurrency", title: "Transactions and Double-Booking", summary: "Protect multi-step invariants when many requests race.",
-    ...legacyDetails("transactions-and-concurrency"),
-    analogy: ["Reserve a changing room before walking to it", "Two shoppers seeing one free room cannot both claim it. A single guarded update must decide the winner."],
-    idea: "Transactions keep related changes atomic. Isolation controls which concurrent effects can be observed. Optimistic locking checks a version at write time; pessimistic locking reserves access earlier. Constraints are the final guard.",
-    flow: ["read version", "conditional update", "commit or retry"], best: "Put the invariant in a database constraint or atomic conditional write, not only application code.", check: "Check races, deadlocks, retry safety and transaction boundaries.", pitfall: "Reading availability and writing a booking as separate unguarded operations.", interview: "Draw two concurrent requests and point to the exact operation that permits only one winner.",
+    slug: "transactions-and-concurrency",
+    title: "Transactions and Double-Booking",
+    summary: "Protect multi-step invariants when many requests race.",
+    intro: [
+      "A transaction groups several changes so that they succeed or fail as one unit. If you move money out of one account and into another, either both steps happen or neither does. Isolation decides what one transaction can see of another's unfinished work. Together they let many users work on the same data at once without corrupting it.",
+      "Races appear when two requests read the same state and both act on it. Two shoppers see one free seat, both click Book, and both bookings are saved. The fix is to make the decision in one guarded step. Optimistic locking checks a version number when writing and rejects the loser. Pessimistic locking reserves the row first. A uniqueness constraint in the database is the last line of defence.",
+    ],
+    analogy: [
+      "Reserve a changing room before walking to it",
+      "Two shoppers see the same free changing room and both walk towards it. One of them must lose. The safest shop has a single attendant who hands out the key, so exactly one person can be given the room, however the shoppers arrive.",
+    ],
+    glossary: [
+      ["transaction", "A group of changes that all succeed or all fail together."],
+      ["isolation", "The rules that decide what one running transaction can see of another's work."],
+      ["optimistic locking", "Checking at write time that the data has not changed since it was read, and failing the write if it has."],
+      ["pessimistic locking", "Reserving the data before changing it so others must wait."],
+      ["constraint", "A rule enforced by the database itself, such as a value that must be unique."],
+    ],
+    walkthrough: {
+      title: "Follow two people booking seat 14",
+      steps: [
+        { label: "Both read", text: "Asha and Ben both open the page. The seat shows as free to each of them, with version 7 of the seat record." },
+        { label: "Both try to write", text: "Each presses Book. Both requests send an update that says: mark seat 14 as booked, but only if its version is still 7." },
+        { label: "One winner", text: "The database applies Asha's update first and moves the version to 8. Ben's condition, version 7, is now false, so his update changes zero rows." },
+        { label: "Handle the loser", text: "The application sees that zero rows changed and tells Ben that the seat was just taken, offering other seats. No double booking happened." },
+      ],
+    },
+    example: {
+      title: "Worked example: check then write goes wrong",
+      text: "A naive booking does two steps: select the seat to check it is free, then insert a booking. At 500 requests per second for a popular show, it is common for two requests to run the select at the same moment, both see \"free\", and both insert. The fix is not a quicker check. It is to merge both steps into one atomic action, for example an insert into a table with a unique rule on show and seat. The second insert fails with a clear error, and the application turns that into \"seat taken\". Even if the application code has a bug, the database refuses to store two bookings for the same seat.",
+    },
+    tradeoff: {
+      title: "Optimistic against pessimistic locking",
+      gain: {
+        label: "Optimistic gives",
+        items: [
+          "No waiting when conflicts are rare",
+          "No locks held, so slow clients block nobody",
+          "Simple conditional updates that work with many databases",
+        ],
+      },
+      cost: {
+        label: "Pessimistic gives",
+        items: [
+          "Certainty for the first requester, as the data is reserved",
+          "Fewer wasted attempts when conflicts are common",
+          "But waiting requests and a risk of deadlock if locks are taken in different orders",
+        ],
+      },
+    },
     lab: "ticket-booking",
+    pitfalls: [
+      "Reading availability and writing a booking as two separate, unguarded operations.",
+      "Relying on application code alone for a rule, when a database constraint would make it impossible to break.",
+      "Holding a transaction open while waiting for a user or a slow external call, which blocks others.",
+    ],
+    remember: [
+      "A transaction makes several changes succeed or fail together.",
+      "Check-then-write is a race; make the decision in one atomic step.",
+      "Let the database enforce the invariant with a constraint.",
+      "Keep transactions short and always handle the loser's case.",
+    ],
+    interview: [
+      "Draw two concurrent requests and point to the exact operation that lets only one of them win.",
+      "Explain what the loser sees and how the user is told, not only how the winner is chosen.",
+    ],
+    quizzes: [
+      {
+        question: "Two requests both check that the last ticket is free and both then insert a booking. What is the root cause?",
+        options: [
+          "The server did not have enough memory to hold the ticket",
+          "The database had too few indexes on the ticket table",
+          "The check and the write were separate, unguarded steps",
+          "The users clicked the button much too quickly",
+        ],
+        answer: 2,
+        why: "Between the check and the write, the state changed. The decision must be made in one atomic step, or protected by a version check or a constraint.",
+      },
+      {
+        question: "An update says \"set status to booked WHERE id = 14 AND version = 7\" and affects zero rows. What does this mean?",
+        options: [
+          "Another writer got there first, so retry or refuse",
+          "The database crashed and the booking has been lost for good",
+          "The booking worked and zero is the usual success value",
+          "The version number should now be removed from the table",
+        ],
+        answer: 0,
+        why: "The version had already moved on, so the condition failed. Zero changed rows is how optimistic locking reports that another writer got there first.",
+      },
+      {
+        question: "Why is a uniqueness constraint on (show, seat) valuable even when the code already checks availability?",
+        options: [
+          "It makes every query on the table run much faster",
+          "It removes the need for any transactions at all",
+          "It stores each seat's history for later reporting",
+          "It still blocks duplicates if the code has a bug",
+        ],
+        answer: 3,
+        why: "The database applies the rule to every writer, whatever the application does. If a race or bug slips past the code, the constraint refuses the second booking.",
+      },
+    ],
   },
   {
-    slug: "leader-election-and-leases", title: "Leader Election and Leases", summary: "Choose one temporary coordinator without pretending it can never lose authority.",
-    analogy: ["A speaking token in a debate", "Only the person holding the unexpired token may announce the next decision. If time runs out, the group can issue a newer token to somebody else."],
-    idea: "Some jobs need one active coordinator: scheduling work, assigning sequence numbers or managing a partition. Election chooses a leader; a time-limited lease makes leadership expire. A fencing token lets storage reject commands from an older leader that wakes up late.",
-    flow: ["candidates request leadership", "quorum grants a lease", "storage checks fencing token"],
-    best: "Treat leadership as a renewable lease and fence every state-changing command with a monotonically increasing token.",
-    check: "Check clock assumptions, quorum loss, slow leaders, lease renewal, duplicate work and recovery time.",
-    pitfall: "Assuming a timed-out leader has stopped; a paused process may resume and write stale decisions.",
-    interview: "Walk through a leader pause, a replacement election and the old leader's rejected write.",
-    example: "Scheduler A holds fencing token 41, pauses, and loses its lease. Scheduler B receives token 42. When A resumes, the job store rejects token 41, so two schedulers cannot both commit ownership.",
-    glossary: [["leader", "The one process temporarily allowed to coordinate a job."], ["lease", "Leadership permission that expires unless renewed."], ["quorum", "Enough independent members to make a decision safely."], ["fencing token", "An increasing number that makes stale leaders' writes rejectable."]],
+    slug: "leader-election-and-leases",
+    title: "Leader Election and Leases",
+    summary: "Choose one temporary coordinator without pretending it can never lose authority.",
+    intro: [
+      "Some jobs must be done by only one machine at a time, such as running a scheduler, assigning sequence numbers or managing a data partition. Leader election is how a group of machines agrees on which one is in charge. To avoid a dead leader holding power forever, leadership is given as a lease, a permission that expires unless the leader renews it.",
+      "The tricky case is a leader that is merely paused, perhaps by a long garbage collection or a slow network, not dead. The group moves on and elects a new leader, then the old one wakes up still believing it is in charge. A fencing token solves this. Each new leader gets a higher number, and the storage layer rejects any command carrying an older number.",
+    ],
+    analogy: [
+      "A speaking token in a debate",
+      "Only the person holding the unexpired token may announce the next decision. If time runs out, the group issues a newer token to somebody else. If the first speaker dozes off and wakes up later, the group simply ignores their old token.",
+    ],
+    glossary: [
+      ["leader", "The one process temporarily allowed to coordinate a job."],
+      ["lease", "A permission to lead that expires unless it is renewed in time."],
+      ["quorum", "A majority of members whose agreement is needed to make a decision safely."],
+      ["fencing token", "An ever-increasing number sent with commands so that a stale leader's writes can be rejected."],
+    ],
+    walkthrough: {
+      title: "Follow a scheduler that pauses",
+      steps: [
+        { label: "Win the lease", text: "Scheduler A asks a coordination service for leadership. A majority agrees, and A gets a 10-second lease with fencing token 41." },
+        { label: "A goes quiet", text: "A freezes for 15 seconds, perhaps in a long pause. It cannot renew its lease, so after 10 seconds the lease expires." },
+        { label: "B takes over", text: "Scheduler B asks for leadership, wins and receives token 42. B begins starting jobs and tells the job store its token is 42." },
+        { label: "A wakes up", text: "A resumes, still thinking it is the leader, and tries to write with token 41. The job store has seen 42, so it rejects A's write." },
+      ],
+    },
+    example: {
+      title: "Worked example: the double-run that fencing prevents",
+      text: "A nightly billing job must run once. Without fencing, A starts the job, pauses mid-way, and loses its lease; B takes over and starts the job again. When A wakes, both write results, and customers are billed twice. With fencing, every write to the billing store carries the token. After B writes with token 42, the store refuses anything with a lower number. The expiry alone is not enough, because it tells everyone else to move on but cannot stop a slow process from acting. The check at the storage layer is the real protection.",
+    },
+    tradeoff: {
+      title: "A single coordinator buys simplicity",
+      gain: {
+        label: "You gain",
+        items: [
+          "One clear owner for jobs that must not run twice",
+          "Automatic replacement when the leader fails",
+          "Safe handover when fencing tokens are checked by storage",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "A short gap with no leader while a new one is chosen",
+          "A coordination service that must itself stay available",
+          "Extra care with clocks, slow processes and renewal timing",
+        ],
+      },
+    },
+    pitfalls: [
+      "Assuming a timed-out leader has stopped; a paused process may resume and write stale decisions.",
+      "Trusting clocks that differ between machines to decide when a lease has ended.",
+      "Electing a leader but never checking its authority at the place where data is changed.",
+    ],
+    remember: [
+      "Leadership is a lease that must be renewed.",
+      "A lease alone cannot stop a slow old leader.",
+      "Fencing tokens let storage reject stale commands.",
+      "Decisions need a majority so two leaders cannot both be chosen.",
+    ],
+    interview: [
+      "Walk through a leader pause, a replacement election and the old leader's rejected write.",
+      "Name what happens in the gap with no leader and how long you would accept it.",
+    ],
+    quizzes: [
+      {
+        question: "A leader's lease expires while it is paused. A new leader is elected. What can still go wrong?",
+        options: [
+          "The old leader may resume and act as if still in charge",
+          "The new leader can never be chosen without the old one",
+          "The lease will extend itself indefinitely once it expires",
+          "All machines will immediately stop working until restart",
+        ],
+        answer: 0,
+        why: "Expiry tells the others to move on, but it does not stop the paused process. Without further protection, it can wake up and make changes that conflict with the new leader.",
+      },
+      {
+        question: "Scheduler A holds token 41 and B holds 42. A sends a write. What should the storage layer do?",
+        options: [
+          "Accept it, since it arrived earlier than B's writes",
+          "Reject it, since its token is below the newest",
+          "Accept it and then ask B whether it agrees",
+          "Merge the two writes by averaging their contents",
+        ],
+        answer: 1,
+        why: "A lower token means an older leader. Rejecting it ensures only the current leader can change state, whatever order the messages arrive in.",
+      },
+      {
+        question: "Why does electing a leader usually require agreement from a majority of members?",
+        options: [
+          "A majority is quicker to collect than a single vote",
+          "Any two majorities overlap, so two leaders cannot win",
+          "Majority voting removes the need for a lease and a token",
+          "Smaller groups cannot hold a vote under any circumstances",
+        ],
+        answer: 1,
+        why: "Any two majorities of the same group share at least one member, and that member will not back two different leaders at once. This prevents two leaders being elected during a partition.",
+      },
+    ],
   },
   {
-    slug: "queues-streams-and-backpressure", title: "Queues, Streams and Backpressure", summary: "Decouple producers from slower work without hiding overload forever.",
-    ...legacyDetails("queues-streams-and-backpressure"),
-    analogy: ["A tray between kitchen and waiters", "The tray absorbs a brief rush, but if dishes arrive faster forever, it fills. Someone must slow orders, add workers or reject work."],
-    idea: "Queues buffer and distribute work; streams retain an ordered record for multiple consumers. Consumers acknowledge work. At-least-once delivery means handlers must tolerate duplicates. Backpressure keeps backlog bounded.",
-    flow: ["producer publishes", "broker stores", "consumer acknowledges"], best: "Define delivery semantics, idempotent handling and a maximum useful backlog age.", check: "Check lag, poison messages, retries, ordering and overload policy.", pitfall: "Calling a queue infinitely scalable and ignoring stale work piling up.", interview: "Choose sync or async from the user's need for an immediate result, then explain failure recovery.",
+    slug: "queues-streams-and-backpressure",
+    title: "Queues, Streams and Backpressure",
+    summary: "Decouple producers from slower work without hiding overload forever.",
+    intro: [
+      "A queue holds work between a producer and a consumer. The producer adds a message and carries on, and a consumer picks it up later. A stream is a similar idea, but it keeps an ordered log that several consumers can read at their own pace. Both let a slow task, such as sending email or resizing an image, happen outside the user's request.",
+      "Queues smooth out bursts, but they do not create capacity. If messages arrive faster than they are handled for long enough, the queue only grows and delays get longer. Most queues also deliver a message at least once, so a consumer may see the same message twice and must handle that. Backpressure is the set of rules that keep the queue from growing without limit, such as slowing producers or refusing work.",
+    ],
+    analogy: [
+      "A tray between the kitchen and the waiters",
+      "The tray absorbs a short rush, so the cooks are not blocked while waiters are busy. But if dishes arrive faster than they are carried out for a long time, the tray fills. Someone then has to slow the orders, add waiters or turn customers away.",
+    ],
+    glossary: [
+      ["queue", "A buffer that holds messages until a consumer takes them."],
+      ["consumer", "A process that takes messages from a queue and does the work."],
+      ["acknowledgement", "A signal from the consumer that a message was handled and can be removed."],
+      ["at-least-once delivery", "A promise that each message arrives once or more, so duplicates are possible."],
+      ["backpressure", "Any mechanism that slows or limits producers when consumers cannot keep up."],
+    ],
+    walkthrough: {
+      title: "Follow a photo upload through a queue",
+      steps: [
+        { label: "Accept quickly", text: "A user uploads a photo. The API saves it and puts a message `resize photo 8841` on a queue, then replies at once." },
+        { label: "Consumer works", text: "A worker takes the message and starts resizing. The queue keeps the message but hides it from other workers for a short time." },
+        { label: "Acknowledge or retry", text: "If the worker finishes, it acknowledges and the message is deleted. If the worker crashes, the message reappears and another worker repeats the job." },
+        { label: "Handle overload", text: "On a busy day uploads outrun the workers and the queue grows. The system adds workers, and past a set limit it tells the app to pause new uploads." },
+      ],
+    },
+    example: {
+      title: "Worked example: how fast does a backlog grow?",
+      text: "Photos arrive at 50 per second but workers handle only 40 per second. The backlog grows by 10 messages every second, so after an hour there are 36,000 waiting. A photo added then waits 36,000 divided by 40, which is 900 seconds or 15 minutes. If the thumbnail is useless after a few minutes, the work is stale before it starts. Options are to add workers until capacity exceeds 50 per second, to drop or skip old messages, or to refuse uploads while the queue is long. Because delivery is at least once, the resize step should also be safe to run twice for photo 8841.",
+    },
+    tradeoff: {
+      title: "Asynchronous work buys speed and costs certainty",
+      gain: {
+        label: "You gain",
+        items: [
+          "Fast replies to users, with slow work done in the background",
+          "Bursts are smoothed so workers run at a steady pace",
+          "Producers and consumers can fail and scale independently",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "The user does not see the result immediately",
+          "Duplicates, ordering and failed messages must be handled",
+          "A growing backlog can hide an overload until delays are very long",
+        ],
+      },
+    },
+    pitfalls: [
+      "Treating a queue as infinitely scalable and ignoring stale work piling up behind it.",
+      "Writing a consumer that is not safe to run twice, then paying for duplicate emails or charges.",
+      "Retrying a poison message that always fails forever, which blocks everything behind it.",
+    ],
+    remember: [
+      "A queue absorbs bursts but does not add capacity.",
+      "Assume messages can be delivered more than once.",
+      "Set a limit on backlog and decide what happens when it is hit.",
+      "Move repeatedly failing messages aside for review.",
+    ],
+    interview: [
+      "Choose synchronous or asynchronous from the user's need for an immediate result, then explain how failures are recovered.",
+      "Describe the maximum useful backlog age and the action taken when it is exceeded.",
+    ],
+    quizzes: [
+      {
+        question: "Messages arrive at 50 per second and consumers handle 40 per second. What happens over time?",
+        options: [
+          "The queue stays the same size because of buffering",
+          "The queue grows steadily and delays keep increasing",
+          "The consumers speed up to match the arriving messages",
+          "The extra messages are deleted without anyone noticing",
+        ],
+        answer: 1,
+        why: "A queue only smooths short bursts. If input exceeds processing for long, the difference accumulates and each new message waits longer than the last.",
+      },
+      {
+        question: "A worker crashes halfway through a job before acknowledging it. With at-least-once delivery, what happens next?",
+        options: [
+          "The job is lost and the user must submit it again",
+          "It is handled again, perhaps by another worker",
+          "The queue permanently stops accepting any new messages",
+          "The producer is told to pause for the next hour",
+        ],
+        answer: 1,
+        why: "Without an acknowledgement, the queue assumes the work was not done and delivers the message again. That is why consumers must be safe to run twice.",
+      },
+      {
+        question: "One malformed message makes the consumer fail every time it is retried. What is a good way to handle it?",
+        options: [
+          "Retry it forever until it eventually works",
+          "Delete every message in the queue to clear the fault",
+          "Stop all consumers until the sender fixes the format",
+          "Move it to a failure queue after a few attempts",
+        ],
+        answer: 3,
+        why: "A poison message keeps failing and blocks useful work. After a limited number of attempts it should be set aside for someone to examine, while others carry on.",
+      },
+    ],
   },
   {
-    slug: "rate-limits-retries-and-circuits", title: "Rate Limits, Retries and Circuit Breakers", summary: "Keep one struggling dependency from becoming a system-wide failure.",
-    ...legacyDetails("rate-limits-retries-and-circuits"),
-    analogy: ["A clinic with appointments and an emergency stop", "Appointments smooth arrivals. Repeatedly sending everyone to a closed room makes the hallway worse; pause and try later."],
-    idea: "Rate limits enforce fair budgets. Timeouts bound waiting. Retries need exponential backoff, jitter and a budget. A circuit breaker temporarily stops calls to a failing dependency so it can recover.",
-    flow: ["admission limit", "bounded attempt", "backoff or fail fast"], best: "Combine timeouts, capped retries with jitter, and an overall deadline.", check: "Check retry amplification, per-tenant fairness and degraded responses.", pitfall: "Retrying every failure immediately at every layer.", interview: "Calculate how three retries across three layers can magnify one failed request.",
+    slug: "rate-limits-retries-and-circuits",
+    title: "Rate Limits, Retries and Circuit Breakers",
+    summary: "Keep one struggling dependency from becoming a system-wide failure.",
+    intro: [
+      "A rate limit caps how much work a caller may send in a period, for example 100 requests per minute per user. Timeouts cap how long you wait for an answer. Retries try again after a failure, and a circuit breaker stops calling a dependency that keeps failing, so it has time to recover. These four tools work together to stop one weak part from dragging down the rest.",
+      "Retries are the dangerous one. A retry helps when a failure was a brief blip, but when a dependency is overloaded, retries add even more load and make the outage longer. Good retries wait longer each time (exponential backoff), add a little randomness (jitter) so clients do not all return together, and stop after a small budget.",
+    ],
+    analogy: [
+      "A clinic with appointments and an emergency stop",
+      "Appointments spread patients over the day so the doctor is not swamped. If the doctor is unwell, sending the whole queue back to knock on the door every minute only makes the hallway worse. Better to put up a sign, wait, and try again later.",
+    ],
+    glossary: [
+      ["rate limit", "A cap on how many requests a caller may make in a given period."],
+      ["timeout", "The longest time you will wait for a reply before giving up."],
+      ["exponential backoff", "Waiting longer after each failed attempt, for example 1, 2, 4 and then 8 seconds."],
+      ["jitter", "A small random variation added to waits so many clients do not retry at the same moment."],
+      ["circuit breaker", "A switch that stops calls to a failing dependency for a while, so it can recover."],
+    ],
+    walkthrough: {
+      title: "Follow calls to a failing payment service",
+      steps: [
+        { label: "Calls start to fail", text: "The payment service becomes slow. Calls hit a 2-second timeout, so a request never waits forever." },
+        { label: "Retry with care", text: "The caller retries after 1 second, then 2, each time with a little random jitter, and gives up after three tries." },
+        { label: "The breaker opens", text: "After ten failures in a row, the circuit breaker opens. For the next 30 seconds, calls fail at once without even trying." },
+        { label: "Test and recover", text: "After 30 seconds the breaker lets one trial request through. If it succeeds, the breaker closes and normal traffic resumes." },
+      ],
+    },
+    example: {
+      title: "Worked example: how retries multiply",
+      text: "A request passes through three layers: the gateway calls the order service, which calls the payment service, which calls the bank. Each layer makes up to 3 attempts. If the bank is down, the payment service makes 3 calls to it for one request. But the order service also makes 3 attempts at the payment service, so the bank sees 9 calls. The gateway does the same, which makes 27 calls to the bank for one user click. A few thousand users and a struggling bank now face tens of thousands of calls. The fix is to retry in one layer only, set an overall deadline, and let a breaker stop the rest.",
+    },
+    tradeoff: {
+      title: "Protection against complexity",
+      gain: {
+        label: "You gain",
+        items: [
+          "A failing dependency gets room to recover",
+          "Users get a quick, clear answer instead of a long wait",
+          "Fair budgets stop one heavy caller from starving others",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "Limits and breakers need tuning, and wrong settings reject good traffic",
+          "Retries can duplicate work unless the operation is idempotent",
+          "More states and settings make behaviour harder to reason about",
+        ],
+      },
+    },
+    pitfalls: [
+      "Retrying every failure immediately at every layer, which multiplies load on a struggling service.",
+      "Retrying a payment-like operation without an idempotency key, so the action happens twice.",
+      "Setting no timeouts, so slow calls pile up and use all of a service's threads.",
+    ],
+    remember: [
+      "Always set a timeout.",
+      "Retry with backoff, jitter and a small budget.",
+      "Retry in one layer, not at every layer.",
+      "A circuit breaker gives a failing dependency room to recover.",
+    ],
+    interview: [
+      "Calculate how three retries across three layers can magnify one failed request into dozens of calls.",
+      "Describe a degraded response, such as showing saved data, for when a dependency is unavailable.",
+    ],
+    quizzes: [
+      {
+        question: "A dependency is overloaded and slow. Every client retries immediately after a failure. What is the likely result?",
+        options: [
+          "The dependency recovers faster because it gets practice",
+          "Clients waste time but the dependency is unaffected",
+          "The extra retry load makes the overload worse",
+          "Retries are blocked automatically by the network",
+        ],
+        answer: 2,
+        why: "Immediate retries add to the load on something already struggling, which prolongs the failure. Backoff and jitter spread retries out and give it time to recover.",
+      },
+      {
+        question: "What does jitter add to exponential backoff?",
+        options: [
+          "Random variation, so retries from many clients are spread out",
+          "A guarantee that every retry will succeed on the next try",
+          "A longer maximum wait than the backoff alone would give",
+          "A count of how many failures each client has seen",
+        ],
+        answer: 0,
+        why: "Without jitter, clients that failed together retry together in waves. A little randomness spreads the retries over time.",
+      },
+      {
+        question: "A circuit breaker is open. What happens to a new call to the failing service?",
+        options: [
+          "It waits for the full timeout, as it normally would",
+          "It fails straight away, without trying the service",
+          "It is queued until the service comes back online",
+          "It is sent to every other service instead",
+        ],
+        answer: 1,
+        why: "An open breaker rejects calls immediately. That saves the caller from long waits and stops it adding load while the dependency recovers.",
+      },
+    ],
   },
   {
-    slug: "polling-websockets-and-sse", title: "Polling, Long Polling, WebSockets and SSE", summary: "Choose how a client learns that something changed without wasting work or hiding reconnects.",
-    analogy: ["Check the noticeboard, wait at reception or stay on a call", "You can revisit a noticeboard, ask reception to call when news arrives, or keep a conversation open. Each costs a different amount of waiting and connection state."],
-    idea: "Polling repeats requests on a schedule. Long polling holds one request until data or a timeout. Server-Sent Events keep a one-way server-to-browser stream. WebSockets keep a two-way message channel. None removes the need for authentication, heartbeats, ordering and reconnect logic.",
-    flow: ["client establishes update method", "server publishes a change", "client resumes after disconnect"],
-    best: "Use the simplest method that meets update frequency and direction: ordinary polling is often enough for infrequent changes.",
-    check: "Check idle connection limits, fan-out, missed-event recovery, backoff, message order and mobile network changes.",
-    pitfall: "Choosing WebSockets for a page that refreshes once a minute and then operating millions of idle connections.",
-    interview: "Compare all four methods for a dashboard, notifications and two-way chat.",
-    example: "A job-status page can poll every five seconds. A news ticker can use SSE because updates flow from server to browser. Chat uses a two-way WebSocket, plus a last-seen message ID so reconnecting devices fill gaps.",
-    glossary: [["polling", "The client repeatedly asks whether anything changed."], ["long polling", "The server holds a request until it has an update or a timeout."], ["SSE", "A browser-friendly, one-way stream from server to client."], ["WebSocket", "A long-lived, two-way message channel."]],
+    slug: "polling-websockets-and-sse",
+    title: "Polling, Long Polling, WebSockets and SSE",
+    summary: "Choose how a client learns that something changed without wasting work or hiding reconnects.",
+    intro: [
+      "A web page often needs to learn that something changed on the server. There are four common ways. Polling asks again and again on a timer. Long polling asks once, and the server holds the request open until it has news or a timeout passes. Server-Sent Events (SSE) keep one connection open over which the server pushes updates to the browser. A WebSocket keeps a connection open that both sides can send on.",
+      "The simplest method that meets the need is usually the best. Open connections cost the server memory, and every method must still handle login checks, dropped connections and updates missed while offline. A page that updates once a minute does not need a permanent connection to every visitor. A chat that must feel instant probably does.",
+    ],
+    analogy: [
+      "Check the noticeboard, wait at reception or stay on a call",
+      "You can walk past a noticeboard every few minutes, which wastes trips when nothing has changed. You can ask reception to tell you the moment news arrives. Or you can stay on a call and talk both ways. Each costs a different amount of effort and keeps a different amount of line busy.",
+    ],
+    glossary: [
+      ["polling", "The client asks repeatedly, on a timer, whether anything has changed."],
+      ["long polling", "The server holds a request open until it has an update or a timeout."],
+      ["SSE", "A browser feature for a one-way stream of events from server to client."],
+      ["WebSocket", "A long-lived connection over which client and server can both send messages."],
+      ["heartbeat", "A small regular message that shows the connection is still alive."],
+    ],
+    walkthrough: {
+      title: "Follow a chat message over a WebSocket",
+      steps: [
+        { label: "Open the channel", text: "The chat app starts as an ordinary web request, then upgrades to a WebSocket. The server checks the user's login before accepting it." },
+        { label: "Send and receive", text: "Asha types a message. It travels up the open connection, and the server passes it down to Ben's open connection within moments." },
+        { label: "Stay alive", text: "Every 30 seconds each side sends a small heartbeat. If none arrives for a while, the connection is treated as dead and closed." },
+        { label: "Reconnect and catch up", text: "Ben's train enters a tunnel and the connection drops. On reconnecting, his app sends the ID of the last message it saw, and the server sends everything after it." },
+      ],
+    },
+    example: {
+      title: "Worked example: matching the method to the page",
+      text: "A job-status page changes every few seconds at most, and a visitor looks at it for a minute. Polling every 5 seconds means 12 requests a minute per visitor, which is simple and fine. A news ticker pushes updates from the server only, so SSE fits and reconnects on its own. A chat needs messages both ways, so a WebSocket is natural. Now count the cost: with a million visitors on a page that changes once a minute, holding a million open connections just to say nothing most of the time is much more expensive than a simple poll every 30 seconds.",
+    },
+    tradeoff: {
+      title: "Instant updates against simplicity and cost",
+      gain: {
+        label: "You gain",
+        items: [
+          "Push methods deliver updates the moment they happen",
+          "Polling is simple, stateless and easy to cache and scale",
+          "WebSockets allow fast two-way messaging",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "Open connections use memory and need limits and monitoring",
+          "Push methods need reconnect and catch-up logic",
+          "Polling wastes requests when nothing has changed",
+        ],
+      },
+    },
+    pitfalls: [
+      "Choosing WebSockets for a page that refreshes once a minute, then operating millions of idle connections.",
+      "Forgetting what happens when a connection drops, so users silently miss updates.",
+      "Skipping heartbeats, so half-dead connections stay open and hold resources.",
+    ],
+    remember: [
+      "Pick the simplest method that meets the update speed and direction.",
+      "SSE is one way, server to client; a WebSocket is two way.",
+      "Every push method needs reconnect and catch-up.",
+      "Idle connections still cost memory.",
+    ],
+    interview: [
+      "Compare all four methods for a dashboard, notifications and two-way chat, and say which you would use for each.",
+      "Explain how a client recovers messages it missed while disconnected.",
+    ],
+    quizzes: [
+      {
+        question: "A page shows a report that changes once every few minutes, for up to a million visitors. Which method is most sensible?",
+        options: [
+          "A WebSocket for every visitor, kept open all day",
+          "Polling every 30 seconds or so, with cached responses",
+          "A custom protocol that needs special browser software",
+          "Long polling with a one-hour wait on every request",
+        ],
+        answer: 1,
+        why: "The data changes slowly, so occasional polling is cheap, simple and cacheable. A million permanent connections would cost a great deal for very little benefit.",
+      },
+      {
+        question: "Which situation fits Server-Sent Events best?",
+        options: [
+          "A multiplayer game where players send moves constantly",
+          "A video call that sends audio in both directions",
+          "A live score feed that only the server updates",
+          "A file upload that needs progress from the browser",
+        ],
+        answer: 2,
+        why: "SSE is a one-way stream from server to browser, which suits a feed that only the server updates. Both-way traffic is what WebSockets are for.",
+      },
+      {
+        question: "A phone loses signal for 20 seconds in a chat app and then reconnects. What is a sound way to recover?",
+        options: [
+          "Ask the server for messages after the last one it saw",
+          "Assume nothing was sent and show an empty chat",
+          "Make the user close the app and sign in again",
+          "Re-send every old message again from the start",
+        ],
+        answer: 0,
+        why: "Remembering the last message ID lets the client ask for exactly what it missed. Without catch-up, any connection drop silently loses updates.",
+      },
+    ],
   },
   {
-    slug: "object-storage-and-cdns", title: "Files, Object Storage and CDNs", summary: "Store large immutable objects cheaply and deliver them near users.",
-    ...legacyDetails("object-storage-and-cdns"),
-    analogy: ["Warehouse stock with nearby display shelves", "The warehouse keeps the durable item; nearby shelves serve popular items quickly and are refilled when empty."],
-    idea: "Keep file bytes in object storage and metadata in a queryable database. Use signed upload URLs to avoid routing every byte through application servers. CDNs cache objects at edge locations.",
-    flow: ["signed upload", "object storage", "CDN delivery"], best: "Separate blob bytes from metadata and authorise access with short-lived signed URLs.", check: "Check content type, size, malware scanning, deletion and cache invalidation.", pitfall: "Storing large file bytes directly in a frequently queried relational table.", interview: "Trace upload and download paths, including access control and interrupted transfers.",
+    slug: "object-storage-and-cdns",
+    title: "Files, Object Storage and CDNs",
+    summary: "Store large immutable objects cheaply and deliver them near users.",
+    intro: [
+      "Object storage keeps files, such as photos, videos and documents, as whole objects under a name, and is designed to hold huge numbers of them cheaply and durably. You do not edit part of an object; you replace it. A content delivery network (CDN) is a set of servers around the world that keep copies of popular objects, so a viewer fetches from a nearby server instead of a far-away origin.",
+      "The usual pattern keeps file bytes in object storage and only a small record about each file, such as its owner, name and size, in the database. Uploads can go straight to storage using a short-lived signed URL, so large files never pass through your application servers. Downloads are then served through a CDN, with access rules that decide who may see what.",
+    ],
+    analogy: [
+      "A warehouse with nearby display shelves",
+      "The warehouse keeps the durable stock of every item. Shelves in shops near customers hold popular items so people can buy them quickly. When a shelf is empty or an item is replaced, it is refilled from the warehouse.",
+    ],
+    glossary: [
+      ["object storage", "A service that stores whole files as named objects, built for very large amounts of data."],
+      ["metadata", "Small facts about a file, such as owner, name, type and size, kept in a database."],
+      ["signed URL", "A temporary web address that grants permission to upload or download one object until it expires."],
+      ["CDN", "A network of servers near users that cache copies of objects for fast delivery."],
+      ["origin", "The main storage or server the CDN fetches objects from when it has no copy."],
+    ],
+    walkthrough: {
+      title: "Follow a profile photo from upload to display",
+      steps: [
+        { label: "Ask for permission", text: "The app asks the API to upload a photo. The API checks the user, creates a record with status `pending` and returns a signed URL valid for 10 minutes." },
+        { label: "Upload directly", text: "The phone sends the file straight to object storage with that URL. The bytes never touch the API servers." },
+        { label: "Confirm and check", text: "Storage tells the API the upload finished. The API checks the type and size, scans it, and marks the record `ready`." },
+        { label: "Serve through the CDN", text: "Pages point at a CDN address. The first viewer in a region causes a fetch from storage, and later viewers there get the cached copy." },
+      ],
+    },
+    example: {
+      title: "Worked example: updating a cached photo",
+      text: "A user changes their profile photo, but the CDN has the old one cached for 24 hours at the same address, so friends still see the old picture. One fix is to ask the CDN to purge that address, which works but can be slow and costs a call. A neater fix is to never change an object: store the new photo under a new name, such as `photos/u77-v2.jpg`, and update the record to point to it. The old address stays cached harmlessly until it ages out, and the new address is fetched fresh. Versioned names avoid invalidation entirely.",
+    },
+    tradeoff: {
+      title: "Cheap and fast delivery, with new rules to learn",
+      gain: {
+        label: "You gain",
+        items: [
+          "Very cheap storage with high durability for large files",
+          "Application servers are freed from moving large uploads",
+          "Viewers get files from a nearby server, so pages load faster",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "Objects are replaced as a whole, not edited in place",
+          "Cached copies can be old until they expire or the name changes",
+          "Access control, scanning and deletion need deliberate design",
+        ],
+      },
+    },
+    pitfalls: [
+      "Storing large file bytes directly in a frequently queried relational table.",
+      "Making signed URLs long-lived or reusable, so a leaked link gives access for days.",
+      "Deleting the database record but forgetting the stored object and its cached copies.",
+    ],
+    remember: [
+      "Bytes in object storage, metadata in the database.",
+      "Use short-lived signed URLs for upload and private download.",
+      "Prefer new object names over trying to overwrite cached ones.",
+      "Deleting a file means the object and its copies, not just the row.",
+    ],
+    interview: [
+      "Trace both the upload and download paths, including access control and what happens if an upload is interrupted.",
+      "Say how an updated file reaches viewers when the CDN still holds the old one.",
+    ],
+    quizzes: [
+      {
+        question: "A 2 GB video is uploaded through the application server, and the servers slow down. What is a better design?",
+        options: [
+          "Add more memory to every application server",
+          "Limit uploads to one user at a time",
+          "Store the video inside the main database table",
+          "Upload directly to storage with a signed URL",
+        ],
+        answer: 3,
+        why: "A signed URL lets the client send the file straight to storage, so large bytes never pass through the application servers. The API only issues permission and records the result.",
+      },
+      {
+        question: "A CDN has cached `logo.png` for a day, and the company changes the logo. What is the cleanest way to roll it out?",
+        options: [
+          "Publish it as `logo-v2.png` and change the references",
+          "Ask every visitor to clear their browser cache by hand",
+          "Overwrite `logo.png` and simply wait for a full day",
+          "Remove the CDN until the old logo expires on its own",
+        ],
+        answer: 0,
+        why: "A new name is a new address, so no stale copy can be served for it. The old address ages out unnoticed, and no purge is needed.",
+      },
+      {
+        question: "A user deletes their account. Which action is complete?",
+        options: [
+          "Removing only the user's row from the database",
+          "Removing the row, the stored objects and any cached copies",
+          "Hiding the user's files from the website's front page",
+          "Renaming the files so that they are harder to find",
+        ],
+        answer: 1,
+        why: "The bytes in object storage, and copies held by a CDN, remain unless they are deleted or expired. Deleting only the row leaves personal data behind.",
+      },
+    ],
   },
   {
-    slug: "safe-configuration-and-deployment", title: "Safe Configuration and Deployment", summary: "Release a tested, immutable artifact gradually and make rollback a designed action.",
-    analogy: ["Serve one table before the whole banquet", "A cook tries a new dish at one table, watches for complaints and keeps the previous dish ready. A bad recipe is stopped before every guest receives it."],
-    idea: "Build one immutable artifact, test it, sign it, and promote the same bytes between environments. Separate configuration from the artifact, validate config before activation, and expose a release first to a canary slice. Automated health gates pause or roll back a harmful change.",
-    flow: ["build and verify artifact", "canary with guarded config", "promote or roll back"],
-    best: "Promote the same immutable artifact gradually, with automatic rollback based on user-visible health signals.",
-    check: "Check schema compatibility, feature-flag ownership, secret handling, config validation, rollback time and mixed-version behaviour.",
-    pitfall: "Rebuilding different binaries per environment or changing database assumptions before old application versions stop running.",
-    interview: "Compare rolling, blue-green and canary releases, then design a safe database-compatible sequence.",
+    slug: "safe-configuration-and-deployment",
+    title: "Safe Configuration and Deployment",
+    summary: "Release a tested, immutable artifact gradually and make rollback a designed action.",
+    intro: [
+      "Deployment means getting new code running for real users. A safe process builds one package, called an artifact, tests it, and then promotes that same package from test to staging to production without rebuilding it. Settings that differ between environments, such as addresses and passwords, are kept outside the artifact as configuration, and are checked before they take effect.",
+      "The risk is releasing a mistake to everyone at once. A canary release sends the new version to a small slice of users first. Automated checks watch errors and delays, and roll back if they get worse. Rollback is not an emergency improvisation; it is designed in, so you can return to the previous version quickly and safely, including when the database has changed.",
+    ],
+    analogy: [
+      "Serve one table before the whole banquet",
+      "A cook tries a new dish at one table, watches the guests' faces and keeps the previous dish ready. If it is a failure, only one table is affected and the old dish is brought out at once. If guests are happy, the dish goes to the rest of the room.",
+    ],
+    glossary: [
+      ["immutable artifact", "One build whose contents never change as it moves between environments."],
+      ["canary", "A small first group of users or machines that gets a new version before everyone else."],
+      ["blue-green", "Two full environments, one live and one new, between which traffic can be switched."],
+      ["feature flag", "A switch that separates deploying code from turning a feature on for users."],
+    ],
+    walkthrough: {
+      title: "Follow version 18 into production",
+      steps: [
+        { label: "Build once", text: "Version 18 is built and tested as one package. The same package, with the same bytes, is what goes to every later environment." },
+        { label: "Canary", text: "It is deployed to 1 per cent of machines while version 17 keeps serving the rest. The new settings are validated before they are loaded." },
+        { label: "Watch the signals", text: "A controller compares error rate and the slowest 5 per cent of responses between the two versions for ten minutes." },
+        { label: "Promote or roll back", text: "If the numbers are healthy, the release widens to 10, then 50, then 100 per cent. If errors rise, traffic returns to version 17 without anyone being woken." },
+      ],
+    },
     lab: "safe-deployment",
-    example: "Version 18 is deployed to 1% of instances while version 17 remains active. The release controller compares error rate and p95 latency. A regression crosses the threshold, so traffic returns to version 17 without waiting for a manual repair.",
-    glossary: [["immutable artifact", "One build whose bytes do not change between environments."], ["canary", "A small first audience used to detect harm before broad release."], ["blue-green", "Two complete environments where traffic can switch between old and new."], ["feature flag", "A controlled switch that separates code deployment from feature exposure."]],
+    example: {
+      title: "Worked example: renaming a column safely",
+      text: "A team wants to rename a database column from `name` to `full_name`. If they rename it and deploy new code together, then during a rolling release some machines run old code that still asks for `name` and fail. A safe sequence uses small steps. First add the new column and write to both. Then deploy code that reads the new column. Later, once no old version is running and a rollback is no longer needed, drop the old column. Every step works with both the version before and the version after it, so each can be rolled back on its own.",
+    },
+    tradeoff: {
+      title: "Gradual release buys safety and costs time",
+      gain: {
+        label: "You gain",
+        items: [
+          "A bad release harms only a small slice of users",
+          "Automatic rollback shortens the time a fault lasts",
+          "The same tested package runs everywhere, with no surprise differences",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "Releases take longer than flipping everything at once",
+          "Two versions run side by side, so changes must work with both",
+          "Health gates and rollback tooling need building and maintaining",
+        ],
+      },
+    },
+    pitfalls: [
+      "Rebuilding different binaries for each environment, so what was tested is not what runs.",
+      "Changing database assumptions before old application versions stop running.",
+      "Putting secrets in the artifact or in the code repository.",
+    ],
+    remember: [
+      "Build once; promote the same package.",
+      "Release to a small group first and watch real signals.",
+      "Make every change work with the version before and after it.",
+      "Practise rollback before you need it.",
+    ],
+    interview: [
+      "Compare rolling, blue-green and canary releases, and say when each is the better fit.",
+      "Describe a database-compatible sequence for a change, with a rollback point at each step.",
+    ],
+    quizzes: [
+      {
+        question: "A canary at 1 per cent shows twice the usual error rate. What should happen?",
+        options: [
+          "Widen the release, since 1 per cent is too small to matter",
+          "Return traffic to the previous version and investigate",
+          "Wait a week to see if the errors go away on their own",
+          "Restart the old version so that it matches the canary",
+        ],
+        answer: 1,
+        why: "The purpose of a canary is to catch harm while it touches few users. A clear rise in errors is the signal to roll back, not to continue.",
+      },
+      {
+        question: "Why promote the same artifact through every environment instead of rebuilding it each time?",
+        options: [
+          "Rebuilding is not possible once the tests have passed",
+          "A new build is always slower than reusing the old one",
+          "What was tested is exactly what reaches production",
+          "Environments cannot hold more than one kind of package",
+        ],
+        answer: 2,
+        why: "A fresh build can differ from the tested one in small, hidden ways. Reusing the same package means the tests you ran apply to what is released.",
+      },
+      {
+        question: "A new release drops a database column that the previous version still reads. What goes wrong if the release is rolled back?",
+        options: [
+          "Nothing, because old code never needs old columns",
+          "The old version fails, since the column it needs is gone",
+          "The database automatically recreates the dropped column",
+          "The old version converts itself to use the new one",
+        ],
+        answer: 1,
+        why: "Rollback returns to code that expects the earlier structure. Removing something it needs makes rollback break the system. Dropping should wait until the old version can never run again.",
+      },
+    ],
   },
   {
-    slug: "peer-to-peer-systems", title: "Peer-to-Peer Systems", summary: "Let participants exchange data directly while planning discovery, unreachable devices and untrusted peers.",
-    analogy: ["Classmates share missing notes with one another", "Instead of asking one teacher to photocopy every page, classmates trade the pages they already have. They still need a class list, a way to find reachable classmates and checks against altered notes."],
-    idea: "In a peer-to-peer system, participants can both request and provide data. A small discovery service may introduce peers, but bulk transfer can happen directly. This reduces central bandwidth and can survive one peer leaving, while adding hard problems: home routers block incoming connections, peers disappear, upload speeds differ and every received byte is untrusted.",
-    flow: ["peer discovers candidates", "reachable peers exchange verified chunks", "missing data retries elsewhere"],
-    best: "Use peers for large, shareable content when central bandwidth is costly, but retain a trustworthy discovery and integrity path.",
-    check: "Check NAT traversal, offline peers, rare chunks, duplicate transfer, bandwidth fairness, encryption, identity and malicious content.",
-    pitfall: "Assuming every device accepts inbound connections or trusting a chunk merely because several peers offered it.",
-    interview: "Compare central client-server delivery with peer-assisted delivery, then explain bootstrap, failure and content verification.",
-    example: "A device asks a discovery service for peers holding chunks of a public software image. It downloads different chunks in parallel and verifies each against a trusted manifest hash. If one home network cannot accept a direct connection, a relay or the central origin supplies that chunk.",
-    glossary: [["peer", "A participant that can both request and provide data."], ["discovery", "The bootstrap step that helps peers find possible partners."], ["NAT traversal", "Techniques for connecting devices hidden behind home or office routers."], ["content hash", "A value used to verify that received bytes match the trusted original."], ["relay", "A server that forwards traffic when two peers cannot connect directly."]],
+    slug: "peer-to-peer-systems",
+    title: "Peer-to-Peer Systems",
+    summary: "Let participants exchange data directly while planning discovery, unreachable devices and untrusted peers.",
+    intro: [
+      "In a peer-to-peer system, the participants, called peers, can both ask for data and provide it. A small discovery service may introduce peers to one another, but the bulk of the data then moves directly between them. This spreads the bandwidth cost across users and can keep working when one peer disappears.",
+      "That freedom brings hard problems. Most home devices sit behind routers that block incoming connections, peers come and go, upload speeds differ widely, and anyone can be dishonest. Every byte received from a peer must be treated as untrusted and verified. Because of these limits, real systems keep a trusted component, such as a manifest of checksums or a fallback origin server.",
+    ],
+    analogy: [
+      "Classmates share missing notes with one another",
+      "Instead of everyone asking one teacher to photocopy every page, classmates trade the pages they already have. They still need a class list to find each other, a way to reach people who are not at the same desk, and a check that nobody has altered the notes they pass on.",
+    ],
+    glossary: [
+      ["peer", "A participant that can both request and provide data."],
+      ["discovery", "The first step that helps a peer find others to connect to."],
+      ["NAT traversal", "Techniques for connecting devices that sit behind home or office routers."],
+      ["content hash", "A fingerprint of data, used to check that received bytes match the trusted original."],
+      ["relay", "A server that forwards traffic when two peers cannot connect directly."],
+    ],
+    walkthrough: {
+      title: "Follow a peer-assisted software download",
+      steps: [
+        { label: "Get the manifest", text: "A device downloads a small trusted manifest from the publisher. It lists each chunk of the file and a hash for each." },
+        { label: "Find peers", text: "It asks a discovery service for devices that hold chunks. The service returns a list of candidates." },
+        { label: "Download in parallel", text: "It fetches different chunks from different peers at once, and checks each chunk against its hash before keeping it." },
+        { label: "Fall back", text: "One home network refuses incoming connections, and one peer leaves. The device gets those chunks from a relay or the publisher's own server." },
+      ],
+    },
+    example: {
+      title: "Worked example: bandwidth saved on a 2 GB update",
+      text: "A publisher releases a 2 GB update to 100,000 devices. From its own servers, that is 200 TB of outgoing traffic. If peers supply, say, 70 per cent of the chunks to each other, the publisher sends about 60 TB, a saving of 140 TB. But the saving depends on peers being online and reachable, which varies a lot, so the publisher keeps its own server as a fallback. Every chunk is checked against its hash; if a peer sends a corrupted or altered chunk, the device throws it away and asks someone else. The manifest must come from the trusted publisher, because the hash is only as trustworthy as its source.",
+    },
+    tradeoff: {
+      title: "Shared load against less control",
+      gain: {
+        label: "You gain",
+        items: [
+          "Less bandwidth cost for the publisher on large, popular content",
+          "More capacity as more peers join",
+          "No single sender whose failure stops everyone",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "Peers may be unreachable, slow or offline without warning",
+          "Every received byte must be verified, because peers may be dishonest",
+          "Peers see each other's addresses, which raises privacy questions",
+        ],
+      },
+    },
+    pitfalls: [
+      "Assuming every device accepts incoming connections.",
+      "Trusting a chunk merely because several peers offered it.",
+      "Offering no fallback, so a rare chunk that nobody holds can never be completed.",
+    ],
+    remember: [
+      "Peers both request and provide data.",
+      "Verify every chunk against a trusted hash.",
+      "Keep a trustworthy discovery path and a fallback source.",
+      "Plan for devices behind routers that block connections.",
+    ],
+    interview: [
+      "Compare client-server delivery with peer-assisted delivery, then explain bootstrap, failure and content verification.",
+      "Say who is trusted in your design, and what happens if a peer lies.",
+    ],
+    quizzes: [
+      {
+        question: "A peer sends a chunk whose hash does not match the manifest. What should the receiving device do?",
+        options: [
+          "Keep the chunk, as it came from a real peer",
+          "Discard it and fetch the chunk from someone else",
+          "Install it anyway, then check it at a later date",
+          "Stop the whole download and delete everything so far",
+        ],
+        answer: 1,
+        why: "A mismatch means the data is corrupted or tampered with. The chunk is thrown away and obtained elsewhere, while the rest of the download carries on.",
+      },
+      {
+        question: "Many home devices cannot accept incoming connections. How should a design cope?",
+        options: [
+          "Exclude these devices so they never receive any files",
+          "Assume they will all open their routers by themselves",
+          "Use relays or a fallback server when a direct link fails",
+          "Send their data again and again until a link works",
+        ],
+        answer: 2,
+        why: "Routers commonly block unsolicited incoming connections. A relay or the origin server lets those devices still complete the download.",
+      },
+      {
+        question: "Why does a peer-to-peer download still need a trusted manifest from the publisher?",
+        options: [
+          "It makes the download faster by skipping peer checks",
+          "It lets peers talk without using any network",
+          "It removes the need for any discovery step",
+          "It gives trusted hashes to verify untrusted chunks",
+        ],
+        answer: 3,
+        why: "Peers cannot be trusted, so chunks are checked against hashes. Those hashes must come from a source you trust, or an attacker could supply matching fakes.",
+      },
+    ],
   },
   {
-    slug: "batch-processing-and-mapreduce", title: "Batch Processing and MapReduce", summary: "Process a large, bounded dataset by splitting independent work and combining results.",
-    analogy: ["Count votes by table, then add the subtotals", "Each table counts its own pile in parallel. A coordinator combines small subtotals instead of one person reading every ballot."],
-    idea: "Batch processing handles a finite input such as yesterday's logs. A map stage turns independent records into intermediate key-value results; shuffle groups equal keys; reduce combines each group. Checkpoints and retryable tasks let a large job recover without starting over.",
-    flow: ["read bounded input", "map and group by key", "reduce and publish output"],
-    best: "Use batch work when results can wait and the input can be divided into deterministic, retryable pieces.",
-    check: "Check skewed keys, duplicate retries, checkpoint cost, late input, output atomicity and job deadline.",
-    pitfall: "Using an hourly batch job for a fraud decision that must happen before a transaction completes.",
-    interview: "Explain which calculations are independent, what key causes the shuffle and how a failed worker retries safely.",
-    example: "To count daily searches per query, each mapper emits `(query, 1)`. The shuffle groups equal queries. Reducers sum counts, write a versioned result, then one pointer makes the complete version visible.",
-    glossary: [["batch", "A finite group of records processed as one job."], ["map", "Transform one input record into one or more intermediate records."], ["shuffle", "Move intermediate records so equal keys meet."], ["reduce", "Combine all intermediate values for one key."]],
+    slug: "batch-processing-and-mapreduce",
+    title: "Batch Processing and MapReduce",
+    summary: "Process a large, bounded dataset by splitting independent work and combining results.",
+    intro: [
+      "Batch processing handles a large, finite set of data in one job, such as yesterday's logs or this month's orders. Nobody waits on the answer in real time, so the job can take minutes or hours and use many machines. The input is split into pieces, each piece is processed independently, and the partial results are combined.",
+      "MapReduce is the classic pattern. In the map step, each worker turns its records into key-value pairs. A shuffle step then brings together all pairs with the same key. In the reduce step, each worker combines the values for its keys. Because pieces are independent and the input does not change while the job runs, a failed piece can simply be run again.",
+    ],
+    analogy: [
+      "Count votes by table, then add the subtotals",
+      "Each table counts its own pile of ballots at the same time. A coordinator then adds up the small subtotals, which is much quicker than one person reading every ballot. If one table miscounts, only that table is counted again.",
+    ],
+    glossary: [
+      ["batch", "A finite group of records processed together as one job."],
+      ["map", "The step that turns each input record into one or more key-value pairs."],
+      ["shuffle", "The step that moves pairs between workers so that equal keys end up together."],
+      ["reduce", "The step that combines all the values for one key into a result."],
+    ],
+    walkthrough: {
+      title: "Follow a count of searches per query",
+      steps: [
+        { label: "Split the input", text: "Yesterday's search log, 500 million lines, is divided into 500 files of about a million lines each. Workers take the files in turn." },
+        { label: "Map", text: "For each line, a mapper emits the pair `(query, 1)`, for example `(\"python tutorial\", 1)`." },
+        { label: "Shuffle", text: "The pairs are grouped so that every pair for `python tutorial` reaches the same reducer, whichever mapper produced it." },
+        { label: "Reduce and publish", text: "Each reducer adds up its ones and writes the totals to a new, versioned output. A single pointer is then switched, so readers see the full result or none of it." },
+      ],
+    },
+    example: {
+      title: "Worked example: when one key is too popular",
+      text: "In the search count, a few queries are far more common than the rest. Suppose the query `weather` appears in 8 per cent of all lines, so one reducer receives 40 million of the 500 million pairs while the others get a few thousand each. That reducer finishes hours after the rest, so the whole job waits on it. A common fix is to let each mapper add up its own pairs first, a local combine step, so the reducer receives 500 partial counts for `weather` instead of 40 million ones. The job's speed was decided by the most skewed key, not by the average one.",
+    },
+    tradeoff: {
+      title: "Big, cheap, delayed answers",
+      gain: {
+        label: "You gain",
+        items: [
+          "The ability to process very large data on many ordinary machines",
+          "Simple recovery: rerun only the pieces that failed",
+          "Efficient use of resources, as jobs can run when machines are idle",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "Results are only as fresh as the last job",
+          "Skewed keys can leave one worker running long after the rest",
+          "Moving data in the shuffle step is slow and expensive",
+        ],
+      },
+    },
+    pitfalls: [
+      "Using an hourly batch job for a fraud decision that must happen before a transaction completes.",
+      "Ignoring skewed keys, so one worker holds up the entire job.",
+      "Writing results into the live output as they come, so readers see a half-finished answer.",
+    ],
+    remember: [
+      "Batch work suits big, bounded data when results can wait.",
+      "Map makes pairs, shuffle groups keys, reduce combines.",
+      "Tasks must be safe to retry.",
+      "Publish output in one atomic switch.",
+    ],
+    interview: [
+      "Explain which calculations are independent, which key causes the shuffle and how a failed worker retries safely.",
+      "Say why batch is or is not right for the question being asked, in terms of how fresh the answer must be.",
+    ],
+    quizzes: [
+      {
+        question: "A bank must decide whether to block a card payment before the payment completes. Is a nightly batch job suitable?",
+        options: [
+          "Yes, because batch jobs are always the most accurate option",
+          "Yes, as long as the batch uses enough machines",
+          "No, because the decision is needed in real time",
+          "No, because batch jobs cannot process payments at all",
+        ],
+        answer: 2,
+        why: "A nightly job produces answers hours after the payment. The decision has to be made while the customer waits, so it needs a real-time path.",
+      },
+      {
+        question: "In a MapReduce job counting words, what does the shuffle step do?",
+        options: [
+          "It gathers all pairs with the same key onto one worker",
+          "It reads the input files and splits them into lines",
+          "It sorts the final results into alphabetical order only",
+          "It deletes pairs whose count is lower than the average",
+        ],
+        answer: 0,
+        why: "Reducers need every value for a key in one place. The shuffle moves the pairs across the cluster so that equal keys meet.",
+      },
+      {
+        question: "One reducer receives 40 million pairs for a single popular key and runs for hours. What helps most?",
+        options: [
+          "Buying faster disks for every other worker",
+          "Adding many more reducers for the unpopular keys",
+          "Combining each mapper's pairs for that key before the shuffle",
+          "Restarting the job whenever the slow worker is spotted",
+        ],
+        answer: 2,
+        why: "The imbalance comes from one huge key. Adding up locally first sends far fewer pairs to that reducer, while changes elsewhere leave the skew in place.",
+      },
+    ],
   },
   {
-    slug: "search-and-autocomplete", title: "Search, Indexing and Autocomplete", summary: "Build a read-optimised view for text lookup and ranked suggestions.",
-    ...legacyDetails("search-and-autocomplete"),
-    analogy: ["A library catalogue beside the shelves", "The catalogue contains searchable clues about books. It can be rebuilt from the shelves, but it must receive updates to stay useful."],
-    idea: "A search index tokenises fields into an inverted map, then filters and ranks matches. Autocomplete needs prefix or n-gram structures and tight latency. The source database remains authoritative.",
-    flow: ["change event", "search index", "ranked query"], best: "Treat search as a derived read model with an explicit indexing-lag promise.", check: "Check relevance, freshness, typo handling, access filters and zero-result queries.", pitfall: "Using a transactional database scan for every full-text query at scale.", interview: "Separate candidate retrieval from ranking and describe how updates reach the index.",
+    slug: "search-and-autocomplete",
+    title: "Search, Indexing and Autocomplete",
+    summary: "Build a read-optimised view for text lookup and ranked suggestions.",
+    intro: [
+      "A search engine for your own data builds an inverted index. It splits each document into words, called tokens, and for each word stores a list of the documents that contain it. To answer a query, it looks up each word, combines the lists, and ranks the matches. This is far faster than scanning every document, and it can also handle stemming, so that \"running\" matches \"run\".",
+      "Autocomplete is a separate, faster job: after only a few typed letters, suggest likely completions in a fraction of a second. It uses structures built for prefixes. The search index is a derived copy of the main database, not the source of truth. It must be kept up to date as data changes, and it can be rebuilt from the database if lost.",
+    ],
+    analogy: [
+      "A library catalogue beside the shelves",
+      "The catalogue holds searchable clues about each book, so you do not walk every shelf. It can be rebuilt from the shelves, but it needs to be updated when books arrive or leave, or it will point you to the wrong place.",
+    ],
+    glossary: [
+      ["inverted index", "A map from each word to the list of documents that contain it."],
+      ["token", "A single word or word piece produced when text is split for indexing."],
+      ["ranking", "Ordering matches so that the most relevant results come first."],
+      ["indexing lag", "The delay between a change in the main database and its appearance in search."],
+    ],
+    walkthrough: {
+      title: "Follow a new course appearing in search",
+      steps: [
+        { label: "A change happens", text: "An author publishes the course \"Java for Beginners\". The database saves it and emits a change event." },
+        { label: "Index it", text: "An indexer lowercases the title, splits it into `java`, `for` and `beginners`, and adds the course to the list for each word." },
+        { label: "A query arrives", text: "A learner searches \"java beginners\". The search looks up each term, finds the course in both lists and scores it." },
+        { label: "Rank and filter", text: "Results are ordered by relevance, and any the learner is not allowed to see are removed before the page is shown." },
+      ],
+    },
+    example: {
+      title: "Worked example: a 2-second delay in the index",
+      text: "A shop has 3 million products. Every price change writes to the database first, then an event updates the search index, usually within 2 seconds. During that gap a search may still show the old price. The product page, which reads straight from the database, always shows the right one. The shop accepts this, but it ensures the checkout always uses the database price, never the one found in search results. Compare scanning 3 million rows with `LIKE '%shirt%'` for every search, which gets slower as the shop grows and cannot rank results sensibly.",
+    },
+    tradeoff: {
+      title: "A fast read view with a freshness gap",
+      gain: {
+        label: "You gain",
+        items: [
+          "Fast text search, ranking and typo tolerance over large data",
+          "Fast prefix lookups for suggestions",
+          "The main database is spared heavy search queries",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "A second copy of the data that can lag behind the truth",
+          "An indexing pipeline to build, monitor and repair",
+          "Relevance needs tuning, and permissions must be applied to results",
+        ],
+      },
+    },
+    pitfalls: [
+      "Using a transactional database scan for every full-text query at scale.",
+      "Treating the search index as the source of truth, so a lost index means lost data.",
+      "Showing search results the user is not allowed to open because permissions were not applied.",
+    ],
+    remember: [
+      "An inverted index maps words to documents.",
+      "Search is a derived read model; the database is the truth.",
+      "State the indexing delay the product accepts.",
+      "Apply access rules to results, not only to pages.",
+    ],
+    interview: [
+      "Separate finding candidate matches from ranking them, and say which part is hard for this product.",
+      "Describe how an update reaches the index, and what a user sees during the gap.",
+    ],
+    quizzes: [
+      {
+        question: "A search index goes missing after a failure. What is the correct way to recover?",
+        options: [
+          "Accept the loss, since search data is unrecoverable",
+          "Rebuild it from the source database",
+          "Ask users to re-enter all of the data again",
+          "Switch off search until the next major release",
+        ],
+        answer: 1,
+        why: "The index is derived from the main database. Rebuilding it from the source restores it, which is why the database remains the single source of truth.",
+      },
+      {
+        question: "A product's price is changed, but search still shows the old price for two seconds. What is the cause?",
+        options: [
+          "Indexing lag between the database and the index",
+          "A bug that stops the database from saving prices",
+          "The browser has stopped refreshing the page",
+          "The search engine has deleted the product entirely",
+        ],
+        answer: 0,
+        why: "The index is updated after the database, so it can briefly show older data. The product should state the delay it accepts and use database values for important actions.",
+      },
+      {
+        question: "What does an inverted index store?",
+        options: [
+          "The full text of each document in alphabetical order",
+          "A list of every user who has searched for something",
+          "The words found in documents, each with its document list",
+          "A picture of every page as it appears on screen",
+        ],
+        answer: 2,
+        why: "It maps each word to the documents containing it, which lets a search jump to matches without reading everything.",
+      },
+    ],
   },
   {
-    slug: "observability-slos-and-security", title: "Observability, SLOs and Safe Failure", summary: "Know what broke, protect data and practise recovery before an incident.",
-    ...legacyDetails("observability-slos-and-security"),
-    analogy: ["A car dashboard plus a seat belt", "Gauges explain what the car is doing; alerts signal danger; the seat belt limits damage. None replaces careful driving."],
-    idea: "Metrics show trends, logs explain events and traces connect one request across services. Service-level objectives turn user promises into thresholds. Least privilege, encryption, audit trails, backups and tested recovery reduce harm.",
-    flow: ["instrument request", "alert on symptom", "diagnose and recover"], best: "Measure user-visible symptoms and tie alerts to an owned response playbook.", check: "Check cardinality, sensitive data in logs, backup restore tests and dependency objectives.", pitfall: "Alerting on every internal metric until operators ignore the noise.", interview: "Finish a design with dashboards, trace IDs, data protection and one rehearsed failure scenario.",
+    slug: "observability-slos-and-security",
+    title: "Observability, SLOs and Safe Failure",
+    summary: "Know what broke, protect data and practise recovery before an incident.",
+    intro: [
+      "Observability is the ability to understand what a system is doing from the outside. Metrics are numbers over time, such as error rate. Logs are records of individual events. Traces follow one request across many services and show where its time went. A service-level objective (SLO) turns a promise to users into a target, such as \"99.9 per cent of requests succeed each month\".",
+      "Good alerts are about symptoms users feel, not every internal wobble. Safe failure is the other half: giving each part only the access it needs, encrypting data, keeping audit records, taking backups, and, importantly, practising restoring them. A backup that has never been restored is only a hope.",
+    ],
+    analogy: [
+      "A car dashboard and a seat belt",
+      "The dashboard shows speed, fuel and warnings so you can notice trouble. The seat belt limits the harm if something goes wrong anyway. Neither replaces careful driving, and a warning light you have learned to ignore is no help at all.",
+    ],
+    glossary: [
+      ["metric", "A number measured over time, such as requests per second or error rate."],
+      ["trace", "A record of one request's path through many services, with the time spent at each step."],
+      ["SLO", "A target for how well a service should perform, measured over a period."],
+      ["error budget", "The amount of failure an SLO allows before the target is missed."],
+      ["least privilege", "Giving each person or service only the access it needs and nothing more."],
+    ],
+    walkthrough: {
+      title: "Follow a checkout slowdown from alert to fix",
+      steps: [
+        { label: "Instrument", text: "Each checkout request gets a trace ID that is passed to every service and written in every log line, with metrics for errors and slow responses." },
+        { label: "Alert on the symptom", text: "More than 1 per cent of checkouts fail for five minutes. The alert fires because users are affected, not because a CPU is busy." },
+        { label: "Diagnose", text: "A trace for a failed checkout shows 9 of its 10 seconds spent waiting on the payment service, which narrows the search at once." },
+        { label: "Recover and learn", text: "The team rolls back the last release, confirms errors drop, and writes down what changed so a check can catch it earlier next time." },
+      ],
+    },
+    example: {
+      title: "Worked example: what an SLO allows",
+      text: "A service has an SLO of 99.9 per cent successful requests over 30 days. With 10 million requests in the month, 0.1 per cent is 10,000 failed requests the team may \"spend\". A bad release that fails 6,000 requests uses 60 per cent of the budget at once, so the team slows risky changes and focuses on reliability for the rest of the month. If the budget is barely touched, they can release faster. Meanwhile, the same team limits what logs record, never writing card numbers or passwords, and tests restoring last night's backup into a clean database every month.",
+    },
+    tradeoff: {
+      title: "Seeing and protecting costs effort",
+      gain: {
+        label: "You gain",
+        items: [
+          "Faster diagnosis, because traces and logs show where it hurts",
+          "Clear targets that guide when to release and when to fix",
+          "Smaller harm from mistakes and attacks, through limited access and tested recovery",
+        ],
+      },
+      cost: {
+        label: "You pay",
+        items: [
+          "Storing metrics, logs and traces costs money and engineering time",
+          "More alerts mean more noise unless they are chosen carefully",
+          "Tighter security and regular restore drills slow some work down",
+        ],
+      },
+    },
+    pitfalls: [
+      "Alerting on every internal metric until operators ignore the noise.",
+      "Writing personal or secret data into logs, which then spread to many places.",
+      "Taking backups but never trying to restore one until the day it is needed.",
+    ],
+    remember: [
+      "Metrics show trends, logs explain events, traces connect services.",
+      "Alert on what users feel and tie each alert to a response.",
+      "An SLO is a number you can spend and track.",
+      "Test your restore, not just your backup.",
+    ],
+    interview: [
+      "Finish a design by naming dashboards, trace IDs, how data is protected and one failure you have rehearsed.",
+      "Pick one or two SLOs for the product and say what you would do when the error budget is nearly spent.",
+    ],
+    quizzes: [
+      {
+        question: "Which alert is the best one to wake an engineer at night?",
+        options: [
+          "One server's disk is 70 per cent full",
+          "Over 1 per cent of checkouts fail for 5 minutes",
+          "A background job started a little later than usual",
+          "Memory use on one machine rose slightly",
+        ],
+        answer: 1,
+        why: "Failing checkouts directly harm users and need a prompt response. The others are internal signals that may matter later but do not justify waking anyone.",
+      },
+      {
+        question: "A service has an SLO of 99.9 per cent success over a month. A bad release has used most of the error budget in two days. What is a sensible response?",
+        options: [
+          "Release even faster, to get past the problem quickly",
+          "Remove the SLO, since it has now been missed",
+          "Slow risky changes and put effort into reliability",
+          "Delete the logs so that the failures are not seen",
+        ],
+        answer: 2,
+        why: "The error budget exists to guide this choice. When most of it is gone, reliability work takes priority over new risk until the budget recovers.",
+      },
+      {
+        question: "A team has taken a nightly database backup for two years but has never restored one. What is the main risk?",
+        options: [
+          "Backups may be unusable, and nobody would know",
+          "The backups will use too much money to store",
+          "The backups are certain to be perfectly valid",
+          "The database will refuse to make further backups",
+        ],
+        answer: 0,
+        why: "A backup proves its worth only when restored. Problems such as missing files or wrong settings appear during a restore test, and finding them during a real incident is far too late.",
+      },
+    ],
   },
 ];
