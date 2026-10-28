@@ -2,39 +2,36 @@
 
 ## Task
 
-Revamp the landing page: less verbose, interactive, modern, not "AI-generated looking" (owner's request in session; PRD §11; no task file).
+Make in-app navigation between tabs feel instant (owner's request in session; PRD §13; no task file). Earlier today: the landing page revamp (`feat/landing-revamp`, merged at 48b2837).
 
 ## What I built
 
-- `apps/web/src/app/page.tsx`: cut from eight sections of paragraphs to six short ones, one line of copy each. VoiceSection, TranscriptSample, Coverage and HowItWorks are gone. What they said is now shown by the interactive pieces below.
-- `components/landing/sample-turn.tsx`: the hero demo. The visitor picks an interview type (Service IT / Product / Big Four / Europe) and presses play. The answer types in word by word over a live waveform, the drawn interviewer (`InterviewerPresence`) switches between listening, thinking and speaking, and the follow-up appears tagged *challenge*, *probe* or *interrupts*.
-- `components/landing/loop-picker.tsx`: pick an archetype to see its rounds in order. Replaces the coverage grid and "How it works".
-- `components/landing/report-preview.tsx`: a sample report. Clicking a competency score shows the quote it was scored on.
-- `components/landing/segmented-tabs.tsx`: a shared pill tablist following the ARIA tabs pattern (arrow keys, Home/End, one tab stop).
-- Employer strip is now a scrolling marquee that pauses on hover. Under reduced motion it is still and wrapped, with each name shown once.
-- Course cards reuse `CourseArtwork` from the catalogue. The Arena is a single compact row.
-- `globals.css`: `marquee`, `wave-bar` and `rise-in` animations, all disabled under `prefers-reduced-motion`.
-- `components/landing/landing.test.tsx`: 9 behaviour and a11y tests (playback, reduced motion, screen-reader text, keyboard tabs, real vs illustrative labels, loop rounds, quote reveal).
+- `components/app-chrome.tsx`: the signed-in bar, backdrop and footer, mounted once in `app/layout.tsx` and shown on shell routes (`isShellPath`). It used to be rendered by every page and every `loading.tsx`, so each click rebuilt it twice.
+- `components/app-shell.tsx`: now only the page body (`<main>` width and padding). Pages are unchanged.
+- `components/rail-nav.tsx`: top-bar links use `prefetch` (full page, not just the skeleton).
+- `next.config.ts`: `experimental.staleTimes.dynamic = 60`, so a page visited in the last minute is served from the router cache.
+- `components/dashboard-panel.tsx`: remembers the last dashboard (keyed to the token, memory only) and paints it on return visits while refetching. `forgetDashboard()` runs with `forgetAccount()` on sign-out.
+- Tests: `app-chrome.test.tsx` (route matching, the same bar element survives a page change, interview room stays bare) and three return-visit tests in `dashboard-panel.identity.test.tsx`.
 
 ## Assumptions I made
 
-- **Fixed a false claim.** The old page said "every round is free … as many times as you want", but `2be9314` set the allowance to one round a day. The hero and CTA now read `DAILY_ROUNDS_TEXT` from `lib/legal.ts`, the same constant the terms use.
-- Only the service-IT exchange and its "operational depth 2/5" score come from a real session (the page always said so). The other three exchanges and three report rows were written by me to show the format, and the UI labels them that way. None of them claims anything about a named employer.
-- "Not AI-looking" was read as: no gradient text, glows, sparkle icons or icon-grid feature walls. Solid navy, crisp cards, and UI that looks like the real product.
+- Ruled out auth latency: the Supabase project signs JWTs with ES256 (JWKS checked), so the proxy's `getClaims` verifies locally with no network call.
+- A 60-second router cache is safe because personal data is fetched client-side, not baked into server payloads, and sign-out calls `router.refresh()`.
+- On a return visit the dashboard can show the previous allowance or round list for the moment before the refetch lands, for example right after finishing a round. I judged that better than a blank skeleton on every visit.
 
 ## What I could NOT verify
 
-- **Visual design.** I have not seen it rendered. Please look at `/` on desktop and phone width, in light and dark mode, and check the marquee speed and the playback pacing (110 ms per word, 0.9 s "thinking").
-- Whether the illustrative exchanges read as realistic interviewer behaviour (owner judgement, per CLAUDE.md).
+- Felt latency in a real signed-in browser. **Next does not prefetch in `next dev`, and dev compiles each route on first visit, so judge speed on a production build (`npm run build && npm run start`) or a deployment.**
+- Each page body still fetches its own data (dashboard, courses progress) from the API on first visit. That depends on API latency from where it is hosted.
 
 ## Verification status
 
-- typecheck / lint / tests (3,101 + 9 new) / build: all pass locally.
-- The first `next build` stopped on a Next.js security-advisory notice and passed on retry. The notice recommends upgrading Next.js (currently 16.4.3). I did not upgrade; that is a separate dependency change.
+- typecheck / lint / tests (3,120) / build: pass locally. CI run 40646873741 passed all four jobs.
+- `next build` again stopped once on the Next.js security-advisory notice and passed on retry.
 
 ## Merge status
 
-- Merged `feat/landing-revamp` into `develop` at 48b2837 after CI run 40644895466 passed all four jobs (web, api, database, images). No migrations in this change.
+- Merged `fix/fast-navigation` into `develop` at 0360c49. No migrations.
 
 ## Suggested next task
 
