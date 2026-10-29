@@ -103,6 +103,18 @@ describe("CreditPacks", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("We could not verify that payment.");
   });
 
+  it("names each pack in credits even when the server still calls it interviews", async () => {
+    vi.mocked(fetchBilling).mockResolvedValue({
+      ...overview,
+      packs: overview.packs.map((pack) => ({ ...pack, name: `${pack.credits} interviews` })),
+    });
+    render(<CreditPacks />);
+
+    expect(await screen.findByRole("heading", { name: "1 credit" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "10 credits" })).toBeInTheDocument();
+    expect(screen.queryByText(/\binterviews\b/)).not.toBeInTheDocument();
+  });
+
   it("shows the packs but cannot start a purchase while the server cannot sell", async () => {
     vi.mocked(fetchBilling).mockResolvedValue({ ...overview, purchasable: false });
     render(<CreditPacks />);

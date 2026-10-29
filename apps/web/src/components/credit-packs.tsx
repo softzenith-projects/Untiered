@@ -10,6 +10,11 @@ import { useAccessToken } from "@/lib/use-access-token";
 
 type Status = { tone: "positive" | "negative"; text: string } | null;
 
+/** "1 credit" or "5 credits", from the count rather than the server's display name, so the card always says credits. */
+function creditCount(credits: number): string {
+  return credits === 1 ? "1 credit" : `${credits} credits`;
+}
+
 /**
  * The interview packs, each bought in one step through Razorpay Checkout.
  *
@@ -63,7 +68,7 @@ export function CreditPacks({
       setOverview(updated);
       setStatus({
         tone: "positive",
-        text: `Payment received. ${pack.credits === 1 ? "1 credit has" : `${pack.credits} credits have`} been added — you now have ${updated.creditBalance === 1 ? "1 credit" : `${updated.creditBalance} credits`}.`,
+        text: `Payment received. ${creditCount(pack.credits)} ${pack.credits === 1 ? "has" : "have"} been added — you now have ${creditCount(updated.creditBalance)}.`,
       });
       onPurchased?.(updated);
     } catch (error) {
@@ -106,7 +111,7 @@ export function CreditPacks({
             }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-heading text-ink">{pack.name}</h3>
+              <h3 className="text-heading text-ink">{creditCount(pack.credits)}</h3>
               {pack.savingsPercent > 0 ? (
                 <span className="pill pill-positive w-fit">Save {pack.savingsPercent}%</span>
               ) : null}
@@ -123,7 +128,7 @@ export function CreditPacks({
               loading={buying === pack.id}
               disabled={closed || buying !== null}
               onClick={() => void buy(pack)}
-              aria-label={`Buy ${pack.name} for ${formatRupees(pack.pricePaise)}`}
+              aria-label={`Buy ${creditCount(pack.credits)} for ${formatRupees(pack.pricePaise)}`}
             >
               Buy for {formatRupees(pack.pricePaise)}
             </Button>
