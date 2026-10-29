@@ -24,6 +24,7 @@ Give every Java course chapter a runnable "try it yourself" block (owner, in ses
 - **Tests** (`content-integrity.test.ts`):
   - every Java chapter has a Java playground with a prompt and expected output
   - in every Java starter, the first class is the one with `main`
+- **Java 15 notice** (follow-up, owner asked): every Java Run button now says it runs Java 15, so records, sealed types and pattern-matching switch won't compile. It shows in the course playground and in the interview round's coding editor, from one constant, `JAVA_VERSION_NOTE` in `apps/web/src/lib/server-code-runner.ts`. Branch `feat/java-15-disclaimer`.
 - **Docs:** fixed the out-of-date "only Python can run" comment on the playground block type (`types.ts`).
 
 ## Assumptions I made

@@ -63,6 +63,7 @@ describe("DsaWorkspace, Java", () => {
     render(<DsaWorkspace problem={problem} board={{ kind: "dsa", sources: {}, language: "java" }} onBoardChange={() => {}} runJava={vi.fn()} />);
 
     expect(screen.getByText(/Runs on our server — only your code and the test input are sent/)).toBeInTheDocument();
+    expect(screen.getByText(/This runs Java 15, so features from Java 16 on/)).toBeInTheDocument();
   });
 
   it("runs the editor's Java against the selected case on the server and compares the output", async () => {

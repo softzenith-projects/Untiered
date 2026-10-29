@@ -7,7 +7,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { loadPython, matchesExpected, runPython } from "@/lib/browser-python";
-import { runOnServer } from "@/lib/server-code-runner";
+import { JAVA_VERSION_NOTE, runOnServer } from "@/lib/server-code-runner";
 
 type Language = "python" | "java";
 
@@ -207,7 +207,9 @@ function EditorBar({
         <span className="text-caption text-on-navy-muted">Python could not load. The round runs out loud.</span>
       )}
       {language === "java" && (
-        <span className="text-caption text-on-navy-muted">Runs on our server — only your code and the test input are sent.</span>
+        <span className="text-caption text-on-navy-muted">
+          Runs on our server — only your code and the test input are sent. {JAVA_VERSION_NOTE}
+        </span>
       )}
     </div>
   );
