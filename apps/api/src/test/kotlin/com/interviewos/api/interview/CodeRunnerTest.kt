@@ -110,7 +110,7 @@ class CodeRunnerTest {
     fun `switched off, it says so without calling anything`() {
         val builder = RestClient.builder()
         val server = MockRestServiceServer.bindTo(builder).build()
-        val runner = CodeRunner(CodeRunnerProperties(enabled = false, baseUrl = base), builder)
+        val runner = CodeRunner(CodeRunnerProperties(enabled = false, baseUrl = base), builder.build())
 
         val result = runner.run(CodeLanguage.JAVA, "public class Main {}", "")
 
@@ -122,7 +122,7 @@ class CodeRunnerTest {
     private fun runner(): Pair<CodeRunner, MockRestServiceServer> {
         val builder = RestClient.builder()
         val server = MockRestServiceServer.bindTo(builder).build()
-        return CodeRunner(CodeRunnerProperties(enabled = true, baseUrl = base), builder) to server
+        return CodeRunner(CodeRunnerProperties(enabled = true, baseUrl = base), builder.build()) to server
     }
 
     private fun expectRuntimes(server: MockRestServiceServer) {

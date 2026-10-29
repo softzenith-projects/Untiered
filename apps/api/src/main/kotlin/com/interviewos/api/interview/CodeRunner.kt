@@ -1,12 +1,15 @@
 package com.interviewos.api.interview
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.http.MediaType
+import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 import tools.jackson.databind.JsonNode
+import java.net.http.HttpClient
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -34,12 +37,26 @@ import java.util.concurrent.atomic.AtomicReference
  * at all.
  */
 @Component
-class CodeRunner(
+class CodeRunner internal constructor(
     private val properties: CodeRunnerProperties,
-    restClientBuilder: RestClient.Builder,
+    private val restClient: RestClient,
 ) {
+    /**
+     * Talks HTTP/1.1, never the JDK client's default HTTP/2. Over plain http that default
+     * opens with an `Upgrade: h2c` request, and Piston answers it with a 400 — so every
+     * Run failed at the runtime lookup with "No java runtime is available right now",
+     * while curl and the browser, which never ask to upgrade, saw a healthy runner.
+     */
+    @Autowired
+    constructor(properties: CodeRunnerProperties, restClientBuilder: RestClient.Builder) : this(
+        properties,
+        restClientBuilder
+            .clone()
+            .requestFactory(JdkClientHttpRequestFactory(HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()))
+            .build(),
+    )
+
     private val log = LoggerFactory.getLogger(javaClass)
-    private val restClient = restClientBuilder.build()
 
     /**
      * Piston wants an exact version, and the versions on the public instance move. Looked
