@@ -73,7 +73,16 @@ export const chapterRecursion: Chapter = {
         '        System.out.println("sumDigits(4321) = " + sumDigits(4321));\n' +
         "    }\n" +
         "}\n",
-      output: "factorial(5) = 120\n0 1 1 2 3 5 8 13 21 \nsumDigits(4321) = 10",
+      output:
+        "factorial(5) = 120\n" +
+        "0 1 1 2 3 5 8 13 21 \n" +
+        "sumDigits(4321) = 10",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Print `factorial(10)` and `sumDigits(98765)`. Then delete the `if (n == 0)` base case from " +
+          "`factorial` and run: the calls never stop, and Java ends them with a StackOverflowError.",
+      },
     },
     {
       kind: "p",
@@ -204,11 +213,10 @@ export const chapterRecursion: Chapter = {
       kind: "quiz",
       question: "What is the purpose of a base case in a recursive method?",
       options: [
-        "It makes the method run faster.",
-        "It's the condition under which the method returns a direct answer without calling itself again, " +
-          "stopping the recursion.",
-        "It's required only for methods that return void.",
-        "It converts the recursive method into a loop automatically.",
+        "It makes the method run faster by skipping the recursive calls whenever the input is large.",
+        "It's the condition where the method returns a direct answer without calling itself, which stops the recursion.",
+        "It is needed only in methods that return void, since other methods stop once they return a value.",
+        "It converts the recursive method into a loop automatically, which removes the need for the call stack.",
       ],
       answer: 1,
       why:
@@ -229,11 +237,10 @@ export const chapterRecursion: Chapter = {
       kind: "quiz",
       question: "Why is the naive recursive Fibonacci shown in this chapter considered inefficient for larger n?",
       options: [
-        "Because it has no base case and never terminates.",
-        "Because it recomputes the same smaller Fibonacci values many times over, with no memory of " +
-          "having already computed them.",
-        "Because Java cannot recurse more than twice in a row.",
-        "Because fibonacci(n - 1) and fibonacci(n - 2) run at the same time and conflict.",
+        "Because it has no base case, so the calls never stop until memory runs out.",
+        "Because it recomputes the same smaller Fibonacci values over and over, with no memory of earlier results.",
+        "Because Java cannot recurse more than twice in a row, so deeper calls get silently skipped.",
+        "Because fibonacci(n - 1) and fibonacci(n - 2) run at the same time and interfere with each other's variables.",
       ],
       answer: 1,
       why:

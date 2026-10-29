@@ -261,29 +261,14 @@ export const chapterInterviewApproach: Chapter = {
           "not because the answer matters, but because it cleanly exercises this exact routine.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "For \"find the maximum sum of any two numbers in an array\", write out (in words) the clarifying " +
-          "questions you'd ask before writing any code.",
-        "Given an array, describe a brute-force approach (in words) to check if any two elements are equal " +
-          "to *double* a third element, then describe how you'd start looking for a faster approach.",
-        "Practise narrating, out loud, the complexity of a brute-force nested-loop solution to a problem of " +
-          "your choice, before looking at any optimisation.",
-        "For a problem that asks for the two closest numbers in an unsorted array, list what you'd test " +
-          "for at the end: at least one normal case and two edge cases, in your own words.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why write a brute-force solution first, even when you suspect a better one exists?",
       options: [
-        "It's required by convention and has no practical benefit",
-        "It confirms your understanding of the problem and gives you a baseline to optimise and test against",
-        "It's always the fastest solution to type, so it saves time",
-        "Interviewers only grade the brute-force attempt",
+        "It's required by convention, and has no practical benefit beyond making the interviewer comfortable",
+        "It confirms you understand the problem and gives you a baseline to optimise and test against",
+        "It's always the fastest solution to type, so it saves time compared to planning a better one",
+        "Interviewers only grade the brute-force attempt, so the optimised version earns no extra credit",
       ],
       answer: 1,
       why:
@@ -295,10 +280,10 @@ export const chapterInterviewApproach: Chapter = {
       kind: "quiz",
       question: "In twoSumFast, what does the HashMap seenIndexOf let the algorithm avoid doing?",
       options: [
-        "Avoid reading the target value",
+        "Avoid reading the target value from the input, since the map already stores it for each index",
         "Avoid rescanning the rest of the array for a matching value on every iteration",
-        "Avoid using indices entirely",
-        "Avoid handling negative numbers",
+        "Avoid using indices altogether, because the map returns the values themselves in their place",
+        "Avoid having to handle negative numbers separately, which would otherwise need a second pass",
       ],
       answer: 1,
       why:
@@ -320,6 +305,21 @@ export const chapterInterviewApproach: Chapter = {
         "Compiling and reading clearly says nothing about logical correctness. Tracing concrete examples — " +
         "normal and edge cases — by hand is what actually surfaces bugs, which is the whole point of the " +
         "test step.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "For \"find the maximum sum of any two numbers in an array\", write out (in words) the clarifying " +
+          "questions you'd ask before writing any code.",
+        "Given an array, describe a brute-force approach (in words) to check if any two elements are equal " +
+          "to *double* a third element, then describe how you'd start looking for a faster approach.",
+        "Practise narrating, out loud, the complexity of a brute-force nested-loop solution to a problem of " +
+          "your choice, before looking at any optimisation.",
+        "For a problem that asks for the two closest numbers in an unsorted array, list what you'd test " +
+          "for at the end: at least one normal case and two edge cases, in your own words.",
+      ],
     },
   ],
 };

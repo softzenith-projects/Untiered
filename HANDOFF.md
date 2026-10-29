@@ -1,48 +1,65 @@
-# Handoff — 26 October 2026
+# Handoff — 29 October 2026
 
 ## Task
-
-Finish Untiered SES email integration and resolve PR #121's lockfile conflict (owner's pasted requests; PRD §05 and §15; no task file).
+Runnable Java in the Java course, plus the follow-ups the owner raised in the same session (PRD 06, PRD §10):
+1. A Run button in every Java chapter.
+2. A notice that the runner is Java 15.
+3. Java's Run said "No java runtime is available right now".
+4. Remove the "1 free interview per day" wording, and guard against it.
+5. Stop showing the same Java program twice.
 
 ## What I built
-
-- Extended the existing draft lifecycle-email PR #121 rather than adding another email service. `SesEmailSender.kt` now sends responsive HTML and plain text through the AWS SDK SES v2, with the verified sender and support Reply-To. `LifecycleEmailJob.kt` uses the existing durable queue for bounded transient retries and records permanent or ambiguous failures without sensitive logs.
-- `20261026000000_ses_delivery_retries.sql` adds claim and retry state. The older lifecycle migration remains unchanged.
-- Added branded Supabase Auth confirmation, recovery, and email-change templates, local Auth rate limits, and tests for templates, CAPTCHA reset flow, MIME content, SES errors, configuration, and outbox retry state.
-- Updated `.env.example`, `deploy/api.env.example`, `application.yml`, and `docs/lifecycle-email-operations.md` for separate API SES v2 and Supabase Auth SMTP configuration in Sydney. The existing SNS email subscription remains the manual bounce/complaint monitor.
-- Patched Next.js and its ESLint config from 16.4.0 to 16.4.3 after the production build blocked on a documented critical advisory. No new web dependency was introduced.
-- Merged the latest `origin/develop` into the PR branch and resolved the sole conflict, `package-lock.json`, with develop's lockfile. Develop already carries Next.js 16.4.3 and newer audit overrides; the resolved lockfile exactly matches its blob.
+- **Runnable Java in every chapter** (`apps/web/src/content/courses/java/*.ts`). Each chapter has a task to try and the output to expect.
+  - **31 chapters:** the chapter's own main example is runnable where it stands. A new `tryIt` field on the `code` block adds an **Edit and run** button, which swaps the block for the editor in place (`components/courses/code-block.tsx`).
+  - **4 chapters** have a separate playground, because their example can't run as one file: 05 input/output, 13 methods, 22 packages and 35 records. Each playground's task says why.
+- **No program on screen twice** (owner's screenshots).
+  - **The duplicate:** chapters showed the example, then a playground with the same code. The playground itself also showed a static "Starter code" copy above its editor, so up to three copies in all.
+  - **Fix for the example:** it is now runnable in place (above). The duplicate playgrounds are gone.
+  - **Fix for the playground:** its static copy shows only until the editor mounts (`playground-lazy.tsx`). The editor then shows the expected output before any run.
+- **Class order.** Piston runs the *first* class in a file, so a helper class above `main`'s class fails.
+  - The examples now put `main`'s class first.
+  - The runner's error says to do the same (`CodeRunner.kt`). This also helps candidates in coding rounds.
+- **Java 15 notice** beside every Java Run button, in the course and in the coding round. The text lives in `JAVA_VERSION_NOTE` (`lib/server-code-runner.ts`).
+- **Fixed: "No java runtime is available right now"** (`CodeRunner.kt`).
+  - **Cause:** the JDK HTTP client's default HTTP/2 opens a plain-http connection with an `h2c` upgrade. Piston answers that with a 400.
+  - **Why nothing caught it:** curl and Node never send the upgrade, so Piston looked healthy from the shell. The unit tests mock the HTTP layer.
+  - **Fix:** the runner now uses HTTP/1.1.
+  - **Guard:** `CodeRunnerProtocolTest` runs over a real socket against a stand-in that refuses upgrades. I confirmed it fails on HTTP/2.
+- **Free tier wording: 3 interviews for life.**
+  - `develop` already enforced 3 for life (API default, terms, privacy, upgrade page). The "1 round … a day" wording is still on **`main`**, which is about 100 commits behind `develop`.
+  - On `develop` I removed what was left: "Sit one round today" on the landing page, "More rounds and longer interviews each day" on the Pro list, "no daily limit" on the used-up notice, and an out-of-date comment in the shared types.
+  - **Guards:**
+    - `lib/free-allowance-copy.test.ts` fails on any daily-allowance wording in user-facing source, and pins `LEGAL.freeRounds` to 3. I confirmed it catches the old lines.
+    - `EntitlementTest` fails if `application.yml` overrides `free-rounds`, `daily-rounds` or `daily-minutes`.
+- **"For life" stated everywhere the free tier appears** (PR, because it changes the terms and privacy policy). There is one phrase, `FREE_ROUNDS_LIFETIME_TEXT` ("3 free mock interviews for life"), used by the terms, privacy policy, upgrade page and landing page. The terms add that the allowance does not reset each day, month or year, does not come back once used, and is not returned for leaving part-way. The API's allowance messages say free interviews are for life and do not reset. Guards: `free-allowance-copy.test.ts` (each of those pages uses the lifetime phrase, and the terms keep the no-reset sentence) and the legal-page test.
+- **Content tests** (`content-integrity.test.ts`):
+  - every Java chapter has runnable Java with a task and expected output
+  - no playground repeats a code example's program
+  - `main`'s class comes first in every runnable program
 
 ## Assumptions I made
-
-- Supabase Auth remains the owner of registration, verification, and reset tokens. Its hosted custom SMTP settings send those messages through SES; the Kotlin API uses SES v2 for its own queued lifecycle messages. Routing Auth through a new backend hook would duplicate token handling and create another sensitive queue.
-- Explicit SES 429/5xx and ThrottlingException responses are retryable; SDK client failures are ambiguous and require manual review. Three total attempts are the limit, without an exactly-once claim.
-- Hosted Supabase settings and templates need a human to apply. The repository's `config.toml` only configures local Supabase Auth. The owner's stated SNS and suppression setup is taken as reported, not remotely verified.
-- PR #121 is already over the 800-line review guideline. Keeping this follow-up on it avoids duplicating the existing queue, preferences, and signup flow; the SES transport and retry migration depend on those unmerged changes.
+- Edit and run starts with the read-only example, not the editor. That keeps the output visible without running anything. It also matters in production, where the runner is off and Run only explains that.
+- Reordering the classes in 15 examples changes none of their text. I checked the prose for references to class order and found none.
+- Prompt text wrapped onto two source lines sometimes splits inside a backtick span. It joins back together at build time, so readers see it correctly.
 
 ## What I could NOT verify
-
-- No live AWS call or mailbox-simulator send was made, per the owner's instruction. SES credentials, quota, sender reputation, actual inbox MIME, callbacks, SNS delivery, and account-level suppression remain unverified.
-- The owner reports applying the migrations. `npm run supabase -- migration list --linked` still cannot verify the remote from this worktree: it has no linked project ref or `.env`. Confirm both email rows have a remote entry before merging into `develop`.
-- Hosted Supabase Auth SMTP, rate limits, CAPTCHA, and HTML templates need manual deployment. Confirm Auth mail has a plain-text MIME alternative during the controlled mailbox test; Supabase's template editor accepts HTML only.
-- Legal/consent wording and final inbox appearance need owner review. `npm install` still reported dependency advisories outside this focused patch update.
+- **Edit and run and Run in a signed-in browser.** I verified on the local Piston directly, with the request the API sends: every runnable program prints exactly its expected output, and the 15 reordered programs still match the chapter's output.
+- **How Edit and run looks and feels.** That's your judgement: the button and the swap into the editor.
 
 ## Verification status
-
-- Web: `npm run typecheck` pass; `npm run lint` pass; `npm run test` pass (85 files, 3,089 tests); standard `npm run build` pass with CI placeholder environment after Next.js 16.4.3 patch.
-- API: `./gradlew.bat ktlintCheck test build` pass. SES sender tests 4/4 pass. Migrated-PostgreSQL tests guarded by `TEST_DB_URL` skipped locally; the CI database job passed them.
-- Repository: `npm run scenario:check` pass; `node --test scripts/*.test.mjs` pass (85 tests, including two new Auth config/template checks). Frontend bundle/static scan found no AWS variable references. No live email, AI call, or migration application occurred.
-- Earlier [CI runs 40319915682](https://github.com/softzenith-projects/Untiered/actions/runs/40319915682) and [40320569790](https://github.com/softzenith-projects/Untiered/actions/runs/40320569790) passed all four jobs. After the develop merge, `npm install --package-lock-only --ignore-scripts --offline --no-audit --no-fund` passed; an incidental optional-peer rewrite was discarded. A local clean install was stopped after a Windows sandbox write error and a long retry. The new PR CI run must validate clean install, tests, and builds before merge.
+- web typecheck / lint / test (3,224 passing) / build: pass locally
+- api ktlintCheck / test / build: pass locally
+- CI green and merged: `feat/java-15-disclaimer`, `fix/piston-http1`, `fix/free-interviews-lifetime-copy`
+- `feat/runnable-code-blocks`: CI run 40826303144 green (api, web, images, database)
 
 ## Merge status
-
-- Draft [PR #121](https://github.com/softzenith-projects/Untiered/pull/121) on `feat/lifecycle-emails` targets `develop`. It remains unmerged for human review because it changes auth and personal-data handling. No push to `main`.
-- The PR description still describes the former SMTP sender. The GitHub connector returned 403 when updating it, and local `gh` credentials are invalid. This handoff and the current diff describe the SES v2 implementation.
+- Merged into `develop`: `feat/java-course-playgrounds`, `feat/java-15-disclaimer`, `fix/piston-http1`, `fix/free-interviews-lifetime-copy`. No migrations.
+- Merged `feat/runnable-code-blocks` into `develop` after CI run 40826303144 went green.
 
 ## Suggested next task
-
-- Verify both migration rows on the linked Supabase project, review PR #121 and update its description, configure hosted Supabase SMTP/rate limits/CAPTCHA/templates, then merge into `develop` only after new CI passes; test SES simulator and Auth callbacks with the owner's explicit live-test approval before setting `EMAIL_ENABLED=true`.
+- Decide on a newer Java for the runner (below), then give chapter 35 a real records example.
 
 ## Open questions for you
-
-- Confirm the production SES send-rate/daily quota and whether Supabase Auth mail includes a plain-text MIME alternative. The sender, region, support address, and app hosting are now specified by the owner.
+- **`main` still says 1 free interview a day.** Merging `develop` into `main` is yours to do. It is what puts the 3-for-life wording live.
+- **The runner is Java 15. Piston's package index has no newer Java.** A custom Piston package for Java 17 or 21 is possible, but it's build and maintenance work. Your call.
+- **Production hosting for Piston** is unchanged. Production keeps `CODE_RUNNER_ENABLED=false` until you decide.

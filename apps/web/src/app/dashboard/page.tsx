@@ -16,8 +16,8 @@ export const metadata: Metadata = { title: "Home" };
 export const dynamic = "force-dynamic";
 
 /**
- * The dashboard keeps the next interview as its primary action, then offers one bounded
- * daily recall question below it. Company and role are named at the point of starting a
+ * The dashboard keeps the next interview as its primary action, then the course in
+ * progress, then one bounded daily recall question, collapsed until asked for. Company and role are named at the point of starting a
  * session — there is no target list to configure, by design (PRD 05).
  */
 export default function DashboardPage() {
@@ -28,8 +28,8 @@ export default function DashboardPage() {
     <AppShell>
       <div className="flex flex-col gap-10">
         <DashboardPanel />
-        {arenaEnabled ? <DashboardQuestionOfDay questionsByDate={questionsByDate} /> : null}
         <ContinueLearning outlines={getCourseOutlines()} />
+        {arenaEnabled ? <DashboardQuestionOfDay questionsByDate={questionsByDate} /> : null}
       </div>
     </AppShell>
   );

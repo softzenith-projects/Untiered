@@ -19,7 +19,13 @@ export default async function LoginPage({
   return (
     <>
     <main className="grid min-h-dvh bg-surface lg:grid-cols-[1.08fr_0.92fr]">
-      <section className="relative hidden overflow-hidden bg-navy px-12 py-10 text-on-navy lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-14">
+      {/*
+        * Pinned to the viewport height, so it never stretches with the form beside it.
+        * It used to be as tall as the grid row, and the row is as tall as the form —
+        * so switching between "Sign in" and "Create account" (which adds two fields)
+        * re-spaced everything on this side.
+        */}
+      <section className="relative hidden overflow-hidden bg-navy px-12 py-10 text-on-navy lg:sticky lg:top-0 lg:flex lg:h-dvh lg:min-h-[40rem] lg:flex-col lg:justify-between lg:self-start xl:px-20 xl:py-14">
         <div
           aria-hidden="true"
           className="absolute -top-24 -right-28 size-96 rounded-full bg-accent/20 blur-3xl"
@@ -49,9 +55,9 @@ export default async function LoginPage({
               ["02", "Employer-aware rounds"],
               ["03", "Evidence in every report"],
             ].map(([number, label]) => (
-              <li key={number} className="rounded-xl border border-on-navy/10 bg-on-navy/5 p-4 backdrop-blur-sm">
-                <span className="font-mono text-micro text-on-navy-muted">{number}</span>
-                <span className="mt-2 block text-caption font-semibold text-on-navy">{label}</span>
+              <li key={number} className="rounded-xl bg-on-navy p-4 shadow-[var(--shadow-md)]">
+                <span className="font-mono text-micro font-bold text-navy/60">{number}</span>
+                <span className="mt-2 block text-caption font-semibold text-navy">{label}</span>
               </li>
             ))}
           </ul>
@@ -63,7 +69,8 @@ export default async function LoginPage({
         </p>
       </section>
 
-      <section className="flex items-center justify-center bg-surface-tint px-6 py-16 sm:px-10">
+      {/* Top-aligned at a fixed offset: a taller form grows downward instead of re-centring. */}
+      <section className="flex items-start justify-center bg-surface-tint px-6 py-16 sm:px-10 lg:pt-[max(4rem,10dvh)]">
         <div className="card flex w-full max-w-md flex-col gap-9 p-7 shadow-[var(--shadow-lg)] sm:p-10 lg:shadow-[var(--shadow-md)]">
           <Link href="/" className="flex w-fit items-center focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:hidden" aria-label="Untiered home">
             <BrandWordmark />

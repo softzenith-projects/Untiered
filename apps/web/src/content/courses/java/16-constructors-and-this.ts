@@ -34,8 +34,20 @@ export const chapterConstructorsAndThis: Chapter = {
     },
     {
       kind: "code",
-      caption: "Two constructors — one delegating to the other with this(...) — and using this.field to disambiguate.",
+      caption:
+        "Two constructors — one delegating to the other with this(...) — and using this.field to " +
+        "disambiguate.",
       code:
+        "public class ConstructorsDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        Student s1 = new Student("Priya", 12);\n' +
+        "        Student s2 = new Student();\n" +
+        "\n" +
+        "        s1.print();\n" +
+        "        s2.print();\n" +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "class Student {\n" +
         "    String name;\n" +
         "    int rollNumber;\n" +
@@ -54,16 +66,6 @@ export const chapterConstructorsAndThis: Chapter = {
         "    void print() {\n" +
         '        System.out.println(name + " (Roll " + rollNumber + ")");\n' +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class ConstructorsDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        Student s1 = new Student("Priya", 12);\n' +
-        "        Student s2 = new Student();\n" +
-        "\n" +
-        "        s1.print();\n" +
-        "        s2.print();\n" +
-        "    }\n" +
         "}\n",
       output:
         "Two-arg constructor ran for Priya\n" +
@@ -71,6 +73,12 @@ export const chapterConstructorsAndThis: Chapter = {
         "No-arg constructor ran, delegated to the two-arg one\n" +
         "Priya (Roll 12)\n" +
         "Unnamed (Roll 0)",
+      tryIt: {
+        language: "java",
+        prompt:
+          'Delete `this("Unnamed", 0);` from the no-argument constructor and run. `s2` now prints `null ' +
+          "(Roll 0)`: those are the values a field holds when nobody sets it.",
+      },
     },
     {
       kind: "p",

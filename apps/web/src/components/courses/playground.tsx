@@ -3,12 +3,15 @@
 import { java } from "@codemirror/lang-java";
 import { python } from "@codemirror/lang-python";
 import CodeMirror from "@uiw/react-codemirror";
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 import { matchesExpected } from "@/lib/browser-python";
 import { getRunner } from "@/lib/course-code-runner";
+import { JAVA_VERSION_NOTE } from "@/lib/server-code-runner";
+import { useAccessToken } from "@/lib/use-access-token";
 import type { Block } from "@/content/courses/types";
 import { InlineText } from "@/components/courses/inline-text";
+import { LESSON_BUTTON, LESSON_BUTTON_PRIMARY, LessonLabel, LessonPanel } from "@/components/courses/lesson-box";
 import { CopyCodeButton } from "@/components/courses/copy-code-button";
 
 type PlaygroundBlockData = Extract<Block, { kind: "playground" }>;
@@ -28,24 +31,37 @@ interface RunOutput {
  * The "try it yourself" block (task 049): an editable CodeMirror seeded from `block.starter`,
  * Run/Reset, and stdout/stderr shown distinctly.
  *
- * The static, server-rendered code sample right above this (see `block-renderer.tsx`) is
- * what a reader with JS off, or a search engine, actually sees — this component is a
- * progressive-enhancement layer on top of it, never the only copy of the content, per
- * task 049. It never fetches Pyodide on its own: `getRunner().prepare()` below is only
- * ever called from the Run click.
+ * The static, server-rendered code sample (see `block-renderer.tsx`) is what a reader with
+ * JS off actually sees; `onReady` tells `PlaygroundLazy` to take it away once this has
+ * mounted, so the same program is never on screen twice. It never fetches Pyodide on its
+ * own: `getRunner().prepare()` below is only ever called from the Run click.
  */
-export function Playground({ block }: { block: PlaygroundBlockData }) {
+export function Playground({
+  block,
+  title,
+  autoFocus,
+  onReady,
+}: {
+  block: PlaygroundBlockData;
+  title?: string;
+  autoFocus?: boolean;
+  onReady?: () => void;
+}) {
   const [source, setSource] = useState(block.starter);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<RunOutput | null>(null);
   const outputId = useId();
   const editorLabel = `Editable ${block.language} code`;
 
-  const runner = useMemo(() => getRunner(block.language), [block.language]);
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
+
+  const accessToken = useAccessToken();
+  const runner = useMemo(() => getRunner(block.language, accessToken), [block.language, accessToken]);
   const extensions = useMemo(() => [block.language === "java" ? java() : python()], [block.language]);
 
   const handleRun = useCallback(async () => {
-    if (!runner) return;
     setPhase("loading");
     const ready = await runner.prepare();
     if (!ready) {
@@ -53,7 +69,10 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
       setResult({
         stdout: "",
         stderr: "",
-        message: "Python could not be loaded here. Try again, or read through the code instead.",
+        message:
+          block.language === "java"
+            ? "Java runs on our server, and you need to be signed in for that. Sign in again, then press Run."
+            : "Python could not be loaded here. Try again, or read through the code instead.",
         timedOut: false,
         matchesExpected: null,
       });
@@ -72,7 +91,7 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
           ? matchesExpected(outcome.stdout, block.expectedOutput)
           : null,
     });
-  }, [runner, source, block.expectedOutput]);
+  }, [runner, source, block.expectedOutput, block.language]);
 
   const handleReset = useCallback(() => {
     setSource(block.starter);
@@ -80,73 +99,77 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
   }, [block.starter]);
 
   return (
-    <figure className="rounded-md border border-line-strong bg-surface-raised">
-      <figcaption className="border-b border-line-strong bg-surface-sunken px-4 py-3">
-        <p className="font-mono text-micro tracking-widest text-accent uppercase">Try it yourself</p>
-        {block.prompt ? (
-          <p className="mt-1 text-caption leading-relaxed text-ink-muted">
-            <InlineText text={block.prompt} />
-          </p>
-        ) : null}
-      </figcaption>
+    <LessonPanel label="Try it yourself" title={title} flush>
+      {block.prompt ? (
+        <p className="border-b border-line px-5 py-3 text-body leading-relaxed text-ink sm:px-6">
+          <InlineText text={block.prompt} />
+        </p>
+      ) : null}
 
       <div className="min-h-[8rem]">
         <CodeMirror
           value={source}
           extensions={extensions}
           onChange={setSource}
+          autoFocus={autoFocus}
           basicSetup={{ lineNumbers: true, foldGutter: false, highlightActiveLine: false }}
           aria-label={editorLabel}
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-line-strong px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3 sm:px-6">
         <CopyCodeButton code={source} />
 
         <button
           type="button"
           onClick={handleReset}
-          className="rounded-md border border-line-strong px-3 py-1.5 text-caption text-ink-muted transition-colors hover:bg-surface-sunken"
+          className={LESSON_BUTTON}
         >
           Reset to original
         </button>
 
-        {runner ? (
-          <button
-            type="button"
-            onClick={() => void handleRun()}
-            disabled={phase !== "idle"}
-            aria-describedby={outputId}
-            className="rounded-lg bg-accent px-3.5 py-1.5 text-caption font-medium text-accent-contrast transition hover:bg-accent-strong disabled:opacity-50"
-          >
-            {phase === "loading" ? "Loading Python…" : phase === "running" ? "Running…" : "Run"}
-          </button>
-        ) : (
-          /*
-           * Said once, plainly, in place of a Run button — never a disabled control with no
-           * explanation, and never "coming soon" hype (task 049).
-           */
-          <p className="text-caption text-ink-subtle">
-            Running Java in the browser isn&rsquo;t available yet — there is no free, unencumbered way to
-            do it today. Copy still works; read through the code, or switch to a Python example to run one.
-          </p>
+        <button
+          type="button"
+          onClick={() => void handleRun()}
+          disabled={phase !== "idle"}
+          aria-describedby={outputId}
+          className={LESSON_BUTTON_PRIMARY}
+        >
+          {phase === "loading" && block.language === "python" ? "Loading Python…" : phase === "idle" ? "Run" : "Running…"}
+        </button>
+
+        {/* Said before Run, not after: the code leaves this machine, and only the code does. */}
+        {block.language === "java" && (
+          <div className="flex flex-col">
+            <p className="text-caption text-ink-subtle">Java runs on our server — only this code is sent.</p>
+            <p className="text-caption text-ink-subtle">{JAVA_VERSION_NOTE}</p>
+          </div>
         )}
       </div>
 
-      <div id={outputId} role="status" aria-live="polite" className="border-t border-line-strong px-4 py-3">
-        {!result && <p className="text-caption text-ink-subtle">Run to see what this prints.</p>}
+      <div id={outputId} role="status" aria-live="polite" className="border-t border-line bg-surface-sunken px-5 py-3 sm:px-6">
+        {/* Before a run, what the starter prints: the static copy that showed it is gone now. */}
+        {!result && block.expectedOutput ? (
+          <div>
+            <LessonLabel>Expected output</LessonLabel>
+            <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap font-mono text-caption text-ink-muted">
+              {block.expectedOutput}
+            </pre>
+          </div>
+        ) : null}
+        {!result && !block.expectedOutput && <p className="text-caption text-ink-subtle">Run to see what this prints.</p>}
         {result?.message && <p className="text-caption text-ink-muted">{result.message}</p>}
         {result && !result.message && (
           <div className="flex flex-col gap-2">
             <div>
-              <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Output</p>
+              <LessonLabel>Output</LessonLabel>
               <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap font-mono text-caption text-ink">
                 {result.stdout || "(nothing printed)"}
               </pre>
             </div>
             {result.stderr ? (
               <div>
-                <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Error</p>
+                <LessonLabel tone="danger">Error</LessonLabel>
                 <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap font-mono text-caption text-danger">
                   {result.stderr}
                 </pre>
@@ -160,6 +183,6 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
           </div>
         )}
       </div>
-    </figure>
+    </LessonPanel>
   );
 }

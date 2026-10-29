@@ -38,6 +38,24 @@ export const chapterEncapsulation: Chapter = {
       kind: "code",
       caption: "A BankAccount with a private balance, reachable only through validated methods.",
       code:
+        "public class EncapsulationDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        BankAccount acc = new BankAccount("Priya", 1000.0);\n' +
+        "\n" +
+        "        acc.deposit(500.0);\n" +
+        '        System.out.println("Balance after deposit: " + acc.getBalance());\n' +
+        "\n" +
+        "        acc.withdraw(2000.0);\n" +
+        '        System.out.println("Balance after rejected withdrawal: " + acc.getBalance());\n' +
+        "\n" +
+        "        acc.deposit(-50.0);\n" +
+        '        System.out.println("Balance after rejected deposit: " + acc.getBalance());\n' +
+        "\n" +
+        "        acc.withdraw(300.0);\n" +
+        '        System.out.println("Balance after valid withdrawal: " + acc.getBalance());\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "class BankAccount {\n" +
         "    private String owner;\n" +
         "    private double balance;\n" +
@@ -66,24 +84,6 @@ export const chapterEncapsulation: Chapter = {
         "        }\n" +
         "        balance -= amount;\n" +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class EncapsulationDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        BankAccount acc = new BankAccount("Priya", 1000.0);\n' +
-        "\n" +
-        "        acc.deposit(500.0);\n" +
-        '        System.out.println("Balance after deposit: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.withdraw(2000.0);\n" +
-        '        System.out.println("Balance after rejected withdrawal: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.deposit(-50.0);\n" +
-        '        System.out.println("Balance after rejected deposit: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.withdraw(300.0);\n" +
-        '        System.out.println("Balance after valid withdrawal: " + acc.getBalance());\n' +
-        "    }\n" +
         "}\n",
       output:
         "Balance after deposit: 1500.0\n" +
@@ -92,6 +92,13 @@ export const chapterEncapsulation: Chapter = {
         "Deposit rejected: amount must be positive\n" +
         "Balance after rejected deposit: 1500.0\n" +
         "Balance after valid withdrawal: 1200.0",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Add `acc.balance = 1000000;` to `main` and run. The compiler stops you, because `balance` is " +
+          "private. The only way to change it is through `deposit` and `withdraw`, which check the " +
+          "amount.",
+      },
     },
     {
       kind: "p",
@@ -179,10 +186,10 @@ export const chapterEncapsulation: Chapter = {
       kind: "quiz",
       question: "What happens if code outside the BankAccount class writes `acc.balance = 5000;` where balance is private?",
       options: [
-        "It works, silently overwriting balance",
-        "It compiles but throws an exception at run time",
-        "It fails to compile — private fields aren't visible outside the class",
-        "It works only if acc is public",
+        "It works, and silently overwrites balance, because Java only warns about private access.",
+        "It compiles but throws an exception at run time, when the private field is accessed.",
+        "It fails to compile: private fields aren't visible outside the class.",
+        "It works only if acc was itself declared public, which makes every field of it open.",
       ],
       answer: 2,
       why:
@@ -202,10 +209,10 @@ export const chapterEncapsulation: Chapter = {
       kind: "quiz",
       question: "Why does BankAccount provide deposit()/withdraw() methods instead of a plain setBalance(double) method?",
       options: [
-        "setBalance would be faster",
-        "Methods can validate the change (reject negative deposits, block overdrafts); a plain setter would let any value through",
-        "Java doesn't allow setters on double fields",
-        "There's no real difference",
+        "setBalance would be slower than a method, because every setter call goes through extra JVM checks.",
+        "Methods can validate the change, rejecting negative deposits and overdrafts; a plain setter lets any value in.",
+        "Java doesn't allow setter methods on double fields, so a differently named method is required.",
+        "There's no real difference, because a plain setter checks its argument automatically as well.",
       ],
       answer: 1,
       why:

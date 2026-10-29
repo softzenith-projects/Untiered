@@ -263,7 +263,7 @@ export const chapterExamplesBeatAdjectives: Chapter = {
       kind: "quiz",
       question: "Why is `28/02/2026 → 2026-02-28` a better example than `03/04/2026 → 2026-04-03`?",
       options: [
-        "It is longer, so the model pays more attention to it",
+        "It is longer, so the model pays more attention to it and treats it as the more important example",
         "It rules out the month-first reading, because there is no 28th month",
         "February is a common month in support data",
         "It has fewer digits to confuse the tokenizer",
@@ -279,7 +279,7 @@ export const chapterExamplesBeatAdjectives: Chapter = {
       options: [
         "Its weights, slightly, for the duration of the session",
         "Nothing about the model — the examples are context, re-sent on every call",
-        "Its temperature",
+        "Its temperature, so that its answers become more consistent from one call to the next",
         "Its context window size",
       ],
       answer: 1,
@@ -291,7 +291,7 @@ export const chapterExamplesBeatAdjectives: Chapter = {
       kind: "quiz",
       question: "Your extraction prompt has three examples, all of which contain a date. What will most likely happen on an input with no date?",
       options: [
-        "The model will say it cannot find one",
+        "The model will say plainly that it cannot find a date, because it knows the examples did not cover this case",
         "The model will produce something date-shaped, because that is the only pattern it has been shown",
         "The model will return an empty string",
         "The API will error",

@@ -40,6 +40,20 @@ export const chapterAbstractInterfaces: Chapter = {
         "An abstract Vehicle with one real method and one unimplemented one, plus a Chargeable interface " +
         "implemented alongside it.",
       code:
+        "public class AbstractInterfaceDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        Vehicle car = new Car("Swift");\n' +
+        "        car.printInfo();\n" +
+        "\n" +
+        '        ElectricCar ec = new ElectricCar("Nexon EV");\n' +
+        "        ec.printInfo();\n" +
+        "        ec.chargeBattery();\n" +
+        "        ec.printChargeStatus();\n" +
+        "\n" +
+        '        System.out.println("ec instanceof Chargeable: " + (ec instanceof Chargeable));\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "abstract class Vehicle {\n" +
         "    protected String name;\n" +
         "\n" +
@@ -83,20 +97,6 @@ export const chapterAbstractInterfaces: Chapter = {
         "    public void chargeBattery() {\n" +
         '        System.out.println(name + " is charging.");\n' +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class AbstractInterfaceDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        Vehicle car = new Car("Swift");\n' +
-        "        car.printInfo();\n" +
-        "\n" +
-        '        ElectricCar ec = new ElectricCar("Nexon EV");\n' +
-        "        ec.printInfo();\n" +
-        "        ec.chargeBattery();\n" +
-        "        ec.printChargeStatus();\n" +
-        "\n" +
-        '        System.out.println("ec instanceof Chargeable: " + (ec instanceof Chargeable));\n' +
-        "    }\n" +
         "}\n",
       output:
         "Swift gives 18.5 km/l\n" +
@@ -104,6 +104,12 @@ export const chapterAbstractInterfaces: Chapter = {
         "Nexon EV is charging.\n" +
         "Charging status: OK\n" +
         "ec instanceof Chargeable: true",
+      tryIt: {
+        language: "java",
+        prompt:
+          'Add `new Vehicle("Generic")` to `main` and read the compile error. Then write a `Bike` class ' +
+          "that extends `Vehicle` and returns its own `fuelEfficiency()`.",
+      },
     },
     {
       kind: "p",
@@ -229,10 +235,10 @@ export const chapterAbstractInterfaces: Chapter = {
       kind: "quiz",
       question: "What is a default method on an interface?",
       options: [
-        "A method every implementing class must override",
-        "A method with a body that implementing classes inherit automatically unless they override it",
-        "The interface's constructor",
-        "A method that only works on primitive types",
+        "A method every implementing class must override, because interfaces cannot contain method bodies.",
+        "A method with a body that implementing classes inherit unless they override it.",
+        "The interface's constructor, which runs when a class that implements it is created.",
+        "A method that works only on primitive types, because defaults cannot take object parameters.",
       ],
       answer: 1,
       why:

@@ -283,7 +283,7 @@ export const chapterAskingForStructure: Chapter = {
       kind: "quiz",
       question: "A model returns `{\"order_id\": \"A-4471\", \"status\": \"paid\", \"amount_inr\": \"3499\"}` against a schema requiring an integer amount. What is the best next move?",
       options: [
-        "Cast the string to an integer and carry on",
+        "Cast the string to an integer yourself and carry on, since the value is plainly meant to be a number",
         "Send back the specific error — amount_inr should be int, got str — and ask for a corrected reply",
         "Lower the temperature and retry",
         "Accept it; JSON types are advisory",
@@ -300,7 +300,7 @@ export const chapterAskingForStructure: Chapter = {
         "That the values are correct",
         "That the output matches the declared shape and types",
         "That the model used a tool",
-        "That no validation is needed afterwards",
+        "That no validation is needed afterwards, because the values will be correct too",
       ],
       answer: 1,
       why:
@@ -311,7 +311,7 @@ export const chapterAskingForStructure: Chapter = {
       kind: "quiz",
       question: "According to the MCP specification, what must a tool's `inputSchema` be?",
       options: [
-        "A plain string describing the arguments",
+        "A plain string that describes the arguments in ordinary English for the model to read",
         "A valid JSON Schema object, defaulting to draft 2020-12 when no $schema is given",
         "An example call",
         "Optional — tools may omit it",

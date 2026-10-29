@@ -57,6 +57,7 @@ describe("DashboardQuestionOfDay", () => {
 
     expect(screen.getByRole("heading", { name: "Question of the day" })).toBeInTheDocument();
     expect(screen.getByText(question.prompt)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Answer it" }));
 
     await user.click(screen.getByRole("button", { name: /Reading array\[i\]/ }));
     await user.click(screen.getByRole("button", { name: /Confirm/ }));
@@ -67,6 +68,17 @@ describe("DashboardQuestionOfDay", () => {
     expect(recordAnswer.mock.calls[0]![1]).toBe(true);
     expect(recordAnswer.mock.calls[0]![4]).toBe(today);
     expect(await screen.findByText(/Awesome job — you solved the Question of the Day/i)).toBeInTheDocument();
+  });
+
+  it("starts collapsed on the dashboard and opens in full on the daily page", () => {
+    const { unmount } = render(<DashboardQuestionOfDay questionsByDate={todayQuestions()} />);
+    expect(screen.getByText(question.prompt)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Reading array\[i\]/ })).not.toBeInTheDocument();
+    unmount();
+
+    render(<DashboardQuestionOfDay questionsByDate={todayQuestions()} focused />);
+    expect(screen.queryByRole("button", { name: "Answer it" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Reading array\[i\]/ })).toBeInTheDocument();
   });
 
   it("restores the green solved state from account progress", () => {
@@ -81,6 +93,7 @@ describe("DashboardQuestionOfDay", () => {
     const user = userEvent.setup();
     render(<DashboardQuestionOfDay questionsByDate={todayQuestions()} />);
 
+    await user.click(screen.getByRole("button", { name: "Answer it" }));
     await user.click(screen.getByRole("button", { name: /Scanning every value/ }));
     await user.click(screen.getByRole("button", { name: /Confirm/ }));
 
@@ -96,6 +109,7 @@ describe("DashboardQuestionOfDay", () => {
     const user = userEvent.setup();
     render(<DashboardQuestionOfDay questionsByDate={todayQuestions()} />);
 
+    await user.click(screen.getByRole("button", { name: "Answer it" }));
     await user.click(screen.getByRole("button", { name: /Reading array\[i\]/ }));
     await user.click(screen.getByRole("button", { name: /Confirm/ }));
 

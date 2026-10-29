@@ -328,14 +328,60 @@
     box-shadow: var(--focus-ring);
   }
 
+  /* Solid accent with contrast text: a pale tint left selected text the same blue-ish
+     tone as links and washes, so a selection was hard to see at all. */
   ::selection {
-    background: color-mix(in srgb, var(--accent) 24%, transparent);
+    background: var(--accent);
+    color: var(--accent-contrast);
+  }
+}
+
+/*
+ * Form controls sit in `components`, below `utilities`, so a caller's `pl-12` or
+ * `min-h-12` on <Input> actually applies. In `utilities` the shorthand `padding` here
+ * came later in source order and silently won — the course search text ran under its icon.
+ */
+@layer components {
+  .field-control {
+    min-height: var(--control-height);
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
     color: var(--ink);
+    padding: 0.65rem 0.8rem;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition:
+      border-color var(--motion-fast) var(--ease-product),
+      box-shadow var(--motion-fast) var(--ease-product);
+  }
+  .field-control::placeholder {
+    color: var(--ink-subtle);
+  }
+  .field-control:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+  .field-control[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+  .field-error {
+    color: var(--danger);
   }
 }
 
 @layer utilities {
   .layout-content { max-width: var(--layout-content); }
+  /*
+   * The one side gutter. Header, page body and footer all use it with
+   * the same max-width, so the logo's left edge and the avatar's right edge are the
+   * content edges on every page. Mismatched gutters left the body 24px inside the header
+   * and read as a misalignment rather than as a margin.
+   */
+  .page-gutter { padding-inline: 1rem; }
+  @media (min-width: 40rem) { .page-gutter { padding-inline: 1.5rem; } }
+  @media (min-width: 64rem) { .page-gutter { padding-inline: 2rem; } }
   .layout-wide { max-width: var(--layout-wide); }
   .layout-reader { max-width: var(--layout-reader); }
   .rounded-surface { border-radius: var(--radius-xl); }
@@ -445,34 +491,6 @@
   }
   .action-destructive:hover {
     background: color-mix(in srgb, var(--danger) 85%, var(--ink));
-  }
-
-  .field-control {
-    min-height: var(--control-height);
-    width: 100%;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-md);
-    background: var(--surface-raised);
-    color: var(--ink);
-    padding: 0.65rem 0.8rem;
-    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
-    transition:
-      border-color var(--motion-fast) var(--ease-product),
-      box-shadow var(--motion-fast) var(--ease-product);
-  }
-  .field-control::placeholder {
-    color: var(--ink-subtle);
-  }
-  .field-control:focus {
-    border-color: var(--accent);
-    outline: none;
-    box-shadow: var(--focus-ring);
-  }
-  .field-control[aria-invalid="true"] {
-    border-color: var(--danger);
-  }
-  .field-error {
-    color: var(--danger);
   }
 
   /* Small rounded label — status, tag, coverage archetype. Never the primary action. */
@@ -631,11 +649,60 @@
   .chapter-layout-grid { grid-template-columns: 17rem minmax(0, 1fr) 15rem; gap: var(--space-8); }
 }
 
+/* Landing page motion: the employer strip, the demo's waveform, and content arriving. */
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+.marquee {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee-track {
+  width: max-content;
+  animation: marquee 70s linear infinite;
+}
+
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+.wave-bar {
+  transform-origin: center;
+  animation: wave 720ms var(--ease-product) infinite;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rise-in {
+  animation: rise-in var(--motion-slow) var(--ease-product) both;
+}
+
 /*
  * Someone who has turned motion down has done so for a reason, and none of this carries
  * information that the text beside it does not already carry.
  */
 @media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .wave-bar {
+    animation: none;
+  }
+
+  /* A still strip shows every name once, wrapped, instead of a cut-off row. */
+  .marquee { mask-image: none; }
+  .marquee-track { width: auto; justify-content: center; }
+  .marquee-track > ul { flex-shrink: 1; flex-wrap: wrap; justify-content: center; padding-inline: 1rem; }
+  .marquee-duplicate { display: none; }
+
   *,
   *::before,
   *::after {

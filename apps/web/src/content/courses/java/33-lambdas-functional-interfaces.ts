@@ -40,16 +40,12 @@ export const chapterLambdas: Chapter = {
     {
       kind: "code",
       caption:
-        "A custom functional interface implemented with a lambda, plus java.util.function's ready-made ones: " +
-        "Predicate, Function, BiFunction, Runnable.",
+        "A custom functional interface implemented with a lambda, plus java.util.function's ready-made " +
+        "ones: Predicate, Function, BiFunction, Runnable.",
       code:
         "import java.util.function.BiFunction;\n" +
         "import java.util.function.Function;\n" +
         "import java.util.function.Predicate;\n" +
-        "\n" +
-        "interface Greeter {\n" +
-        "    String greet(String name);\n" +
-        "}\n" +
         "\n" +
         "public class LambdasDemo {\n" +
         "    static int applyTwice(Function<Integer, Integer> f, int start) {\n" +
@@ -76,6 +72,10 @@ export const chapterLambdas: Chapter = {
         '        Runnable task = () -> System.out.println("Task running via lambda");\n' +
         "        task.run();\n" +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "interface Greeter {\n" +
+        "    String greet(String name);\n" +
         "}\n",
       output:
         "Good morning, Priya.\n" +
@@ -86,6 +86,12 @@ export const chapterLambdas: Chapter = {
         "applyTwice(square, 3) = 81\n" +
         "add(4, 5) = 9\n" +
         "Task running via lambda",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Write a third `Greeter` that greets in Hindi, and a `Predicate<Integer>` that checks whether a " +
+          "number is positive. Test both.",
+      },
     },
     {
       kind: "p",
@@ -178,10 +184,10 @@ export const chapterLambdas: Chapter = {
       kind: "quiz",
       question: "Which of these can a lambda expression be assigned to?",
       options: [
-        "Any interface",
-        "Only an interface with exactly one abstract method (a functional interface)",
-        "Any class",
-        "Only java.util.function interfaces specifically",
+        "Any interface at all, as long as the lambda's parameters match one of its methods.",
+        "Only an interface with exactly one abstract method (a functional interface).",
+        "Any class, as long as the lambda is placed inside one of that class's methods.",
+        "Only interfaces from the java.util.function package, and no interface that you write yourself.",
       ],
       answer: 1,
       why:

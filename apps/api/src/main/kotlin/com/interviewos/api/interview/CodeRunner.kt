@@ -1,12 +1,15 @@
 package com.interviewos.api.interview
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.http.MediaType
+import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 import tools.jackson.databind.JsonNode
+import java.net.http.HttpClient
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -34,12 +37,26 @@ import java.util.concurrent.atomic.AtomicReference
  * at all.
  */
 @Component
-class CodeRunner(
+class CodeRunner internal constructor(
     private val properties: CodeRunnerProperties,
-    restClientBuilder: RestClient.Builder,
+    private val restClient: RestClient,
 ) {
+    /**
+     * Talks HTTP/1.1, never the JDK client's default HTTP/2. Over plain http that default
+     * opens with an `Upgrade: h2c` request, and Piston answers it with a 400 — so every
+     * Run failed at the runtime lookup with "No java runtime is available right now",
+     * while curl and the browser, which never ask to upgrade, saw a healthy runner.
+     */
+    @Autowired
+    constructor(properties: CodeRunnerProperties, restClientBuilder: RestClient.Builder) : this(
+        properties,
+        restClientBuilder
+            .clone()
+            .requestFactory(JdkClientHttpRequestFactory(HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()))
+            .build(),
+    )
+
     private val log = LoggerFactory.getLogger(javaClass)
-    private val restClient = restClientBuilder.build()
 
     /**
      * Piston wants an exact version, and the versions on the public instance move. Looked
@@ -92,7 +109,14 @@ class CodeRunner(
                 stdout = run.path("stdout").asString().orEmpty(),
                 // A compile failure is the useful message in Java, and Piston reports it
                 // in a different place from a runtime error. Both reach the candidate.
-                stderr = listOf(compileError, run.path("stderr").asString().orEmpty()).filter { it.isNotBlank() }.joinToString("\n"),
+                // Piston's Java package renames the file before compiling, so its errors name
+                // `Main.java.java` — a file the candidate never wrote.
+                stderr =
+                    listOf(compileError, run.path("stderr").asString().orEmpty())
+                        .filter { it.isNotBlank() }
+                        .joinToString("\n")
+                        .replace("${language.fileName}.java", language.fileName)
+                        .let(::explainMissingMain),
                 exitCode = run.path("code").asInt(-1),
                 timedOut = run.path("signal").asString() == "SIGKILL",
                 available = true,
@@ -118,9 +142,12 @@ class CodeRunner(
 
             val found =
                 runtimes
+                    .values()
                     .mapNotNull { node ->
                         val name = node.path("language").asString()
-                        val aliases = node.path("aliases").map { it.asString() }
+                        // `.values()`, not `.map` on the node: in Jackson 3 the latter hands the
+                        // whole array to the lambda once, and `asString()` on an array throws.
+                        val aliases = node.path("aliases").values().map { it.asString() }
                         val version = node.path("version").asString()
                         if (version.isNullOrBlank()) {
                             null
@@ -138,6 +165,18 @@ class CodeRunner(
             null
         }
     }
+
+    /**
+     * Piston runs Java as a single source file, and the launcher starts whichever class
+     * comes first. A helper class above `main`'s class is ordinary Java everywhere else,
+     * so the launcher's bare "can't find main" reads like a bug in the candidate's code.
+     */
+    private fun explainMissingMain(stderr: String): String =
+        if ("can't find main(String[]) method in class" in stderr) {
+            "$stderr\nJava runs the first class in the file. Move the class that has main to the top."
+        } else {
+            stderr
+        }
 }
 
 /** The languages a candidate may write in. Two, deliberately — this is an interview, not an IDE. */

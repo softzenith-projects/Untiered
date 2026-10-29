@@ -25,20 +25,29 @@ export interface EntitlementView {
     | "daily_minutes_short";
   message: string;
   /**
-   * How many free rounds are left, or null when there is no limit.
-   *
-   * Null is the case today: every round is free until there is a paid tier worth gating
-   * against. `free_tier_exhausted` cannot occur while it is null.
+   * How many of the lifetime free rounds are left (3 in all, owner, 29 October 2026), or
+   * null when the server sets no free limit.
    */
   remainingFree: number | null;
   /**
-   * The daily free allowance (2 rounds and 60 planned minutes a day, reset at midnight
-   * India time). Each is null when that allowance is switched off on the server.
+   * An optional daily allowance, reset at midnight India time. Off by default, so each is
+   * null: the free tier is the lifetime rounds above, not a daily quota.
    */
   dailyRoundLimit: number | null;
   dailyMinuteLimit: number | null;
   remainingRoundsToday: number | null;
   remainingMinutesToday: number | null;
+  /** The round blocking a new one (`created` or `in_progress`), so a client can always offer Resume. */
+  openSessionId?: string | null;
+  /** Paid interviews bought and not yet spent. */
+  creditBalance: number;
+  /**
+   * What would pay for a round started now: the free allowance, or one paid interview.
+   * Null when no round may start.
+   */
+  funding: "free" | "credit" | null;
+  /** Whether interviews can be bought here; false until the server has Razorpay keys. */
+  purchasable: boolean;
 }
 
 export interface TurnView {

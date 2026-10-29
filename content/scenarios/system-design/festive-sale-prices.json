@@ -1,0 +1,274 @@
+{
+  "course_slug": "system-design",
+  "slug": "festive-sale-prices",
+  "title": "Midnight Sale Prices",
+  "hook": "Your marketplace's festive sale starts at midnight, and crores of listings must show their new prices at 00:00 exactly. In rehearsal the price update took 40 minutes and customers saw a mix of old and new prices.",
+  "context": "E-commerce marketplace where one instant must change prices across the database, the CDN, search and checkout.",
+  "tier": "advanced",
+  "concept_ids": [
+    "staged-publish",
+    "cdn",
+    "propagation-delay",
+    "search-index-lag",
+    "price-quotes",
+    "thundering-herd",
+    "hot-keys"
+  ],
+  "estimated_minutes": 14,
+  "status": "live",
+  "solution_brief": "Stage the sale prices in advance as a versioned price set and switch one active-version pointer at 00:00, rather than updating crores of rows at midnight. Keep product pages cacheable by fetching price from a tiny separately cached endpoint keyed by version, so the switch invalidates almost nothing. Let search hold ids and filters and hydrate prices from the price service. Issue a quote with an expiry when checkout starts and charge the quoted price until it expires. Pre-warm and coalesce requests for the headline deal page so the first second does not stampede the origin.",
+  "steps": [
+    {
+      "kind": "initial",
+      "step_type": "design_choice",
+      "prompt": "A midnight job runs an UPDATE over 2 crore listings. In rehearsal it took 40 minutes, held locks that slowed checkout, and customers saw old prices on some products and sale prices on others. How should the new prices go live?",
+      "context_note": "The sale starts at 00:00, and the rehearsal showed that updating crores of rows at that moment cannot be both fast and consistent.",
+      "system_state": {
+        "nodes": [
+          "price-update-job",
+          "listings-db(prices)",
+          "product-pages"
+        ],
+        "links": [
+          [
+            "price-update-job",
+            "listings-db(prices)"
+          ],
+          [
+            "listings-db(prices)",
+            "product-pages"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Run the same update with ten times more parallel workers so it finishes in about four minutes"
+        },
+        {
+          "id": "b",
+          "text": "Start the same update at 23:00 so most prices are new by midnight"
+        },
+        {
+          "id": "c",
+          "text": "Update prices in small throttled batches after midnight so checkout is never slowed"
+        },
+        {
+          "id": "d",
+          "text": "Stage prices in a versioned set early, then flip one active-version pointer at 00:00"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "The slow, heavy work of writing 2 crore rows can happen days early on a staged copy, leaving only a tiny atomic switch at 00:00. More workers still leave minutes of mixed prices and heavier locks, starting at 23:00 leaks sale prices an hour early, and throttled batches keep the mixture going for longer.",
+      "bottleneck_note": "Do the expensive work before the deadline and make the deadline itself a single small switch.",
+      "concept_ids": [
+        "staged-publish"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Product pages are cached at the CDN for ten minutes. After the switch many customers still see the old price, and your plan is to purge all 2 crore page URLs at 00:00. What would you do instead?",
+      "context_note": "The database now flips instantly, but the CDN keeps serving page copies that contain the old price baked in.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "cdn",
+          "product-page-origin",
+          "price-store(versioned)"
+        ],
+        "links": [
+          [
+            "customers",
+            "cdn"
+          ],
+          [
+            "cdn",
+            "product-page-origin"
+          ],
+          [
+            "product-page-origin",
+            "price-store(versioned)"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Purge every product page at midnight and let the CDN refetch them all from the origin"
+        },
+        {
+          "id": "b",
+          "text": "Keep the pages cacheable but load the price from a tiny endpoint cached by price version"
+        },
+        {
+          "id": "c",
+          "text": "Set the cache time of every product page to zero for the whole day of the sale"
+        },
+        {
+          "id": "d",
+          "text": "Ask the CDN to serve stale pages for an hour so the origin is shielded from the traffic"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "If the price is not baked into the page, flipping the version changes one small cached response instead of crores of pages, and the heavy page shell stays cached. Purging everything sends the entire catalogue back to the origin at the busiest second, a zero cache time throws away the CDN's benefit all day, and serving stale pages guarantees wrong prices.",
+      "bottleneck_note": "Cache the large stable part and fetch the small volatile part separately, keyed by version.",
+      "concept_ids": [
+        "cdn",
+        "propagation-delay"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "Search results show prices from the search index, which is updated asynchronously and lags the price database by about 15 minutes after the switch. Customers search for a deal and see the old price. What is the best fix?",
+      "context_note": "Pages now show the right price at 00:00, but the search results list still disagrees with them for a quarter of an hour.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "search-service",
+          "search-index",
+          "price-service"
+        ],
+        "links": [
+          [
+            "customers",
+            "search-service"
+          ],
+          [
+            "search-service",
+            "search-index"
+          ],
+          [
+            "search-service",
+            "price-service"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Disable search between 00:00 and 00:20 so that customers do not see inconsistent prices"
+        },
+        {
+          "id": "b",
+          "text": "Reindex every listing with its sale price before midnight so the index is already up to date"
+        },
+        {
+          "id": "c",
+          "text": "Show the indexed price and add a note beneath it that the price may differ on the product page"
+        },
+        {
+          "id": "d",
+          "text": "Have search return product ids and fill the price from the price service"
+        }
+      ],
+      "correct_option_id": "d",
+      "explanation": "The index is good at finding and filtering products, and it can lag without harm if the price shown always comes from the source of truth. Loading sale prices into the index early would leak them before the sale, and disabling search or adding a disclaimer either loses the traffic or tells customers to distrust the page. Sorting by price may still lag briefly, and that is an accepted trade-off.",
+      "bottleneck_note": "Let a lagging index find things, but read the facts that must be correct from the source of truth.",
+      "concept_ids": [
+        "search-index-lag"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "tradeoff",
+      "prompt": "A customer saw a phone at the sale price of ₹19,999 at 00:02, spent 12 minutes comparing, then paid after the sale price had moved to ₹21,499 for the next wave. What should checkout charge?",
+      "context_note": "Prices are now consistent for browsing, but they can change while a customer is partway through buying.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "checkout-service",
+          "price-service"
+        ],
+        "links": [
+          [
+            "customers",
+            "checkout-service"
+          ],
+          [
+            "checkout-service",
+            "price-service"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Always charge the live price at the moment of payment, even if it is higher than the displayed one"
+        },
+        {
+          "id": "b",
+          "text": "Honour any price that was ever shown to the customer, for as long as the item stays in their cart"
+        },
+        {
+          "id": "c",
+          "text": "Create a quote when checkout starts, charge it until it expires, then re-quote with a message"
+        },
+        {
+          "id": "d",
+          "text": "Charge whichever of the two prices is higher, to protect margin on the sale"
+        }
+      ],
+      "correct_option_id": "c",
+      "explanation": "A quote with a short expiry, say 15 minutes, gives the customer what they were shown while bounding how long the business is exposed to an old price. Charging the live price surprises people at the last step, honouring prices for ever lets a cart become a free option on any past price, and charging the higher figure punishes customers for the system's timing.",
+      "bottleneck_note": "Promise a price for a bounded window, snapshot it, and make expiry visible.",
+      "concept_ids": [
+        "price-quotes"
+      ]
+    },
+    {
+      "kind": "probe",
+      "step_type": "design_choice",
+      "prompt": "The headline deal is one phone whose page gets 40,000 requests a second at 00:00. Its cached copy expires right at the switch, so every request misses and the origin database for that one product falls over. How do you protect it?",
+      "context_note": "Quotes protect the price paid, but one product page is now a hot key that every cache layer misses at the same moment.",
+      "system_state": {
+        "nodes": [
+          "customers",
+          "cdn",
+          "product-page-origin",
+          "price-store(versioned)"
+        ],
+        "links": [
+          [
+            "customers",
+            "cdn"
+          ],
+          [
+            "cdn",
+            "product-page-origin"
+          ],
+          [
+            "product-page-origin",
+            "price-store(versioned)"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "a",
+          "text": "Lower the cache time of that page to a few seconds so that no copy ever grows old"
+        },
+        {
+          "id": "b",
+          "text": "Pre-warm the page before midnight and collapse simultaneous misses into one origin fetch"
+        },
+        {
+          "id": "c",
+          "text": "Spread the product row across ten database replicas so each handles 4,000 requests a second"
+        },
+        {
+          "id": "d",
+          "text": "Rate limit each customer to one page view per second so the total load stays manageable"
+        }
+      ],
+      "correct_option_id": "b",
+      "explanation": "The danger is many identical misses at the same instant, so the page should already be cached and any remaining miss should reach the origin once while everyone else is served the old or shared copy. Shorter cache times create more misses, replicas still serve every request from the origin tier, and per-customer limits do nothing when 40,000 different customers arrive together.",
+      "bottleneck_note": "For a single hot key, prevent the simultaneous miss rather than trying to absorb it.",
+      "concept_ids": [
+        "thundering-herd",
+        "hot-keys"
+      ]
+    }
+  ]
+}

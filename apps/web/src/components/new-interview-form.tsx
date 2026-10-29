@@ -17,15 +17,16 @@ import { useAccessToken } from "@/lib/use-access-token";
 
 
 /**
- * Real sentences, not placeholder poetry. Each one is a round this actually runs, and
- * naming Infosys and a techno-managerial panel beside Google says more about coverage
- * than a paragraph of copy would.
+ * Short, neutral starting points: a role and an employer, nothing more. Long first-person
+ * sentences ("I always fumble the escalation questions") read as if they were somebody
+ * else's round, and every candidate saw the same four. One product company, one more, a
+ * service firm and a Big Four firm still show the range without telling a story.
  */
 const EXAMPLES = [
-  "Infosys MR round next Tuesday — 5 years, Java backend, and I always fumble the escalation questions.",
-  "Google L4 system design in six weeks. I haven't interviewed in four years.",
-  "Deloitte consultant case round. First time doing a case, I have no idea how to structure one.",
-  "HR round at Adyen — Amsterdam, and I need to talk about relocation and notice period.",
+  "SDE 1 at Amazon",
+  "Software Engineer at Microsoft",
+  "Systems Engineer at Infosys",
+  "Analyst at Deloitte",
 ];
 
 /**
@@ -48,18 +49,23 @@ export function NewInterviewForm({
   initialRoundType,
   initialTopic = "",
   roundPreselected = false,
+  initialCompany = "",
+  initialRole = "",
 }: {
   initialRoundType?: RoundType;
   initialTopic?: string;
   roundPreselected?: boolean;
+  /** Filled in from a dashboard quick start; the candidate can still change both. */
+  initialCompany?: string;
+  initialRole?: string;
 }) {
   const router = useRouter();
   const accessToken = useAccessToken();
   const topic = initialTopic.trim();
 
   const [query, setQuery] = useState("");
-  const [structuredCompany, setStructuredCompany] = useState("");
-  const [structuredRole, setStructuredRole] = useState("");
+  const [structuredCompany, setStructuredCompany] = useState(initialCompany);
+  const [structuredRole, setStructuredRole] = useState(initialRole);
   const [structuredRound, setStructuredRound] = useState<RoundType>(
     initialRoundType ?? "coding_practical",
   );
@@ -80,6 +86,8 @@ export function NewInterviewForm({
   // Today's allowance, read once so a candidate who has used it is told before filling
   // anything in. The server enforces it either way; this only saves them the wasted form.
   const [entitlement, setEntitlement] = useState<EntitlementView | null>(null);
+  // Bumped after a purchase, so the allowance is read again and the setup unlocks.
+  const [entitlementRead, setEntitlementRead] = useState(0);
   useEffect(() => {
     if (!accessToken) return;
     let active = true;
@@ -93,12 +101,12 @@ export function NewInterviewForm({
     return () => {
       active = false;
     };
-  }, [accessToken]);
+  }, [accessToken, entitlementRead]);
 
   if (isDailyLimitReached(entitlement) && entitlement) {
     return (
       <div className="flex flex-col gap-6">
-        <DailyLimitNotice entitlement={entitlement} />
+        <DailyLimitNotice entitlement={entitlement} onPurchased={() => setEntitlementRead((read) => read + 1)} />
         <a href="/dashboard" className="w-fit text-caption font-medium text-accent hover:underline">
           Back to your dashboard
         </a>
@@ -205,6 +213,8 @@ export function NewInterviewForm({
         onStart={(id) => router.push(`/interview/${id}`)}
         accessToken={accessToken}
         minutesLeftToday={entitlement?.remainingMinutesToday ?? null}
+        creditBalance={entitlement?.creditBalance ?? 0}
+        fundedByCredit={entitlement?.funding === "credit"}
       />
     );
   }
@@ -233,41 +243,46 @@ export function NewInterviewForm({
               </div>
             </div>
 
-            <Field label="Company (optional)" hint="Leave this blank for employer-neutral practice.">
-              <Input
-                value={structuredCompany}
-                onChange={(event) => setStructuredCompany(event.target.value)}
-                placeholder="Amazon"
-                autoComplete="organization"
-                maxLength={120}
-              />
-            </Field>
-            <div className="flex flex-wrap gap-2" aria-label="Suggested companies">
-              {["Amazon", "Google", "Microsoft", "Infosys", "Deloitte"].map((company) => (
-                <button
-                  key={company}
-                  type="button"
-                  onClick={() => setStructuredCompany(company)}
-                  className="min-h-11 rounded-full border border-line bg-surface-raised px-3 py-2 text-caption text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-wash hover:text-ink"
-                >
-                  {company}
-                </button>
-              ))}
-            </div>
+            {/* Side by side from `sm`: at the page grid's width one field per row ran ~700px for a name or a job title. */}
+            <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-3">
+                <Field label="Company (optional)" hint="Leave this blank for employer-neutral practice.">
+                  <Input
+                    value={structuredCompany}
+                    onChange={(event) => setStructuredCompany(event.target.value)}
+                    placeholder="Amazon"
+                    autoComplete="organization"
+                    maxLength={120}
+                  />
+                </Field>
+                <div className="flex flex-wrap gap-2" aria-label="Suggested companies">
+                  {["Amazon", "Google", "Microsoft", "Infosys", "Deloitte"].map((company) => (
+                    <button
+                      key={company}
+                      type="button"
+                      onClick={() => setStructuredCompany(company)}
+                      className="min-h-11 rounded-full border border-line bg-surface-raised px-3 py-2 text-caption text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-wash hover:text-ink"
+                    >
+                      {company}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            <Field
-              label={campus ? "Role (optional for freshers)" : "Role"}
-              hint={campus ? "It is fine if campus hiring has not named a role yet." : "Use the title you are preparing to interview for."}
-            >
-              <Input
-                value={structuredRole}
-                onChange={(event) => setStructuredRole(event.target.value)}
-                placeholder="Software Development Engineer"
-                autoComplete="organization-title"
-                required={!campus}
-                maxLength={120}
-              />
-            </Field>
+              <Field
+                label={campus ? "Role (optional for freshers)" : "Role"}
+                hint={campus ? "It is fine if campus hiring has not named a role yet." : "Use the title you are preparing to interview for."}
+              >
+                <Input
+                  value={structuredRole}
+                  onChange={(event) => setStructuredRole(event.target.value)}
+                  placeholder="Software Development Engineer"
+                  autoComplete="organization-title"
+                  required={!campus}
+                  maxLength={120}
+                />
+              </Field>
+            </div>
 
             <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl bg-surface-sunken px-4 py-3 focus-within:ring-2 focus-within:ring-accent">
               <Checkbox
@@ -371,7 +386,7 @@ export function NewInterviewForm({
           placeholder={
             campus
               ? "Optional — add a company, branch, or placement round if you know it."
-              : "Infosys MR round next Tuesday. 5 years, Java backend."
+              : "SDE 1 at Amazon, Java backend, 2 years of experience."
           }
           className="w-full resize-none rounded-xl border border-line bg-surface px-5 py-4 text-body text-ink shadow-[var(--shadow-sm)] placeholder:text-ink-subtle transition-colors focus:border-accent focus:outline-none"
         />
@@ -438,17 +453,17 @@ export function NewInterviewForm({
         </p>
       ) : null}
 
-      <section className="flex flex-col gap-4 rounded-2xl border border-line bg-surface-raised p-5 sm:p-6">
-        <p className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
-          Or start from one of these
+      <section aria-labelledby="composer-examples" className="flex flex-wrap items-center gap-2">
+        <p id="composer-examples" className="text-caption text-ink-muted">
+          For example:
         </p>
-        <ul className="grid gap-2">
+        <ul className="flex flex-wrap gap-2">
           {EXAMPLES.map((example) => (
             <li key={example}>
               <button
                 type="button"
                 onClick={() => setQuery(example)}
-                className="w-full rounded-xl border border-line bg-surface-raised px-4 py-3 text-left text-caption text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-wash hover:text-ink"
+                className="rounded-full border border-line bg-surface-raised px-3.5 py-1.5 text-caption text-ink-muted transition-colors hover:border-accent/40 hover:bg-accent-wash hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {example}
               </button>
@@ -476,6 +491,8 @@ function RoundSetup({
   accessToken,
   roundPreselected,
   minutesLeftToday = null,
+  creditBalance = 0,
+  fundedByCredit = false,
 }: {
   draft: RoundDraft;
   query: string;
@@ -491,6 +508,10 @@ function RoundSetup({
   roundPreselected: boolean;
   /** Free minutes left today, or null when there is no daily limit (or it is unknown). */
   minutesLeftToday?: number | null;
+  /** Paid interviews held. Any at all lifts the free-minutes cap on the round's length. */
+  creditBalance?: number;
+  /** True when the free allowance is already used, so any round started now is paid for. */
+  fundedByCredit?: boolean;
 }) {
   const [companyName, setCompanyName] = useState(draft.companyName);
   const [roleTitle, setRoleTitle] = useState(draft.roleTitle);
@@ -522,13 +543,17 @@ function RoundSetup({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lengthOptions = (roundType === "custom_topic" ? CUSTOM_LENGTHS : ROUND_LENGTHS).filter(
-    (option) => minutesLeftToday === null || option.minutes <= minutesLeftToday,
+    (option) => minutesLeftToday === null || creditBalance > 0 || option.minutes <= minutesLeftToday,
   );
   // The chosen length, kept inside what is left today: one that cannot start would only be
   // refused by the server after the candidate had filled everything in.
   const effectiveMinutes = lengthOptions.some((option) => option.minutes === durationMinutes)
     ? durationMinutes
     : (lengthOptions.at(-1)?.minutes ?? durationMinutes);
+  // Mirrors the server, which spends free practice first: a credit pays only when the free
+  // allowance is gone or this round is longer than the free minutes left.
+  const usesCredit =
+    creditBalance > 0 && (fundedByCredit || (minutesLeftToday !== null && effectiveMinutes > minutesLeftToday));
   const selectedRound = ROUND_CATALOGUE.find((item) => item.value === roundType);
   // The server keeps a focus topic only for a custom-topic round and drops it for every
   // other one, so asking for it anywhere else would collect words that go nowhere.
@@ -790,7 +815,9 @@ function RoundSetup({
               ? `Only ${minutesLeftToday} free minutes are left today, which is shorter than this round can run. Choose a different round, or come back tomorrow.`
               : minutesLeftToday === null
                 ? "Real rounds are time-boxed. The clock ends this one."
-                : `Real rounds are time-boxed. ${minutesLeftToday} free minutes left today.`
+                : `Real rounds are time-boxed. ${minutesLeftToday} free minutes left today${
+                    creditBalance > 0 ? "; a longer round uses a paid interview." : "."
+                  }`
           }
         >
           <select
@@ -856,6 +883,10 @@ function RoundSetup({
         </Button>
         {!consentAudio ? (
           <p className="text-caption text-ink-subtle">Voice recording is required to continue.</p>
+        ) : usesCredit ? (
+          <p className="text-caption text-ink-muted">
+            Uses 1 of your {creditBalance} paid {creditBalance === 1 ? "interview" : "interviews"} when it begins.
+          </p>
         ) : null}
       </div>
     </form>

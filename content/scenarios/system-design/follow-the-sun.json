@@ -21,8 +21,8 @@
     {
       "kind": "initial",
       "step_type": "design_choice",
-      "prompt": "Today everything runs in one region with a single primary database. Users on other continents see 200 to 300 ms latency on every request. You want low latency everywhere without conflicting writes on the same account. What is the cleanest multi-region data design?",
-      "context_note": "Multi-region is easy for reads and hard for writes.",
+      "prompt": "One primary database serves everyone, so users on other continents see 200 to 300 ms on every request. You want low latency everywhere without conflicting writes on the same account. Which data design do you choose?",
+      "context_note": "Reads are easy to copy closer to users. Writes are the hard part.",
       "system_state": {
         "nodes": [
           "India users",
@@ -48,23 +48,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Allow any region to write any account at any time, and sort out conflicts afterwards."
+          "text": "Let any region write any account, and merge conflicting writes whenever replicas sync up."
         },
         {
           "id": "b",
-          "text": "Assign each account a home region that owns its writes, serve it from there, and replicate to other regions for reads and recovery."
+          "text": "Give each account a home region that owns its writes, with replicas elsewhere."
         },
         {
           "id": "c",
-          "text": "Keep one region and buy a faster network."
+          "text": "Keep one region and put a CDN in front of the API."
         },
         {
           "id": "d",
-          "text": "Copy the whole database to every region and let each edit freely."
+          "text": "Shard accounts by account number, placing each shard in whichever region has space."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "A designated writer per account avoids conflicting writes. Local reads can be fast where replicas are allowed, but an account whose home region is far away still has cross-region write latency. Geography, failover and consistency requirements must be measured and designed explicitly.",
+      "explanation": "One writer per account removes conflicting writes by design, and nearby replicas keep reads fast. Letting every region write means someone has to resolve conflicts on money. Sharding without regard to where the user lives still sends many users across an ocean on every write. A user whose home region is far away still pays cross-region write latency, so the home region should be chosen close to the user.",
       "bottleneck_note": "Avoid conflicts by design: one owner per piece of data beats clever merging.",
       "concept_ids": [
         "home-region-partitioning",
@@ -74,8 +74,8 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "A user in India pays a bill, then travels to Europe and opens the app. The request hits the EU region, which has a replica that is 2 seconds behind. They see the old balance and panic. How do you keep their own writes visible to them?",
-      "context_note": "Replication is asynchronous, so replicas lag.",
+      "prompt": "A user in India pays a bill, travels to Europe and opens the app. The EU region serves their balance from a replica that is 2 seconds behind, so the old balance appears. How should the app make sure users see their own recent writes?",
+      "context_note": "Replication from India to the EU replica is asynchronous, so the replica is always slightly behind the home region.",
       "system_state": {
         "nodes": [
           "user",
@@ -101,23 +101,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Tell users to wait a few seconds."
+          "text": "Show a notice that balances may take a few seconds to update."
         },
         {
           "id": "b",
-          "text": "Provide read-your-writes: for balances and recent transactions, read from the home region, or carry a version or timestamp token from the write and only serve reads from a replica that has caught up to it."
+          "text": "Read balances from the home region or from a replica that has seen the user's last write."
         },
         {
           "id": "c",
-          "text": "Disable replicas."
+          "text": "Turn off the EU replica and send every read to the India primary."
         },
         {
           "id": "d",
-          "text": "Always show the user a cached balance."
+          "text": "Keep the last known balance on the user's device and show it first until the app refreshes."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Asynchronous replication means a replica can serve stale data, which is unacceptable for a user's own balance. Reading from the home region or passing a 'read at least this version' token ensures users see their latest writes. Less critical reads can still use lagging replicas.",
+      "explanation": "A user's own balance must never go backwards, so those reads go to the owner or wait until a replica has caught up to a version token from the write. Less critical reads can still use lagging replicas. Sending every read to India removes the latency benefit for everything else, and a device copy goes stale as soon as another device or a credit changes the balance.",
       "bottleneck_note": "Choose consistency per read: critical reads go to the owner or wait for catch-up.",
       "concept_ids": [
         "replication-lag",
@@ -127,30 +127,16 @@
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "prompt": "A user in India sends money to a user in Europe. Their accounts are owned by different regions. Using a distributed two-phase commit across continents would block and fail under network problems. What is a more practical design?",
-      "context_note": "A transaction now spans two home regions.",
+      "prompt": "A user in India sends money to a user whose account is owned by the EU region. Two-phase commit with locks across both regions would block whenever the link between continents is slow or down. Which design moves the money safely?",
+      "context_note": "The two accounts now live in different regions, so one transfer touches two ledgers that cannot share a local transaction.",
       "system_state": {
         "nodes": [
           "India ledger",
-          "event stream",
-          "EU ledger",
-          "transfer-coordinator"
+          "EU ledger"
         ],
         "links": [
           [
-            "transfer-coordinator",
-            "India ledger"
-          ],
-          [
-            "transfer-coordinator",
-            "EU ledger"
-          ],
-          [
             "India ledger",
-            "event stream"
-          ],
-          [
-            "event stream",
             "EU ledger"
           ]
         ]
@@ -158,23 +144,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Hold locks in both regions until both agree, however long it takes."
+          "text": "Run two-phase commit between the two ledgers with a long timeout for slow links."
         },
         {
           "id": "b",
-          "text": "Use a ledger with idempotent steps: debit the sender in their region (moving money into an in-flight state), reliably send a transfer event with a unique id, credit the receiver idempotently, and compensate the debit if the credit cannot complete."
+          "text": "Debit into an in-flight state, send a credit event with a unique id, and reverse if it fails."
         },
         {
           "id": "c",
-          "text": "Credit first and debit later if there is time."
+          "text": "Credit the receiver first so they are never kept waiting, then debit the sender when confirmation arrives."
         },
         {
           "id": "d",
-          "text": "Disallow cross-region transfers."
+          "text": "Call one global ledger from both regions and wait for it on every transfer."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Cross-region commits that hold locks over long, unreliable links are slow and fragile. A saga-style ledger with durable events, unique transfer ids and idempotent credit and debit steps stays correct under retries and partitions, and compensation covers failures. Crediting first risks creating money from nothing.",
+      "explanation": "A saga with durable events, a unique transfer id and idempotent steps stays correct under retries and partitions, and the reversal covers a credit that can never complete. A long-timeout two-phase commit holds locks over an unreliable link, and crediting first can create money that is never paid for if the debit fails.",
       "bottleneck_note": "Prefer idempotent steps with compensation to long distributed locks.",
       "concept_ids": [
         "cross-region-transactions"
@@ -183,24 +169,15 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "The US region's primary fails. You promote a replica in another region, but the old primary was only partitioned, not dead, and comes back still believing it is the primary. Now two primaries accept writes. How do you prevent this split brain?",
-      "context_note": "Failover creates a dangerous overlap if the old leader is merely unreachable.",
+      "prompt": "The US primary became unreachable, so you promoted a replica in another region. The old primary was only partitioned, and it has reconnected still believing it is the leader, so two primaries now accept writes. What stops the old leader's writes from being accepted?",
+      "context_note": "A network partition, not a crash, made the old primary look dead, and it does not know it has been replaced.",
       "system_state": {
         "nodes": [
           "old-primary",
           "new-primary",
-          "epoch-service (consensus)",
           "clients"
         ],
         "links": [
-          [
-            "old-primary",
-            "epoch-service (consensus)"
-          ],
-          [
-            "new-primary",
-            "epoch-service (consensus)"
-          ],
           [
             "clients",
             "new-primary"
@@ -210,23 +187,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Hope the old primary stays down."
+          "text": "Have the old primary poll the new one every few seconds and step down as soon as it notices a newer leader."
         },
         {
           "id": "b",
-          "text": "Use a consensus-backed leader election with an epoch or fencing token, so storage and replicas reject writes from any leader with an older epoch, and decide in advance how much replication lag (RPO) you will accept."
+          "text": "Give each leadership term an increasing epoch, and have storage reject writes from older epochs."
         },
         {
           "id": "c",
-          "text": "Let both primaries accept writes and merge later."
+          "text": "Let both primaries accept writes and merge the conflicts once the partition heals."
         },
         {
           "id": "d",
-          "text": "Reboot every server in the company."
+          "text": "Shut the old primary down by hand once someone sees the alert."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Fencing tokens make failover safe: once a new leader holds a higher epoch, any write from the stale leader is refused. You also need to be explicit that asynchronous replication means a failover can lose the last few seconds of writes (the recovery point objective), or use synchronous replication where that loss is unacceptable.",
+      "explanation": "Fencing makes the check at the storage layer, so a stale leader is refused no matter what it believes. Polling leaves a window in which it still accepts writes, and merging account balances afterwards risks lost or doubled money. Asynchronous replication can also lose the last few seconds of writes on failover, so the acceptable loss (RPO) must be decided in advance.",
       "bottleneck_note": "Failover correctness is about fencing the old leader, not just promoting a new one.",
       "concept_ids": [
         "failover-and-fencing"
@@ -235,11 +212,11 @@
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "prompt": "A regulator says EU customers' personal and financial data must stay inside the EU. Your plan replicates every account to every region for resilience. What do you change?",
-      "context_note": "Resilience and residency pull in opposite directions.",
+      "prompt": "A regulator requires EU customers' personal and financial data to stay inside the EU, but your plan copies every account to every region for resilience. How should replication change?",
+      "context_note": "Resilience and residency pull in opposite directions: every extra region holding a copy is another place the rule applies.",
       "system_state": {
         "nodes": [
-          "EU region (primary + EU-only DR)",
+          "EU region",
           "India region",
           "US region",
           "global-router"
@@ -247,7 +224,7 @@
         "links": [
           [
             "global-router",
-            "EU region (primary + EU-only DR)"
+            "EU region"
           ],
           [
             "global-router",
@@ -256,29 +233,37 @@
           [
             "global-router",
             "US region"
+          ],
+          [
+            "EU region",
+            "India region"
+          ],
+          [
+            "EU region",
+            "US region"
           ]
         ]
       },
       "options": [
         {
           "id": "a",
-          "text": "Ignore it, since users will not know."
+          "text": "Encrypt the replicated EU data and keep copies in every region."
         },
         {
           "id": "b",
-          "text": "Partition by residency: keep EU customers' personal data only in EU regions (using EU-only replicas for resilience), route requests by home region, and share only non-personal or anonymised data globally."
+          "text": "Keep EU data on EU replicas only, route users to their home region, and share only anonymised data."
         },
         {
           "id": "c",
-          "text": "Move all data to the US."
+          "text": "Move all customer data to the US region as a single source of truth."
         },
         {
           "id": "d",
-          "text": "Delete the EU users."
+          "text": "Keep full replication but strip names, emails and phone numbers from every copy held outside the EU."
         }
       ],
       "correct_option_id": "b",
-      "explanation": "Residency rules are a hard constraint, so replication topology must follow them: EU data replicates only to EU locations, and routing sends each user to their home region. Global features can run on non-personal or anonymised data. Disaster recovery stays possible within the permitted geography.",
+      "explanation": "Residency is a hard constraint, so the replication topology has to follow it: EU data replicates only to EU locations, which still gives disaster recovery inside the permitted geography. Encryption does not change where the data sits, and stripping names from the copies leaves balances and transactions that are still personal financial data.",
       "bottleneck_note": "Legal constraints shape topology. Model them as part of the architecture, not afterwards.",
       "concept_ids": [
         "data-residency"

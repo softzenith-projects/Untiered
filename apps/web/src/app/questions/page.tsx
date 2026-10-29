@@ -27,7 +27,7 @@ export default function QuestionsPage() {
 
   return (
     <AppShell breadcrumb="questions">
-      <div className="flex max-w-5xl flex-col gap-8">
+      <div className="flex flex-col gap-8">
         <header className="hero-band relative overflow-hidden p-7 text-on-navy sm:p-9">
           <div aria-hidden="true" className="absolute -top-24 -right-16 size-64 rounded-full bg-accent/20 blur-3xl" />
           <div className="relative flex flex-col gap-4">

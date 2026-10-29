@@ -62,7 +62,7 @@ export const chapterCollectionsOverview: Chapter = {
         '        marksByName.put("Priya", 87);\n' +
         '        marksByName.put("Arjun", 91);\n' +
         '        marksByName.put("Priya", 90);\n' +
-        '        System.out.println("Map (Priya\'s latest marks): " + marksByName.get("Priya"));\n' +
+        "        System.out.println(\"Map (Priya's latest marks): \" + marksByName.get(\"Priya\"));\n" +
         '        System.out.println("Map size (no duplicate keys): " + marksByName.size());\n' +
         "\n" +
         "        for (String name : names) {\n" +
@@ -77,6 +77,12 @@ export const chapterCollectionsOverview: Chapter = {
         "Map (Priya's latest marks): 90\n" +
         "Map size (no duplicate keys): 2\n" +
         "Priya Arjun Priya",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Add \"Neha\" to `names` twice. Before you run, predict the list, the set's size, and what the " +
+          "loop prints.",
+      },
     },
     {
       kind: "p",
@@ -175,10 +181,10 @@ export const chapterCollectionsOverview: Chapter = {
       kind: "quiz",
       question: "Adding \"Priya\" twice to a List versus a Set — what's the difference in the resulting size?",
       options: [
-        "No difference — both grow by 2",
-        "The List grows by 2 (duplicates allowed); the Set grows by only 1 (the second add is a no-op)",
-        "The Set grows by 2; the List rejects duplicates",
-        "Both throw an exception on the second add",
+        "No difference: both grow by 2, because each add call always inserts a new element.",
+        "The List grows by 2, as duplicates are allowed; the Set grows by only 1, since the second add is ignored.",
+        "The Set grows by 2, while the List rejects the duplicate and grows by only 1.",
+        "Both throw an exception on the second add, because duplicate values are never legal in Java collections.",
       ],
       answer: 1,
       why:
@@ -189,10 +195,10 @@ export const chapterCollectionsOverview: Chapter = {
       kind: "quiz",
       question: "`map.put(\"x\", 1); map.put(\"x\", 2);` — what is map.get(\"x\") afterward, and how many entries does the map have?",
       options: [
-        "1, with 2 entries",
-        "2, with 1 entry — the second put replaced the first value for the same key",
-        "It throws an exception on the second put",
-        "It depends on the Map implementation",
+        "1, with 2 entries, because put keeps the older value and stores the new one separately.",
+        "2, with 1 entry: the second put replaced the first value for the same key.",
+        "It throws an exception on the second put, because that key already exists.",
+        "It depends on the Map: HashMap keeps both values, while TreeMap keeps only one.",
       ],
       answer: 1,
       why:

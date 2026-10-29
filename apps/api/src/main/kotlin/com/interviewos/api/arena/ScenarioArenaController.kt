@@ -36,8 +36,11 @@ class ScenarioArenaController(
             completed.size,
             repository.active(userId, course)?.scenarioId,
             ScenarioSelection.unlockedTier(completed.size),
+            // Only concepts the candidate has actually answered. Untouched ones all tie at the
+            // starting score, so ranking them just lists the first three alphabetically.
             repository
                 .conceptNames(course)
+                .filter { (id, _) -> id in mastery }
                 .map { (id, name) -> WeakConceptView(id, name, ScenarioSelection.decayedScore(mastery[id], now)) }
                 .sortedBy { it.score }
                 .take(3),

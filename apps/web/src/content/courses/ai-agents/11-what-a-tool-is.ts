@@ -281,7 +281,7 @@ export const chapterWhatAToolIs: Chapter = {
       kind: "quiz",
       question: "A model produces a tool call for `delete_all_orders`, which you never registered. What happens?",
       options: [
-        "The function runs, because the model requested it",
+        "The function runs anyway, because the model asked for it and the dispatcher trusts the model's request",
         "Nothing runs — the dispatcher does not find it and returns an error the model can read",
         "The model is blocked from producing tool calls for the rest of the session",
         "It depends on the system prompt",
@@ -296,8 +296,8 @@ export const chapterWhatAToolIs: Chapter = {
       kind: "quiz",
       question: "Which error message is most likely to let an agent recover on its next turn?",
       options: [
-        "\"Error: 400\"",
-        "\"Invalid input\"",
+        "\"Error: 400 — the request could not be processed, please try again later.\"",
+        "\"Invalid input: the request failed validation, so it was not processed. Contact support.\"",
         "\"Invalid departure date: must be in the future. Current date is 08/08/2025.\"",
         "A full Python traceback",
       ],
@@ -310,7 +310,7 @@ export const chapterWhatAToolIs: Chapter = {
       kind: "quiz",
       question: "Where should the decision that a refund needs human approval live?",
       options: [
-        "In the system prompt, as an instruction to ask first",
+        "In the system prompt, as a firm instruction to always ask a human before issuing any refund",
         "In the tool description, as a warning",
         "In the runtime, between the model's request and the function call",
         "In the model's training",

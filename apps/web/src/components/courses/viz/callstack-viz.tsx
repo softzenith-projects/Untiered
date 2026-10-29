@@ -1,14 +1,17 @@
 import type { CallFrame } from "@/content/courses/types";
+import { fitWidth } from "@/components/courses/viz/viz-tokens";
 
 const BOX_H = 34;
 const GAP = 6;
-const WIDTH = 260;
+const MIN_WIDTH = 260;
 
 /** The call stack, drawn bottom to top — the frame that's `active` is the one currently
  * executing; `returning` marks a frame about to pop, distinct from active by label, not
  * just colour. */
 export function CallStackViz({ frame }: { frame: CallFrame }) {
   const n = frame.stack.length;
+  // Room for the label, plus the state tag ("returning") on the right.
+  const WIDTH = Math.max(MIN_WIDTH, ...frame.stack.map((call) => fitWidth(call.label, 13, 0) + 140));
   const height = Math.max(1, n) * (BOX_H + GAP) + 24;
   const summary = `Call stack, top first: ${[...frame.stack].reverse().map((f) => f.label).join(", ") || "empty"}`;
 

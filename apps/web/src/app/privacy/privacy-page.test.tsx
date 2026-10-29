@@ -43,13 +43,15 @@ describe("legal pages", () => {
 
     privacy.unmount();
     render(<TermsPage />);
-    expect(screen.getByText(/help@untiered\.tech/)).toBeInTheDocument();
+    // Once for refund requests on paid interviews, once for general questions.
+    expect(screen.getAllByText(/help@untiered\.tech/).length).toBe(2);
   });
 
-  it("states the same daily allowance the API enforces", () => {
+  it("states the same free allowance the API enforces", () => {
     render(<TermsPage />);
 
-    expect(screen.getByText(/up to 1 round and\s+60 minutes a day/i)).toBeInTheDocument();
+    const free = screen.getByText(/each account gets 3 free mock interviews for life/i);
+    expect(free).toHaveTextContent(/does not reset each day, month or year/i);
   });
 
   it("links every legal page from the others", () => {

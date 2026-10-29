@@ -2,13 +2,14 @@ import type { SessionSummary } from "@untiered/shared";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DashboardPanel, RoundHistoryPanel } from "./dashboard-panel";
+import { DashboardPanel, forgetDashboard, RoundHistoryPanel } from "./dashboard-panel";
 
 const auth = vi.hoisted(() => ({ token: "account-a" as string | null | undefined }));
 const api = vi.hoisted(() => ({
   SESSION_PAGE_SIZE: 20,
   fetchEntitlement: vi.fn(),
   fetchMe: vi.fn(),
+  fetchProfile: vi.fn(),
   fetchSessions: vi.fn(),
   fetchReadiness: vi.fn(),
   deleteSession: vi.fn(),
@@ -34,6 +35,7 @@ const session = (id: string, companyName: string): SessionSummary => ({
 describe("DashboardPanel account isolation", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    forgetDashboard();
     auth.token = "account-a";
     api.fetchEntitlement.mockResolvedValue({ allowed: true, remainingFree: null });
     api.fetchMe.mockResolvedValue({
@@ -50,15 +52,15 @@ describe("DashboardPanel account isolation", () => {
   it("hides the previous account's interviews as soon as the identity changes", async () => {
     api.fetchSessions.mockResolvedValueOnce([session("a", "Private A interview")]);
     const view = render(<DashboardPanel />);
-    expect(await screen.findByText(/Private A interview/)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Private A interview/)).length).toBeGreaterThan(0);
 
     api.fetchSessions.mockRejectedValueOnce(new Error("account B request failed"));
     auth.token = "account-b";
     view.rerender(<DashboardPanel />);
 
-    expect(screen.queryByText(/Private A interview/)).not.toBeInTheDocument();
+    expect(screen.queryAllByText(/Private A interview/)).toHaveLength(0);
     await waitFor(() => expect(api.fetchSessions).toHaveBeenCalledWith({ accessToken: "account-b" }));
-    expect(screen.queryByText(/Private A interview/)).not.toBeInTheDocument();
+    expect(screen.queryAllByText(/Private A interview/)).toHaveLength(0);
   });
 
   it("ignores a slow response from the account that has signed out", async () => {
@@ -72,7 +74,7 @@ describe("DashboardPanel account isolation", () => {
     view.rerender(<DashboardPanel />);
     await act(async () => resolveA([session("a", "Late private interview")]));
 
-    expect(screen.queryByText(/Late private interview/)).not.toBeInTheDocument();
+    expect(screen.queryAllByText(/Late private interview/)).toHaveLength(0);
   });
 
   it("shows the primary action while readiness is still loading", async () => {
@@ -136,5 +138,52 @@ describe("DashboardPanel account isolation", () => {
       { accessToken: "account-a" },
       { limit: 20, offset: 20 },
     );
+  });
+});
+
+describe("DashboardPanel return visits", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    forgetDashboard();
+    auth.token = "account-a";
+    api.fetchEntitlement.mockResolvedValue({ allowed: true, remainingFree: null });
+    api.fetchMe.mockResolvedValue(null);
+    api.fetchReadiness.mockResolvedValue([]);
+  });
+
+  it("paints the last dashboard immediately when the page is opened again", async () => {
+    api.fetchSessions.mockResolvedValueOnce([session("a", "Remembered interview")]);
+    const first = render(<DashboardPanel />);
+    expect((await screen.findAllByText(/Remembered interview/)).length).toBeGreaterThan(0);
+    first.unmount();
+
+    api.fetchSessions.mockReturnValueOnce(new Promise(() => {}));
+    render(<DashboardPanel />);
+    expect(screen.getAllByText(/Remembered interview/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("status", { name: "Loading your dashboard" })).not.toBeInTheDocument();
+  });
+
+  it("never paints another account's remembered dashboard", async () => {
+    api.fetchSessions.mockResolvedValueOnce([session("a", "Account A interview")]);
+    const first = render(<DashboardPanel />);
+    expect((await screen.findAllByText(/Account A interview/)).length).toBeGreaterThan(0);
+    first.unmount();
+
+    auth.token = "account-b";
+    api.fetchSessions.mockReturnValueOnce(new Promise(() => {}));
+    render(<DashboardPanel />);
+    expect(screen.queryAllByText(/Account A interview/)).toHaveLength(0);
+  });
+
+  it("forgets the remembered dashboard on sign-out", async () => {
+    api.fetchSessions.mockResolvedValueOnce([session("a", "Forgotten interview")]);
+    const first = render(<DashboardPanel />);
+    expect((await screen.findAllByText(/Forgotten interview/)).length).toBeGreaterThan(0);
+    first.unmount();
+
+    forgetDashboard();
+    api.fetchSessions.mockReturnValueOnce(new Promise(() => {}));
+    render(<DashboardPanel />);
+    expect(screen.queryAllByText(/Forgotten interview/)).toHaveLength(0);
   });
 });

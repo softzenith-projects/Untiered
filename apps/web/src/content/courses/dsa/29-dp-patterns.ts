@@ -385,21 +385,6 @@ export const chapterDpPatterns: Chapter = {
           "is what you write first.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd adapt the 0/1 knapsack recurrence to solve 'subset sum' — " +
-          "does a subset of the given numbers add up to exactly a target value?",
-        "Explain, in words, how you'd extend the LCS table to also reconstruct the actual longest common " +
-          "subsequence string, not just its length.",
-        "Given the grid-paths problem, describe how you'd handle some cells being blocked (impassable), and " +
-          "what changes in the recurrence.",
-        "Describe how edit distance (minimum insertions, deletions, and substitutions to turn one string " +
-          "into another) could be solved with a 2D table similar in shape to this chapter's LCS solution.",
-      ],
-    },
     {
       kind: "quiz",
       question: "In the 0/1 knapsack recurrence, what does dp[i][w] represent?",
@@ -419,11 +404,10 @@ export const chapterDpPatterns: Chapter = {
       kind: "quiz",
       question: "Why is the standard LIS solution's time complexity O(n²) rather than O(n)?",
       options: [
-        "Because it sorts the array first, which costs O(n log n) rounded up",
-        "Because for each index i, the inner loop must check every earlier index j < i as a possible " +
-          "predecessor in the increasing subsequence, not just the immediately preceding element",
-        "Because Java arrays are inherently O(n) to access",
-        "It's actually O(n), the problem statement is wrong",
+        "Because it sorts the array first, which costs O(n log n) and is then rounded up to O(n²) in the analysis.",
+        "For each index i, the inner loop checks every earlier index j < i as a possible predecessor.",
+        "Because Java arrays are inherently O(n) to access, so every single read inside the loop costs a full pass.",
+        "It's actually O(n), and the problem statement is wrong, because each element only needs one comparison.",
       ],
       answer: 1,
       why:
@@ -434,18 +418,31 @@ export const chapterDpPatterns: Chapter = {
       kind: "quiz",
       question: "In the grid-paths recurrence, why is dp[i][j] = dp[i-1][j] + dp[i][j-1]?",
       options: [
-        "It's an arbitrary formula that happens to work",
-        "Every path to cell (i, j) must arrive either from directly above (i-1, j) or directly from the " +
-          "left (i, j-1), since only right and down moves are allowed — so the total paths to (i, j) is the " +
-          "sum of paths to those two predecessor cells",
-        "Because rows and columns must always be equal",
-        "Because dp[i-1][j] and dp[i][j-1] are always equal to each other",
+        "It's an arbitrary formula that happens to work, because grid problems always add the cells next to the one being filled.",
+        "Every path to cell (i, j) arrives from above or from the left, so the two counts add.",
+        "Because rows and columns must always be equal in size, so the two neighbouring cells contribute the same amount each time.",
+        "Because dp[i-1][j] and dp[i][j-1] are always equal to each other, so adding them is the same as doubling one of them.",
       ],
       answer: 1,
       why:
         "With only rightward and downward moves allowed, every route to (i, j) took its very last step from " +
         "exactly one of two cells, so counting all routes is exactly summing the routes to each of those " +
         "two predecessors.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd adapt the 0/1 knapsack recurrence to solve 'subset sum' — " +
+          "does a subset of the given numbers add up to exactly a target value?",
+        "Explain, in words, how you'd extend the LCS table to also reconstruct the actual longest common " +
+          "subsequence string, not just its length.",
+        "Given the grid-paths problem, describe how you'd handle some cells being blocked (impassable), and " +
+          "what changes in the recurrence.",
+        "Describe how edit distance (minimum insertions, deletions, and substitutions to turn one string " +
+          "into another) could be solved with a 2D table similar in shape to this chapter's LCS solution.",
+      ],
     },
   ],
 };

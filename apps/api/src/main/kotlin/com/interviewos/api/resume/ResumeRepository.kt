@@ -2,6 +2,7 @@ package com.interviewos.api.resume
 
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.sql.ResultSet
 import java.time.Instant
 import java.util.UUID
@@ -96,6 +97,104 @@ class ResumeRepository(
             .query { rs, _ -> mapResume(rs) }
             .optional()
             .orElse(null)
+
+    /** Deleting an older owned upload must remain possible after it leaves the profile UI. */
+    fun findById(
+        userId: UUID,
+        id: UUID,
+    ): ResumeRow? =
+        jdbcClient
+            .sql(
+                """
+                select id, original_filename, content_type, size_bytes,
+                       parse_status::text as parse_status, parse_error, parsed_payload::text as parsed_payload,
+                       uploaded_at, parsed_at, storage_bucket, storage_path
+                  from public.resumes where user_id = :u and id = :id
+                """.trimIndent(),
+            ).param("u", userId)
+            .param("id", id)
+            .query { rs, _ -> mapResume(rs) }
+            .optional()
+            .orElse(null)
+
+    /**
+     * Keep the newest upload shown in the UI and the newest parsed resume used by rounds.
+     * Every other terminal upload is removed with a durable object-deletion job. Processing
+     * uploads remain until they finish; a concurrent parse can never delete their file.
+     */
+    fun enqueueAndDeleteSuperseded(
+        userId: UUID,
+        bucket: String,
+    ): Int =
+        jdbcClient
+            .sql(
+                """
+                with keep as (
+                    (select id from public.resumes where user_id = :u
+                       order by uploaded_at desc, id desc limit 1)
+                    union
+                    (select id from public.resumes where user_id = :u and parse_status = 'parsed'
+                       order by parsed_at desc nulls last, uploaded_at desc, id desc limit 1)
+                ), removable as (
+                    select id, user_id, storage_path from public.resumes
+                     where user_id = :u and parse_status <> 'processing'
+                       and id not in (select id from keep)
+                       and storage_bucket = :bucket
+                       and storage_path like :prefix || '%'
+                       and substring(storage_path from length(:prefix) + 1) ~ '^[A-Za-z0-9._-]+$'
+                       and position('..' in substring(storage_path from length(:prefix) + 1)) = 0
+                ), enqueued as (
+                    insert into public.storage_deletion_jobs
+                           (user_id, session_id, bucket, object_prefix, reason)
+                    select user_id, null, :bucket, storage_path, 'resume_deleted' from removable
+                    on conflict (bucket, object_prefix) do update
+                       set completed_at = null, next_attempt_at = now(),
+                           settle_after = greatest(public.storage_deletion_jobs.settle_after, now() + interval '15 minutes'),
+                           reason = excluded.reason, updated_at = now()
+                    returning object_prefix
+                )
+                delete from public.resumes r using removable old
+                 where r.id = old.id
+                   and exists (select 1 from enqueued where object_prefix = old.storage_path)
+                """.trimIndent(),
+            ).param("u", userId)
+            .param("bucket", bucket)
+            .param("prefix", "$userId/")
+            .update()
+
+    /** Keyset pages of owners with removable uploads, for retrying failed cleanup. */
+    fun supersededOwnersAfter(
+        after: UUID?,
+        limit: Int,
+        bucket: String,
+    ): List<UUID> =
+        jdbcClient
+            .sql(
+                """
+                with ranked as (
+                    select user_id, storage_bucket, storage_path, parse_status,
+                           row_number() over (partition by user_id order by uploaded_at desc, id desc) as upload_rank,
+                           row_number() over (
+                             partition by user_id, (parse_status = 'parsed')
+                             order by parsed_at desc nulls last, uploaded_at desc, id desc
+                           ) as parsed_rank
+                      from public.resumes
+                )
+                select distinct user_id from ranked
+                 where user_id > coalesce(cast(:after as uuid), '00000000-0000-0000-0000-000000000000'::uuid)
+                   and parse_status <> 'processing' and upload_rank > 1
+                   and (parse_status <> 'parsed' or parsed_rank > 1)
+                   and storage_bucket = :bucket
+                   and storage_path like user_id::text || '/%'
+                   and substring(storage_path from length(user_id::text) + 2) ~ '^[A-Za-z0-9._-]+$'
+                   and position('..' in substring(storage_path from length(user_id::text) + 2)) = 0
+                 order by user_id limit :limit
+                """.trimIndent(),
+            ).param("after", after?.toString())
+            .param("limit", limit)
+            .param("bucket", bucket)
+            .query { rs, _ -> requireNotNull(rs.getObject(1, UUID::class.java)) }
+            .list()
 
     /**
      * The resume an interview should be grounded in: the most recent one that actually
@@ -210,10 +309,29 @@ class ResumeRepository(
             .update()
     }
 
-    fun setAvatarPath(
+    @Transactional
+    fun replaceAvatarPath(
         userId: UUID,
         path: String,
+        bucket: String,
     ) {
+        // Serialize two concurrent replacements. Otherwise both can read the same old
+        // path and leave one of their newly uploaded objects unreferenced.
+        jdbcClient
+            .sql("select id from public.users where id = :u for update")
+            .param("u", userId)
+            .query(UUID::class.java)
+            .single()
+        val old = avatarPath(userId)
+        if (old != null &&
+            (
+                !com.interviewos.api.storage.StorageKeys
+                    .isDirectChildOf(old, userId.toString()) ||
+                    !old.substringAfterLast('/').startsWith("avatar-")
+            )
+        ) {
+            throw IllegalStateException("Refusing to delete an avatar outside its owner's folder")
+        }
         jdbcClient
             .sql(
                 """
@@ -223,6 +341,23 @@ class ResumeRepository(
             ).param("u", userId)
             .param("path", path)
             .update()
+        if (old != null && old != path) {
+            jdbcClient
+                .sql(
+                    """
+                    insert into public.storage_deletion_jobs
+                           (user_id, session_id, bucket, object_prefix, reason)
+                    values (:u, null, :bucket, :old, 'resume_deleted')
+                    on conflict (bucket, object_prefix) do update
+                       set completed_at = null, next_attempt_at = now(),
+                           settle_after = greatest(public.storage_deletion_jobs.settle_after, now() + interval '15 minutes'),
+                           reason = excluded.reason, updated_at = now()
+                    """.trimIndent(),
+                ).param("u", userId)
+                .param("bucket", bucket)
+                .param("old", old)
+                .update()
+        }
     }
 
     /**

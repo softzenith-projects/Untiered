@@ -34,6 +34,21 @@ export const chapterStatic: Chapter = {
       kind: "code",
       caption: "A static counter shared across every Student object, and a static method to read it.",
       code:
+        "public class StaticDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        System.out.println("Before any student: " + Student.count);\n' +
+        "\n" +
+        '        Student s1 = new Student("Priya");\n' +
+        '        Student s2 = new Student("Arjun");\n' +
+        '        Student s3 = new Student("Vikram");\n' +
+        "\n" +
+        '        System.out.println("After three students: " + Student.count);\n' +
+        '        System.out.println("Via getCount(): " + Student.getCount());\n' +
+        '        System.out.println("Via an instance, s1.count: " + s1.count);\n' +
+        '        System.out.println("School (shared): " + s2.schoolName);\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "class Student {\n" +
         "    static int count = 0;\n" +
         '    static String schoolName = "DAV Public School";\n' +
@@ -48,21 +63,6 @@ export const chapterStatic: Chapter = {
         "    static int getCount() {\n" +
         "        return count;\n" +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class StaticDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        System.out.println("Before any student: " + Student.count);\n' +
-        "\n" +
-        '        Student s1 = new Student("Priya");\n' +
-        '        Student s2 = new Student("Arjun");\n' +
-        '        Student s3 = new Student("Vikram");\n' +
-        "\n" +
-        '        System.out.println("After three students: " + Student.count);\n' +
-        '        System.out.println("Via getCount(): " + Student.getCount());\n' +
-        '        System.out.println("Via an instance, s1.count: " + s1.count);\n' +
-        '        System.out.println("School (shared): " + s2.schoolName);\n' +
-        "    }\n" +
         "}\n",
       output:
         "Before any student: 0\n" +
@@ -70,6 +70,12 @@ export const chapterStatic: Chapter = {
         "Via getCount(): 3\n" +
         "Via an instance, s1.count: 3\n" +
         "School (shared): DAV Public School",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Create a fourth student and run: `count` reaches 4 however you read it, because the class " +
+          "holds one shared copy. Then remove `static` from `count` and read the compile error.",
+      },
     },
     {
       kind: "p",
@@ -165,10 +171,10 @@ export const chapterStatic: Chapter = {
       kind: "quiz",
       question: "Why can't a static method reference an instance field directly?",
       options: [
-        "It's just a style rule enforced by convention",
-        "A static method may run with no object created yet, so there is no instance field to refer to",
-        "Instance fields are always private",
-        "It actually can — this is a myth",
+        "It is only a naming and style rule, and the compiler would accept the code with just a warning.",
+        "A static method may run when no object exists yet, so there is no instance field for it to refer to.",
+        "Instance fields are always private, and static methods can never see private members of their class.",
+        "It actually can: this is a myth, and a static method may read any instance field it can see.",
       ],
       answer: 1,
       why:

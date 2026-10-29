@@ -40,21 +40,9 @@ export const chapterMultithreading: Chapter = {
     {
       kind: "code",
       caption:
-        "Two threads printing (ordered deterministically with join, so output never varies by run), then two " +
-        "threads safely sharing a synchronized counter.",
+        "Two threads printing (ordered deterministically with join, so output never varies by run), then " +
+        "two threads safely sharing a synchronized counter.",
       code:
-        "class Counter {\n" +
-        "    private int count = 0;\n" +
-        "\n" +
-        "    synchronized void increment() {\n" +
-        "        count++;\n" +
-        "    }\n" +
-        "\n" +
-        "    int getCount() {\n" +
-        "        return count;\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
         "public class ThreadsDemo {\n" +
         "    public static void main(String[] args) throws InterruptedException {\n" +
         "        Runnable printTask = () -> {\n" +
@@ -69,7 +57,7 @@ export const chapterMultithreading: Chapter = {
         "        t1.join();\n" +
         "        t2.start();\n" +
         "        t2.join();\n" +
-        '        System.out.println(\n' +
+        "        System.out.println(\n" +
         '            "Both workers finished (run one after another, in order, thanks to join)");\n' +
         "\n" +
         "        Counter counter = new Counter();\n" +
@@ -86,8 +74,20 @@ export const chapterMultithreading: Chapter = {
         "        a.join();\n" +
         "        b.join();\n" +
         "\n" +
-        '        System.out.println(\n' +
+        "        System.out.println(\n" +
         '            "Final count after two threads, each incrementing 1000 times: " + counter.getCount());\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Counter {\n" +
+        "    private int count = 0;\n" +
+        "\n" +
+        "    synchronized void increment() {\n" +
+        "        count++;\n" +
+        "    }\n" +
+        "\n" +
+        "    int getCount() {\n" +
+        "        return count;\n" +
         "    }\n" +
         "}\n",
       output:
@@ -95,6 +95,12 @@ export const chapterMultithreading: Chapter = {
         "Worker-2 starting\n" +
         "Both workers finished (run one after another, in order, thanks to join)\n" +
         "Final count after two threads, each incrementing 1000 times: 2000",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Raise both loops to 100000, then delete `synchronized` from `increment()` and run a few times. " +
+          "The count usually lands below 200000, because two threads update `count` at the same moment.",
+      },
     },
     {
       kind: "p",
@@ -163,10 +169,10 @@ export const chapterMultithreading: Chapter = {
       kind: "quiz",
       question: "What's the difference between calling thread.start() and thread.run() directly?",
       options: [
-        "No difference — both start a new thread",
-        "start() launches the code on a genuinely new thread; run() just executes it on the current thread, with no concurrency",
-        "run() is faster than start()",
-        "start() can only be called once per program",
+        "No difference: both create a new thread, and run() is simply the older name for start().",
+        "start() launches the code on a new thread; run() just executes it on the current thread, with no concurrency.",
+        "run() is the method that creates the new thread, and start() just runs the code on the current one.",
+        "start() can be called only once per program, so a second thread must be launched with run() instead.",
       ],
       answer: 1,
       why:
@@ -177,10 +183,10 @@ export const chapterMultithreading: Chapter = {
       kind: "quiz",
       question: "Two threads both run `count++` on the same unsynchronized int field, 1000 times each. What's the safest expectation for the final count?",
       options: [
-        "Always exactly 2000",
-        "Possibly less than 2000, because count++ isn't atomic and increments can be lost to interleaving",
-        "Always exactly 1000",
-        "It will throw an exception",
+        "Always exactly 2000, because each count++ is a single step that can never be interrupted.",
+        "Possibly less than 2000, because count++ isn't atomic and some increments can be lost.",
+        "Always exactly 1000, because the second thread's updates simply overwrite those of the first.",
+        "It throws a ConcurrentModificationException, because two threads touch the same field at once.",
       ],
       answer: 1,
       why:
@@ -192,10 +198,10 @@ export const chapterMultithreading: Chapter = {
       kind: "quiz",
       question: "What does calling t1.join() in the main thread do?",
       options: [
-        "Starts t1 running",
-        "Makes main wait until t1 has finished before continuing",
-        "Merges t1's memory with main's",
-        "Stops t1 immediately",
+        "Starts t1 running, so that it begins work alongside the main thread.",
+        "Makes main wait until t1 has finished before it continues.",
+        "Merges t1's memory with main's, so both threads then share the same variables.",
+        "Stops t1 immediately, so that main can carry on without waiting for it.",
       ],
       answer: 1,
       why:

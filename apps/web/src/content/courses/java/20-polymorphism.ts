@@ -40,9 +40,30 @@ export const chapterPolymorphism: Chapter = {
     {
       kind: "code",
       caption:
-        "Shape/Circle/Square shows overriding — the loop calls area() once, and gets different behaviour per " +
-        "object. totalArea shows overloading — two methods, same name, different parameter lists.",
+        "Shape/Circle/Square shows overriding — the loop calls area() once, and gets different behaviour " +
+        "per object. totalArea shows overloading — two methods, same name, different parameter lists.",
       code:
+        "public class PolymorphismDemo {\n" +
+        "    static double totalArea(int scale) {\n" +
+        "        return 0;\n" +
+        "    }\n" +
+        "\n" +
+        "    static double totalArea(int scale, int count) {\n" +
+        "        return scale * count;\n" +
+        "    }\n" +
+        "\n" +
+        "    public static void main(String[] args) {\n" +
+        "        Shape[] shapes = { new Circle(2.0), new Square(3.0) };\n" +
+        "\n" +
+        "        for (Shape s : shapes) {\n" +
+        '            System.out.printf("%.2f%n", s.area());\n' +
+        "        }\n" +
+        "\n" +
+        "        System.out.println(totalArea(5));\n" +
+        "        System.out.println(totalArea(5, 2));\n" +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "class Shape {\n" +
         "    double area() {\n" +
         "        return 0.0;\n" +
@@ -67,29 +88,18 @@ export const chapterPolymorphism: Chapter = {
         "    double area() {\n" +
         "        return side * side;\n" +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class PolymorphismDemo {\n" +
-        "    static double totalArea(int scale) {\n" +
-        "        return 0;\n" +
-        "    }\n" +
-        "\n" +
-        "    static double totalArea(int scale, int count) {\n" +
-        "        return scale * count;\n" +
-        "    }\n" +
-        "\n" +
-        "    public static void main(String[] args) {\n" +
-        "        Shape[] shapes = { new Circle(2.0), new Square(3.0) };\n" +
-        "\n" +
-        "        for (Shape s : shapes) {\n" +
-        '            System.out.printf("%.2f%n", s.area());\n' +
-        "        }\n" +
-        "\n" +
-        "        System.out.println(totalArea(5));\n" +
-        "        System.out.println(totalArea(5, 2));\n" +
-        "    }\n" +
         "}\n",
-      output: "12.57\n9.00\n0.0\n10.0",
+      output:
+        "12.57\n" +
+        "9.00\n" +
+        "0.0\n" +
+        "10.0",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Add a `Rectangle` class with a width and a height that overrides `area()`, and put one in the " +
+          "`shapes` array. The loop prints its area without any change.",
+      },
     },
     {
       kind: "p",
@@ -182,10 +192,10 @@ export const chapterPolymorphism: Chapter = {
       kind: "quiz",
       question: "A Shape variable holds a Circle object. Calling shapeVar.area() runs whose area() — Shape's or Circle's?",
       options: [
-        "Shape's, because that's the variable's declared type",
-        "Circle's, because Java resolves overridden methods based on the actual object at run time",
-        "It fails to compile",
-        "It depends on which class was compiled first",
+        "Shape's, because Java uses the variable's declared type to choose which area() runs.",
+        "Circle's, because Java picks the overridden method from the actual object at run time.",
+        "It fails to compile, because a Shape variable may not hold a Circle object.",
+        "It depends on which class was compiled first, because Java picks the earlier-compiled version.",
       ],
       answer: 1,
       why:

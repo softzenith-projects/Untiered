@@ -4,6 +4,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { BrandMark, BrandWordmark } from "@/components/brand-logo";
+import { CourseArtwork } from "@/components/courses/course-visuals";
+import { LoopPicker } from "@/components/landing/loop-picker";
+import { ReportPreview } from "@/components/landing/report-preview";
+import { SampleTurn } from "@/components/landing/sample-turn";
 import { ActionLink } from "@/components/ui/action-link";
 import { Testimonials } from "@/components/testimonials";
 import { courses, totalChapters, totalMinutes } from "@/content/courses";
@@ -12,6 +16,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SessionLink } from "@/components/session-link";
 import { fetchUsage } from "@/lib/api";
 import { courseEnabled, featureEnabled } from "@/lib/flags";
+import { FREE_ROUNDS_LIFETIME_TEXT } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Untiered — talent has no tiers",
@@ -23,14 +28,18 @@ export const metadata: Metadata = {
 /**
  * The public landing page.
  *
- * Rebuilt in the InterviewBit-style direction the owner asked for (task 044): a
- * confident marketing page with a navy hero, clear promise and a hero visual, rather
- * than a terminal-flavoured spec sheet. The claims underneath are unchanged from the
- * previous pass and still true statements only — no invented user counts, ratings or
- * testimonials (CLAUDE.md "quality bar").
+ * Revamped (28 October 2026) because the previous pass explained the product in six
+ * sections of paragraphs. This one shows it instead: the hero plays a spoken turn and the
+ * interviewer pushing back on it, the loop picker shows each archetype's rounds, and the
+ * sample report reveals the quote behind each score. Copy is cut to a line per section.
+ *
+ * The claims underneath are still true statements only — no invented user counts, ratings
+ * or testimonials (CLAUDE.md "quality bar"), and the free allowance is read from the same
+ * constant the terms state, so the two cannot disagree.
  *
  * Server-rendered: organic search on "<employer> interview" is a primary acquisition
- * channel (PRD 11).
+ * channel (PRD 11). The interactive pieces are client islands whose first state renders
+ * on the server, so their text is in the HTML.
  */
 export default function LandingPage() {
   const mockInterviewsEnabled = featureEnabled("mockInterviews");
@@ -49,15 +58,12 @@ export default function LandingPage() {
           arenaEnabled={arenaEnabled && visibleCourses.length > 0}
         />
         {mockInterviewsEnabled ? <EmployerStrip /> : null}
-        {mockInterviewsEnabled ? <VoiceSection /> : null}
-        {mockInterviewsEnabled ? <TranscriptSample /> : null}
-        {mockInterviewsEnabled ? <Coverage /> : null}
-        {mockInterviewsEnabled && reportsEnabled ? <ReportContents /> : null}
+        {mockInterviewsEnabled ? <Loops /> : null}
+        {mockInterviewsEnabled && reportsEnabled ? <Report /> : null}
         {coursesEnabled && visibleCourses.length > 0 ? (
           <Courses visibleCourses={visibleCourses} arenaEnabled={arenaEnabled} />
         ) : null}
         <Testimonials testimonials={LANDING_TESTIMONIALS} />
-        {mockInterviewsEnabled ? <HowItWorks /> : null}
         <CtaBand mockInterviewsEnabled={mockInterviewsEnabled} coursesEnabled={coursesEnabled} arenaEnabled={arenaEnabled} />
       </main>
       <SiteFooter />
@@ -68,7 +74,7 @@ export default function LandingPage() {
 function SiteHeader({ mockInterviewsEnabled, coursesEnabled }: { mockInterviewsEnabled: boolean; coursesEnabled: boolean }) {
   return (
     <header className="z-sticky sticky top-0 border-b border-line bg-surface-raised/90 shadow-[var(--shadow-sm)] backdrop-blur-xl">
-      <div className="mx-auto flex layout-content items-center justify-between gap-6 px-6 py-4">
+      <div className="mx-auto flex layout-content items-center justify-between gap-6 px-4 py-3 sm:px-6">
         <Link href="/" className="flex min-h-11 items-center gap-2.5 focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" aria-label="Untiered home">
           <span className="sm:hidden"><BrandMark /></span>
           <span className="hidden sm:block"><BrandWordmark /></span>
@@ -107,9 +113,10 @@ function Hero({
 }) {
   const learningHref = coursesEnabled ? "/courses" : arenaEnabled ? "/arena" : "/login";
   return (
-    <section className="bg-navy text-on-navy">
-      <div className={`mx-auto grid layout-content gap-14 px-6 py-20 lg:items-center lg:gap-10 lg:py-28 ${mockInterviewsEnabled ? "lg:grid-cols-[1.1fr_1fr]" : "lg:grid-cols-[1.25fr_.75fr]"}`}>
-        <div className="flex flex-col gap-7">
+    <section className="relative overflow-hidden bg-navy text-on-navy">
+      <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-0 opacity-40" />
+      <div className={`relative mx-auto grid layout-content gap-12 px-4 py-14 sm:px-6 lg:items-center lg:gap-14 lg:py-24 ${mockInterviewsEnabled ? "lg:grid-cols-[1fr_1.05fr]" : "lg:grid-cols-[1.25fr_.75fr]"}`}>
+        <div className="flex flex-col gap-6">
           <span className="pill pill-navy w-fit">Talent has no tiers.</span>
           <h1 className="text-hero text-balance text-on-navy">
             {mockInterviewsEnabled ? (
@@ -118,22 +125,33 @@ function Hero({
               <>Build skills that <span className="text-accent-on-navy">hold up under pressure.</span></>
             )}
           </h1>
-          <p className="max-w-xl text-body text-on-navy-muted">
+          <p className="max-w-lg text-body text-on-navy-muted">
             {mockInterviewsEnabled
-              ? "You speak your answers. It follows up on what you actually said, cuts in when you ramble, and pushes back on claims you cannot defend. Afterwards you get a report where every score is pinned to a sentence out of your own mouth."
-              : "Work through complete learning paths, test your recall in short practice rounds, and return tomorrow with a clear next step instead of another passive video queue."}
+              ? "You talk. It follows up on what you actually said, cuts in when you ramble, and quotes you in the report."
+              : "Complete learning paths, short daily recall rounds, and a clear next step every time you come back."}
           </p>
-          <div className="flex flex-wrap items-center gap-4 pt-1">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             {mockInterviewsEnabled ? (
               <ActionLink href="/interview/new" size="lg">Take a free interview</ActionLink>
             ) : (
               <ActionLink href={learningHref as Route} size="lg">Start learning</ActionLink>
             )}
             {coursesEnabled && mockInterviewsEnabled ? (
-              <ActionLink href={"/courses" as Route} variant="onDark" size="lg">Explore free courses</ActionLink>
+              <ActionLink href={"/courses" as Route} variant="onDark" size="lg">Free courses</ActionLink>
             ) : null}
           </div>
-          <p className="text-caption text-on-navy-muted">{mockInterviewsEnabled ? "Every round free while we build. Full report included, no card." : "Free learning paths. Sign in once and continue where you stopped."}</p>
+          {mockInterviewsEnabled ? (
+            <ul className="flex flex-wrap gap-x-5 gap-y-2 text-caption text-on-navy-muted">
+              {[FREE_ROUNDS_LIFETIME_TEXT, "Full report included", "No card to start"].map((item) => (
+                <li key={item} className="flex items-center gap-1.5">
+                  <CheckIcon />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-caption text-on-navy-muted">Free learning paths. Sign in once and continue where you stopped.</p>
+          )}
           {mockInterviewsEnabled ? (
             <Suspense fallback={null}>
               <UsageLine />
@@ -141,9 +159,17 @@ function Hero({
           ) : null}
         </div>
 
-        {mockInterviewsEnabled ? <HeroVisual /> : <LearningVisual coursesEnabled={coursesEnabled} arenaEnabled={arenaEnabled} />}
+        {mockInterviewsEnabled ? <SampleTurn /> : <LearningVisual coursesEnabled={coursesEnabled} arenaEnabled={arenaEnabled} />}
       </div>
     </section>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 text-positive" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m3.5 8.5 3 3 6-7" />
+    </svg>
   );
 }
 
@@ -187,356 +213,92 @@ async function UsageLine() {
 }
 
 /**
- * The hero visual: a mock interview card with a waveform and a report score, built in
- * plain SVG/HTML. Not a stock abstract blob — it is a small, honest picture of the two
- * things the product actually does (listen to a spoken answer, score it with evidence).
- */
-function HeroVisual() {
-  const bars = [6, 14, 9, 22, 12, 28, 16, 10, 24, 14, 8, 18, 11, 26, 15, 9, 20, 13, 7, 17];
-  return (
-    <div className="relative mx-auto w-full max-w-sm lg:mx-0">
-      <div className="card relative flex flex-col gap-5 bg-surface-raised p-6 shadow-[var(--shadow-lg)]">
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
-            Live round · turn 4
-          </span>
-          <span className="flex items-center gap-1.5 text-micro font-semibold text-positive">
-            <span className="h-1.5 w-1.5 rounded-full bg-positive" aria-hidden="true" />
-            Speaking
-          </span>
-        </div>
-
-        <div className="flex h-16 items-end gap-1" role="img" aria-label="A candidate's voice waveform">
-          {bars.map((h, i) => (
-            <span
-              key={i}
-              className="w-full rounded-full bg-accent/70"
-              style={{ height: `${h * 2.2}px` }}
-            />
-          ))}
-        </div>
-
-        <p className="text-caption text-ink-muted">
-          &ldquo;We polled the ledger table every few seconds and retried on failure.&rdquo;
-        </p>
-
-        <div className="flex items-center justify-between border-t border-line pt-4">
-          <span className="text-caption text-ink-subtle">Operational depth</span>
-          <span className="font-mono text-title font-bold text-ink">2<span className="text-caption text-ink-subtle">/5</span></span>
-        </div>
-      </div>
-
-      <div className="card absolute -bottom-8 -left-8 hidden w-52 flex-col gap-2 bg-surface-raised p-4 shadow-[var(--shadow-md)] sm:flex">
-        <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
-          Report score
-        </span>
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-mono text-display font-bold text-accent">78</span>
-          <span className="text-caption text-ink-subtle">/100</span>
-        </div>
-        <span className="pill pill-positive w-fit">Ready for the next round</span>
-      </div>
-    </div>
-  );
-}
-
-/**
  * True employer names we cover, as text wordmarks — no logos we do not own the rights to.
  * Every name here is a row in `public.companies`; the "more" count is the rest of that
  * table (91 in production on 27 October 2026), rounded down so it stays true.
+ *
+ * The list is rendered twice so the scrolling strip loops seamlessly; the copy is hidden
+ * from assistive tech, and from everyone when motion is reduced (globals.css).
  */
+const EMPLOYERS = [
+  "Google", "Amazon", "Microsoft", "Meta", "Apple", "Netflix", "Uber", "Atlassian", "Salesforce", "Stripe",
+  "Adyen", "PayPal", "Goldman Sachs", "JPMorgan Chase", "McKinsey & Company", "Flipkart", "Zomato", "Swiggy",
+  "Razorpay", "Paytm", "PhonePe", "CRED", "Zerodha", "Meesho", "Zoho", "Freshworks", "TCS", "Infosys",
+  "Accenture", "Deloitte",
+];
+
 function EmployerStrip() {
-  const employers = [
-    "Google",
-    "Amazon",
-    "Microsoft",
-    "Meta",
-    "Apple",
-    "Netflix",
-    "Uber",
-    "Atlassian",
-    "Salesforce",
-    "Stripe",
-    "Adyen",
-    "PayPal",
-    "Goldman Sachs",
-    "JPMorgan Chase",
-    "McKinsey & Company",
-    "Flipkart",
-    "Zomato",
-    "Swiggy",
-    "Razorpay",
-    "Paytm",
-    "PhonePe",
-    "CRED",
-    "Zerodha",
-    "Meesho",
-    "Zoho",
-    "Freshworks",
-    "TCS",
-    "Infosys",
-    "Accenture",
-    "Deloitte",
-  ];
   return (
-    <section className="border-b border-line bg-surface-sunken">
-      <div className="mx-auto layout-content px-6 py-8">
-        <p className="pb-4 text-center font-mono text-micro tracking-widest text-ink-subtle uppercase">
-          Rounds built for interviews at
-        </p>
-        <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-          {employers.map((name) => (
-            <li key={name} className="text-heading font-bold text-ink-muted">
-              {name}
-            </li>
-          ))}
-          <li className="text-heading font-bold text-accent">and 60+ more</li>
-        </ul>
+    <section className="border-b border-line bg-surface-raised py-8">
+      <p className="px-4 pb-5 text-center font-mono text-micro tracking-widest text-ink-subtle uppercase">
+        Rounds built for interviews at these employers and 60+ more
+      </p>
+      <div className="marquee overflow-hidden">
+        <div className="marquee-track flex">
+          <EmployerList />
+          <EmployerList duplicate />
+        </div>
       </div>
     </section>
   );
 }
 
-function VoiceSection() {
-  const points = [
-    {
-      title: "You speak, it listens",
-      body: "Browser recording straight to Gemini — no separate voice vendor. It hears the answer and speaks the next question back.",
-    },
-    {
-      title: "A face across the table",
-      body: "A drawn interviewer, never photoreal and never named, so nobody mistakes it for a person. Your own camera is optional and never leaves your browser.",
-    },
-    {
-      title: "It interrupts",
-      body: "Rambling gets cut in on. A claim you cannot defend gets a follow-up. That is the difference from a question bank on a timer.",
-    },
-  ];
+/** Each copy carries its own trailing gap, so the two halves are identical and the loop has no seam. */
+function EmployerList({ duplicate = false }: { duplicate?: boolean }) {
+  return (
+    <ul aria-hidden={duplicate || undefined} className={`flex shrink-0 gap-x-10 gap-y-3 pr-10 ${duplicate ? "marquee-duplicate" : ""}`}>
+      {EMPLOYERS.map((name) => (
+        <li key={name} className="text-h4 font-bold whitespace-nowrap text-ink-subtle transition-colors hover:text-ink">
+          {name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Loops() {
   return (
     <section className="border-b border-line">
-      <div className="mx-auto layout-content px-6 py-20">
-        <div className="flex flex-col gap-3 pb-10">
-          <span className="pill pill-accent w-fit">Voice mock interviews</span>
-          <h2 className="text-display text-balance text-ink">Practice by talking, not by typing.</h2>
+      <div className="mx-auto layout-content px-4 py-16 sm:px-6 lg:py-24">
+        <div className="flex flex-col gap-3 pb-8">
+          <h2 className="text-display text-balance text-ink">An Infosys panel is not a Google loop.</h2>
+          <p className="max-w-xl text-body text-ink-muted">Each type runs its own rounds and its own rubric. Pick one.</p>
         </div>
-        <ul className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3">
-          {points.map((p) => (
-            <li key={p.title} className="flex flex-col gap-2 bg-surface-raised p-6">
-              <h3 className="text-heading font-bold text-ink">{p.title}</h3>
-              <p className="text-caption text-ink-muted">{p.body}</p>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-/**
- * A real exchange from a real session. The single most persuasive thing on the page,
- * because it is the thing competitors cannot fake with copy.
- */
-function TranscriptSample() {
-  return (
-    <section className="border-b border-line bg-surface-sunken">
-      <div className="mx-auto grid layout-content gap-10 px-6 py-20 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
-        <div className="flex flex-col gap-4">
-          <h2 className="text-display text-balance text-ink">It listens to the answer.</h2>
-          <p className="max-w-md text-body text-ink-muted">
-            Not a question bank on a timer. The follow-up below came from one sentence the
-            candidate said about their own architecture — and it came because the answer had gone
-            thin.
-          </p>
-        </div>
-
-        <div className="card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-line px-5 py-3">
-            <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
-              Project deep-dive · service-based IT
-            </span>
-            <span className="font-mono text-micro text-ink-subtle">turn 2</span>
-          </div>
-          <div className="flex flex-col divide-y divide-line">
-            <Exchange
-              speaker="Candidate"
-              body="Yeah, so we used a background worker that polled the ledger table every few seconds. If it failed we just retried it. It was mostly fine."
-            />
-            <Exchange
-              speaker="Interviewer"
-              accent
-              tag="challenge"
-              body="Polling a ledger table taking hundreds of writes per second degrades the database and adds lag. How did you track which records still needed projecting?"
-            />
-          </div>
-          <p className="border-t border-line px-5 py-3 text-caption text-ink-subtle">
-            The report scored operational depth 2 out of 5 here, and quoted that answer as the
-            reason.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Exchange({
-  speaker,
-  body,
-  accent = false,
-  tag,
-}: {
-  speaker: string;
-  body: string;
-  accent?: boolean;
-  tag?: string;
-}) {
-  return (
-    <div className={accent ? "bg-accent-wash px-5 py-4" : "px-5 py-4"}>
-      <div className="flex items-center gap-2 pb-1.5">
-        <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
-          {speaker}
-        </span>
-        {tag ? <span className="pill pill-accent">{tag}</span> : null}
-      </div>
-      <p className="text-body text-ink">{body}</p>
-    </div>
-  );
-}
-
-/** Names real employers and real round types. An adjective would say nothing. */
-function Coverage() {
-  const archetypes = [
-    {
-      label: "Service-based IT",
-      examples: "TCS · Infosys · Wipro · Cognizant",
-      rounds: "Project walkthrough, techno-managerial, HR fit",
-    },
-    {
-      label: "Consulting and Big Four",
-      examples: "Deloitte · EY · PwC · KPMG · Accenture",
-      rounds: "Case discussion, client scenario, manager round",
-    },
-    {
-      label: "Global product",
-      examples: "Google · Amazon · Microsoft · Atlassian",
-      rounds: "Coding, system design, behavioural, bar raiser",
-    },
-    {
-      label: "European employers",
-      examples: "Booking · Adyen · SAP · Zalando",
-      rounds: "Competency rounds, values fit, relocation and visa",
-    },
-    {
-      label: "Indian product",
-      examples: "Zoho · Razorpay · Zerodha · Swiggy",
-      rounds: "Practical coding, product sense, founder round",
-    },
-    {
-      label: "GCC and captive",
-      examples: "Global banks, retail and pharma captives",
-      rounds: "Domain depth, stakeholder management, compliance",
-    },
-  ];
-
-  return (
-    <section className="border-b border-line">
-      <div className="mx-auto layout-content px-6 py-20">
-        <div className="flex flex-col gap-3 pb-10">
-          <h2 className="text-display text-balance text-ink">The loops most tools skip.</h2>
-          <p className="max-w-2xl text-body text-ink-muted">
-            An Infosys techno-managerial panel is not a Google system design round, and preparing
-            for one does not prepare you for the other. Each archetype runs its own structure and
-            its own rubric.
-          </p>
-        </div>
-
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {archetypes.map((item) => (
-            <li key={item.label} className="card flex flex-col gap-2 p-5">
-              <span className="text-heading font-bold text-ink">{item.label}</span>
-              <span className="font-mono text-caption text-ink-subtle">{item.examples}</span>
-              <span className="text-caption text-ink-muted">{item.rounds}</span>
-            </li>
-          ))}
-        </ul>
-
-        <p className="max-w-2xl pt-6 text-caption text-ink-subtle">
-          Name an employer we do not recognise and the round still runs — on archetype patterns,
-          and it tells you that is what it is doing rather than inventing detail about a company
-          we know nothing about.
+        <LoopPicker />
+        <p className="max-w-xl pt-5 text-caption text-ink-subtle">
+          Name an employer we don&rsquo;t know and the round runs on the archetype — and says so, rather than inventing detail.
         </p>
       </div>
     </section>
   );
 }
 
-function ReportContents() {
-  const sections = [
-    {
-      n: "01",
-      title: "Competency scores, each with a quote",
-      body: "Scored against your function and level. A score that cannot be tied to something you said is dropped rather than shown.",
-    },
-    {
-      n: "02",
-      title: "Where you needed a hand",
-      body: "Counted from the round itself: which answers stood alone, where you were nudged, and what you built on the nudge.",
-    },
-    {
-      n: "03",
-      title: "Answer by answer",
-      body: "What worked, what was vague, what a real interviewer would have probed, and a stronger framing for the weakest answers.",
-    },
-    {
-      n: "04",
-      title: "How you came across",
-      body: "Structure, filler density, pace, rambling, and how you handled not knowing something.",
-    },
-    {
-      n: "05",
-      title: "What to work on next",
-      body: "The specific competencies to fix before the next attempt, and which round to take next.",
-    },
-  ];
-
+function Report() {
+  const extras = ["Answer-by-answer breakdown", "Where you needed a nudge", "Filler, pace and structure", "What to fix next"];
   return (
     <section className="border-b border-line bg-surface-sunken">
-      <div className="mx-auto grid layout-content gap-10 px-6 py-20 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <div className="mx-auto grid layout-content gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-16 lg:py-24">
         <div className="flex flex-col gap-4">
-          <span className="pill pill-accent w-fit">The feedback report</span>
-          <h2 className="text-display text-balance text-ink">The report is the product.</h2>
-          <p className="max-w-md text-body text-ink-muted">
-            Encouraging summaries are worthless and candidates know it. Everything here is either
-            traceable to your transcript or it does not appear.
-          </p>
+          <span className="pill pill-accent w-fit">The report</span>
+          <h2 className="text-display text-balance text-ink">Every score quotes you.</h2>
+          <p className="max-w-md text-body text-ink-muted">A score that can&rsquo;t be tied to something you said is dropped, not shown.</p>
+          <ul className="flex flex-wrap gap-2 pt-2">
+            {extras.map((item) => (
+              <li key={item} className="rounded-full border border-line bg-surface-raised px-3 py-1.5 text-caption font-medium text-ink-muted">
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
-
-        <ol className="card flex flex-col divide-y divide-line">
-          {sections.map((section) => (
-            <li key={section.n} className="flex gap-5 p-5">
-              <span className="pt-0.5 font-mono text-caption text-accent">{section.n}</span>
-              <div className="flex flex-col gap-1">
-                <h3 className="text-heading font-bold text-ink">{section.title}</h3>
-                <p className="max-w-xl text-body text-ink-muted">{section.body}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <ReportPreview />
       </div>
     </section>
   );
 }
 
 /**
- * Free courses (task 045).
- *
- * Each card links to its own course. It used to send both to `/courses` — the comment
- * said "links out even if the route isn't live yet", which was true when it was written
- * and quietly stopped being true once the courses shipped. The effect was that clicking
- * either card landed you on the same catalogue page, so the two cards looked broken.
- *
- * The titles and taglines are read from the course content itself rather than repeated
- * here, so the landing page cannot drift out of step with what the course is actually
- * called.
+ * Free courses. Each card links to its own course; titles and taglines are read from the
+ * course content itself so the landing page cannot drift from what a course is called.
  */
 function Courses({
   visibleCourses,
@@ -547,75 +309,54 @@ function Courses({
 }) {
   return (
     <section className="border-b border-line">
-      <div className="mx-auto layout-content px-6 py-20">
-        <div className="flex flex-col gap-3 pb-10">
-          <span className="pill pill-highlight w-fit">Free courses</span>
-          <h2 className="text-display text-balance text-ink">Study before you sit the round.</h2>
-          <p className="max-w-2xl text-body text-ink-muted">
-            Free, self-paced material — the fundamentals a coding round tests, and the AI work everyone is
-            now being asked about.
-          </p>
+      <div className="mx-auto layout-content px-4 py-16 sm:px-6 lg:py-24">
+        <div className="flex flex-wrap items-end justify-between gap-4 pb-8">
+          <div className="flex flex-col gap-3">
+            <span className="pill pill-highlight w-fit">Free courses</span>
+            <h2 className="text-display text-balance text-ink">Study before you sit the round.</h2>
+          </div>
+          <Link href={"/courses" as Route} className="inline-flex min-h-11 items-center text-caption font-semibold text-accent hover:text-accent-strong">
+            All courses →
+          </Link>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {visibleCourses.map((course) => (
             <Link
               key={course.slug}
               href={`/courses/${course.slug}` as Route}
-              className="card flex flex-col gap-2 p-6 transition-shadow hover:shadow-[var(--shadow-md)]"
+              className="card group flex flex-col overflow-hidden transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
-              <h3 className="text-heading font-bold text-ink">{course.title}</h3>
-              <p className="text-caption text-ink-muted">{course.tagline}</p>
-              <span className="pt-2 text-caption font-semibold text-accent">
-                {totalChapters(course)} chapters · {totalMinutes(course)} min
-              </span>
-              <span className="text-caption font-semibold text-accent">Start course →</span>
+              <CourseArtwork courseSlug={course.slug} />
+              <div className="flex flex-1 flex-col gap-2 p-5">
+                <h3 className="text-heading font-bold text-ink">{course.title}</h3>
+                <p className="text-caption text-ink-muted">{course.tagline}</p>
+                <span className="mt-auto pt-3 font-mono text-micro text-ink-subtle">
+                  {totalChapters(course)} chapters · {totalMinutes(course)} min
+                </span>
+              </div>
             </Link>
           ))}
-          {arenaEnabled ? (
-            <Link href={"/arena" as Route} className="card flex flex-col gap-2 p-6 transition-shadow hover:shadow-[var(--shadow-md)]">
-              <span className="pill pill-highlight w-fit">New</span>
-              <h3 className="text-heading font-bold text-ink">The Arena</h3>
-              <p className="text-caption text-ink-muted">
-                Short, gamified rounds derived from every chapter above — spot the mistake, predict the output,
-                read a diagram one step ahead.
-              </p>
-              <span className="pt-2 text-caption font-semibold text-accent">Play now →</span>
-            </Link>
-          ) : null}
         </div>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorks() {
-  const steps = [
-    { n: "01", title: "Pick company and role", body: "Chosen fresh for this session — no setup, no target list to maintain." },
-    { n: "02", title: "Take the round", body: "Up to 8 spoken exchanges. It adapts to what you say and interrupts when it needs to." },
-    { n: "03", title: "Read the report", body: "Every score quotes your own transcript. Free, in full, every time." },
-  ];
-  return (
-    <section className="border-b border-line bg-surface-sunken">
-      <div className="mx-auto layout-content px-6 py-20">
-        <h2 className="pb-10 text-display text-balance text-ink">How it works.</h2>
-        <ol className="grid gap-8 sm:grid-cols-3">
-          {steps.map((s) => (
-            <li key={s.n} className="flex flex-col gap-2">
-              <span className="font-mono text-display font-bold text-accent">{s.n}</span>
-              <h3 className="text-heading font-bold text-ink">{s.title}</h3>
-              <p className="text-caption text-ink-muted">{s.body}</p>
-            </li>
-          ))}
-        </ol>
+        {arenaEnabled ? (
+          <Link
+            href={"/arena" as Route}
+            className="card mt-5 flex flex-wrap items-center justify-between gap-4 p-5 transition-shadow hover:shadow-[var(--shadow-md)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <span className="flex flex-col gap-1">
+              <span className="text-heading font-bold text-ink">The Arena</span>
+              <span className="text-caption text-ink-muted">Spot the mistake, predict the output — short rounds from every chapter.</span>
+            </span>
+            <span className="text-caption font-semibold text-accent">Play now →</span>
+          </Link>
+        ) : null}
       </div>
     </section>
   );
 }
 
 /**
- * There is no paid tier yet, so this promises exactly what the product does: every round,
- * free, while it is being built. Saying "free trial" or naming a future price would be
- * selling something that does not exist.
+ * The free allowance is stated from the same constant as the terms (`lib/legal.ts`), so
+ * this band cannot promise more than the product gives.
  */
 function CtaBand({
   mockInterviewsEnabled,
@@ -627,20 +368,37 @@ function CtaBand({
   arenaEnabled: boolean;
 }) {
   const href = mockInterviewsEnabled ? "/interview/new" : coursesEnabled ? "/courses" : arenaEnabled ? "/arena" : "/login";
+  const steps = ["Pick a company and role", "Talk through up to 8 exchanges", "Read the report"];
   return (
     <section className="bg-navy text-on-navy">
-      <div className="mx-auto flex layout-content flex-col items-start gap-6 px-6 py-20">
-        <h2 className="text-display text-balance text-on-navy">
-          {mockInterviewsEnabled ? "Every round is free right now." : "Keep building the skill behind the answer."}
-        </h2>
-        <p className="max-w-xl text-body text-on-navy-muted">
-          {mockInterviewsEnabled
-            ? "Not a trial round, and not a sample report — the whole thing, as many times as you want, while we are still building it. No card. When there is something worth charging for, we will say so before we charge for it."
-            : "Choose a learning path, practise what you studied, and come back with a stronger explanation than the one you had yesterday."}
-        </p>
-        <ActionLink href={href as Route} size="lg">
-          {mockInterviewsEnabled ? "Start an interview" : coursesEnabled ? "Explore courses" : arenaEnabled ? "Open the Arena" : "Sign in"}
-        </ActionLink>
+      <div className="mx-auto flex layout-content flex-col gap-10 px-4 py-16 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:py-20">
+        <div className="flex flex-col gap-4">
+          <h2 className="text-display text-balance text-on-navy">
+            {mockInterviewsEnabled ? `${FREE_ROUNDS_LIFETIME_TEXT}.` : "Keep building the skill behind the answer."}
+          </h2>
+          {mockInterviewsEnabled ? (
+            <ol className="flex flex-col gap-3 sm:flex-row sm:gap-6">
+              {steps.map((step, index) => (
+                <li key={step} className="flex items-center gap-2.5 text-caption text-on-navy-muted">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-navy-raised font-mono text-micro font-bold text-on-navy">
+                    {index + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="max-w-xl text-body text-on-navy-muted">Choose a learning path, practise what you studied, and come back sharper.</p>
+          )}
+        </div>
+        <div className="flex flex-col items-start gap-2">
+          <ActionLink href={href as Route} size="lg">
+            {mockInterviewsEnabled ? "Start an interview" : coursesEnabled ? "Explore courses" : arenaEnabled ? "Open the Arena" : "Sign in"}
+          </ActionLink>
+          {mockInterviewsEnabled ? (
+            <span className="text-caption text-on-navy-muted">Full report with each · no card to start</span>
+          ) : null}
+        </div>
       </div>
     </section>
   );

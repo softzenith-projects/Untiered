@@ -507,23 +507,6 @@ export const chapterBacktracking: Chapter = {
           "choose/undo shape and an early-pruning constraint in one problem.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd adapt the subsets backtracking code to only record subsets " +
-          "that sum to a given target, pruning early rather than filtering the final list.",
-        "Given a string, describe a backtracking approach to generate every possible way to insert commas " +
-          "to split it into non-empty pieces.",
-        "Describe, in your own words, how permutations would need to change to correctly handle an input " +
-          "array containing duplicate values, avoiding duplicate permutations in the output.",
-        "For a grid where you must place non-attacking rooks (which only attack along rows and columns, not " +
-          "diagonals), describe how the isSafe check would differ from N-Queens.",
-        "Explain, in your own words, why generating every arrangement first and checking validity afterward " +
-          "would be far slower than N-Queens's approach of checking isSafe before each recursive call.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What is the key discipline backtracking adds on top of plain recursion?",
@@ -543,11 +526,10 @@ export const chapterBacktracking: Chapter = {
       kind: "quiz",
       question: "Why does subsets([1,2,3]) produce exactly 8 subsets, while permutations([1,2,3]) produces 6?",
       options: [
-        "Both should produce the same count; one of the two is a bug",
-        "Subsets counts every include/exclude combination (2³=8); permutations counts every ordering " +
-          "of all 3 elements (3!=6)",
-        "8 and 6 are arbitrary and unrelated to the input size",
-        "Because permutations only considers even-length arrangements",
+        "Both should produce the same count for the same input, so one of the two functions must have a bug",
+        "Subsets counts every include/exclude choice (2³=8); permutations counts every ordering of 3 elements (3!=6)",
+        "8 and 6 are arbitrary numbers, unrelated to the size of the input array being processed",
+        "Because permutations only considers arrangements of even length, so it skips several of the orderings",
       ],
       answer: 1,
       why:
@@ -570,6 +552,23 @@ export const chapterBacktracking: Chapter = {
         "Checking safety before recursing means the algorithm never explores the (large) space of " +
         "placements that build on an already-invalid partial arrangement — this early pruning is what " +
         "makes N-Queens practical rather than checking all nⁿ full placements afterward.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd adapt the subsets backtracking code to only record subsets " +
+          "that sum to a given target, pruning early rather than filtering the final list.",
+        "Given a string, describe a backtracking approach to generate every possible way to insert commas " +
+          "to split it into non-empty pieces.",
+        "Describe, in your own words, how permutations would need to change to correctly handle an input " +
+          "array containing duplicate values, avoiding duplicate permutations in the output.",
+        "For a grid where you must place non-attacking rooks (which only attack along rows and columns, not " +
+          "diagonals), describe how the isSafe check would differ from N-Queens.",
+        "Explain, in your own words, why generating every arrangement first and checking validity afterward " +
+          "would be far slower than N-Queens's approach of checking isSafe before each recursive call.",
+      ],
     },
   ],
 };

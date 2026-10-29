@@ -1,6 +1,8 @@
 "use client";
 
+import { runCourseCode } from "@/lib/api";
 import { loadPython, runPython } from "@/lib/browser-python";
+import { runOnServer } from "@/lib/server-code-runner";
 
 export type PlaygroundLanguage = "python" | "java";
 
@@ -30,17 +32,19 @@ const pythonRunner: CodeRunner = {
 };
 
 /**
- * One runner per supported language — the pluggable seam task 049 asks for. Python is the
- * only implementation today; a server-side Java runner, when the owner green-lights one,
- * plugs in here as a second `CodeRunner` rather than a rewrite of the playground UI.
- *
- * `null` for Java is not a bug to work around: there is no free, unencumbered way to run
- * Java in a browser as of Feb 2026 (Piston went whitelist-only, self-hosting needs a
- * privileged Docker sidecar, Judge0 is GPLv3 with an unresolved API-use question, CheerpJ
- * needs a commercial licence, DoppioJVM is dead, TeaVM's class-library support is
- * partial). The playground shows that honestly instead of a fake Run button.
+ * Java on our server runner — there is still no free, unencumbered way to run it in a
+ * browser (CheerpJ needs a commercial licence, DoppioJVM is dead, TeaVM's class library
+ * is partial). Courses are behind sign-in, so a reader always has a token to send; until
+ * it has loaded, `prepare()` says not yet rather than sending an unauthenticated run.
  */
-export function getRunner(language: PlaygroundLanguage): CodeRunner | null {
-  if (language === "python") return pythonRunner;
-  return null;
+function javaRunner(accessToken: string | null | undefined): CodeRunner {
+  return {
+    prepare: () => Promise.resolve(Boolean(accessToken)),
+    run: (source) => runOnServer(() => runCourseCode(accessToken ?? "", { source, language: "java", stdin: "" })),
+  };
+}
+
+/** One runner per supported language — the pluggable seam task 049 asks for. */
+export function getRunner(language: PlaygroundLanguage, accessToken?: string | null): CodeRunner {
+  return language === "python" ? pythonRunner : javaRunner(accessToken);
 }

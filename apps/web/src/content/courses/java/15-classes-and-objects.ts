@@ -39,16 +39,6 @@ export const chapterClassesAndObjects: Chapter = {
       kind: "code",
       caption: "A Student class and two independent Student objects, in one file.",
       code:
-        "class Student {\n" +
-        "    String name;\n" +
-        "    int rollNumber;\n" +
-        "    int marks;\n" +
-        "\n" +
-        "    void printDetails() {\n" +
-        '        System.out.println(name + " (Roll " + rollNumber + "): " + marks + " marks");\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
         "public class ClassesDemo {\n" +
         "    public static void main(String[] args) {\n" +
         "        Student s1 = new Student();\n" +
@@ -67,12 +57,28 @@ export const chapterClassesAndObjects: Chapter = {
         '        System.out.println("s1 == s2: " + (s1 == s2));\n' +
         '        System.out.println("s1.marks after editing only s1: " + s1.marks);\n' +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Student {\n" +
+        "    String name;\n" +
+        "    int rollNumber;\n" +
+        "    int marks;\n" +
+        "\n" +
+        "    void printDetails() {\n" +
+        '        System.out.println(name + " (Roll " + rollNumber + "): " + marks + " marks");\n' +
+        "    }\n" +
         "}\n",
       output:
         "Priya (Roll 12): 87 marks\n" +
         "Arjun (Roll 15): 91 marks\n" +
         "s1 == s2: false\n" +
         "s1.marks after editing only s1: 87",
+      tryIt: {
+        language: "java",
+        prompt:
+          "The class with `main` comes first in this file, because the runner starts from the top. Make a " +
+          "third student, `s3`, with your own name and marks, and print their details.",
+      },
     },
     {
       kind: "p",
@@ -185,10 +191,10 @@ export const chapterClassesAndObjects: Chapter = {
       kind: "quiz",
       question: "What does `new Student()` actually do?",
       options: [
-        "Defines the Student class for the first time",
-        "Creates a new object in memory with default field values and returns a reference to it",
-        "Copies an existing Student object",
-        "Nothing, until a field is assigned",
+        "Declares the Student class to the compiler for the first time, so it must come before other code.",
+        "Creates a new object in memory with default field values and returns a reference to it.",
+        "Copies an existing Student object into a new place in memory, field by field.",
+        "Nothing visible, until a field is assigned a value; only then is memory set aside.",
       ],
       answer: 1,
       why:

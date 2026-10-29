@@ -49,6 +49,14 @@ editor” and “ticket booking platform”. They do not claim to describe any n
 private architecture. Educative, ByteByteGo, LeetCode company tags and other proprietary or
 non-redistributable course material were not used.
 
+**Fanout** (fanout.sh, *System Design Course: Concepts, Cases and Builds*) is a paid
+course with no open licence. On 28 October 2026 only the module headings on its public
+course page (e.g. "NoSQL, partitioning and IDs", "Storage engines", "Analytics and
+sketches") were compared against this course's chapter list to find missing topics. That
+comparison led to the "Inside the data layer" chapters (`data-internals.ts`). No Fanout
+lesson, note, lab, diagram or example was opened, copied, paraphrased or used as a source;
+those chapters are original writing.
+
 The local `Course Materials/SysDesign` filenames were treated only as a coverage checklist.
 No PDF or video was transcribed, paraphrased, extracted, embedded or used as a factual source.
 All teaching expression and all quiz/scenario wording in this directory are original.

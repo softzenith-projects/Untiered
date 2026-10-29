@@ -17,8 +17,10 @@ const prepare = vi.fn<CodeRunner["prepare"]>();
 const run = vi.fn<CodeRunner["run"]>();
 
 vi.mock("@/lib/course-code-runner", () => ({
-  getRunner: (language: string) => (language === "python" ? { prepare, run } : null),
+  getRunner: () => ({ prepare, run }),
 }));
+
+vi.mock("@/lib/use-access-token", () => ({ useAccessToken: () => "token" }));
 
 /**
  * CodeMirror's real view does its own text measurement (`getClientRects`, animation-frame
@@ -86,8 +88,22 @@ describe("Playground", () => {
     expect(await screen.findByRole("button", { name: "Loading Python…" })).toBeInTheDocument();
 
     resolvePrepare(true);
-    expect(await screen.findByText("hi")).toBeInTheDocument();
+    // The expected output ("hi") is on screen before the run, so wait for the run's own result.
     expect(await screen.findByText("Matches the expected output.")).toBeInTheDocument();
+    expect(screen.getByText("Output")).toBeInTheDocument();
+    expect(screen.getByText("hi")).toBeInTheDocument();
+  });
+
+  it("shows what the starter should print before anything has run", () => {
+    render(<Playground block={pythonBlock} />);
+    expect(screen.getByText("Expected output")).toBeInTheDocument();
+    expect(screen.queryByText("Run to see what this prints.")).not.toBeInTheDocument();
+  });
+
+  it("says when it has mounted, so the static copy of its code can be taken away", () => {
+    const onReady = vi.fn();
+    render(<Playground block={pythonBlock} onReady={onReady} />);
+    expect(onReady).toHaveBeenCalled();
   });
 
   it("shows stderr distinctly and does not claim a match when the run errored", async () => {
@@ -168,12 +184,36 @@ describe("Playground", () => {
     expect(screen.getByRole("button", { name: "Run" })).toBeInTheDocument();
   });
 
-  it("for Java, explains the gap honestly instead of a fake or unexplained Run control", () => {
+  it("for Java, says before Run that the code goes to our server", () => {
     render(<Playground block={javaBlock} />);
-    expect(screen.queryByRole("button", { name: "Run" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Running Java in the browser isn.t available yet/)).toBeInTheDocument();
-    // Copy and Reset still work for Java — only Run is unavailable.
-    expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reset to original" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Run" })).toBeInTheDocument();
+    expect(screen.getByText("Java runs on our server — only this code is sent.")).toBeInTheDocument();
+    expect(screen.getByText(/This runs Java 15, so features from Java 16 on/)).toBeInTheDocument();
+    expect(prepare).not.toHaveBeenCalled();
+  });
+
+  it("for Java, runs on the server and shows what it printed, with no Python loading state", async () => {
+    prepare.mockResolvedValue(true);
+    run.mockResolvedValue({ stdout: "hi\n", stderr: "", available: true, timedOut: false, message: null });
+
+    const user = userEvent.setup();
+    render(<Playground block={{ ...javaBlock, expectedOutput: "hi" }} />);
+    await user.click(screen.getByRole("button", { name: "Run" }));
+
+    expect(screen.queryByRole("button", { name: "Loading Python…" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Matches the expected output.")).toBeInTheDocument();
+    expect(run).toHaveBeenCalledWith(javaBlock.starter);
+  });
+
+  it("for Java with no sign-in, asks the reader to sign in rather than blaming Python", async () => {
+    prepare.mockResolvedValue(false);
+
+    const user = userEvent.setup();
+    render(<Playground block={javaBlock} />);
+    await user.click(screen.getByRole("button", { name: "Run" }));
+
+    expect(await screen.findByText(/you need to be signed in/)).toBeInTheDocument();
+    expect(screen.queryByText(/Python could not be loaded/)).not.toBeInTheDocument();
+    expect(run).not.toHaveBeenCalled();
   });
 });

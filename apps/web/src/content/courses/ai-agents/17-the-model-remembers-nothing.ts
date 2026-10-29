@@ -261,7 +261,7 @@ export const chapterTheModelRemembersNothing: Chapter = {
       kind: "quiz",
       question: "Your assistant forgets the user's original request after ten turns. What is happening?",
       options: [
-        "The model's memory is degrading over time",
+        "The model's memory is degrading over time, because long conversations wear out the weights it uses to remember",
         "The oldest turns are being dropped to fit the budget, and the first turn is where the goal was stated",
         "The temperature is too high",
         "The session store is corrupt",
@@ -276,7 +276,7 @@ export const chapterTheModelRemembersNothing: Chapter = {
       kind: "quiz",
       question: "In LangGraph, what does re-invoking a graph with the same `thread_id` do?",
       options: [
-        "Starts a fresh conversation",
+        "Starts a fresh conversation, because the same id is treated as a duplicate and the stored state is discarded",
         "Continues the same conversation, because the checkpointer stores state per thread",
         "Replays every previous turn through the model again",
         "Nothing — thread_id is only used for logging",
@@ -291,9 +291,9 @@ export const chapterTheModelRemembersNothing: Chapter = {
       question: "A node in your graph sends an email, then the run is interrupted and later resumed. What should you assume?",
       options: [
         "The node resumes exactly where it stopped, so the email is sent once",
-        "The affected node runs again from the start of its function, so the email can be sent twice unless it is idempotent",
+        "The node runs again from the start of its function, so the email can be sent twice unless it is idempotent",
         "The framework detects and skips completed side effects automatically",
-        "Interrupted runs are discarded entirely",
+        "Interrupted runs are discarded entirely, so the email is never sent and the run must be started again",
       ],
       answer: 1,
       why:

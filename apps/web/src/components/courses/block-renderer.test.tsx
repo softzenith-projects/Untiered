@@ -18,7 +18,7 @@ const ALL_KINDS: Block[] = [
   { kind: "table", head: ["A", "B"], rows: [["1", "2"]] },
   { kind: "trace", title: "Trace title", steps: ["step one", "step two"] },
   { kind: "pitfall", items: ["A common mistake"] },
-  { kind: "remember", items: ["Remember this"] },
+  { kind: "remember", items: ["A point worth keeping"] },
   { kind: "interview", items: ["Comes up as X"] },
   {
     kind: "quiz",
@@ -35,9 +35,9 @@ const ALL_KINDS: Block[] = [
       frames: [{ cells: [{ value: 1 }, { value: 2 }], note: "Frame one note." }],
     },
   },
-  // Java, deliberately: getRunner("java") is null with no mocking needed, so this
-  // exercises the real Playground component (real CodeMirror, no Worker involved) in the
-  // same no-mock smoke test as every other block kind.
+  // Java, deliberately: its runner is a server call made only on Run, so this exercises
+  // the real Playground component (real CodeMirror, no Worker, no request) in the same
+  // no-mock smoke test as every other block kind.
   {
     kind: "playground",
     language: "java",
@@ -88,7 +88,7 @@ describe("BlockRenderer", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
     expect(screen.getByText("Trace title")).toBeInTheDocument();
     expect(screen.getByText("A common mistake")).toBeInTheDocument();
-    expect(screen.getByText("Remember this")).toBeInTheDocument();
+    expect(screen.getByText("A point worth keeping")).toBeInTheDocument();
     expect(screen.getByText("Comes up as X")).toBeInTheDocument();
     expect(screen.getByText("What is 2 + 2?")).toBeInTheDocument();
     expect(screen.getByText("A step-through array")).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe("BlockRenderer", () => {
     const wait = { timeout: 10_000 };
     expect(await screen.findByText("A prompt line.", {}, wait)).toBeInTheDocument();
     expect(
-      await screen.findByText(/Running Java in the browser isn.t available yet/, {}, wait),
+      await screen.findByText(/Java runs on our server — only this code is sent/, {}, wait),
     ).toBeInTheDocument();
     expect(screen.getByText("A concept title")).toBeInTheDocument();
     expect(screen.getByText("A vs B")).toBeInTheDocument();
@@ -152,6 +152,13 @@ describe("BlockRenderer", () => {
     expect(wrappers[2]?.className).toContain("w-full");
   });
 
+  it("gives headings the full width so a short heading is not broken onto two lines", () => {
+    const { container } = render(
+      <BlockRenderer blocks={[{ kind: "h", text: "`System.out.println` vs `System.out.print`" }]} />,
+    );
+    expect(container.firstElementChild?.children[0]?.className).not.toContain("62ch");
+  });
+
   it("renders inline `code` and **bold** markers as their own elements", () => {
     render(<BlockRenderer blocks={[{ kind: "p", text: "See `Scanner` and **immutable**." }]} />);
 
@@ -183,7 +190,7 @@ describe("BlockRenderer", () => {
     expect(screen.getByText("Main explanation").closest("p")).toHaveClass("text-heading", "text-ink");
     expect(screen.getByText("Teaching point").closest("ul")).toHaveClass("text-heading", "text-ink");
     const interview = screen.getByText("How this comes up in interviews").closest("aside");
-    expect(interview).toHaveClass("border-accent/30", "bg-accent-wash");
+    expect(interview).toHaveClass("border-accent/25", "bg-accent-wash");
     expect(screen.getByText("How this comes up in interviews")).toHaveClass("text-accent-strong");
     expect(screen.getByText("Interview advice").closest("ul")).toHaveClass("text-body", "text-ink");
     expect(screen.getByText("Concept explanation").closest("p")).toHaveClass("text-body", "text-ink");
@@ -271,6 +278,51 @@ describe("BlockRenderer", () => {
     await user.click(screen.getByRole("button", { name: "Java" }));
     expect(screen.getByText("System.out.println(1);")).toBeInTheDocument();
     expect(screen.queryByText("print(1)")).not.toBeInTheDocument();
+  });
+
+  it("opens a runnable code example as the editor in its own place, so the program is shown once", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <BlockRenderer
+        blocks={[
+          {
+            kind: "code",
+            code: "System.out.println(3);",
+            caption: "Prints three",
+            output: "3",
+            tryIt: { language: "java", prompt: "Make it print four." },
+          },
+        ]}
+      />,
+    );
+    expect(screen.queryByText("Make it print four.")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Edit and run" }));
+
+    expect(await screen.findByText("Make it print four.", {}, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit and run" })).not.toBeInTheDocument();
+    // The static copy is gone: the editor is the only place the program appears.
+    expect(container.querySelector("pre code")).toBeNull();
+    expect(screen.getAllByText("Prints three")).toHaveLength(1);
+    expect(screen.getByText("Expected output")).toBeInTheDocument();
+  });
+
+  it("offers no Edit and run on a code example without tryIt", () => {
+    render(<BlockRenderer blocks={[{ kind: "code", code: "int x = 1;", output: "1" }]} />);
+
+    expect(screen.queryByRole("button", { name: "Edit and run" })).not.toBeInTheDocument();
+  });
+
+  it("takes a playground's static starter copy away once its editor has mounted", async () => {
+    render(
+      <BlockRenderer
+        blocks={[{ kind: "playground", language: "java", starter: "System.out.println(5);", prompt: "A task.", expectedOutput: "5" }]}
+      />,
+    );
+    // Whether the static copy is still up at this instant depends on whether another test
+    // already loaded the editor's chunk; the smoke test above covers it being rendered.
+    expect(await screen.findByText("A task.", {}, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.queryByText("Starter code · Java")).not.toBeInTheDocument();
   });
 
   it("renders no language toggle for a code block with no python field", () => {

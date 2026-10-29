@@ -309,6 +309,48 @@ export const chapterLinkedLists: Chapter = {
           "solves it — when fast reaches the end, slow is at the middle — without first counting the length.",
       ],
     },
+    {
+      kind: "quiz",
+      question: "In the iterative reverse(), why must `next` be saved before `curr.next` is reassigned?",
+      options: [
+        "It isn't necessary, because Java preserves the old value of curr.next automatically somewhere",
+        "Once curr.next is overwritten to point at prev, the rest of the list is unreachable unless its address was saved",
+        "To make the loop run faster, since reading next once avoids repeated pointer lookups",
+        "Because next is used only for printing the list afterwards, not for the correctness of the loop",
+      ],
+      answer: 1,
+      why:
+        "curr.next is the only reference to the remainder of the original list. Overwriting it before " +
+        "saving that address permanently loses access to every node after curr.",
+    },
+    {
+      kind: "quiz",
+      question: "Why does a fast pointer moving two steps per iteration always meet a slow pointer (one step) if a cycle exists?",
+      options: [
+        "It doesn't always meet: whether the pointers meet depends on which node of the cycle they each start from.",
+        "Fast pointers in Java automatically detect cycles, and report one by stopping as soon as they pass the head.",
+        "Fast gains one node on slow each iteration, so once both are in the cycle the gap shrinks to zero.",
+        "The JVM throws an exception when a cycle is present, and the code catches it to report that a cycle exists.",
+      ],
+      answer: 2,
+      why:
+        "Once both pointers are on the cycle, the distance between them (mod cycle length) decreases by one " +
+        "each iteration, so it is guaranteed to hit zero — a meeting — within at most one full lap.",
+    },
+    {
+      kind: "quiz",
+      question: "What is the time and space complexity of reversing an n-node singly linked list iteratively?",
+      options: [
+        "O(n) time, O(n) space, since a whole new list has to be built from copies of the nodes",
+        "O(n) time, O(1) space, since each node's pointer is redirected in place",
+        "O(1) time, O(1) space, since only the head pointer needs to be changed",
+        "O(n log n) time, O(1) space, since the nodes must be compared as they are redirected",
+      ],
+      answer: 1,
+      why:
+        "Each of the n nodes is visited exactly once to flip its pointer, and only three reference " +
+        "variables (prev, curr, next) are held at any time — no second list is ever allocated.",
+    },
     { kind: "h", text: "Practice problems" },
     {
       kind: "list",
@@ -323,50 +365,6 @@ export const chapterLinkedLists: Chapter = {
         "Describe how merging two already-sorted linked lists into one sorted list works, and why it needs " +
           "no extra array to hold the result.",
       ],
-    },
-    {
-      kind: "quiz",
-      question: "In the iterative reverse(), why must `next` be saved before `curr.next` is reassigned?",
-      options: [
-        "It isn't necessary — Java preserves the old value automatically",
-        "Because once curr.next is overwritten to point at prev, the original rest of the list becomes " +
-          "unreachable unless its address was saved first",
-        "To make the loop run faster",
-        "Because next is used only for printing, not for correctness",
-      ],
-      answer: 1,
-      why:
-        "curr.next is the only reference to the remainder of the original list. Overwriting it before " +
-        "saving that address permanently loses access to every node after curr.",
-    },
-    {
-      kind: "quiz",
-      question: "Why does a fast pointer moving two steps per iteration always meet a slow pointer (one step) if a cycle exists?",
-      options: [
-        "It doesn't always meet — it depends on the starting node",
-        "Fast pointers in Java automatically detect cycles",
-        "Fast gains exactly one node of distance on slow every iteration, so once both are inside the " +
-          "cycle, that gap shrinks by one each step until it reaches zero — they must meet",
-        "The JVM throws an exception when a cycle is present, which is caught to report true",
-      ],
-      answer: 2,
-      why:
-        "Once both pointers are on the cycle, the distance between them (mod cycle length) decreases by one " +
-        "each iteration, so it is guaranteed to hit zero — a meeting — within at most one full lap.",
-    },
-    {
-      kind: "quiz",
-      question: "What is the time and space complexity of reversing an n-node singly linked list iteratively?",
-      options: [
-        "O(n) time, O(n) space, since a new list is built",
-        "O(n) time, O(1) space, since each node's pointer is redirected in place",
-        "O(1) time, O(1) space",
-        "O(n log n) time, O(1) space",
-      ],
-      answer: 1,
-      why:
-        "Each of the n nodes is visited exactly once to flip its pointer, and only three reference " +
-        "variables (prev, curr, next) are held at any time — no second list is ever allocated.",
     },
   ],
 };

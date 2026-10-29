@@ -35,37 +35,11 @@ export const chapterGenerics: Chapter = {
     },
     {
       kind: "code",
-      caption: "A generic Box<T>, a two-parameter Pair<K, V>, and a generic method that works for any List<T>.",
+      caption:
+        "A generic Box<T>, a two-parameter Pair<K, V>, and a generic method that works for any List<T>.",
       code:
         "import java.util.ArrayList;\n" +
         "import java.util.List;\n" +
-        "\n" +
-        "class Box<T> {\n" +
-        "    private T content;\n" +
-        "\n" +
-        "    void put(T item) {\n" +
-        "        content = item;\n" +
-        "    }\n" +
-        "\n" +
-        "    T get() {\n" +
-        "        return content;\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class Pair<K, V> {\n" +
-        "    private K key;\n" +
-        "    private V value;\n" +
-        "\n" +
-        "    Pair(K key, V value) {\n" +
-        "        this.key = key;\n" +
-        "        this.value = value;\n" +
-        "    }\n" +
-        "\n" +
-        "    @Override\n" +
-        '    public String toString() {\n' +
-        '        return key + " -> " + value;\n' +
-        "    }\n" +
-        "}\n" +
         "\n" +
         "public class GenericsDemo {\n" +
         "    static <T> T firstElement(List<T> list) {\n" +
@@ -91,12 +65,45 @@ export const chapterGenerics: Chapter = {
         '        names.add("Vikram");\n' +
         '        System.out.println("First element via generic method: " + firstElement(names));\n' +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Box<T> {\n" +
+        "    private T content;\n" +
+        "\n" +
+        "    void put(T item) {\n" +
+        "        content = item;\n" +
+        "    }\n" +
+        "\n" +
+        "    T get() {\n" +
+        "        return content;\n" +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Pair<K, V> {\n" +
+        "    private K key;\n" +
+        "    private V value;\n" +
+        "\n" +
+        "    Pair(K key, V value) {\n" +
+        "        this.key = key;\n" +
+        "        this.value = value;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public String toString() {\n" +
+        '        return key + " -> " + value;\n' +
+        "    }\n" +
         "}\n",
       output:
         "Box<String>: Priya\n" +
         "Box<Integer>: 42\n" +
         "Pair: Priya -> 87\n" +
         "First element via generic method: Arjun",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Add `stringBox.put(42);` and read the compile error, which is the check generics give you. " +
+          "Then make a `Pair<String, Double>` holding a name and a height.",
+      },
     },
     {
       kind: "p",
@@ -174,10 +181,10 @@ export const chapterGenerics: Chapter = {
       kind: "quiz",
       question: "What is the main advantage of `Box<T>` over an older design storing `Object content`?",
       options: [
-        "Box<T> uses less memory",
-        "Type mismatches are caught at compile time instead of causing a runtime ClassCastException",
-        "Box<T> runs faster",
-        "There is no real difference",
+        "Box<T> uses less memory, because the compiler removes the object header from every stored value.",
+        "Type mismatches are caught at compile time instead of failing later with a ClassCastException.",
+        "Box<T> runs faster, because the compiler generates a separate optimised copy for each type.",
+        "There is no real difference, because both designs report type errors at the same stage.",
       ],
       answer: 1,
       why:
@@ -203,10 +210,10 @@ export const chapterGenerics: Chapter = {
       kind: "quiz",
       question: "Why can't you write `new T()` directly inside a generic class like Box<T>?",
       options: [
-        "It's just a style convention",
-        "Java erases generic type information at run time, so T isn't an instantiable type by then",
-        "T can only be used for method parameters, never for object creation",
-        "You actually can — this is a myth",
+        "It's just a style convention, and the compiler would accept it with only a warning.",
+        "Java erases generic type information at run time, so T isn't a type it can instantiate.",
+        "T can be used only for method parameters, never for creating objects of any kind.",
+        "You actually can write it, and the claim that you can't is a common myth.",
       ],
       answer: 1,
       why:

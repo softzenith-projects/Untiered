@@ -7,6 +7,9 @@ import type {
   AwardBadgesRequest,
   BankCompany,
   BankQuestionPage,
+  BillingOverview,
+  CheckoutOrder,
+  ConfirmPaymentRequest,
   CourseProgressView,
   RoundType,
   CodeRunResult,
@@ -289,6 +292,31 @@ export function fetchEntitlement(options: ApiGetOptions): Promise<EntitlementVie
   return apiGet<EntitlementView>("/api/v1/entitlement", options);
 }
 
+// -- paid interviews ----------------------------------------------------------
+
+export function fetchBilling(options: ApiGetOptions): Promise<BillingOverview> {
+  return apiGet<BillingOverview>("/api/v1/billing", options);
+}
+
+/** Creates a Razorpay order for one pack. The server sets the amount. */
+export function createCreditOrder(accessToken: string, packId: string): Promise<CheckoutOrder> {
+  return apiSend<CheckoutOrder>("/api/v1/billing/orders", "POST", accessToken, { packId });
+}
+
+/** Hands Checkout's result to the server, which verifies it and grants the interviews. */
+export function confirmCreditOrder(
+  accessToken: string,
+  orderId: string,
+  payment: ConfirmPaymentRequest,
+): Promise<BillingOverview> {
+  return apiSend<BillingOverview>(
+    `/api/v1/billing/orders/${encodeURIComponent(orderId)}/confirm`,
+    "POST",
+    accessToken,
+    payment,
+  );
+}
+
 export const SESSION_PAGE_SIZE = 20;
 
 export function fetchSessions(
@@ -473,6 +501,11 @@ export function runCode(
   request: RunCodeRequest,
 ): Promise<CodeRunResult> {
   return apiSend<CodeRunResult>(`/api/v1/sessions/${id}/run`, "POST", accessToken, request);
+}
+
+/** Runs a course reader's code outside any round. Java only in practice; Python runs in the browser. */
+export function runCourseCode(accessToken: string, request: RunCodeRequest): Promise<CodeRunResult> {
+  return apiSend<CodeRunResult>("/api/v1/code/run", "POST", accessToken, request);
 }
 
 /**

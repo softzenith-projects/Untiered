@@ -38,7 +38,8 @@ export const chapterArrayListVsLinkedList: Chapter = {
     },
     {
       kind: "code",
-      caption: "Both implement List identically from the outside; add(index, ...) behaves the same way on both.",
+      caption:
+        "Both implement List identically from the outside; add(index, ...) behaves the same way on both.",
       code:
         "import java.util.ArrayList;\n" +
         "import java.util.LinkedList;\n" +
@@ -76,6 +77,12 @@ export const chapterArrayListVsLinkedList: Chapter = {
         "LinkedList after insert at front: [Neha, Priya, Arjun, Vikram]\n" +
         "Removed from front: first\n" +
         "Remaining queue: [second, third]",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Call `queue.removeFirst()` three more times. The third call finds the queue empty and throws a " +
+          "NoSuchElementException, which is why real code checks `isEmpty()` first.",
+      },
     },
     {
       kind: "p",
@@ -201,10 +208,10 @@ export const chapterArrayListVsLinkedList: Chapter = {
       kind: "quiz",
       question: "Why does `arrayList.add(1, \"Neha\")` cost more as the list grows larger?",
       options: [
-        "It doesn't — it's always constant time",
-        "Every element from index 1 onward has to shift one position to make room",
-        "ArrayList has to sort itself after every insert",
-        "It only costs more if the list contains duplicates",
+        "It doesn't cost more: inserting into an ArrayList always takes constant time.",
+        "Every element from index 1 onward has to shift one position to make room.",
+        "ArrayList has to sort itself again after every insert, and sorting grows with the size.",
+        "It only costs more if the list contains duplicate values that must be compared first.",
       ],
       answer: 1,
       why:

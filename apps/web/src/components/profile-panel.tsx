@@ -446,7 +446,7 @@ function ProfileHeader({
               <button type="button" onClick={() => avatarInput.current?.click()} disabled={disabled} aria-label={details?.avatarUrl ? "Change profile photo" : "Add profile photo"} className="absolute -bottom-2 -right-2 grid size-11 place-items-center rounded-full border-2 border-navy bg-accent text-heading text-accent-contrast shadow-[var(--shadow-sm)] transition-transform hover:scale-105 disabled:opacity-50">
                 <span aria-hidden>{avatarBusy ? "…" : "+"}</span>
               </button>
-              <input ref={avatarInput} type="file" accept="image/*" className="sr-only" onChange={(event) => {
+              <input ref={avatarInput} type="file" accept="image/png,image/jpeg" className="sr-only" onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) onAvatar(file);
                 event.target.value = "";

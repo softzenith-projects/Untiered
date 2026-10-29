@@ -68,6 +68,12 @@ export const chapterStringBuilder: Chapter = {
         "StringBuilder result: 01234\n" +
         "After append/insert/reverse: dlroW ,olleH >>\n" +
         "After delete/setChar: Ello, World",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Make both loops run 10 times instead of 5. The two results still match. The difference is how " +
+          "many throwaway strings the first loop created along the way.",
+      },
     },
     {
       kind: "p",
@@ -168,11 +174,10 @@ export const chapterStringBuilder: Chapter = {
       kind: "quiz",
       question: "Why is `result = result + i;` inside a loop considered wasteful compared to `sb.append(i);`?",
       options: [
-        "It isn't actually wasteful — they perform identically.",
-        "Because String is immutable, so each + creates an entirely new String object; StringBuilder " +
-          "modifies the same object in place instead.",
-        "Because + only works on numbers, not strings, so it has to convert types every time.",
-        "Because StringBuilder is a primitive type and String is not.",
+        "It isn't wasteful, because the compiler turns every + in a loop into the same code as append.",
+        "Because String is immutable, each + creates a whole new String object; StringBuilder changes one object in place.",
+        "Because + works only on numbers, so each pass has to convert the strings to numbers and back.",
+        "Because StringBuilder is a primitive type, so it avoids creating any objects at all.",
       ],
       answer: 1,
       why:
@@ -193,11 +198,10 @@ export const chapterStringBuilder: Chapter = {
       kind: "quiz",
       question: "Which best describes StringBuilder compared to String?",
       options: [
-        "Both are immutable; StringBuilder is just faster to print.",
-        "StringBuilder is mutable — its methods modify the same object in place, unlike String's methods, " +
-          "which always return a new object.",
-        "String and StringBuilder are two names for exactly the same class.",
-        "StringBuilder can only hold numbers, not text.",
+        "Both are immutable; StringBuilder is simply faster at printing text to the console.",
+        "StringBuilder is mutable, so its methods change the same object; String's methods always return a new one.",
+        "String and StringBuilder are one class under two names, kept apart only for old code.",
+        "StringBuilder can hold only numbers, which is why text still has to be stored in a String.",
       ],
       answer: 1,
       why:

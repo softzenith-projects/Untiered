@@ -1,5 +1,6 @@
 import type { Block } from "@/content/courses/types";
 import { InlineText } from "@/components/courses/inline-text";
+import { LessonPanel } from "@/components/courses/lesson-box";
 
 type StepsBlockData = Extract<Block, { kind: "steps" }>;
 
@@ -11,18 +12,13 @@ type StepsBlockData = Extract<Block, { kind: "steps" }>;
  */
 export function StepsBlock({ block }: { block: StepsBlockData }) {
   return (
-    <figure className="rounded-md border border-line-strong bg-surface-raised p-4">
-      {block.title ? (
-        <figcaption className="mb-3 text-caption font-medium text-ink">
-          <InlineText text={block.title} />
-        </figcaption>
-      ) : null}
+    <LessonPanel label="Step by step" title={block.title ? <InlineText text={block.title} /> : undefined}>
       <ol className="grid list-none gap-3 md:grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
         {block.steps.map((step, i) => (
           <li key={i} className="flex min-w-0 items-stretch">
-            <div className="flex w-full flex-col gap-2 rounded-md border border-line bg-surface-sunken px-4 py-4">
+            <div className="flex w-full flex-col gap-2 rounded-lg border border-line bg-surface px-4 py-4">
               <div className="flex items-center gap-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-micro font-semibold text-accent-contrast">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-micro font-semibold text-accent-contrast">
                   {i + 1}
                 </span>
                 <span className="block text-caption font-semibold text-ink first-letter:uppercase">
@@ -36,6 +32,6 @@ export function StepsBlock({ block }: { block: StepsBlockData }) {
           </li>
         ))}
       </ol>
-    </figure>
+    </LessonPanel>
   );
 }

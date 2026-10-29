@@ -222,6 +222,50 @@ export const chapterQuickSort: Chapter = {
           "(quickselect) — worth knowing the connection exists even without covering it in full here.",
       ],
     },
+    {
+      kind: "quiz",
+      question: "What is guaranteed to be true about the pivot immediately after one call to partition()?",
+      options: [
+        "The entire array is now fully sorted, because the pivot has been placed in the right position",
+        "The pivot is in its final sorted position: smaller values on its left, larger or equal on its right",
+        "The pivot has been removed from the array, leaving the two smaller halves to be sorted next",
+        "Both halves of the array are now individually sorted, so only joining them together remains",
+      ],
+      answer: 1,
+      why:
+        "partition() only guarantees the pivot's own final position and the smaller/larger split around " +
+        "it — neither side is internally sorted yet; that's what the subsequent recursive calls handle.",
+    },
+    {
+      kind: "quiz",
+      question: "Why does an already-sorted array trigger quick sort's O(n²) worst case when the pivot is always the last element?",
+      options: [
+        "Because sorting an array that is already sorted is undefined behaviour, so the partition step can misbehave badly.",
+        "The pivot is always the largest remaining value, so each partition puts everything on one side: n levels.",
+        "Because Java's recursion depth limit is reached immediately, which forces the algorithm into a slower fallback.",
+        "It doesn't trigger it: already-sorted input is quick sort's best case, since no swaps are needed at all.",
+      ],
+      answer: 1,
+      why:
+        "On an ascending sorted array, arr[high] is always the largest value in the current range, so " +
+        "partition places everything else on the left and nothing on the right — the recursion depth " +
+        "becomes n instead of log n, and each level still does O(n) partitioning work, giving O(n²).",
+    },
+    {
+      kind: "quiz",
+      question: "Which statement correctly compares quick sort and merge sort?",
+      options: [
+        "Merge sort is in-place and quick sort needs extra memory, so quick sort uses more space than merge sort.",
+        "Quick sort guarantees O(n log n) in every case, while merge sort does not, because its merging step can degrade.",
+        "Merge sort is stable with O(n log n) worst case; quick sort is in-place and often faster, but O(n²) worst case.",
+        "The two algorithms have identical time and space characteristics, so choosing between them is purely a matter of style.",
+      ],
+      answer: 2,
+      why:
+        "Merge sort trades O(n) extra space for a guaranteed O(n log n) worst case and stability. Quick " +
+        "sort trades away that worst-case guarantee (and, in this implementation, stability) for in-place " +
+        "sorting and generally lower constant factors in the average case.",
+    },
     { kind: "h", text: "Practice problems" },
     {
       kind: "list",
@@ -237,53 +281,6 @@ export const chapterQuickSort: Chapter = {
           "is stable, and worst-case time — in your own words, as if explaining the trade-off to a " +
           "teammate choosing between them.",
       ],
-    },
-    {
-      kind: "quiz",
-      question: "What is guaranteed to be true about the pivot immediately after one call to partition()?",
-      options: [
-        "The entire array is now fully sorted",
-        "The pivot is in its final, correct sorted position, with everything smaller to its left and " +
-          "everything larger (or equal) to its right",
-        "The pivot has been removed from the array",
-        "Both halves of the array are now individually sorted",
-      ],
-      answer: 1,
-      why:
-        "partition() only guarantees the pivot's own final position and the smaller/larger split around " +
-        "it — neither side is internally sorted yet; that's what the subsequent recursive calls handle.",
-    },
-    {
-      kind: "quiz",
-      question: "Why does an already-sorted array trigger quick sort's O(n²) worst case when the pivot is always the last element?",
-      options: [
-        "Because sorting an already-sorted array is undefined behaviour",
-        "Because the last element is always the largest remaining value in that case, so every partition " +
-          "puts all other elements on one side, giving n levels of recursion instead of log n",
-        "Because Java's recursion depth limit is reached immediately",
-        "It doesn't — already-sorted input is quick sort's best case",
-      ],
-      answer: 1,
-      why:
-        "On an ascending sorted array, arr[high] is always the largest value in the current range, so " +
-        "partition places everything else on the left and nothing on the right — the recursion depth " +
-        "becomes n instead of log n, and each level still does O(n) partitioning work, giving O(n²).",
-    },
-    {
-      kind: "quiz",
-      question: "Which statement correctly compares quick sort and merge sort?",
-      options: [
-        "Merge sort is in-place and quick sort needs extra memory",
-        "Quick sort guarantees O(n log n) in every case, while merge sort does not",
-        "Merge sort guarantees O(n log n) worst case and is stable; quick sort is in-place and typically " +
-          "faster in practice but has an O(n²) worst case and, as implemented here, is not stable",
-        "The two algorithms have identical time and space characteristics",
-      ],
-      answer: 2,
-      why:
-        "Merge sort trades O(n) extra space for a guaranteed O(n log n) worst case and stability. Quick " +
-        "sort trades away that worst-case guarantee (and, in this implementation, stability) for in-place " +
-        "sorting and generally lower constant factors in the average case.",
     },
   ],
 };

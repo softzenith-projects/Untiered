@@ -35,6 +35,12 @@ export type Block =
       python?: string;
       pythonOutput?: string;
       pythonNote?: string;
+      /**
+       * Makes this sample runnable where it stands, instead of a `playground` further down
+       * repeating it: "Edit and run" swaps the block for the editor, seeded with `code` and
+       * checked against `output`. `prompt` is the task shown above the editor.
+       */
+      tryIt?: { language: "python" | "java"; prompt: string };
     }
   | { kind: "list"; items: string[]; ordered?: boolean }
   | { kind: "table"; head: string[]; rows: string[][] }
@@ -62,10 +68,10 @@ export type Block =
    * Keeping them apart means a static `code` sample never accidentally pulls in the
    * editor bundle, and a chapter can mix "read this" snippets with "try this" ones freely.
    *
-   * Only `language: "python"` can actually run — see `getRunner` in
-   * `lib/course-code-runner.ts`. A `java` playground still renders (editable, copyable)
-   * but shows an honest explanation in place of Run; there is no free, unencumbered way
-   * to execute Java in the browser as of Feb 2026 (see `browser-python.ts` and task 049).
+   * Python runs in the browser; Java runs on our self-hosted Piston (Java 15) through
+   * `POST /api/v1/code/run` — see `getRunner` in `lib/course-code-runner.ts`. Piston
+   * launches one source file and starts from its first class, so a Java starter puts the
+   * class with `main` first. Where no runner is configured, Run explains that instead.
    */
   | {
       kind: "playground";

@@ -1,12 +1,13 @@
 "use client";
 
-import type { BoardState, CodingProblem, ProblemTestCase } from "@untiered/shared";
+import type { BoardState, CodeRunResult, CodingProblem, ProblemTestCase } from "@untiered/shared";
 import { java } from "@codemirror/lang-java";
 import { python } from "@codemirror/lang-python";
 import CodeMirror from "@uiw/react-codemirror";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { loadPython, matchesExpected, runPython } from "@/lib/browser-python";
+import { JAVA_VERSION_NOTE, runOnServer } from "@/lib/server-code-runner";
 
 type Language = "python" | "java";
 
@@ -36,10 +37,13 @@ export function DsaWorkspace({
   problem,
   board,
   onBoardChange,
+  runJava,
 }: {
   problem: CodingProblem;
   board: BoardState | null;
   onBoardChange: (board: BoardState) => void;
+  /** Java cannot run in a browser, so the room hands in a call to the round's run endpoint. */
+  runJava: (source: string, stdin: string) => Promise<CodeRunResult>;
 }) {
   const [language, setLanguage] = useState<Language>(() => (board?.language === "java" ? "java" : "python"));
   const [sources, setSources] = useState<Record<string, string>>(() => ({
@@ -82,19 +86,10 @@ export function DsaWorkspace({
     if (!testCase) return;
     setRunning(true);
     try {
-      if (language === "java") {
-        setResult({
-          caseIndex: selectedCase,
-          stdout: "",
-          stderr: "",
-          passed: null,
-          message:
-            "Java needs a server-side runner, and none is configured here. Your code is saved — " +
-            "talk me through it, or switch to Python to run it.",
-        });
-        return;
-      }
-      const outcome = await runPython(source, testCase.input);
+      const outcome =
+        language === "java"
+          ? await runOnServer(() => runJava(source, testCase.input))
+          : await runPython(source, testCase.input);
       setResult({
         caseIndex: selectedCase,
         stdout: outcome.stdout,
@@ -108,7 +103,7 @@ export function DsaWorkspace({
     } finally {
       setRunning(false);
     }
-  }, [language, selectedCase, source, testCase]);
+  }, [language, runJava, selectedCase, source, testCase]);
 
   const extensions = useMemo(() => [language === "java" ? java() : python()], [language]);
 
@@ -211,7 +206,11 @@ function EditorBar({
       {language === "python" && pythonReady === false && (
         <span className="text-caption text-on-navy-muted">Python could not load. The round runs out loud.</span>
       )}
-      {language === "java" && <span className="text-caption text-on-navy-muted">Java needs a server runner — not configured.</span>}
+      {language === "java" && (
+        <span className="text-caption text-on-navy-muted">
+          Runs on our server — only your code and the test input are sent. {JAVA_VERSION_NOTE}
+        </span>
+      )}
     </div>
   );
 }

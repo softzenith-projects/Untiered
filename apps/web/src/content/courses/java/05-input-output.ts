@@ -127,6 +127,38 @@ export const chapterInputOutput: Chapter = {
         "output above, the way a printed bill lines up item names on the left and prices on the right.",
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "The playground has no keyboard to type into, so this `Scanner` reads from a piece of text " +
+        "instead of `System.in`. Every method works the same way. Change the name, age and marks in the " +
+        "text and run again.",
+      starter:
+        "import java.util.Scanner;\n" +
+        "\n" +
+        "public class InputOutput {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        // Each line of this text is one thing a user would have typed.\n" +
+        '        Scanner sc = new Scanner("Aditi Sharma\\n17\\n88.5\\n");\n' +
+        "\n" +
+        "        String name = sc.nextLine();\n" +
+        "        int age = sc.nextInt();\n" +
+        "        double marks = sc.nextDouble();\n" +
+        "\n" +
+        '        System.out.printf("Name: %s%n", name);\n' +
+        '        System.out.printf("Age: %d%n", age);\n' +
+        '        System.out.printf("Marks: %.1f%n", marks);\n' +
+        '        System.out.printf("%-10s|%5d%n", "Padded", 42);\n' +
+        "        sc.close();\n" +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Name: Aditi Sharma\n" +
+        "Age: 17\n" +
+        "Marks: 88.5\n" +
+        "Padded    |   42",
+    },
+    {
       kind: "pitfall",
       items: [
         "Calling `sc.nextLine()` right after `sc.nextInt()`/`sc.nextDouble()` and getting an unexpected " +
@@ -188,10 +220,10 @@ export const chapterInputOutput: Chapter = {
       kind: "quiz",
       question: "Why might sc.next() be the wrong choice for reading someone's full name?",
       options: [
-        "next() can only read numbers, not text.",
-        "next() reads only one word — it stops at the first space, so a name with a space is cut short.",
-        "next() requires the name to be in quotes.",
-        "next() and nextLine() behave identically, so it doesn't matter.",
+        "next() can read only numbers, so any text such as a name makes it fail at run time.",
+        "next() reads only one word: it stops at the first space, so a name with a space is cut short.",
+        "next() requires the name to be typed inside quotes, otherwise it returns nothing at all.",
+        "next() and nextLine() behave identically, so using either one for a full name works the same.",
       ],
       answer: 1,
       why:

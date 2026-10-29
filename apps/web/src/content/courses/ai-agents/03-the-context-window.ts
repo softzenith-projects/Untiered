@@ -278,7 +278,7 @@ export const chapterTheContextWindow: Chapter = {
       kind: "quiz",
       question: "You send a 50-turn conversation to a model. How much of it does the model process on the final turn?",
       options: [
-        "Only the last turn — the earlier ones are cached in the model",
+        "Only the last turn — the provider keeps the earlier turns cached inside the model between calls",
         "All 50 turns, plus the system prompt and tool definitions, from the top",
         "A summary of the earlier turns that the model maintains internally",
         "The last five turns, which is the standard window",
@@ -310,7 +310,7 @@ export const chapterTheContextWindow: Chapter = {
       options: [
         "Asking the model to be concise in its replies",
         "Shortening the tool definitions and the system prompt",
-        "Using a model with a bigger context window",
+        "Switching to a model with a much bigger context window than before",
         "Sending the conversation in reverse order",
       ],
       answer: 1,

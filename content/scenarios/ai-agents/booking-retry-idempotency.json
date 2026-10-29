@@ -2,10 +2,14 @@
   "course_slug": "ai-agents",
   "slug": "booking-retry-idempotency",
   "title": "Did the booking happen twice?",
-  "hook": "A travel assistant calls a booking tool. The request times out after 10 seconds, so the agent cannot tell whether the reservation was created. The user sees 'still working.' What should happen next?",
+  "hook": "A travel assistant calls a booking tool, and the request times out after 10 seconds. Nobody yet knows whether the room was reserved, and the user is waiting.",
   "context": "Travel booking assistant with a side-effecting reserve-room tool",
   "tier": "intermediate",
-  "concept_ids": ["tool-idempotency", "stopping-conditions", "agent-evaluation"],
+  "concept_ids": [
+    "tool-idempotency",
+    "stopping-conditions",
+    "agent-evaluation"
+  ],
   "estimated_minutes": 7,
   "status": "live",
   "solution_brief": "Create a stable idempotency key for one confirmed booking intent. After a timeout, query reservation status by that key before retrying; reuse the same key if a retry is needed. Bound retries and hand off uncertain cases. Evaluate the final booking record and user communication, not just whether the agent produced a plausible sentence.",
@@ -13,76 +17,141 @@
     {
       "kind": "initial",
       "step_type": "design_choice",
-      "prompt": "What should the assistant do first after the booking tool times out?",
+      "prompt": "The reserve-room call timed out, so the room may or may not be booked. What should the assistant do first?",
       "options": [
-        {"id": "a", "text": "Query reservation status using the original booking intent or idempotency key."},
-        {"id": "b", "text": "Immediately send a second booking request with a new key."},
-        {"id": "c", "text": "Tell the user the booking definitely failed."}
+        {
+          "id": "a",
+          "text": "Check whether the booking exists, using the original key"
+        },
+        {
+          "id": "b",
+          "text": "Retry the booking right away with a new idempotency key"
+        },
+        {
+          "id": "c",
+          "text": "Tell the user the booking failed and ask them to try again"
+        }
       ],
       "correct_option_id": "a",
-      "explanation": "A resolves the ambiguous outcome before another side effect. B may create two reservations. C is unsupported: a network timeout does not prove the booking failed.",
-      "bottleneck_note": "A timeout is an unknown result, not a failure result.",
-      "concept_ids": ["tool-idempotency"]
+      "explanation": "A timeout means the result is unknown, not that the booking failed: the server may have reserved the room after the client gave up waiting. Checking status settles that before any new side effect. Retrying with a new key can book a second room, and telling the user it failed may be false.",
+      "bottleneck_note": "A timeout is an unknown outcome, not a failure.",
+      "concept_ids": [
+        "tool-idempotency"
+      ]
     },
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "context_note": "The status lookup says no reservation is recorded yet, so one retry is allowed.",
-      "prompt": "Which key should the retry use?",
+      "context_note": "The status lookup finds no reservation, so the assistant may retry once.",
+      "prompt": "Which idempotency key should the retry send?",
       "options": [
-        {"id": "a", "text": "The same stable idempotency key used for the original confirmed booking intent."},
-        {"id": "b", "text": "A fresh random key because each network request is different."},
-        {"id": "c", "text": "No key; the language model will notice duplicates later."}
+        {
+          "id": "a",
+          "text": "The same key as the original attempt"
+        },
+        {
+          "id": "b",
+          "text": "A new key, since this is a new request"
+        },
+        {
+          "id": "c",
+          "text": "No key; the model will notice a duplicate"
+        }
       ],
       "correct_option_id": "a",
-      "explanation": "A lets the booking service collapse duplicate attempts into one outcome. B makes the retry look like a new purchase. C offers no server-side duplicate protection.",
-      "bottleneck_note": "The idempotency key identifies the user's one intent, not an HTTP attempt.",
-      "concept_ids": ["tool-idempotency"]
+      "explanation": "The key identifies the user's one booking intent, so reusing it lets the booking service recognise the retry and return the first result instead of making a second booking, even if the first attempt lands late. A new key makes the retry look like a new purchase, and the model cannot see duplicates created on the server.",
+      "bottleneck_note": "An idempotency key names the intent, not the HTTP attempt.",
+      "concept_ids": [
+        "tool-idempotency"
+      ]
     },
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "context_note": "The retry returns 'already reserved' with reservation R-204 and a confirmed total of ₹4,800.",
-      "prompt": "What should the assistant tell the user now?",
+      "context_note": "The retry returns 'already reserved': reservation R-204, total ₹4,800.",
+      "prompt": "What should the assistant tell the user?",
       "options": [
-        {"id": "a", "text": "Confirm one reservation R-204 and the ₹4,800 total from the booking record."},
-        {"id": "b", "text": "Claim that two rooms were booked because there were two tool calls."},
-        {"id": "c", "text": "Keep saying 'still working' even though the service returned a final record."}
+        {
+          "id": "a",
+          "text": "One room is booked: reservation R-204, total ₹4,800"
+        },
+        {
+          "id": "b",
+          "text": "Two rooms may have been booked, since it called twice"
+        },
+        {
+          "id": "c",
+          "text": "The booking is still in progress, so please wait"
+        }
       ],
       "correct_option_id": "a",
-      "explanation": "A reports the durable outcome. B confuses request attempts with reservations. C hides a confirmed result and leaves the user uncertain.",
-      "bottleneck_note": "User-facing claims should be grounded in the side-effecting system's record.",
-      "concept_ids": ["tool-idempotency", "agent-evaluation"]
+      "explanation": "'Already reserved' for the same key means the first attempt succeeded and the retry was folded into it, so there is exactly one booking. Two calls do not mean two rooms when the key matches. Saying it is still in progress hides a confirmed result.",
+      "bottleneck_note": "Tell the user what the booking record says, not what the call history suggests.",
+      "concept_ids": [
+        "tool-idempotency",
+        "agent-evaluation"
+      ]
     },
     {
       "kind": "probe",
       "step_type": "tradeoff",
-      "context_note": "A second booking attempt also times out, and the status endpoint is unavailable.",
-      "prompt": "What is the safe stopping rule?",
+      "context_note": "In another session, the retry also times out and the status endpoint is down.",
+      "prompt": "When should the assistant stop, and what should it tell the user?",
       "options": [
-        {"id": "a", "text": "Stop automatic retries, disclose the unknown booking state, and send the case for reconciliation."},
-        {"id": "b", "text": "Try again forever because the user asked for a room."},
-        {"id": "c", "text": "Say it is booked without a reservation record."}
+        {
+          "id": "a",
+          "text": "Stop, say the outcome is unknown, and send it for review"
+        },
+        {
+          "id": "b",
+          "text": "Keep retrying with the same key until the service responds"
+        },
+        {
+          "id": "c",
+          "text": "Say it is probably booked, since the first call likely worked"
+        },
+        {
+          "id": "d",
+          "text": "Retry with a fresh key in case the old one is stuck"
+        }
       ],
       "correct_option_id": "a",
-      "explanation": "A contains duplicate and spend risk while preserving the truth. B can create repeated side effects and loops. C invents an outcome that cannot be verified.",
-      "bottleneck_note": "A bounded retry policy needs an uncertain-outcome path.",
-      "concept_ids": ["stopping-conditions", "tool-idempotency"]
+      "explanation": "With no way to learn the outcome, more retries only add load and risk a loop, and a guess may be wrong. Saying plainly that the state is unknown, and passing the case to someone who can reconcile it, keeps the user's picture true. A fresh key is the one move that can create a duplicate booking.",
+      "bottleneck_note": "A bounded retry policy needs a path for 'we don't know'.",
+      "concept_ids": [
+        "stopping-conditions",
+        "tool-idempotency"
+      ]
     },
     {
       "kind": "probe",
       "step_type": "design_choice",
-      "context_note": "The team evaluates the new recovery policy across 100 simulated timeouts.",
-      "prompt": "Which measurement best shows whether the agent handled this situation well?",
+      "context_note": "The team replays 100 simulated timeouts to test the new recovery policy.",
+      "prompt": "Which measurement shows whether the policy works?",
       "options": [
-        {"id": "a", "text": "Count duplicate reservations, unresolved outcomes, and incorrect user confirmations against booking records."},
-        {"id": "b", "text": "Measure only whether the final chat message sounds reassuring."},
-        {"id": "c", "text": "Measure only how many tool calls the agent made."}
+        {
+          "id": "a",
+          "text": "Duplicate or misreported bookings, per the booking records"
+        },
+        {
+          "id": "b",
+          "text": "How reassuring reviewers find the assistant's final message"
+        },
+        {
+          "id": "c",
+          "text": "How few tool calls the assistant makes per conversation"
+        },
+        {
+          "id": "d",
+          "text": "How quickly the assistant replies after each timeout"
+        }
       ],
       "correct_option_id": "a",
-      "explanation": "A checks actual side effects and truthfulness. B can reward a confident but false claim. C ignores whether the booking was correct or the user was misled.",
-      "bottleneck_note": "Agent evaluation must inspect external outcomes, not just fluent text.",
-      "concept_ids": ["agent-evaluation"]
+      "explanation": "The failures that matter live in the booking system: duplicate rooms, or a user told something the record contradicts. Comparing outcomes with booking records catches both. A reassuring tone can hide a false claim, and fewer calls or faster replies can come from skipping the status check.",
+      "bottleneck_note": "Judge an agent by its effects in the world, not by how its messages sound.",
+      "concept_ids": [
+        "agent-evaluation"
+      ]
     }
   ]
 }

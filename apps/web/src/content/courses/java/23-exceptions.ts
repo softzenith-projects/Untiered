@@ -36,19 +36,13 @@ export const chapterExceptions: Chapter = {
     {
       kind: "code",
       caption:
-        "A built-in exception (array bounds), a custom checked exception, and multi-catch, all handled — the " +
-        "program never crashes.",
+        "A built-in exception (array bounds), a custom checked exception, and multi-catch, all handled — " +
+        "the program never crashes.",
       code:
-        "class InsufficientBalanceException extends Exception {\n" +
-        "    InsufficientBalanceException(String message) {\n" +
-        "        super(message);\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
         "public class ExceptionsDemo {\n" +
         "    static void withdraw(double balance, double amount) throws InsufficientBalanceException {\n" +
         "        if (amount > balance) {\n" +
-        '            throw new InsufficientBalanceException(\n' +
+        "            throw new InsufficientBalanceException(\n" +
         '                "Cannot withdraw " + amount + " from balance " + balance);\n' +
         "        }\n" +
         '        System.out.println("Withdrawal of " + amount + " approved");\n' +
@@ -80,6 +74,12 @@ export const chapterExceptions: Chapter = {
         "\n" +
         '        System.out.println("Program continues after all handled exceptions");\n' +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "class InsufficientBalanceException extends Exception {\n" +
+        "    InsufficientBalanceException(String message) {\n" +
+        "        super(message);\n" +
+        "    }\n" +
         "}\n",
       output:
         "Caught: Index 5 out of bounds for length 3\n" +
@@ -87,6 +87,12 @@ export const chapterExceptions: Chapter = {
         "Caught custom exception: Cannot withdraw 1500.0 from balance 1000.0\n" +
         "Caught: NullPointerException\n" +
         "Program continues after all handled exceptions",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change the withdrawal to `withdraw(1000.0, 500.0)` and run. Then delete `throws " +
+          "InsufficientBalanceException` from `withdraw` and read why the compiler insists on it.",
+      },
     },
     {
       kind: "p",
@@ -174,10 +180,10 @@ export const chapterExceptions: Chapter = {
       kind: "quiz",
       question: "A method that can throw a checked exception without catching it — what must it do?",
       options: [
-        "Nothing extra is required",
-        "Declare throws ExceptionType in its signature, or the code fails to compile",
-        "Wrap the whole method body in try/catch regardless",
-        "Rename the method to start with 'throws'",
+        "Nothing extra is required, because the compiler tracks checked exceptions on its own.",
+        "Declare throws ExceptionType in its signature, or the code fails to compile.",
+        "Wrap the whole method body in try/catch, since a throws clause alone is never enough.",
+        "Rename the method so that it starts with the word throws, which marks it as risky.",
       ],
       answer: 1,
       why:
@@ -188,10 +194,10 @@ export const chapterExceptions: Chapter = {
       kind: "quiz",
       question: "Does the finally block run if the try block's exception is never caught by any matching catch?",
       options: [
-        "No, only if the exception was caught",
-        "Yes — finally runs before the exception propagates further, caught or not",
-        "Only if there's no catch block at all",
-        "Only for checked exceptions",
+        "No, finally runs only when the exception was caught by a catch block in the same method.",
+        "Yes: finally runs before the exception propagates further, whether or not it was caught.",
+        "Only when there's no catch block at all, because otherwise the catch handles everything.",
+        "Only for checked exceptions, since unchecked ones skip the finally block entirely.",
       ],
       answer: 1,
       why:

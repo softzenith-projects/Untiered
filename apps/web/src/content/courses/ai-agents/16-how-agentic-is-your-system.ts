@@ -238,7 +238,7 @@ export const chapterHowAgenticIsYourSystem: Chapter = {
       kind: "quiz",
       question: "Your code classifies a ticket with one LLM call, then routes it through one of three fixed handlers. Where is this on the ladder?",
       options: [
-        "A multi-step agent, because it uses an LLM",
+        "A multi-step agent, because an LLM is making a decision and so it must be choosing its own path",
         "A router — an LLM output controls an if/else switch, and nothing more",
         "A multi-agent system",
         "Not agentic at all",
@@ -262,7 +262,7 @@ export const chapterHowAgenticIsYourSystem: Chapter = {
       kind: "quiz",
       question: "Which of these is the clearest case for climbing to a multi-step agent?",
       options: [
-        "Summarising incoming support emails into three bullets",
+        "Summarising every incoming support email into three bullet points, whatever it happens to say",
         "Routing a request to one of two known departments",
         "Investigating why a payment failed, where each check depends on what the last one returned",
         "Translating a page into Marathi",

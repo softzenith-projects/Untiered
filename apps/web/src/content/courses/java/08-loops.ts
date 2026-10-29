@@ -74,6 +74,12 @@ export const chapterLoops: Chapter = {
         "Sum 1..5 via while: 15\n" +
         "do-while ran, count ended at: 3\n" +
         "do-while runs at least once: 1",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change the `for` loop so it counts down from 5 to 1. Then change `while (false)` to `while " +
+          "(attempts < 4)` and predict the last line before you run.",
+      },
     },
     {
       kind: "p",

@@ -50,6 +50,67 @@ describe("course registry", () => {
   });
 });
 
+// The Java course's playgrounds run on our Piston runner, which launches a single source
+// file and starts from its first class. A helper class above `main`'s class is legal Java
+// that fails there, so a starter that reads fine can still break on its first Run.
+describe("course: java, as a whole", () => {
+  const javaCourse = courses.find((c) => c.slug === "java");
+  const javaChapters = javaCourse ? flattenChapters(javaCourse) : [];
+
+  // Every program a reader can run here, from either kind of block: a code example made
+  // runnable with `tryIt`, or a separate playground.
+  function runnables(chapter: Chapter): { source: string; language: string; prompt: string; output: string }[] {
+    const fromCode = (blocksOf("code", chapter) as Extract<Block, { kind: "code" }>[]).flatMap((block) =>
+      block.tryIt
+        ? [{ source: block.code, language: block.tryIt.language, prompt: block.tryIt.prompt, output: block.output ?? "" }]
+        : [],
+    );
+    const fromPlaygrounds = (blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[]).map((block) => ({
+      source: block.starter,
+      language: block.language,
+      prompt: block.prompt ?? "",
+      output: block.expectedOutput ?? "",
+    }));
+    return [...fromCode, ...fromPlaygrounds];
+  }
+
+  it("gives every chapter Java to run, with a task and the output it should print", () => {
+    expect(javaChapters.length).toBeGreaterThan(0);
+    for (const chapter of javaChapters) {
+      const runnable = runnables(chapter);
+      expect(runnable.length, chapter.slug).toBeGreaterThanOrEqual(1);
+      for (const block of runnable) {
+        expect(block.language, chapter.slug).toBe("java");
+        expect(block.prompt.trim().length, chapter.slug).toBeGreaterThan(0);
+        expect(block.output.trim().length, chapter.slug).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  // The owner's complaint (29 October 2026): the same program shown as a code example and
+  // again as a playground. A program that is already a code example gets `tryIt` instead.
+  it("never repeats a code example's program as a playground", () => {
+    for (const chapter of javaChapters) {
+      const examples = new Set((blocksOf("code", chapter) as Extract<Block, { kind: "code" }>[]).map((b) => b.code.trim()));
+      for (const block of blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[]) {
+        expect(examples.has(block.starter.trim()), chapter.slug).toBe(false);
+      }
+    }
+  });
+
+  it("puts the class with main first in every runnable program, where the runner starts", () => {
+    const topLevelType = /^(?:public |abstract |final )*(?:class|interface|enum) /;
+    for (const chapter of javaChapters) {
+      for (const { source } of runnables(chapter)) {
+        const topLevelTypes = source
+          .split(/^(?=(?:public |abstract |final )*(?:class|interface|enum) )/m)
+          .filter((part) => topLevelType.test(part));
+        expect(topLevelTypes[0] ?? "", chapter.slug).toContain("public static void main(");
+      }
+    }
+  });
+});
+
 // Course-level rules for the AI course (task 057), asserted once rather than per chapter:
 // the owner asked for many quizzes, hands-on practice throughout, and the agent lab as the
 // thing that makes this course different. These guard all three against erosion.
@@ -92,33 +153,31 @@ describe("course: system-design, as a whole", () => {
   const systemDesignChapters = systemDesignCourse ? flattenChapters(systemDesignCourse) : [];
   const systemDesignBlocks = systemDesignChapters.flatMap((chapter) => chapter.blocks);
 
-  it("covers foundations, building blocks, AI systems, and compositional cases", () => {
+  it("covers foundations, building blocks, data-layer internals, AI systems, and compositional cases", () => {
     expect(systemDesignCourse).toBeDefined();
-    expect(systemDesignCourse?.modules).toHaveLength(4);
-    expect(systemDesignChapters).toHaveLength(56);
+    expect(systemDesignCourse?.modules).toHaveLength(5);
+    expect(systemDesignChapters).toHaveLength(59);
     expect(systemDesignCourse?.requiresCodeExamples).toBe(false);
   });
 
   it("teaches each topic in beginner-first layers instead of a terse repeated outline", () => {
     for (const chapter of systemDesignChapters) {
-      const headings = chapter.blocks.filter((block) => block.kind === "h").map((block) => block.text);
       const tables = chapter.blocks.filter((block) => block.kind === "table");
       const concepts = chapter.blocks.filter((block) => block.kind === "concept");
       const comparisons = chapter.blocks.filter((block) => block.kind === "compare");
       const steps = chapter.blocks.filter((block) => block.kind === "steps");
       const glossaries = tables.filter((block) => block.head[0] === "Term");
-      const workedExamples = concepts.filter((block) => block.title === "Worked example");
+      const workedExamples = concepts.filter((block) => block.title.startsWith("Worked example"));
 
-      expect(headings, chapter.slug).toContain("First, learn the words in plain language");
+      // The plain-language glossary comes before the walkthrough that uses its words.
       expect(glossaries, chapter.slug).toHaveLength(1);
       expect(glossaries[0]?.rows.length, chapter.slug).toBeGreaterThanOrEqual(3);
       expect(glossaries[0]?.rows.every((row) => row.length === 2 && row.every((cell) => cell.trim().length > 0)), chapter.slug).toBe(true);
-      expect(chapter.blocks.indexOf(glossaries[0]!), chapter.slug).toBeLessThan(
-        chapter.blocks.findIndex((block) => block.kind === "analogy"),
-      );
+      expect(chapter.blocks.indexOf(glossaries[0]!), chapter.slug).toBeLessThan(chapter.blocks.indexOf(steps[0]!));
       expect(workedExamples, chapter.slug).toHaveLength(1);
       expect(workedExamples[0]?.text.trim().length, chapter.slug).toBeGreaterThanOrEqual(80);
-      expect(comparisons.some((block) => block.title?.includes("trade-off")), chapter.slug).toBe(true);
+      // A trade-off is two sides: what the choice buys and what it costs.
+      expect(comparisons.some((block) => block.columns.length === 2), chapter.slug).toBe(true);
       expect(steps, chapter.slug).toHaveLength(1);
       expect(steps[0]?.steps.every((step) => !/^(Start|Add|Finish)\b/.test(step.text)), chapter.slug).toBe(true);
     }
@@ -126,7 +185,7 @@ describe("course: system-design, as a whole", () => {
 
   it("uses a substantive, chapter-specific worked example instead of fallback prose", () => {
     const examples = systemDesignChapters.map((chapter) => {
-      const block = chapter.blocks.find((candidate) => candidate.kind === "concept" && candidate.title === "Worked example");
+      const block = chapter.blocks.find((candidate) => candidate.kind === "concept" && candidate.title.startsWith("Worked example"));
       expect(block, chapter.slug).toBeDefined();
       return block?.kind === "concept" ? block.text.trim() : "";
     });
@@ -139,6 +198,9 @@ describe("course: system-design, as a whole", () => {
     const slugs = new Set(systemDesignChapters.map((chapter) => chapter.slug));
     const required = [
       "network-protocols",
+      "unique-ids-at-scale",
+      "storage-engines",
+      "bloom-filters-and-sketches",
       "proxies-and-service-discovery",
       "consistent-hashing",
       "leader-election-and-leases",

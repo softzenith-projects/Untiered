@@ -222,8 +222,8 @@ export const chapterEmbeddings: Chapter = {
       kind: "quiz",
       question: "Why is cosine similarity divided by the length of both vectors?",
       options: [
-        "To make the numbers smaller and easier to store",
-        "So that length drops out and only direction is compared — a long document does not score higher just for being long",
+        "To make the numbers smaller and easier to store, because long documents would otherwise take up far more memory",
+        "So length drops out and only direction is compared — a long text does not score higher just for being long",
         "Because probabilities must sum to one",
         "To remove negative values",
       ],
@@ -236,7 +236,7 @@ export const chapterEmbeddings: Chapter = {
       kind: "quiz",
       question: "\"Refunds are allowed after 30 days\" and \"Refunds are not allowed after 30 days\" — what will their embeddings look like?",
       options: [
-        "Opposite directions, since they contradict each other",
+        "Opposite directions, since the two sentences contradict each other and the vectors encode that meaning",
         "Very close together, because they are about the same topic in nearly the same words",
         "Unrelated, because of the word \"not\"",
         "Identical, because embeddings ignore negation entirely",
@@ -251,7 +251,7 @@ export const chapterEmbeddings: Chapter = {
       kind: "quiz",
       question: "You switch to a new embedding model but keep the vectors already in your index. What happens?",
       options: [
-        "Slightly worse results until the index warms up",
+        "Slightly worse results, because the new vectors need a few days of use before they line up with the old ones",
         "The results become meaningless, because the two models' spaces are unrelated",
         "Nothing — embeddings are a standard format",
         "The index rejects the new vectors",

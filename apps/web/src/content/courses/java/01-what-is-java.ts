@@ -129,7 +129,9 @@ export const chapterWhatIsJava: Chapter = {
     },
     {
       kind: "code",
-      caption: "A complete program — the same one traced above. Compiled with `javac Hello.java`, run with `java Hello`.",
+      caption:
+        "A complete program — the same one traced above. Compiled with `javac Hello.java`, run with `java " +
+        "Hello`.",
       code:
         "public class Hello {\n" +
         "    public static void main(String[] args) {\n" +
@@ -137,7 +139,16 @@ export const chapterWhatIsJava: Chapter = {
         '        System.out.println("This program was compiled once and can now run anywhere a JVM exists.");\n' +
         "    }\n" +
         "}\n",
-      output: "Namaste, Java!\nThis program was compiled once and can now run anywhere a JVM exists.",
+      output:
+        "Namaste, Java!\n" +
+        "This program was compiled once and can now run anywhere a JVM exists.",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change the text in the first `println` to your own greeting and press Run. Then delete one " +
+          "semicolon and run again: that red message is a compile error, caught before the program ever " +
+          "starts.",
+      },
     },
     { kind: "h", text: "Compiled, but not compiled all the way" },
     {
@@ -223,11 +234,10 @@ export const chapterWhatIsJava: Chapter = {
       kind: "quiz",
       question: "Why is Java described as neither purely compiled nor purely interpreted?",
       options: [
-        "Because Java has no compiler at all, only an interpreter.",
-        "Because `javac` compiles source to bytecode, and the JVM then interprets (and further " +
-          "optimises) that bytecode at run time — both steps happen.",
-        "Because different companies build Java differently, so it depends on the vendor.",
-        "Because Java code runs directly on the processor with no intermediate step.",
+        "Because Java has no compiler at all: the JVM reads the source text and interprets it directly.",
+        "Because javac compiles source to bytecode, and the JVM then interprets (and further optimises) that bytecode at run time.",
+        "Because different companies build Java differently, so whether it is compiled or interpreted depends on the vendor.",
+        "Because Java code runs straight on the processor with no intermediate step, like a C program.",
       ],
       answer: 1,
       why:

@@ -28,7 +28,7 @@ describe("ProFeatureRequestForm", () => {
     const user = userEvent.setup();
     render(<ProFeatureRequestForm />);
 
-    await user.click(screen.getByRole("checkbox", { name: /more rounds and longer interviews/i }));
+    await user.click(screen.getByRole("checkbox", { name: /more interviews after your free ones/i }));
     await user.click(screen.getByRole("checkbox", { name: /deeper practice recommendations/i }));
     await user.type(screen.getByLabelText(/anything else/i), "  Mock HR rounds  ");
     await user.click(screen.getByRole("button", { name: "Send request" }));

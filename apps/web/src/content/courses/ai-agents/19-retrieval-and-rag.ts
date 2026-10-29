@@ -257,7 +257,7 @@ export const chapterRetrievalAndRag: Chapter = {
       kind: "quiz",
       question: "Your RAG system always sends the top 3 passages. A user asks about something your collection does not cover. What happens?",
       options: [
-        "Retrieval returns nothing and the system says so",
+        "Retrieval returns nothing and the system tells the user plainly that the collection has no answer",
         "The three least-irrelevant passages are sent anyway, and the model answers from them",
         "The embedding model raises an error",
         "The scores are all exactly zero",
@@ -272,8 +272,8 @@ export const chapterRetrievalAndRag: Chapter = {
       kind: "quiz",
       question: "Why require a passage id on every claim?",
       options: [
-        "It makes the answer longer and therefore more thorough",
-        "It makes each claim checkable — by a human, and by a test that verifies the cited ids were actually retrieved",
+        "It makes the answer longer and therefore more thorough, because every claim then carries extra text",
+        "It makes each claim checkable — by a person, and by a test that verifies the cited ids were really retrieved",
         "The model reasons better when it cites",
         "It is required by the RAG paper",
       ],
@@ -286,7 +286,7 @@ export const chapterRetrievalAndRag: Chapter = {
       kind: "quiz",
       question: "In the pipeline above, the top passage for \"how long does a refund take?\" was the one about payment method. What does this illustrate?",
       options: [
-        "The embedding model is broken",
+        "The embedding model is broken, because a model that worked would have ranked the passage about timing first",
         "Retrieval finds topical closeness, not answers — which is why k > 1 and a citation requirement both matter",
         "The score floor was set too low",
         "Cosine similarity should have been dot product",

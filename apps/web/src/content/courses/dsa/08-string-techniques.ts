@@ -272,32 +272,14 @@ export const chapterStringTechniques: Chapter = {
           "version.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd check whether a string is a palindrome while ignoring " +
-          "spaces, punctuation, and letter case, adapting the two-pointer approach without building a fully " +
-          "cleaned copy first.",
-        "Given a string, describe a frequency-count approach to find the first character that appears " +
-          "exactly once.",
-        "Describe, in your own words, how the frequency-count idea from isAnagram could be adapted to check " +
-          "whether one string's characters (with counts) could be rearranged to form a second, possibly " +
-          "shorter, string.",
-        "Given a list of words, describe how you'd group all anagrams of each other together, reusing the " +
-          "frequency-count idea as a way to identify which words belong in the same group.",
-      ],
-    },
     {
       kind: "quiz",
       question: "Why does isPalindrome use `left < right` rather than `left <= right` as its loop condition?",
       options: [
-        "It's a typo that happens to still work",
-        "When left equals right, that's the single middle character (for odd-length strings), which never " +
-          "needs comparing against itself",
-        "Because Java forbids using <= with string indices",
-        "Because it makes the check run in O(1) instead of O(n)",
+        "It's a typo that happens to still work, because the extra comparison is always harmless",
+        "When left equals right it's the single middle character of an odd-length string, which needs no comparison",
+        "Because Java forbids using <= with string indices, so the loop would not compile",
+        "Because it makes the check run in O(1) instead of O(n), by stopping the loop early",
       ],
       answer: 1,
       why:
@@ -325,15 +307,32 @@ export const chapterStringTechniques: Chapter = {
       kind: "quiz",
       question: "Why is the frequency-count approach to checking anagrams generally preferred over sorting both strings and comparing them?",
       options: [
-        "Sorting doesn't work correctly for this check",
-        "The frequency-count approach is O(n) while sorting both strings is O(n log n)",
-        "Frequency counting uses less code, which is the only advantage",
-        "Sorting can't be used on strings in Java",
+        "Sorting doesn't work correctly for this check, since sorted strings can differ for anagrams",
+        "Frequency counting is O(n), while sorting both strings is O(n log n)",
+        "Frequency counting uses less code, and that is its only advantage over sorting",
+        "Sorting can't be used on strings in Java, because String has no sort method of any kind",
       ],
       answer: 1,
       why:
         "Sorting both strings costs O(n log n) and then a linear comparison; frequency counting reaches " +
         "the same true/false answer in O(n) total, which is the better complexity when asked to optimise.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd check whether a string is a palindrome while ignoring " +
+          "spaces, punctuation, and letter case, adapting the two-pointer approach without building a fully " +
+          "cleaned copy first.",
+        "Given a string, describe a frequency-count approach to find the first character that appears " +
+          "exactly once.",
+        "Describe, in your own words, how the frequency-count idea from isAnagram could be adapted to check " +
+          "whether one string's characters (with counts) could be rearranged to form a second, possibly " +
+          "shorter, string.",
+        "Given a list of words, describe how you'd group all anagrams of each other together, reusing the " +
+          "frequency-count idea as a way to identify which words belong in the same group.",
+      ],
     },
   ],
 };

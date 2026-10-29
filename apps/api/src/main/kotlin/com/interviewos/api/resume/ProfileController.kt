@@ -123,17 +123,24 @@ class ProfileController(
         val identity = SupabaseIdentity.from(jwt)
         userRepository.provision(identity)
 
-        val contentType = file.contentType ?: ""
-        if (!contentType.startsWith("image/")) {
-            throw ApiException.badRequest("That needs to be an image.", code = "unsupported_avatar_type")
-        }
         if (file.size > MAX_AVATAR_BYTES) {
             throw ApiException.badRequest("Keep the photo under 2MB.", code = "avatar_too_large")
         }
 
+        val image =
+            AvatarImage.normalise(file.contentType ?: "", file.bytes)
+                ?: throw ApiException.badRequest("Choose a valid PNG or JPEG photo.", code = "unsupported_avatar_type")
+
         val path = "${identity.id}/avatar-${UUID.randomUUID()}"
-        storage.upload(storageProperties.resumeBucket, path, file.bytes, contentType)
-        repository.setAvatarPath(identity.id, path)
+        storage.upload(storageProperties.resumeBucket, path, image.bytes, image.contentType)
+        try {
+            repository.replaceAvatarPath(identity.id, path, storageProperties.resumeBucket)
+        } catch (e: RuntimeException) {
+            // The database transaction rolled back, so this new object is not referenced.
+            // Best-effort cleanup keeps a storage failure from hiding the original error.
+            runCatching { storage.deleteByPrefix(storageProperties.resumeBucket, path) }
+            throw e
+        }
         return details(identity.id)
     }
 

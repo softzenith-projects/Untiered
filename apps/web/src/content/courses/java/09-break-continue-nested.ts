@@ -55,7 +55,15 @@ export const chapterBreakContinueNested: Chapter = {
         "        System.out.println();\n" +
         "    }\n" +
         "}\n",
-      output: "1 2 3 4 5 \n1 3 5 7 9",
+      output:
+        "1 2 3 4 5 \n" +
+        "1 3 5 7 9",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Swap the two keywords: put `continue` in the first loop and `break` in the second. Predict " +
+          "both lines before you run.",
+      },
     },
     {
       kind: "p",
@@ -219,9 +227,9 @@ export const chapterBreakContinueNested: Chapter = {
       question: "Why doesn't a plain (unlabelled) `break` inside the inner loop of a nested pair stop the outer loop too?",
       options: [
         "break always stops every loop it's nested inside, without exception.",
-        "break only ever applies to the innermost loop containing it, unless given a label naming an outer loop.",
-        "break only works on while loops, not for loops, when nested.",
-        "It's a compile error to use break inside a nested loop at all.",
+        "break only affects the innermost loop around it, unless a label names an outer loop.",
+        "break only works on while loops, not for loops, once they are nested inside another loop.",
+        "It's a compile error to use break inside a nested loop at all, so a flag variable is required.",
       ],
       answer: 1,
       why:

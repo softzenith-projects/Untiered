@@ -36,32 +36,14 @@ export const chapterComparableComparator: Chapter = {
     },
     {
       kind: "code",
-      caption: "Student implements Comparable for its natural order (marks); two Comparators sort it differently.",
+      caption:
+        "Student implements Comparable for its natural order (marks); two Comparators sort it " +
+        "differently.",
       code:
         "import java.util.ArrayList;\n" +
         "import java.util.Collections;\n" +
         "import java.util.Comparator;\n" +
         "import java.util.List;\n" +
-        "\n" +
-        "class Student implements Comparable<Student> {\n" +
-        "    String name;\n" +
-        "    int marks;\n" +
-        "\n" +
-        "    Student(String name, int marks) {\n" +
-        "        this.name = name;\n" +
-        "        this.marks = marks;\n" +
-        "    }\n" +
-        "\n" +
-        "    @Override\n" +
-        "    public int compareTo(Student other) {\n" +
-        "        return Integer.compare(this.marks, other.marks);\n" +
-        "    }\n" +
-        "\n" +
-        "    @Override\n" +
-        '    public String toString() {\n' +
-        '        return name + "(" + marks + ")";\n' +
-        "    }\n" +
-        "}\n" +
         "\n" +
         "public class ComparableComparatorDemo {\n" +
         "    public static void main(String[] args) {\n" +
@@ -79,11 +61,37 @@ export const chapterComparableComparator: Chapter = {
         "        students.sort(Comparator.comparingInt((Student s) -> s.marks).reversed());\n" +
         '        System.out.println("Sorted by marks descending (Comparator): " + students);\n' +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Student implements Comparable<Student> {\n" +
+        "    String name;\n" +
+        "    int marks;\n" +
+        "\n" +
+        "    Student(String name, int marks) {\n" +
+        "        this.name = name;\n" +
+        "        this.marks = marks;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public int compareTo(Student other) {\n" +
+        "        return Integer.compare(this.marks, other.marks);\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public String toString() {\n" +
+        '        return name + "(" + marks + ")";\n' +
+        "    }\n" +
         "}\n",
       output:
         "Sorted by marks (Comparable): [Vikram(78), Priya(87), Arjun(91)]\n" +
         "Sorted by name (Comparator): [Arjun(91), Priya(87), Vikram(78)]\n" +
         "Sorted by marks descending (Comparator): [Arjun(91), Priya(87), Vikram(78)]",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Swap `this.marks` and `other.marks` inside `compareTo` and run. The natural order now puts the " +
+          "highest marks first, and the two Comparator lines don't change at all.",
+      },
     },
     {
       kind: "p",
@@ -207,10 +215,10 @@ export const chapterComparableComparator: Chapter = {
       kind: "quiz",
       question: "Why is `Integer.compare(this.marks, other.marks)` generally preferred over `this.marks - other.marks` inside compareTo()?",
       options: [
-        "It's shorter to type",
-        "Subtraction can overflow for extreme int values and return an incorrect sign; Integer.compare avoids this",
-        "Subtraction doesn't work on int at all",
-        "There's no real difference",
+        "Subtraction is not allowed inside compareTo, so Integer.compare is the only version that compiles.",
+        "Subtraction can overflow for extreme int values and give the wrong sign; Integer.compare avoids that.",
+        "Subtraction doesn't work on int values at all, so it has to be replaced with a method call.",
+        "There's no real difference; both versions return the same sign for every possible pair of ints.",
       ],
       answer: 1,
       why:

@@ -91,12 +91,13 @@ export function ChallengeCard({
         <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">{challenge.moduleTitle}</span>
       </div>
 
-      <h2 ref={headingRef} tabIndex={-1} className="text-title text-balance text-ink outline-none whitespace-pre-line">
+      <h2 ref={headingRef} tabIndex={-1} className="text-title text-balance text-ink whitespace-pre-line outline-none focus:shadow-none focus-visible:shadow-none">
         {challenge.prompt}
       </h2>
 
       {challenge.context ? (
-        <p className="rounded-xl border border-line bg-surface-sunken px-4 py-3 text-body leading-relaxed text-ink-muted">
+        // A side note, not a box: a rounded, bordered, sunken panel read as a text field to type into.
+        <p className="border-l-2 border-accent/40 pl-4 text-caption leading-relaxed text-ink-muted">
           {challenge.context}
         </p>
       ) : null}

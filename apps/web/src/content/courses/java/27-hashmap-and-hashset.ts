@@ -48,6 +48,34 @@ export const chapterHashMapHashSet: Chapter = {
         "import java.util.Set;\n" +
         "import java.util.Map;\n" +
         "\n" +
+        "public class HashDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        Set<Point> points = new HashSet<>();\n" +
+        "        points.add(new Point(1, 2));\n" +
+        "        points.add(new Point(1, 2));\n" +
+        "        points.add(new Point(3, 4));\n" +
+        '        System.out.println("Set size (equal points deduped): " + points.size());\n' +
+        "\n" +
+        "        Map<String, Integer> wordCount = new HashMap<>();\n" +
+        '        String[] words = { "the", "cat", "sat", "the", "mat", "the" };\n' +
+        "        for (String w : words) {\n" +
+        "            wordCount.put(w, wordCount.getOrDefault(w, 0) + 1);\n" +
+        "        }\n" +
+        "        System.out.println(\"'the' occurrences: \" + wordCount.get(\"the\"));\n" +
+        "        System.out.println(\"'cat' occurrences: \" + wordCount.get(\"cat\"));\n" +
+        '        System.out.println("Unknown key lookup: " + wordCount.get("dog"));\n' +
+        "\n" +
+        "        class NoEqualsPoint {\n" +
+        "            int x, y;\n" +
+        "            NoEqualsPoint(int x, int y) { this.x = x; this.y = y; }\n" +
+        "        }\n" +
+        "        Set<NoEqualsPoint> broken = new HashSet<>();\n" +
+        "        broken.add(new NoEqualsPoint(1, 1));\n" +
+        "        broken.add(new NoEqualsPoint(1, 1));\n" +
+        '        System.out.println("Without equals/hashCode, size is: " + broken.size());\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "class Point {\n" +
         "    int x;\n" +
         "    int y;\n" +
@@ -69,34 +97,6 @@ export const chapterHashMapHashSet: Chapter = {
         "    public int hashCode() {\n" +
         "        return Objects.hash(x, y);\n" +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class HashDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        Set<Point> points = new HashSet<>();\n" +
-        "        points.add(new Point(1, 2));\n" +
-        "        points.add(new Point(1, 2));\n" +
-        "        points.add(new Point(3, 4));\n" +
-        '        System.out.println("Set size (equal points deduped): " + points.size());\n' +
-        "\n" +
-        "        Map<String, Integer> wordCount = new HashMap<>();\n" +
-        '        String[] words = { "the", "cat", "sat", "the", "mat", "the" };\n' +
-        "        for (String w : words) {\n" +
-        "            wordCount.put(w, wordCount.getOrDefault(w, 0) + 1);\n" +
-        "        }\n" +
-        '        System.out.println("\'the\' occurrences: " + wordCount.get("the"));\n' +
-        '        System.out.println("\'cat\' occurrences: " + wordCount.get("cat"));\n' +
-        '        System.out.println("Unknown key lookup: " + wordCount.get("dog"));\n' +
-        "\n" +
-        "        class NoEqualsPoint {\n" +
-        "            int x, y;\n" +
-        "            NoEqualsPoint(int x, int y) { this.x = x; this.y = y; }\n" +
-        "        }\n" +
-        "        Set<NoEqualsPoint> broken = new HashSet<>();\n" +
-        "        broken.add(new NoEqualsPoint(1, 1));\n" +
-        "        broken.add(new NoEqualsPoint(1, 1));\n" +
-        '        System.out.println("Without equals/hashCode, size is: " + broken.size());\n' +
-        "    }\n" +
         "}\n",
       output:
         "Set size (equal points deduped): 2\n" +
@@ -104,6 +104,13 @@ export const chapterHashMapHashSet: Chapter = {
         "'cat' occurrences: 1\n" +
         "Unknown key lookup: null\n" +
         "Without equals/hashCode, size is: 2",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Delete the `hashCode()` method from `Point` and run. The set's size goes from 2 to 3, even " +
+          "though `equals()` is still there: the set never compares two points that land in different " +
+          "buckets.",
+      },
     },
     {
       kind: "p",
@@ -229,10 +236,10 @@ export const chapterHashMapHashSet: Chapter = {
       kind: "quiz",
       question: "A class overrides equals() to compare by value but never overrides hashCode(). What's the practical effect on a HashSet of that class?",
       options: [
-        "It works fine — equals() alone is enough",
-        "Equal objects can still be treated as distinct, since they may land in different buckets and never get compared",
+        "It works fine, because HashSet compares every pair of elements using equals() alone.",
+        "Equal objects may land in different buckets and never get compared, so they're treated as distinct.",
         "It fails to compile",
-        "The HashSet automatically generates a matching hashCode()",
+        "HashSet automatically generates a matching hashCode() from the fields that equals() compares.",
       ],
       answer: 1,
       why:
@@ -253,10 +260,10 @@ export const chapterHashMapHashSet: Chapter = {
       kind: "quiz",
       question: "What is `Objects.hash(x, y)` used for in the Point class?",
       options: [
-        "To compare two Points for equality directly",
-        "To produce a combined hash code from multiple fields, consistent with equals()",
-        "To sort a list of Points",
-        "It's unrelated to hashing despite the name",
+        "To compare two Points for equality directly, field by field, without calling equals().",
+        "To produce one combined hash code from several fields, consistent with equals().",
+        "To sort a list of Points by their hash values, so equal points sit side by side.",
+        "It's unrelated to hashing despite the name; it only builds a string from the fields.",
       ],
       answer: 1,
       why:

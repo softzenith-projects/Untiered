@@ -220,6 +220,31 @@ export const chapterTwoPointers: Chapter = {
       ],
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "Add `print(left, right, total)` inside the loop and re-run to watch the two pointers converge on " +
+        "each target.",
+      starter:
+        "def has_pair_with_sum(nums, target):\n" +
+        "    left, right = 0, len(nums) - 1\n" +
+        "    while left < right:\n" +
+        "        total = nums[left] + nums[right]\n" +
+        "        if total == target:\n" +
+        "            return True\n" +
+        "        if total < target:\n" +
+        "            left += 1\n" +
+        "        else:\n" +
+        "            right -= 1\n" +
+        "    return False\n" +
+        "\n" +
+        "\n" +
+        "nums = [1, 3, 5, 7, 9, 11]\n" +
+        "print(has_pair_with_sum(nums, 12))\n" +
+        "print(has_pair_with_sum(nums, 2))\n",
+      expectedOutput: "True\nFalse",
+    },
+    {
       kind: "pitfall",
       items: [
         "Applying converging two pointers to an unsorted array — without sorted order, moving `left` or " +
@@ -257,54 +282,13 @@ export const chapterTwoPointers: Chapter = {
       ],
     },
     {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "Add `print(left, right, total)` inside the loop and re-run to watch the two pointers converge on " +
-        "each target.",
-      starter:
-        "def has_pair_with_sum(nums, target):\n" +
-        "    left, right = 0, len(nums) - 1\n" +
-        "    while left < right:\n" +
-        "        total = nums[left] + nums[right]\n" +
-        "        if total == target:\n" +
-        "            return True\n" +
-        "        if total < target:\n" +
-        "            left += 1\n" +
-        "        else:\n" +
-        "            right -= 1\n" +
-        "    return False\n" +
-        "\n" +
-        "\n" +
-        "nums = [1, 3, 5, 7, 9, 11]\n" +
-        "print(has_pair_with_sum(nums, 12))\n" +
-        "print(has_pair_with_sum(nums, 2))\n",
-      expectedOutput: "True\nFalse",
-    },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Given a sorted array, describe (in words) how you'd find a pair whose sum is closest to a target, " +
-          "not necessarily exactly equal, adapting the converging two-pointer approach.",
-        "For a string, describe how two pointers from both ends can check whether it's a palindrome " +
-          "ignoring spaces and punctuation, without building a cleaned copy of the string first.",
-        "Given an array of 0s and 1s, describe a same-direction (read/write) two-pointer approach to move " +
-          "all the 0s to the end while keeping the relative order of the 1s.",
-        "Explain, in your own words, why the converging two-pointer approach for pair-sum would give a " +
-          "wrong answer on an unsorted array, with a small example.",
-      ],
-    },
-    {
       kind: "quiz",
       question: "In pairWithSum, why does the array need to be sorted for the technique to be correct?",
       options: [
-        "It doesn't — sorting is only for speed, not correctness",
-        "Sorted order guarantees that moving left forward strictly increases the sum, and moving right " +
-          "backward strictly decreases it, so no valid pair is skipped",
-        "Java's two-pointer functions require sorted input as a language rule",
-        "Sorting removes duplicate values, which the algorithm can't handle otherwise",
+        "It doesn't need to be: sorting is only there for speed, not for the correctness of the answer",
+        "Sorted order means moving left forward increases the sum and moving right backward decreases it, so no pair is skipped",
+        "Java's two-pointer functions require sorted input as a language rule, otherwise the code won't compile",
+        "Sorting removes duplicate values, which the algorithm cannot handle correctly if they are left in",
       ],
       answer: 1,
       why:
@@ -324,15 +308,30 @@ export const chapterTwoPointers: Chapter = {
       kind: "quiz",
       question: "Which of these is a same-direction (not converging) two-pointer pattern?",
       options: [
-        "Checking a palindrome by comparing the first and last characters inward",
-        "Finding a pair sum by moving left forward and right backward",
-        "A fast and slow pointer both starting at the head of a list, moving forward at different speeds",
-        "Reversing an array by swapping the outermost elements inward",
+        "Checking a palindrome by comparing the first and last characters and working inward to the middle",
+        "Finding a pair sum in a sorted array by moving left forward and right backward",
+        "A fast and slow pointer both starting at the head of a list and moving forward",
+        "Reversing an array by swapping the outermost elements and moving both pointers inward",
       ],
       answer: 2,
       why:
         "Fast/slow pointers both move in the same direction (forward), just at different speeds — unlike " +
         "the converging pattern, where one pointer starts at each end and they move toward each other.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Given a sorted array, describe (in words) how you'd find a pair whose sum is closest to a target, " +
+          "not necessarily exactly equal, adapting the converging two-pointer approach.",
+        "For a string, describe how two pointers from both ends can check whether it's a palindrome " +
+          "ignoring spaces and punctuation, without building a cleaned copy of the string first.",
+        "Given an array of 0s and 1s, describe a same-direction (read/write) two-pointer approach to move " +
+          "all the 0s to the end while keeping the relative order of the 1s.",
+        "Explain, in your own words, why the converging two-pointer approach for pair-sum would give a " +
+          "wrong answer on an unsorted array, with a small example.",
+      ],
     },
   ],
 };

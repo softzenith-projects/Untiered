@@ -1,5 +1,6 @@
 import type { Block, Chapter, Course } from "@/content/courses/types";
 import { cyrb53, mulberry32, shuffle } from "@/lib/arena/hash";
+import { orderedQuiz } from "@/lib/quiz-order";
 import type { Challenge, ChallengeKind } from "@/lib/arena/types";
 
 /**
@@ -67,8 +68,14 @@ interface ChapterLoc {
   chapter: Chapter;
 }
 
+/**
+ * Where the question comes from, and nothing more. This used to append the chapter's
+ * summary, and a summary states the chapter's key idea, so it often answered the question
+ * printed under it ("cost grows with the square of its length", above "why does a 12-turn
+ * run cost more than 12 calls?").
+ */
 function lessonContext(loc: ChapterLoc): string {
-  return `From “${loc.chapter.title}”: ${loc.chapter.summary}`;
+  return `From “${loc.chapter.title}”.`;
 }
 
 function locations(courses: Course[]): ChapterLoc[] {
@@ -119,6 +126,7 @@ function deriveMcq(loc: ChapterLoc, used: Set<string>): Challenge[] {
   const quizzes = loc.chapter.blocks.filter((b): b is QuizBlock => b.kind === "quiz");
   return quizzes.map((quiz) => {
     const base = challengeIdBase("mcq", loc.course.slug, loc.chapter.slug, quiz.question);
+    const shown = orderedQuiz(quiz);
     return {
       id: uniqueId(base, used),
       kind: "mcq" as const,
@@ -127,8 +135,8 @@ function deriveMcq(loc: ChapterLoc, used: Set<string>): Challenge[] {
       moduleTitle: loc.courseModule.title,
       context: lessonContext(loc),
       prompt: quiz.question,
-      options: quiz.options,
-      correctIndex: quiz.answer,
+      options: shown.options,
+      correctIndex: shown.answer,
       why: quiz.why,
     };
   });

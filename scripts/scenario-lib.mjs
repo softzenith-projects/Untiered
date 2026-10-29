@@ -7,6 +7,10 @@ const TYPES = new Set(["design_choice", "algo_choice", "complexity", "predict_ou
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const COMPLEXITY = /^O\([A-Za-z0-9 +*/^().]+\)$/;
 const present = (value) => typeof value === "string" && value.trim().length > 0;
+// The Arena shows options in a shuffled order, so "A is right, B invents a limit" points at
+// the wrong cards on screen. Explanations name options by what they say instead. A bare
+// capital B, C or D (or "option A") is the tell; a capital A alone is usually an article.
+const LETTER_REFERENCE = /(?:^|[\s(])[B-D](?=$|[\s.,:;)])|\b[Oo]ption\s+[A-D]\b|\bA (?:is|explains|enforces|checks|breaks|would|fails|invents)\b/;
 
 export function loadCatalogue(root = ROOT) {
   const catalogue = JSON.parse(readFileSync(join(root, "concepts.json"), "utf8"));
@@ -57,6 +61,7 @@ export function validateScenario(s, catalogue) {
       if (step.step_type === "complexity" && step.options.some((o) => !COMPLEXITY.test(o.text))) fail(`${path}: invalid complexity expression`);
     }
     if (!present(step.explanation)) fail(`${path}: empty explanation`);
+    else if (LETTER_REFERENCE.test(step.explanation)) fail(`${path}: explanation refers to an option by letter`);
     if (!present(step.bottleneck_note)) fail(`${path}: empty bottleneck_note`);
     if (["predict_output", "debug"].includes(step.step_type) && !present(step.code_snippet)) fail(`${path}: code-based step without snippet`);
     if (present(step.code_snippet) && !present(step.language)) fail(`${path}: snippet language required`);

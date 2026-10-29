@@ -324,29 +324,14 @@ export const chapterSlidingWindow: Chapter = {
           "variable-size window problems across interviews.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you'd find the minimum (not maximum) sum among all windows of " +
-          "size k, adapting the fixed-size window approach.",
-        "For a string, describe a variable-size window approach to find the length of the longest substring " +
-          "that contains at most two distinct characters.",
-        "Given an array of positive numbers and a target sum, describe a variable-size window approach to " +
-          "find the length of the shortest contiguous subarray whose sum is at least the target.",
-        "Explain, in your own words, why a variable-size window's left pointer never needs to move " +
-          "backward once it has advanced — what would break if it did?",
-      ],
-    },
     {
       kind: "quiz",
       question: "In the fixed-size maxSumWindow, what does `windowSum += nums[end] - nums[end - k]` accomplish?",
       options: [
-        "It resets windowSum to zero and recomputes it",
-        "It adds the newly entered element and subtracts the element that just left the window, in one step",
-        "It sorts the current window",
-        "It computes the average of the window instead of its sum",
+        "It resets windowSum to zero and then recomputes the whole sum from scratch for the new window",
+        "It adds the newly entered element and subtracts the one that just left, in a single step",
+        "It sorts the current window first, so the largest element can be added to the running sum",
+        "It computes the average of the window instead of its sum, by dividing after each update",
       ],
       answer: 1,
       why:
@@ -357,11 +342,10 @@ export const chapterSlidingWindow: Chapter = {
       kind: "quiz",
       question: "In longestNoRepeat, why does the inner loop use `while (inWindow.contains(c))` instead of `if`?",
       options: [
-        "while and if behave identically here, so it doesn't matter",
-        "Because a single repeated character can require shrinking the window's left edge past more than " +
-          "one character before the window is valid again",
-        "while is required by Java syntax whenever a Set is involved",
-        "It's a stylistic choice with no effect on correctness",
+        "while and if behave identically here, so the choice makes no difference to the result",
+        "One repeated character can force the left edge to move past more than one character",
+        "while is required by Java syntax whenever a Set is used inside the loop condition",
+        "It's a stylistic choice with no effect on correctness, as an if would work as well",
       ],
       answer: 1,
       why:
@@ -378,6 +362,21 @@ export const chapterSlidingWindow: Chapter = {
         "right advances n times total across the whole run, and left only ever moves forward, so it also " +
         "advances at most n times total — the combined work across the entire run is O(n), not O(n) per " +
         "step of an outer O(n) loop.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you'd find the minimum (not maximum) sum among all windows of " +
+          "size k, adapting the fixed-size window approach.",
+        "For a string, describe a variable-size window approach to find the length of the longest substring " +
+          "that contains at most two distinct characters.",
+        "Given an array of positive numbers and a target sum, describe a variable-size window approach to " +
+          "find the length of the shortest contiguous subarray whose sum is at least the target.",
+        "Explain, in your own words, why a variable-size window's left pointer never needs to move " +
+          "backward once it has advanced — what would break if it did?",
+      ],
     },
   ],
 };

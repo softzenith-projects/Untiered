@@ -234,6 +234,36 @@ export const chapterWhatIsDsa: Chapter = {
         "day real traffic arrives.",
     },
     {
+      kind: "playground",
+      language: "python",
+      prompt:
+        "The Java example above ran both approaches once. Here they are in Python, where you can change " +
+        "the numbers and re-run instantly. Try removing the repeated 7 from `nums` and see both answers " +
+        "flip together.",
+      starter:
+        "def has_duplicate_slow(nums):\n" +
+        "    for i in range(len(nums)):\n" +
+        "        for j in range(i + 1, len(nums)):\n" +
+        "            if nums[i] == nums[j]:\n" +
+        "                return True\n" +
+        "    return False\n" +
+        "\n" +
+        "\n" +
+        "def has_duplicate_fast(nums):\n" +
+        "    seen = set()\n" +
+        "    for n in nums:\n" +
+        "        if n in seen:\n" +
+        "            return True\n" +
+        "        seen.add(n)\n" +
+        "    return False\n" +
+        "\n" +
+        "\n" +
+        "nums = [4, 7, 2, 9, 7, 1]\n" +
+        'print("slow:", has_duplicate_slow(nums))\n' +
+        'print("fast:", has_duplicate_fast(nums))\n',
+      expectedOutput: "slow: True\nfast: True",
+    },
+    {
       kind: "pitfall",
       items: [
         "Treating DSA as trivia to memorise (\"HashMap is O(1)\") rather than a way of thinking — the " +
@@ -266,34 +296,47 @@ export const chapterWhatIsDsa: Chapter = {
       ],
     },
     {
-      kind: "playground",
-      language: "python",
-      prompt:
-        "The Java example above ran both approaches once. Here they are in Python, where you can change " +
-        "the numbers and re-run instantly. Try removing the repeated 7 from `nums` and see both answers " +
-        "flip together.",
-      starter:
-        "def has_duplicate_slow(nums):\n" +
-        "    for i in range(len(nums)):\n" +
-        "        for j in range(i + 1, len(nums)):\n" +
-        "            if nums[i] == nums[j]:\n" +
-        "                return True\n" +
-        "    return False\n" +
-        "\n" +
-        "\n" +
-        "def has_duplicate_fast(nums):\n" +
-        "    seen = set()\n" +
-        "    for n in nums:\n" +
-        "        if n in seen:\n" +
-        "            return True\n" +
-        "        seen.add(n)\n" +
-        "    return False\n" +
-        "\n" +
-        "\n" +
-        "nums = [4, 7, 2, 9, 7, 1]\n" +
-        'print("slow:", has_duplicate_slow(nums))\n' +
-        'print("fast:", has_duplicate_fast(nums))\n',
-      expectedOutput: "slow: True\nfast: True",
+      kind: "quiz",
+      question: "In the kitchen analogy, what does a data structure correspond to?",
+      options: [
+        "The ingredients themselves, because data structures are the raw material the cook starts with",
+        "The deliberate organisation of where things are kept (the spice rack, the drawer)",
+        "The recipe being cooked, since a data structure is the list of steps to follow",
+        "The person doing the cooking, because they decide what happens with the ingredients",
+      ],
+      answer: 1,
+      why:
+        "The data structure is the organisation — how the same underlying data (ingredients, numbers) is " +
+        "arranged so that operations on it (finding an item) are cheap or expensive.",
+    },
+    {
+      kind: "quiz",
+      question: "Why does hasDuplicateFast typically do less work than hasDuplicateSlow on the same input?",
+      options: [
+        "It uses a different, faster programming language internally, so each comparison takes less time.",
+        "It only checks half the array, because the other half is guaranteed to hold no duplicates.",
+        "It checks each number against a running set once, instead of comparing every pair.",
+        "It sorts the array first, and Java's sorting step is free, so only the scan is counted.",
+      ],
+      answer: 2,
+      why:
+        "hasDuplicateSlow compares every pair of elements (roughly n²/2 comparisons); hasDuplicateFast " +
+        "makes one pass, checking each element against a set that answers membership quickly, doing roughly " +
+        "n units of work instead.",
+    },
+    {
+      kind: "quiz",
+      question: "What is the main reason interviews test DSA, according to this chapter?",
+      options: [
+        "To check whether you've memorised the names of standard library methods and their exact signatures",
+        "Because almost every job requires implementing a HashMap or a balanced tree from scratch each week",
+        "As a proxy for recognising a problem's shape and reasoning about cost at scale, which transfers to real work",
+        "It's mostly tradition, with no real connection to the work you would actually do on the job",
+      ],
+      answer: 2,
+      why:
+        "The chapter argues DSA questions stand in for a transferable skill — picking an organisation " +
+        "suited to a problem and reasoning about its cost — rather than testing memorised trivia.",
     },
     {
       kind: "h",
@@ -315,50 +358,6 @@ export const chapterWhatIsDsa: Chapter = {
           "suspect the wrong data structure would make it noticeably slow at large scale. You don't need to " +
           "know the real implementation — just reason about what would go wrong.",
       ],
-    },
-    {
-      kind: "quiz",
-      question: "In the kitchen analogy, what does a data structure correspond to?",
-      options: [
-        "The ingredients themselves",
-        "The deliberate organisation of where things are kept (the spice rack, the drawer)",
-        "The recipe being cooked",
-        "The person cooking",
-      ],
-      answer: 1,
-      why:
-        "The data structure is the organisation — how the same underlying data (ingredients, numbers) is " +
-        "arranged so that operations on it (finding an item) are cheap or expensive.",
-    },
-    {
-      kind: "quiz",
-      question: "Why does hasDuplicateFast typically do less work than hasDuplicateSlow on the same input?",
-      options: [
-        "It uses a different, faster programming language internally.",
-        "It only checks half the array.",
-        "It checks each number against a running set once, instead of comparing every pair of numbers.",
-        "It sorts the array first, which is always free.",
-      ],
-      answer: 2,
-      why:
-        "hasDuplicateSlow compares every pair of elements (roughly n²/2 comparisons); hasDuplicateFast " +
-        "makes one pass, checking each element against a set that answers membership quickly, doing roughly " +
-        "n units of work instead.",
-    },
-    {
-      kind: "quiz",
-      question: "What is the main reason interviews test DSA, according to this chapter?",
-      options: [
-        "To check whether you've memorised standard library method names",
-        "Because every job requires implementing a HashMap from scratch",
-        "As a proxy for recognising a problem's shape and reasoning about cost at scale, which transfers " +
-          "to real engineering work",
-        "It's mostly tradition with no real connection to the job",
-      ],
-      answer: 2,
-      why:
-        "The chapter argues DSA questions stand in for a transferable skill — picking an organisation " +
-        "suited to a problem and reasoning about its cost — rather than testing memorised trivia.",
     },
   ],
 };

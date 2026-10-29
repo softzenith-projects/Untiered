@@ -253,31 +253,14 @@ export const chapterUnionFind: Chapter = {
           "of union-find: sort edges by weight, add each one unless union() reports it would form a cycle.",
       ],
     },
-    { kind: "h", text: "Practice problems" },
-    {
-      kind: "list",
-      ordered: true,
-      items: [
-        "Describe, in your own words, how you would use union-find to find the single edge that, if removed " +
-          "from a connected graph with exactly one cycle, would make it a tree.",
-        "Given a list of accounts where some share an email address (implying the same person), describe how " +
-          "union-find would group all accounts belonging to the same person.",
-        "Explain why union by rank alone (without path compression), or path compression alone (without " +
-          "union by rank), still gives correct results but loses some of the near-O(1) performance guarantee.",
-        "Describe, in words, how you'd track the *size* of each group (not just its representative) as " +
-          "unions happen, and how that could answer 'how many elements are in the same group as x?' " +
-          "efficiently.",
-      ],
-    },
     {
       kind: "quiz",
       question: "What does it mean when union(a, b) returns false in this chapter's implementation?",
       options: [
-        "An error occurred during the union operation",
-        "a and b are already in the same group (find(a) == find(b)), so merging them again would create a " +
-          "cycle rather than a new connection",
-        "a or b doesn't exist in the structure",
-        "The rank arrays are corrupted",
+        "An error occurred during the union operation, and the groups were left unchanged",
+        "a and b are already in the same group, so merging them again would create a cycle",
+        "a or b doesn't exist in the structure, so there was nothing to merge",
+        "The rank arrays are corrupted, so the structure can no longer be trusted",
       ],
       answer: 1,
       why:
@@ -289,11 +272,10 @@ export const chapterUnionFind: Chapter = {
       kind: "quiz",
       question: "What is the combined effect of path compression and union by rank on the amortised time complexity of find/union?",
       options: [
-        "O(n) per operation",
-        "O(log n) per operation",
-        "Effectively O(1) (formally O(α(n)), the inverse Ackermann function, which is under 5 for any " +
-          "practical input size)",
-        "O(n log n) per operation",
+        "O(n) per operation, because each find must still walk a chain whose length can reach the number of elements.",
+        "O(log n) per operation, because the trees stay balanced but each find still climbs a logarithmic number of parents.",
+        "Effectively O(1): formally O(α(n)), the inverse Ackermann function, which is under 5 for any practical input size.",
+        "O(n log n) per operation, because every union has to merge two sorted lists of members before it can finish.",
       ],
       answer: 2,
       why:
@@ -316,6 +298,22 @@ export const chapterUnionFind: Chapter = {
         "Once a node points directly at its group's root, any later find() on it (or on anything that was " +
         "compressed along the same path) short-circuits immediately — the flattening pays for itself on " +
         "every subsequent call.",
+    },
+    { kind: "h", text: "Practice problems" },
+    {
+      kind: "list",
+      ordered: true,
+      items: [
+        "Describe, in your own words, how you would use union-find to find the single edge that, if removed " +
+          "from a connected graph with exactly one cycle, would make it a tree.",
+        "Given a list of accounts where some share an email address (implying the same person), describe how " +
+          "union-find would group all accounts belonging to the same person.",
+        "Explain why union by rank alone (without path compression), or path compression alone (without " +
+          "union by rank), still gives correct results but loses some of the near-O(1) performance guarantee.",
+        "Describe, in words, how you'd track the *size* of each group (not just its representative) as " +
+          "unions happen, and how that could answer 'how many elements are in the same group as x?' " +
+          "efficiently.",
+      ],
     },
   ],
 };

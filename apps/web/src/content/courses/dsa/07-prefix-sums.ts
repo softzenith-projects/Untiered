@@ -229,6 +229,50 @@ export const chapterPrefixSums: Chapter = {
           "you recognise prefix sums' limits, not just their use case.",
       ],
     },
+    {
+      kind: "quiz",
+      question: "What does prefix[i] represent in the buildPrefix code above?",
+      options: [
+        "The value of nums[i], copied across so that it can be looked up quickly later",
+        "The sum of all elements from index 0 up to, but not including, index i",
+        "The maximum element seen so far, updated each time a larger value is found",
+        "The index of the largest element that appears before position i in the array",
+      ],
+      answer: 1,
+      why:
+        "prefix[i] is the running total of everything before index i — prefix[0] is 0 (sum of nothing), " +
+        "and each step adds exactly one more element of nums.",
+    },
+    {
+      kind: "quiz",
+      question: "Why is rangeSum(prefix, left, right) computed as prefix[right + 1] - prefix[left], and not prefix[right] - prefix[left]?",
+      options: [
+        "Both formulas give the same answer for every range, so the choice of index doesn't matter",
+        "prefix[right] excludes nums[right]; prefix[right + 1] is needed to include it in the sum",
+        "It's a Java syntax requirement for array indexing, since indexes must always start at one",
+        "prefix[right + 1] is always the array's last element, so the subtraction removes the correct tail",
+      ],
+      answer: 1,
+      why:
+        "Since prefix[i] sums everything before index i, prefix[right] would stop just short of including " +
+        "nums[right]. prefix[right + 1] includes it, which is required for a range that's meant to be " +
+        "inclusive of right.",
+    },
+    {
+      kind: "quiz",
+      question: "When is the prefix sum technique NOT a good fit?",
+      options: [
+        "When there will be many range-sum queries on a fixed array that is never changed",
+        "When the array is updated frequently between queries that need the latest values",
+        "When the array contains negative numbers, since subtraction then gives a wrong total",
+        "When the array has fewer than 10 elements, because prefix sums need at least ten values",
+      ],
+      answer: 1,
+      why:
+        "A prefix sum array reflects the array's state at the moment it was built. If the array changes " +
+        "often and queries must reflect those changes, either the whole prefix array must be rebuilt " +
+        "(costly) or a different, update-friendly structure is needed instead.",
+    },
     { kind: "h", text: "Practice problems" },
     {
       kind: "list",
@@ -243,50 +287,6 @@ export const chapterPrefixSums: Chapter = {
         "Explain, in your own words, why prefix sums stop being a good fit if the underlying array is " +
           "updated frequently between queries.",
       ],
-    },
-    {
-      kind: "quiz",
-      question: "What does prefix[i] represent in the buildPrefix code above?",
-      options: [
-        "The value of nums[i]",
-        "The sum of all elements from index 0 up to, but not including, index i",
-        "The maximum element seen so far",
-        "The index of the largest element before position i",
-      ],
-      answer: 1,
-      why:
-        "prefix[i] is the running total of everything before index i — prefix[0] is 0 (sum of nothing), " +
-        "and each step adds exactly one more element of nums.",
-    },
-    {
-      kind: "quiz",
-      question: "Why is rangeSum(prefix, left, right) computed as prefix[right + 1] - prefix[left], and not prefix[right] - prefix[left]?",
-      options: [
-        "Both formulas give the same answer, so it doesn't matter",
-        "prefix[right] excludes nums[right] itself; prefix[right + 1] is needed to include it in the sum",
-        "It's a Java syntax requirement for array indexing",
-        "prefix[right + 1] is always the array's last element",
-      ],
-      answer: 1,
-      why:
-        "Since prefix[i] sums everything before index i, prefix[right] would stop just short of including " +
-        "nums[right]. prefix[right + 1] includes it, which is required for a range that's meant to be " +
-        "inclusive of right.",
-    },
-    {
-      kind: "quiz",
-      question: "When is the prefix sum technique NOT a good fit?",
-      options: [
-        "When there will be many range-sum queries on a fixed array",
-        "When the array is updated frequently between queries that need to reflect the latest values",
-        "When the array contains negative numbers",
-        "When the array has fewer than 10 elements",
-      ],
-      answer: 1,
-      why:
-        "A prefix sum array reflects the array's state at the moment it was built. If the array changes " +
-        "often and queries must reflect those changes, either the whole prefix array must be rebuilt " +
-        "(costly) or a different, update-friendly structure is needed instead.",
     },
   ],
 };

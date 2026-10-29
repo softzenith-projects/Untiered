@@ -385,6 +385,49 @@ export const chapterShortestPaths: Chapter = {
           "and negative edges can violate that.",
       ],
     },
+    {
+      kind: "quiz",
+      question: "Why does BFS give the correct shortest path on an unweighted graph without any extra bookkeeping?",
+      options: [
+        "It doesn't give the shortest path: BFS never guarantees it, because it can reach a vertex by a longer route first.",
+        "BFS visits vertices in rings by edge count, so a vertex is first reached by the fewest edges.",
+        "Because BFS secretly runs Dijkstra's algorithm internally, using a priority queue in place of its ordinary queue.",
+        "Only because the example graph happened to be small; on a larger graph BFS would give longer paths.",
+      ],
+      answer: 1,
+      why:
+        "Every vertex at ring distance k is only enqueued after all vertices at distance k-1 have been " +
+        "processed, so the first visit to any vertex is guaranteed to be via the minimum number of edges.",
+    },
+    {
+      kind: "quiz",
+      question: "In dijkstra(), what does the check `if (d > dist[curr]) continue;` protect against?",
+      options: [
+        "Negative cycles in the graph, which would otherwise keep lowering the distances without ever stopping.",
+        "Skipping a stale queue entry whose vertex already has a shorter distance",
+        "Running out of memory when the priority queue grows past the number of edges in the graph.",
+        "Disconnected graphs, where vertices that cannot be reached would otherwise be given a made-up distance.",
+      ],
+      answer: 1,
+      why:
+        "Because relaxation can push the same vertex onto the queue more than once, older (worse) entries " +
+        "for an already-improved vertex must be skipped rather than re-processed as if they were current.",
+    },
+    {
+      kind: "quiz",
+      question: "Why does Dijkstra's algorithm produce incorrect results on graphs with negative edge weights?",
+      options: [
+        "Java's PriorityQueue cannot hold negative numbers, so a negative edge weight is rejected before Dijkstra can use it.",
+        "Dijkstra assumes a finalised vertex can't be improved later, but a negative edge can make a path cheaper after that.",
+        "Negative weights make the algorithm loop forever rather than return a wrong answer, so it never produces any output.",
+        "It doesn't fail: Dijkstra handles negative weights correctly as long as no negative cycle exists in the graph.",
+      ],
+      answer: 1,
+      why:
+        "Dijkstra's greedy correctness relies on distances only ever growing as you extend a path with " +
+        "non-negative edges. A negative edge can make an already-finalised vertex's true shortest distance " +
+        "smaller than what was recorded, which the algorithm has no mechanism to revisit.",
+    },
     { kind: "h", text: "Practice problems" },
     {
       kind: "list",
@@ -399,53 +442,6 @@ export const chapterShortestPaths: Chapter = {
         "Describe how you would find the shortest path between two specific vertices (not from a source to " +
           "all vertices) — does anything in Dijkstra's approach change, or can it stop early?",
       ],
-    },
-    {
-      kind: "quiz",
-      question: "Why does BFS give the correct shortest path on an unweighted graph without any extra bookkeeping?",
-      options: [
-        "It doesn't — BFS never guarantees shortest paths",
-        "Because BFS visits vertices in expanding rings by edge count, so the first time any vertex is " +
-          "reached, it has necessarily been reached via the fewest possible edges",
-        "Because BFS secretly runs Dijkstra internally",
-        "Only because the example graph happened to be small",
-      ],
-      answer: 1,
-      why:
-        "Every vertex at ring distance k is only enqueued after all vertices at distance k-1 have been " +
-        "processed, so the first visit to any vertex is guaranteed to be via the minimum number of edges.",
-    },
-    {
-      kind: "quiz",
-      question: "In dijkstra(), what does the check `if (d > dist[curr]) continue;` protect against?",
-      options: [
-        "Negative cycles in the graph",
-        "Processing a stale priority-queue entry for a vertex whose distance has already been improved by " +
-          "a better path found later, since the same vertex can be pushed multiple times",
-        "Running out of memory",
-        "Disconnected graphs",
-      ],
-      answer: 1,
-      why:
-        "Because relaxation can push the same vertex onto the queue more than once, older (worse) entries " +
-        "for an already-improved vertex must be skipped rather than re-processed as if they were current.",
-    },
-    {
-      kind: "quiz",
-      question: "Why does Dijkstra's algorithm produce incorrect results on graphs with negative edge weights?",
-      options: [
-        "Java's PriorityQueue cannot store negative numbers",
-        "Dijkstra assumes that once a vertex is finalised with its shortest distance, no later path can " +
-          "improve it — a negative edge can violate this by making a longer-looking path suddenly cheaper " +
-          "after that vertex was already finalised",
-        "Negative weights cause an infinite loop, not a wrong answer",
-        "It doesn't — Dijkstra handles negative weights correctly as long as there's no negative cycle",
-      ],
-      answer: 1,
-      why:
-        "Dijkstra's greedy correctness relies on distances only ever growing as you extend a path with " +
-        "non-negative edges. A negative edge can make an already-finalised vertex's true shortest distance " +
-        "smaller than what was recorded, which the algorithm has no mechanism to revisit.",
     },
   ],
 };

@@ -54,8 +54,8 @@ export const chapterStrings: Chapter = {
         '        System.out.println("Length: " + name.length());\n' +
         '        System.out.println("Char at 0: " + name.charAt(0));\n' +
         '        System.out.println("Substring(1,3): " + name.substring(1, 3));\n' +
-        '        System.out.println("Contains \'iy\': " + name.contains("iy"));\n' +
-        '        System.out.println("Index of \'y\': " + name.indexOf(\'y\'));\n' +
+        "        System.out.println(\"Contains 'iy': \" + name.contains(\"iy\"));\n" +
+        "        System.out.println(\"Index of 'y': \" + name.indexOf('y'));\n" +
         "\n" +
         '        String greeting = "Hello";\n' +
         '        String modified = greeting.concat(", World");\n' +
@@ -83,6 +83,12 @@ export const chapterStrings: Chapter = {
         "Original: Hello\n" +
         "Modified copy: Hello, World\n" +
         "roll | name | marks |",
+      tryIt: {
+        language: "java",
+        prompt:
+          'Change `c` to `String c = "hello";` and run. `a == c` turns true, because both now point at ' +
+          "the same pooled string. `.equals()` gives true either way, which is why you should use it.",
+      },
     },
     {
       kind: "p",
@@ -225,10 +231,10 @@ export const chapterStrings: Chapter = {
       kind: "quiz",
       question: "After `String s = \"  hi  \"; s.trim();` with no reassignment, what does s hold?",
       options: [
-        "\"hi\", with the whitespace removed",
-        "\"  hi  \", unchanged — trim() returned a new string that was never captured",
-        "null",
-        "It fails to compile.",
+        "\"hi\", because trim() removes the whitespace from s itself, even without reassignment.",
+        "\"  hi  \", unchanged: trim() returned a new string that was never captured.",
+        "null, because trim() with no reassignment leaves the variable without a value.",
+        "It fails to compile, because the result of trim() is ignored and Java requires it to be used.",
       ],
       answer: 1,
       why:

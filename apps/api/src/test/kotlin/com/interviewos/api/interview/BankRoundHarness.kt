@@ -12,6 +12,7 @@ import com.interviewos.api.ai.ReportContent
 import com.interviewos.api.bank.BankQuestion
 import com.interviewos.api.bank.CompanyDirectory
 import com.interviewos.api.bank.QuestionBankRepository
+import com.interviewos.api.billing.BillingProperties
 import com.interviewos.api.pool.PoolQuestion
 import com.interviewos.api.pool.QuestionPoolRepository
 import com.interviewos.api.pool.RoleFamily
@@ -122,6 +123,7 @@ class BankRoundHarness(
             objectMapper = mapper,
             questionSpeech = mock(QuestionSpeech::class.java),
             entitlementProperties = EntitlementProperties(),
+            billingProperties = BillingProperties(),
             roundsProperties = RoundsProperties(),
             retentionProperties = RetentionProperties(),
             bankRounds = BankRoundPlanner(directory, bank, repository),

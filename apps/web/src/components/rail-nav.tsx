@@ -25,8 +25,16 @@ export function RailNav() {
         const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
         return (
           <li key={link.href}>
+            {/*
+              * `prefetch` fetches the whole page, not just its loading skeleton. These pages
+              * render on demand, and without it a click showed the skeleton while the server
+              * worked; with it the page is already in the browser when the link is pressed.
+              * The server side of each is static content and a flag check, so the five
+              * prefetches are cheap; their data is fetched by the page in the browser.
+              */}
             <Link
               href={link.href as Route}
+              prefetch
               aria-current={active ? "page" : undefined}
               className={`relative block h-full px-3 py-5 text-caption transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full ${
                 active

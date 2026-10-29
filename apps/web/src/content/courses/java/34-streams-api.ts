@@ -37,21 +37,11 @@ export const chapterStreams: Chapter = {
     {
       kind: "code",
       caption:
-        "A student list filtered, transformed, sorted and collected; plus average, count, sum, and a stream " +
-        "over plain integers.",
+        "A student list filtered, transformed, sorted and collected; plus average, count, sum, and a " +
+        "stream over plain integers.",
       code:
         "import java.util.List;\n" +
         "import java.util.stream.Collectors;\n" +
-        "\n" +
-        "class Student {\n" +
-        "    String name;\n" +
-        "    int marks;\n" +
-        "\n" +
-        "    Student(String name, int marks) {\n" +
-        "        this.name = name;\n" +
-        "        this.marks = marks;\n" +
-        "    }\n" +
-        "}\n" +
         "\n" +
         "public class StreamsDemo {\n" +
         "    public static void main(String[] args) {\n" +
@@ -91,6 +81,16 @@ export const chapterStreams: Chapter = {
         "            .collect(Collectors.toList());\n" +
         '        System.out.println("Squares: " + squares);\n' +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Student {\n" +
+        "    String name;\n" +
+        "    int marks;\n" +
+        "\n" +
+        "    Student(String name, int marks) {\n" +
+        "        this.name = name;\n" +
+        "        this.marks = marks;\n" +
+        "    }\n" +
         "}\n",
       output:
         "Toppers (>= 80), sorted by name: [Arjun, Neha, Priya]\n" +
@@ -98,6 +98,12 @@ export const chapterStreams: Chapter = {
         "Count above 85: 3\n" +
         "Total marks: 413\n" +
         "Squares: [1, 4, 9, 16, 25]",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change the filter to `s.marks >= 90` and predict the toppers before you run. Then add " +
+          "`.limit(1)` after `.sorted()`.",
+      },
     },
     {
       kind: "p",
@@ -194,10 +200,10 @@ export const chapterStreams: Chapter = {
       kind: "quiz",
       question: "In a stream pipeline `.filter(...).map(...).sorted()` with no terminal operation, what happens?",
       options: [
-        "It runs immediately and does the work",
-        "Nothing runs yet — streams are lazy until a terminal operation like collect() or count() is called",
-        "It throws a compile error",
-        "It runs filter and map, but not sorted",
+        "It runs immediately, because filter, map and sorted each do their work as soon as they are called.",
+        "Nothing runs yet; streams are lazy until a terminal operation like collect() or count() is called.",
+        "It throws a compile error, because every stream pipeline must end with a terminal operation.",
+        "It runs filter and map straight away, but sorted waits until a terminal operation arrives.",
       ],
       answer: 1,
       why:
@@ -208,10 +214,10 @@ export const chapterStreams: Chapter = {
       kind: "quiz",
       question: "What's the key difference between .map(...) and .filter(...) on a stream?",
       options: [
-        "They're interchangeable",
-        "map transforms every element into something else; filter removes elements that don't match a condition",
-        "filter transforms elements; map removes them",
-        "map only works on numbers",
+        "They're interchangeable, since both pass each element through a function and keep the result.",
+        "map transforms every element into something else; filter removes the elements that fail a condition.",
+        "filter transforms every element into a new value, while map removes elements that fail a condition.",
+        "map only works on numbers, while filter can be used on any type of element.",
       ],
       answer: 1,
       why:
@@ -222,10 +228,10 @@ export const chapterStreams: Chapter = {
       kind: "quiz",
       question: "Given the toppers pipeline (filter marks >= 80, map to name, sorted), which student is excluded from the final result and why?",
       options: [
-        "Neha — because her marks are too high",
-        "Vikram (78) and Rahul (62) — both fail the marks >= 80 filter",
-        "Arjun — because of alphabetical sorting",
-        "No one is excluded",
+        "Neha, because her marks are too high to fit in a list of the toppers.",
+        "Vikram (78) and Rahul (62), as both fail the marks >= 80 filter.",
+        "Arjun, because the alphabetical sorting step drops the name that comes first.",
+        "No one is excluded, because filter only reorders the students and never removes any.",
       ],
       answer: 1,
       why:

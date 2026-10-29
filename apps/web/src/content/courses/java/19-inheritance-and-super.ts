@@ -35,8 +35,22 @@ export const chapterInheritance: Chapter = {
     },
     {
       kind: "code",
-      caption: "Manager extends Employee, calls the parent's constructor with super(...), and extends computePay().",
+      caption:
+        "Manager extends Employee, calls the parent's constructor with super(...), and extends " +
+        "computePay().",
       code:
+        "public class InheritanceDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        Employee e = new Employee("Arjun", 40000);\n' +
+        '        Manager m = new Manager("Priya", 60000, 15000);\n' +
+        "\n" +
+        "        e.printPaySlip();\n" +
+        "        m.printPaySlip();\n" +
+        "\n" +
+        '        System.out.println("m instanceof Employee: " + (m instanceof Employee));\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "class Employee {\n" +
         "    protected String name;\n" +
         "    protected double baseSalary;\n" +
@@ -51,7 +65,7 @@ export const chapterInheritance: Chapter = {
         "    }\n" +
         "\n" +
         "    void printPaySlip() {\n" +
-        '        System.out.println(name + "\'s pay: " + computePay());\n' +
+        "        System.out.println(name + \"'s pay: \" + computePay());\n" +
         "    }\n" +
         "}\n" +
         "\n" +
@@ -68,20 +82,17 @@ export const chapterInheritance: Chapter = {
         "        double base = super.computePay();\n" +
         "        return base + teamBonus;\n" +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class InheritanceDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        Employee e = new Employee("Arjun", 40000);\n' +
-        '        Manager m = new Manager("Priya", 60000, 15000);\n' +
-        "\n" +
-        "        e.printPaySlip();\n" +
-        "        m.printPaySlip();\n" +
-        "\n" +
-        '        System.out.println("m instanceof Employee: " + (m instanceof Employee));\n' +
-        "    }\n" +
         "}\n",
-      output: "Arjun's pay: 40000.0\nPriya's pay: 75000.0\nm instanceof Employee: true",
+      output:
+        "Arjun's pay: 40000.0\n" +
+        "Priya's pay: 75000.0\n" +
+        "m instanceof Employee: true",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Delete the `computePay` override from `Manager` and run. Priya's pay falls to her base salary, " +
+          "because `Manager` now uses `Employee`'s version unchanged.",
+      },
     },
     {
       kind: "p",
@@ -191,7 +202,7 @@ export const chapterInheritance: Chapter = {
         "Manager's own computePay() result, causing infinite recursion",
         "Employee's original computePay(), i.e. just baseSalary",
         "0, because super methods can't be called from an override",
-        "It fails to compile",
+        "It fails to compile, since the compiler insists that equals() and hashCode() are overridden together.",
       ],
       answer: 1,
       why:

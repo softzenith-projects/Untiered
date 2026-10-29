@@ -273,7 +273,7 @@ export const chapterTokens: Chapter = {
       kind: "quiz",
       question: "Byte-pair encoding decides which pair to merge next by looking at what?",
       options: [
-        "Which pair is most grammatically meaningful",
+        "Which adjacent pair forms the most meaningful grammatical unit, as judged by linguists",
         "Which adjacent pair appears most often in the training text",
         "Which pair the model predicts best",
         "Which pair is alphabetically first",
@@ -288,7 +288,7 @@ export const chapterTokens: Chapter = {
       question: "Your prompt is a 2,000-character block of JSON. Roughly how does its token count compare with 2,000 characters of English prose?",
       options: [
         "About the same",
-        "Noticeably fewer tokens, because JSON is repetitive",
+        "Noticeably fewer tokens, because JSON is a compact format that tokenizers are specially built to compress",
         "Noticeably more tokens, because braces, quotes and keys fragment into small pieces",
         "Exactly half, because JSON has no spaces",
       ],
@@ -301,7 +301,7 @@ export const chapterTokens: Chapter = {
       kind: "quiz",
       question: "Which of these is the *right* fix for a model that keeps miscounting characters in a string?",
       options: [
-        "Tell it to be more careful and to think step by step",
+        "Tell it in the system prompt to count carefully, one character at a time, and to check its count twice",
         "Use a bigger model",
         "Give it a tool that does the string operation and returns the result",
         "Ask the same question three times and take the majority answer",

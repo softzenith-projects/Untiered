@@ -56,6 +56,14 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   experimental: {
     agentUpgrade: "security",
+    /*
+     * Keep a visited on-demand page in the browser's router cache for a minute, so going
+     * back to a tab you just left is instant instead of another server round trip (the
+     * default is zero). Safe because personal data on these pages is fetched client-side
+     * on mount, not baked into the server payload, and sign-out calls `router.refresh()`,
+     * which empties this cache.
+     */
+    staleTimes: { dynamic: 60 },
   },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];

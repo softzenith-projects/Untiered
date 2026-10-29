@@ -243,8 +243,8 @@ export const chapterCostAndLatency: Chapter = {
       kind: "quiz",
       question: "Why does a 12-turn agent run cost more than 12 times a single call?",
       options: [
-        "Long runs are billed at a higher rate",
-        "Each turn re-sends the whole context so far, so total input tokens grow roughly with the square of the turns",
+        "Long runs are billed at a higher rate per token, so every extra turn is priced above the turn before it",
+        "Each turn re-sends the whole context so far, so input tokens grow roughly with the square of the turns",
         "The model gets slower as it works",
         "Retries are included in the price",
       ],
@@ -261,7 +261,7 @@ export const chapterCostAndLatency: Chapter = {
         "Shorten the system prompt",
         "Cache the tool results",
         "Ask for a shorter answer — decode is sequential and dominates the turn",
-        "Switch to a model with a larger context window",
+        "Switch to a model with a larger context window, which lets the model generate its answer sooner",
       ],
       answer: 2,
       why:
@@ -272,7 +272,7 @@ export const chapterCostAndLatency: Chapter = {
       kind: "quiz",
       question: "You remove a tool nobody uses from the registry. What do you save?",
       options: [
-        "Nothing, until somebody would have called it",
+        "Nothing, because a tool definition only costs anything on the turns where the model actually calls it",
         "Its definition's tokens, once per turn, on every run — which is a saving multiplied by every turn",
         "Only the storage of the tool definition",
         "One model call per run",

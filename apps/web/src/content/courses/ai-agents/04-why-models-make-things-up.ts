@@ -242,7 +242,7 @@ export const chapterWhyModelsMakeThingsUp: Chapter = {
         "Because guessing produces more fluent text",
         "Because standard benchmarks give no credit for abstaining, so guessing scores better and models are optimised as test-takers",
         "Because saying \"I don't know\" is filtered out by safety systems",
-        "Because the training data contains very few examples of uncertainty",
+        "Because the training data contains almost no examples of people saying they do not know, so the model cannot learn to abstain",
       ],
       answer: 1,
       why:
@@ -255,7 +255,7 @@ export const chapterWhyModelsMakeThingsUp: Chapter = {
       question: "A colleague sets temperature to 0 and reports that the hallucinations are fixed. What has actually changed?",
       options: [
         "Nothing about accuracy — the same most-likely continuation is now produced every time, right or wrong",
-        "The model now verifies its claims before answering",
+        "The model now checks each claim against its training data before it answers, so wrong claims are removed",
         "The model now abstains when uncertain",
         "The context window effectively doubled",
       ],
@@ -268,7 +268,7 @@ export const chapterWhyModelsMakeThingsUp: Chapter = {
       kind: "quiz",
       question: "Which of these genuinely reduces invented facts about a specific customer's order?",
       options: [
-        "Adding \"be accurate and never invent details\" to the system prompt",
+        "Adding a long, forceful paragraph to the system prompt forbidding invented details and demanding accuracy in capitals",
         "Lowering the temperature",
         "Giving the model a tool that fetches that order and instructing it to answer only from what the tool returned",
         "Asking the model to double-check its own answer",

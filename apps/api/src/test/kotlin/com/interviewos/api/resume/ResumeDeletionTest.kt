@@ -33,7 +33,7 @@ class ResumeDeletionTest {
 
     @Test
     fun `owned resume is queued for deletion before the request succeeds`() {
-        given(repository.findLatest(userId)).willReturn(resume(bucket, path))
+        given(repository.findById(userId, resumeId)).willReturn(resume(bucket, path))
         given(repository.enqueueAndDelete(resumeId, userId, bucket, path)).willReturn(true)
 
         service.delete(userId, resumeId)
@@ -52,7 +52,7 @@ class ResumeDeletionTest {
                 resume(bucket, userId.toString()),
             )
         forged.forEach { row ->
-            given(repository.findLatest(userId)).willReturn(row)
+            given(repository.findById(userId, resumeId)).willReturn(row)
             val failure = assertFailsWith<ApiException> { service.delete(userId, resumeId) }
             assertEquals(HttpStatus.CONFLICT, failure.status)
             assertEquals("invalid_resume_storage_scope", failure.code)
@@ -64,7 +64,7 @@ class ResumeDeletionTest {
 
     @Test
     fun `another candidate's resume cannot create a deletion job`() {
-        given(repository.findLatest(userId)).willReturn(null)
+        given(repository.findById(userId, resumeId)).willReturn(null)
         val failure = assertFailsWith<ApiException> { service.delete(userId, resumeId) }
         assertEquals(HttpStatus.NOT_FOUND, failure.status)
     }
