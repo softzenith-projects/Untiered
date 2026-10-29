@@ -1,11 +1,11 @@
 "use client";
 
-import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { AccountSummary } from "@/components/account-summary";
 import { BrandMark, BrandWordmark } from "@/components/brand-logo";
+import { CreditBalance } from "@/components/credit-balance";
 import { RailNav } from "@/components/rail-nav";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -83,12 +83,7 @@ export function AppHeader({ width = "layout-content" }: { width?: "layout-conten
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0">
-          <Link
-            href={"/upgrade" as Route}
-            className="inline-flex min-h-11 items-center rounded-lg bg-accent-wash px-3 py-2 text-caption font-semibold text-accent-strong transition-colors hover:bg-accent hover:text-accent-contrast"
-          >
-            Upgrade
-          </Link>
+          <CreditBalance />
           <AccountSummary />
         </div>
       </div>
