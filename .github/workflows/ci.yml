@@ -24,7 +24,9 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          # 24: the JavaScript course runtime prints the way this Node prints, and its
+          # content tests run every lesson sample under it (lib/javascript-runtime.ts).
+          node-version: 24
           cache: npm
 
       - run: npm ci
