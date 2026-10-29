@@ -110,7 +110,7 @@ class DailyAllowanceTest {
         val decision = evaluate(today(rounds = 2, minutes = 10), purchasable = true)
 
         assertFalse(decision.allowed)
-        assertTrue(decision.message.contains("Buy an interview"))
+        assertTrue(decision.message.contains("Buy credits"))
         assertFalse(decision.message.contains("coming soon"))
     }
 

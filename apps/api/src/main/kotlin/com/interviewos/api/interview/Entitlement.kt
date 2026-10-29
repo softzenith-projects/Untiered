@@ -177,16 +177,16 @@ data class EntitlementDecision(
 
                 Entitlement.Reason.FREE_TIER_EXHAUSTED -> {
                     if (purchasable) {
-                        "You have used your free interviews, which do not reset. Buy an interview to keep practising."
+                        "You have used your free interviews, which do not reset. Buy credits to keep practising."
                     } else {
-                        "You have used your free interviews, which do not reset. Paid interviews are coming soon."
+                        "You have used your free interviews, which do not reset. Interview credits are coming soon."
                     }
                 }
 
                 Entitlement.Reason.DAILY_ROUNDS_REACHED, Entitlement.Reason.DAILY_MINUTES_REACHED -> {
                     "You have used today's free practice (${allowanceSummary()}). It resets at midnight, India time. " +
                         if (purchasable) {
-                            "Buy an interview to keep practising today."
+                            "Buy credits to keep practising today."
                         } else {
                             "Pro, with more practice each day, is coming soon."
                         }
@@ -195,13 +195,13 @@ data class EntitlementDecision(
                 Entitlement.Reason.DAILY_MINUTES_SHORT -> {
                     "You have ${daily.remainingMinutes} minutes of free practice left today. " +
                         "Choose a round of ${daily.remainingMinutes} minutes or less" +
-                        if (purchasable) ", or buy an interview for a longer one." else "."
+                        if (purchasable) ", or buy credits for a longer one." else "."
                 }
             }
 
     private fun paidHeld(): String = if (creditBalance > 0) " You also have ${paid(creditBalance)}." else ""
 
-    private fun paid(count: Int): String = "$count paid ${if (count == 1) "interview" else "interviews"}"
+    private fun paid(count: Int): String = "$count ${if (count == 1) "credit" else "credits"}"
 
     private fun allowanceLeft(): String =
         listOfNotNull(

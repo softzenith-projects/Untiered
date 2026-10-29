@@ -274,11 +274,11 @@ describe("NewInterviewForm", () => {
     await userEvent.selectOptions(length, "60");
     await userEvent.click(screen.getByRole("checkbox", { name: /record my voice/i }));
 
-    expect(screen.getByText("Uses 1 of your 2 paid interviews when it begins.")).toBeInTheDocument();
+    expect(screen.getByText("Uses 1 of your 2 credits when it begins.")).toBeInTheDocument();
 
     // A round that fits in the free minutes is still free.
     await userEvent.selectOptions(length, "20");
-    expect(screen.queryByText(/paid interviews? when it begins/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/credits? when it begins/)).not.toBeInTheDocument();
   });
 
   it("turns one line into a round, and shows it back before anything starts", async () => {
