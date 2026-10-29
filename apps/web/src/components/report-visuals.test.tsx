@@ -2,7 +2,7 @@ import type { ReportCompetency, ReportSpokenEnglish, SessionReport } from "@unti
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { PaceGauge, ReportVisuals, RingMeter, SkillRadar } from "./report-visuals";
+import { PaceGauge, ReportVisuals, RingMeter, SkillRadar, Spotlight } from "./report-visuals";
 
 function competency(name: string, score: number, maxScore = 5): ReportCompetency {
   return { competency: name, score, maxScore, rationale: "", evidenceQuote: "", turnIndex: null };
@@ -111,5 +111,35 @@ describe("PaceGauge", () => {
     render(<PaceGauge wordsPerMinute={wpm} />);
 
     expect(screen.getByText(new RegExp(`^${where} the shaded conversational range`))).toBeInTheDocument();
+  });
+});
+
+describe("Spotlight", () => {
+  it("names the strongest and weakest competency, each with its colour's word", () => {
+    render(<Spotlight competencies={competencies} />);
+
+    expect(screen.getByText("Your strongest").parentElement).toHaveTextContent("System design trade-offs4/5 · The ceiling");
+    expect(screen.getByText("Needs most work").parentElement).toHaveTextContent("Communication2/5 · Ordinary");
+  });
+
+  it("is left out when every competency is the same one", () => {
+    const { container } = render(<Spotlight competencies={competencies.slice(0, 1)} />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("tone labels", () => {
+  it("says in words what a ring's colour means", () => {
+    render(<RingMeter title="Answered without help" value={1} total={4} caption="1 of 4" />);
+
+    expect(screen.getByText("Needs work")).toBeInTheDocument();
+  });
+
+  it("never marks a pace outside the range as needing work", () => {
+    render(<PaceGauge wordsPerMinute={200} />);
+
+    expect(screen.getByText("A little fast")).toBeInTheDocument();
+    expect(screen.queryByText("Needs work")).not.toBeInTheDocument();
   });
 });
