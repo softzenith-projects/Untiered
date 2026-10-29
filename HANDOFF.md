@@ -49,11 +49,11 @@ Runnable Java in the Java course, plus the follow-ups the owner raised in the sa
 - web typecheck / lint / test (3,224 passing) / build: pass locally
 - api ktlintCheck / test / build: pass locally
 - CI green and merged: `feat/java-15-disclaimer`, `fix/piston-http1`, `fix/free-interviews-lifetime-copy`
-- `feat/runnable-code-blocks`: see merge status
+- `feat/runnable-code-blocks`: CI run 40826303144 green (api, web, images, database)
 
 ## Merge status
 - Merged into `develop`: `feat/java-course-playgrounds`, `feat/java-15-disclaimer`, `fix/piston-http1`, `fix/free-interviews-lifetime-copy`. No migrations.
-- `feat/runnable-code-blocks`: merged only once its CI is green.
+- Merged `feat/runnable-code-blocks` into `develop` after CI run 40826303144 went green.
 
 ## Suggested next task
 - Decide on a newer Java for the runner (below), then give chapter 35 a real records example.
