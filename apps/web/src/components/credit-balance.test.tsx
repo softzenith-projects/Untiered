@@ -1,8 +1,8 @@
 import type { EntitlementView } from "@untiered/shared";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { CreditBalance, interviewsLeft } from "./credit-balance";
+import { announceCreditsChanged, CreditBalance, interviewsLeft } from "./credit-balance";
 
 const fetchEntitlement = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/api", () => ({ fetchEntitlement }));
@@ -51,5 +51,18 @@ describe("CreditBalance", () => {
     render(<CreditBalance />);
 
     expect(screen.getByRole("link", { name: "Buy credits" })).toBeInTheDocument();
+  });
+});
+
+describe("announceCreditsChanged", () => {
+  it("makes the header read the balance again after a purchase", async () => {
+    fetchEntitlement.mockResolvedValue(entitlement({ remainingFree: 3, creditBalance: 0 }));
+    render(<CreditBalance />);
+    expect(await screen.findByText("3")).toBeInTheDocument();
+
+    fetchEntitlement.mockResolvedValue(entitlement({ remainingFree: 3, creditBalance: 1 }));
+    act(() => announceCreditsChanged());
+
+    expect(await screen.findByText("4")).toBeInTheDocument();
   });
 });
