@@ -134,12 +134,37 @@ describe("EmailPasswordAuth", () => {
   });
 
   it("shows a helpful sign-in error", async () => {
-    signInWithPassword.mockResolvedValue({ error: new Error("invalid credentials") });
+    signInWithPassword.mockResolvedValue({ error: Object.assign(new Error("Invalid login credentials"), { code: "invalid_credentials", status: 400 }) });
     render(<EmailPasswordAuth next="/dashboard" />);
     await userEvent.type(screen.getByRole("textbox", { name: "Email address" }), "candidate@example.com");
     await userEvent.type(screen.getByLabelText("Password"), "wrongpass");
     await userEvent.click(screen.getByRole("button", { name: "Sign in with email" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/did not work/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/do not match.*forgot password/i);
+  });
+
+  it("treats Supabase's existing-account error code like the placeholder user", async () => {
+    signUp.mockResolvedValue({ data: { session: null, user: null }, error: Object.assign(new Error("User already registered"), { code: "user_already_exists", status: 422 }) });
+    render(<EmailPasswordAuth next="/dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Email address" }), "candidate@example.com");
+    await userEvent.type(screen.getByLabelText("Password", { exact: true }), "password123");
+    await userEvent.type(screen.getByLabelText("Confirm password"), "password123");
+    await userEvent.click(screen.getAllByRole("button", { name: "Create account" })[1]!);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/already exists/i);
+    expect(screen.getByRole("button", { name: "Sign in with email" })).toBeInTheDocument();
+  });
+
+  it("says the confirmation email could not be sent when sign-up fails on Supabase's side", async () => {
+    signUp.mockResolvedValue({ data: { session: null, user: null }, error: Object.assign(new Error("Error sending confirmation email"), { code: "unexpected_failure", status: 500 }) });
+    render(<EmailPasswordAuth next="/dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Email address" }), "candidate@example.com");
+    await userEvent.type(screen.getByLabelText("Password", { exact: true }), "password123");
+    await userEvent.type(screen.getByLabelText("Confirm password"), "password123");
+    await userEvent.click(screen.getAllByRole("button", { name: "Create account" })[1]!);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not send your confirmation email/i);
   });
 
   it("requires a fresh CAPTCHA token and sends it with sign-up", async () => {

@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { FieldHint, FieldLabel, Input } from "@/components/ui/field";
 import { Alert } from "@/components/ui/feedback";
 import { TurnstileChallenge } from "@/components/turnstile-challenge";
-import { PASSWORD_RULE, meetsPasswordRule, passwordRejection } from "@/lib/password-rule";
+import { EXISTING_ACCOUNT_MESSAGE, authErrorMessage, isExistingAccount } from "@/lib/auth-errors";
+import { PASSWORD_RULE, meetsPasswordRule } from "@/lib/password-rule";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type Mode = "sign-in" | "sign-up" | "forgot";
@@ -99,15 +100,16 @@ export function EmailPasswordAuth({ next, emailOptIn: sharedOptIn, onEmailOptInC
             ...(captchaToken ? { captchaToken } : {}),
           },
         });
-        if (signUpError) throw signUpError;
         // With confirmations on, Supabase answers a sign-up for an already confirmed
         // email with a placeholder user that has no identities, and sends no email.
         // Saying "check your email" there leaves the candidate waiting for nothing.
-        if (data.user && data.user.identities?.length === 0) {
+        // With confirmations off it says so with an error code instead.
+        if (isExistingAccount(signUpError) || (!signUpError && data.user && data.user.identities?.length === 0)) {
           changeMode("sign-in");
-          setError("An account already exists for this email. Sign in instead, or use Continue with Google if that is how you joined.");
+          setError(EXISTING_ACCOUNT_MESSAGE);
           return;
         }
+        if (signUpError) throw signUpError;
         if (data.session) {
           router.replace(next as Route);
           router.refresh();
@@ -126,14 +128,7 @@ export function EmailPasswordAuth({ next, emailOptIn: sharedOptIn, onEmailOptInC
         router.refresh();
       }
     } catch (failure) {
-      const rejection = mode === "sign-up" ? passwordRejection(failure) : null;
-      setError(
-        rejection ?? (mode === "forgot"
-          ? "We could not send a reset link right now. Please try again."
-          : mode === "sign-up"
-            ? "We could not create your account. Check your details or try signing in."
-            : "That email and password did not work. Please try again."),
-      );
+      setError(authErrorMessage(failure, mode));
     } finally {
       setPending(false);
       if (turnstileSiteKey) {
