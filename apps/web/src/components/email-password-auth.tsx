@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FieldHint, FieldLabel, Input } from "@/components/ui/field";
 import { Alert } from "@/components/ui/feedback";
 import { TurnstileChallenge } from "@/components/turnstile-challenge";
-import { PASSWORD_RULE, meetsPasswordRule } from "@/lib/password-rule";
+import { PASSWORD_RULE, meetsPasswordRule, passwordRejection } from "@/lib/password-rule";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type Mode = "sign-in" | "sign-up" | "forgot";
@@ -125,13 +125,14 @@ export function EmailPasswordAuth({ next, emailOptIn: sharedOptIn, onEmailOptInC
         router.replace(next as Route);
         router.refresh();
       }
-    } catch {
+    } catch (failure) {
+      const rejection = mode === "sign-up" ? passwordRejection(failure) : null;
       setError(
-        mode === "forgot"
+        rejection ?? (mode === "forgot"
           ? "We could not send a reset link right now. Please try again."
           : mode === "sign-up"
             ? "We could not create your account. Check your details or try signing in."
-            : "That email and password did not work. Please try again.",
+            : "That email and password did not work. Please try again."),
       );
     } finally {
       setPending(false);

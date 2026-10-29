@@ -5,7 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { BrandWordmark } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
-import { PASSWORD_RULE, meetsPasswordRule } from "@/lib/password-rule";
+import { PASSWORD_RULE, meetsPasswordRule, passwordRejection } from "@/lib/password-rule";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PasswordUpdateForm() {
@@ -50,8 +50,8 @@ export function PasswordUpdateForm() {
       setPassword("");
       setConfirmation("");
       setSaved(true);
-    } catch {
-      setError("We could not update your password. Please try again or request a new link.");
+    } catch (updateError) {
+      setError(passwordRejection(updateError) ?? "We could not update your password. Please try again or request a new link.");
     } finally {
       setPending(false);
     }
