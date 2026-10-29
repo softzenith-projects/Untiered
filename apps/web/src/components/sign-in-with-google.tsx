@@ -8,12 +8,19 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 interface SignInWithGoogleProps {
   /** Path to land on after the exchange completes. */
   next: string;
+  /** Shared with the email form on the login page, so the page shows one checkbox, not two. */
+  emailOptIn?: boolean;
+  onEmailOptInChange?: (value: boolean) => void;
+  /** False while the email form above is showing the same checkbox. */
+  showEmailOptIn?: boolean;
 }
 
-export function SignInWithGoogle({ next }: SignInWithGoogleProps) {
+export function SignInWithGoogle({ next, emailOptIn: sharedOptIn, onEmailOptInChange, showEmailOptIn = true }: SignInWithGoogleProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [emailOptIn, setEmailOptIn] = useState(false);
+  const [ownOptIn, setOwnOptIn] = useState(false);
+  const emailOptIn = sharedOptIn ?? ownOptIn;
+  const setEmailOptIn = onEmailOptInChange ?? setOwnOptIn;
 
   async function signIn() {
     setPending(true);
@@ -43,10 +50,12 @@ export function SignInWithGoogle({ next }: SignInWithGoogleProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex items-start gap-3 rounded-xl border border-line bg-surface-raised p-3 text-caption text-ink-muted">
-        <input type="checkbox" checked={emailOptIn} onChange={(event) => setEmailOptIn(event.target.checked)} disabled={pending} className="mt-1 size-4 accent-accent" />
-        <span>Email me the daily question, occasional platform news, and reminders if I stop visiting. I can change this anytime.</span>
-      </label>
+      {showEmailOptIn ? (
+        <label className="flex items-start gap-3 rounded-xl border border-line bg-surface-raised p-3 text-caption text-ink-muted">
+          <input type="checkbox" checked={emailOptIn} onChange={(event) => setEmailOptIn(event.target.checked)} disabled={pending} className="mt-1 size-4 accent-accent" />
+          <span>Email me the daily question, occasional platform news, and reminders if I stop visiting. I can change this anytime.</span>
+        </label>
+      ) : null}
       <Button className="w-full" onClick={signIn} disabled={pending} aria-busy={pending}>
         {pending ? "Redirecting to Google…" : "Continue with Google"}
       </Button>

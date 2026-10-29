@@ -64,6 +64,22 @@ describe("EmailPasswordAuth", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it("tells the candidate the email already has an account instead of promising an email", async () => {
+    // Supabase's answer for an already confirmed email: no error, no session, no identities.
+    signUp.mockResolvedValue({ data: { session: null, user: { identities: [] } }, error: null });
+    render(<EmailPasswordAuth next="/dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Email address" }), "candidate@example.com");
+    await userEvent.type(screen.getByLabelText("Password", { exact: true }), "password123");
+    await userEvent.type(screen.getByLabelText("Confirm password"), "password123");
+    await userEvent.click(screen.getAllByRole("button", { name: "Create account" })[1]!);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/already exists/i);
+    expect(screen.queryByText(/check your email/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in with email" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Email address" })).toHaveValue("candidate@example.com");
+  });
+
   it("sends consent only when the signup checkbox is explicitly selected", async () => {
     render(<EmailPasswordAuth next="/dashboard" />);
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));

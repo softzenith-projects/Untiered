@@ -10,9 +10,17 @@ import { Alert } from "@/components/ui/feedback";
 import { TurnstileChallenge } from "@/components/turnstile-challenge";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type Mode = "sign-in" | "sign-up" | "forgot";
+export type Mode = "sign-in" | "sign-up" | "forgot";
 
-export function EmailPasswordAuth({ next }: { next: string }) {
+interface EmailPasswordAuthProps {
+  next: string;
+  /** Shared with the Google button on the login page, so the page shows one checkbox, not two. */
+  emailOptIn?: boolean;
+  onEmailOptInChange?: (value: boolean) => void;
+  onModeChange?: (mode: Mode) => void;
+}
+
+export function EmailPasswordAuth({ next, emailOptIn: sharedOptIn, onEmailOptInChange, onModeChange }: EmailPasswordAuthProps) {
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
   const turnstileRequired =
     process.env.NEXT_PUBLIC_REQUIRE_TURNSTILE === "true" || process.env.NODE_ENV === "production";
@@ -21,7 +29,9 @@ export function EmailPasswordAuth({ next }: { next: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [emailOptIn, setEmailOptIn] = useState(false);
+  const [ownOptIn, setOwnOptIn] = useState(false);
+  const emailOptIn = sharedOptIn ?? ownOptIn;
+  const setEmailOptIn = onEmailOptInChange ?? setOwnOptIn;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -31,6 +41,7 @@ export function EmailPasswordAuth({ next }: { next: string }) {
 
   function changeMode(value: Mode) {
     setMode(value);
+    onModeChange?.(value);
     setPassword("");
     setConfirmPassword("");
     setError(null);
@@ -84,6 +95,14 @@ export function EmailPasswordAuth({ next }: { next: string }) {
           },
         });
         if (signUpError) throw signUpError;
+        // With confirmations on, Supabase answers a sign-up for an already confirmed
+        // email with a placeholder user that has no identities, and sends no email.
+        // Saying "check your email" there leaves the candidate waiting for nothing.
+        if (data.user && data.user.identities?.length === 0) {
+          changeMode("sign-in");
+          setError("An account already exists for this email. Sign in instead, or use Continue with Google if that is how you joined.");
+          return;
+        }
         if (data.session) {
           router.replace(next as Route);
           router.refresh();
