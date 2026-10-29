@@ -3,7 +3,7 @@
 import type { ReportCompetency, ReportSpokenEnglish, SessionReport } from "@untiered/shared";
 import { useState } from "react";
 
-import { ORDINARY_MARK } from "@/components/report-charts";
+import { ORDINARY_MARK, TONE_STYLES, ToneLegend, bandFor, scoreToneForPercent, toneFor, type ScoreTone } from "@/components/report-charts";
 
 /**
  * The report at a glance, drawn: the shape of the candidate's skills, how much of the round
@@ -51,12 +51,17 @@ export function ReportVisuals({ report }: { report: SessionReport }) {
 
   return (
     <section aria-labelledby="report-visuals" className="flex flex-col gap-6 rounded-2xl border border-line bg-surface-raised p-6 shadow-[var(--shadow-sm)] sm:p-8">
-      <div>
-        <p className="eyebrow text-accent">At a glance</p>
-        <h2 id="report-visuals" className="mt-2 text-title text-ink">
-          Your interview, in pictures
-        </h2>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow text-accent">At a glance</p>
+          <h2 id="report-visuals" className="mt-2 text-title text-ink">
+            Your interview, in pictures
+          </h2>
+        </div>
+        <ToneLegend />
       </div>
+
+      {scored.length >= 2 ? <Spotlight competencies={scored} /> : null}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {scored.length >= 3 ? <SkillRadar competencies={scored} /> : null}
@@ -127,7 +132,7 @@ export function SkillRadar({ competencies }: { competencies: ReportCompetency[] 
       <figcaption className="flex flex-col gap-1">
         <span className={CARD_TITLE}>Skill shape</span>
         <span className="text-caption text-ink-muted">
-          Each spoke is one competency, scored against its own maximum. The darker ring is an ordinary answer.
+          Each spoke is one competency, scored against its own maximum. The colour of each dot is how it scored; the darker ring is an ordinary answer.
         </span>
       </figcaption>
 
@@ -201,8 +206,8 @@ export function SkillRadar({ competencies }: { competencies: ReportCompetency[] 
                 <circle
                   cx={x}
                   cy={y}
-                  r={active === index ? 6.5 : 5}
-                  className="fill-chart-1 stroke-surface"
+                  r={active === index ? 8 : 6.5}
+                  className={`${TONE_STYLES[toneFor(item.score, item.maxScore)].svgFill} stroke-surface`}
                   strokeWidth={2}
                 />
               </g>
@@ -220,6 +225,7 @@ export function SkillRadar({ competencies }: { competencies: ReportCompetency[] 
             <p className="tabular-nums text-ink-muted">
               {focused.score} / {focused.maxScore} · {Math.round((focused.score / focused.maxScore) * 100)}%
             </p>
+            <ToneBadge tone={toneFor(focused.score, focused.maxScore)} text={bandFor((focused.score / focused.maxScore) * 100).name} />
           </div>
         ) : null}
       </div>
@@ -245,6 +251,7 @@ export function SkillRadar({ competencies }: { competencies: ReportCompetency[] 
  */
 export function RingMeter({ title, value, total, caption }: { title: string; value: number; total: number; caption: string }) {
   const percent = total > 0 ? Math.min(100, Math.max(0, (value / total) * 100)) : 0;
+  const tone = scoreToneForPercent(percent);
   const radius = 34;
   const circumference = 2 * Math.PI * radius;
 
@@ -265,7 +272,7 @@ export function RingMeter({ title, value, total, caption }: { title: string; val
             cx={44}
             cy={44}
             r={radius}
-            className="fill-none stroke-chart-1 transition-[stroke-dashoffset] duration-700"
+            className={`fill-none ${TONE_STYLES[tone].stroke} transition-[stroke-dashoffset] duration-700`}
             strokeWidth={9}
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -282,6 +289,7 @@ export function RingMeter({ title, value, total, caption }: { title: string; val
       <figcaption className="flex flex-col gap-1">
         <span className={CARD_TITLE}>{title}</span>
         <span className="text-caption text-ink-muted">{caption}</span>
+        <ToneBadge tone={tone} />
       </figcaption>
     </figure>
   );
@@ -315,6 +323,8 @@ export function PaceGauge({ wordsPerMinute }: { wordsPerMinute: number }) {
   const needle = at(wordsPerMinute, 40);
   const where =
     wordsPerMinute < PACE_RANGE.low ? "below" : wordsPerMinute > PACE_RANGE.high ? "above" : "within";
+  // A rough guide, not a rule, so outside the range is amber at most — never red.
+  const paceTone: ScoreTone = where === "within" ? "positive" : "warning";
 
   return (
     <figure className={`${CARD} flex-row items-center gap-4`}>
@@ -330,8 +340,8 @@ export function PaceGauge({ wordsPerMinute }: { wordsPerMinute: number }) {
         <svg viewBox="0 0 120 68" className="h-auto w-full" aria-hidden="true">
           <path d={arc(PACE_SCALE.min, PACE_SCALE.max, 48)} className="fill-none stroke-surface-sunken" strokeWidth={10} />
           <path d={arc(PACE_RANGE.low, PACE_RANGE.high, 48)} className="fill-none stroke-chart-1/35" strokeWidth={10} />
-          <line x1={60} y1={60} x2={needle.x} y2={needle.y} className="stroke-ink" strokeWidth={2.5} strokeLinecap="round" />
-          <circle cx={60} cy={60} r={4} className="fill-ink" />
+          <line x1={60} y1={60} x2={needle.x} y2={needle.y} className={TONE_STYLES[paceTone].stroke} strokeWidth={3} strokeLinecap="round" />
+          <circle cx={60} cy={60} r={4.5} className={TONE_STYLES[paceTone].svgFill} />
         </svg>
         <p className="-mt-1 text-center">
           <strong className="text-heading tabular-nums text-ink">{wordsPerMinute}</strong>
@@ -344,6 +354,7 @@ export function PaceGauge({ wordsPerMinute }: { wordsPerMinute: number }) {
           {where === "within" ? "Within" : where === "below" ? "Below" : "Above"} the shaded conversational range of{" "}
           {PACE_RANGE.low}–{PACE_RANGE.high} words a minute.
         </span>
+        <ToneBadge tone={paceTone} text={where === "within" ? "Comfortable pace" : where === "below" ? "A little slow" : "A little fast"} />
       </figcaption>
     </figure>
   );
@@ -409,5 +420,54 @@ export function WordsPerAnswer({ answers }: { answers: ReportSpokenEnglish["answ
         ))}
       </div>
     </figure>
+  );
+}
+
+/** A tone as a small pill: the colour and the word for it, never the colour alone. */
+function ToneBadge({ tone, text }: { tone: ScoreTone; text?: string }) {
+  const style = TONE_STYLES[tone];
+  return (
+    <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-micro font-semibold ${style.wash} ${style.text}`}>
+      <span aria-hidden="true" className={`size-2 rounded-full ${style.fill}`} />
+      {text ?? style.label}
+    </span>
+  );
+}
+
+/**
+ * The best and the weakest competency, side by side and in their own colours — the two
+ * things a candidate should remember from this round if they remember nothing else.
+ */
+export function Spotlight({ competencies }: { competencies: ReportCompetency[] }) {
+  const ranked = [...competencies].sort((a, b) => b.score / b.maxScore - a.score / a.maxScore);
+  const best = ranked[0];
+  const weakest = ranked[ranked.length - 1];
+  if (!best || !weakest || best === weakest) return null;
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <SpotlightCard heading="Your strongest" item={best} />
+      <SpotlightCard heading="Needs most work" item={weakest} />
+    </div>
+  );
+}
+
+function SpotlightCard({ heading, item }: { heading: string; item: ReportCompetency }) {
+  const percent = (item.score / item.maxScore) * 100;
+  const tone = toneFor(item.score, item.maxScore);
+  const style = TONE_STYLES[tone];
+  return (
+    <div className={`flex items-center gap-4 rounded-xl border-l-4 p-5 ${style.border} ${style.wash}`}>
+      <div className={`grid size-16 shrink-0 place-items-center rounded-full text-heading font-bold tabular-nums ${tone === "warning" ? "text-navy" : "text-surface-raised"} ${style.fill}`}>
+        {Math.round(percent)}%
+      </div>
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className={CARD_TITLE}>{heading}</span>
+        <span className="text-heading font-semibold text-ink">{item.competency}</span>
+        <span className="text-caption text-ink-muted">
+          {item.score}/{item.maxScore} · {bandFor(percent).name}
+        </span>
+      </div>
+    </div>
   );
 }
