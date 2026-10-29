@@ -374,7 +374,7 @@ function CtaBand({
       <div className="mx-auto flex layout-content flex-col gap-10 px-4 py-16 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:py-20">
         <div className="flex flex-col gap-4">
           <h2 className="text-display text-balance text-on-navy">
-            {mockInterviewsEnabled ? "Sit one round today." : "Keep building the skill behind the answer."}
+            {mockInterviewsEnabled ? `Your first ${FREE_ROUNDS_TEXT} are free.` : "Keep building the skill behind the answer."}
           </h2>
           {mockInterviewsEnabled ? (
             <ol className="flex flex-col gap-3 sm:flex-row sm:gap-6">
@@ -396,7 +396,7 @@ function CtaBand({
             {mockInterviewsEnabled ? "Start an interview" : coursesEnabled ? "Explore courses" : arenaEnabled ? "Open the Arena" : "Sign in"}
           </ActionLink>
           {mockInterviewsEnabled ? (
-            <span className="text-caption text-on-navy-muted">{FREE_ROUNDS_TEXT} free · no card to start</span>
+            <span className="text-caption text-on-navy-muted">Full report with each · no card to start</span>
           ) : null}
         </div>
       </div>

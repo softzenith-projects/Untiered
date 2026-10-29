@@ -53,7 +53,7 @@ export function DailyLimitNotice({
         <CreditPacks compact onPurchased={onPurchased} />
       ) : (
         <p className="max-w-prose text-caption text-ink-subtle">
-          Until then, the courses and the Arena are open with no daily limit.
+          Until then, the courses and the Arena stay open.
         </p>
       )}
     </section>
