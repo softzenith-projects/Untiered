@@ -85,7 +85,7 @@ export default async function LoginPage({
           {error ? (
             <p role="alert" className="text-caption text-danger">
               {error === "link_expired" || error === "missing_code" || error === "exchange_failed"
-                ? "That email link could not be verified. Request a new link and try again."
+                ? "That email link has expired or was already used. If you have confirmed your email, sign in below. Otherwise, create your account again for a fresh link, or use Forgot password."
                 : "Sign-in could not be completed. Please try again."}
             </p>
           ) : null}

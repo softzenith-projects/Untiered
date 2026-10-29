@@ -92,6 +92,20 @@ describe("EmailPasswordAuth", () => {
     await waitFor(() => expect(signUp.mock.calls[0]?.[0].options.data.email_marketing_opt_in).toBe(true));
   });
 
+  it("states the password rule and enforces it before contacting Supabase", async () => {
+    render(<EmailPasswordAuth next="/dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    expect(screen.getByLabelText("Password", { exact: true })).toHaveAccessibleDescription(/letter and a number/i);
+
+    await userEvent.type(screen.getByRole("textbox", { name: "Email address" }), "candidate@example.com");
+    await userEvent.type(screen.getByLabelText("Password", { exact: true }), "onlyletters");
+    await userEvent.type(screen.getByLabelText("Confirm password"), "onlyletters");
+    await userEvent.click(screen.getAllByRole("button", { name: "Create account" })[1]!);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/letter and a number/i);
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
   it("rejects mismatched passwords before contacting Supabase", async () => {
     render(<EmailPasswordAuth next="/dashboard" />);
     await userEvent.click(screen.getAllByRole("button", { name: "Create account" })[0]!);

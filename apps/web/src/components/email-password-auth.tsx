@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FieldHint, FieldLabel, Input } from "@/components/ui/field";
 import { Alert } from "@/components/ui/feedback";
 import { TurnstileChallenge } from "@/components/turnstile-challenge";
+import { PASSWORD_RULE, meetsPasswordRule } from "@/lib/password-rule";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type Mode = "sign-in" | "sign-up" | "forgot";
@@ -56,6 +57,10 @@ export function EmailPasswordAuth({ next, emailOptIn: sharedOptIn, onEmailOptInC
     setError(null);
     setSuccess(null);
 
+    if (mode === "sign-up" && !meetsPasswordRule(password)) {
+      setError(PASSWORD_RULE);
+      return;
+    }
     if (mode === "sign-up" && password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -164,7 +169,7 @@ export function EmailPasswordAuth({ next, emailOptIn: sharedOptIn, onEmailOptInC
           <div className="flex flex-col gap-1.5">
             <FieldLabel htmlFor="auth-password">Password</FieldLabel>
             <Input id="auth-password" type="password" autoComplete={mode === "sign-up" ? "new-password" : "current-password"} minLength={mode === "sign-up" ? 8 : undefined} required value={password} onChange={(event) => setPassword(event.target.value)} disabled={pending} aria-describedby={mode === "sign-up" ? "auth-password-hint" : undefined} />
-            {mode === "sign-up" ? <FieldHint id="auth-password-hint">Use at least 8 characters.</FieldHint> : null}
+            {mode === "sign-up" ? <FieldHint id="auth-password-hint">{PASSWORD_RULE}</FieldHint> : null}
           </div>
         ) : null}
         {mode === "sign-up" ? (
