@@ -5,6 +5,13 @@ import { ApiRequestError } from "@/lib/api";
 /** The API's run limit (`interviewos.code-runner.run-timeout-millis`), in seconds, for the message. */
 const SERVER_RUN_TIMEOUT_SECONDS = 5;
 
+/**
+ * Said beside every Java Run button. Piston's package index stops at Java 15, so newer
+ * syntax fails to compile with an error that reads like the reader's own mistake.
+ */
+export const JAVA_VERSION_NOTE =
+  "This runs Java 15, so features from Java 16 on — records, sealed types, pattern-matching switch — won't compile.";
+
 export interface ServerRunOutcome {
   stdout: string;
   stderr: string;

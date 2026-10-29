@@ -174,6 +174,7 @@ describe("Playground", () => {
     render(<Playground block={javaBlock} />);
     expect(screen.getByRole("button", { name: "Run" })).toBeInTheDocument();
     expect(screen.getByText("Java runs on our server — only this code is sent.")).toBeInTheDocument();
+    expect(screen.getByText(/This runs Java 15, so features from Java 16 on/)).toBeInTheDocument();
     expect(prepare).not.toHaveBeenCalled();
   });
 

@@ -7,6 +7,7 @@ import { useCallback, useId, useMemo, useState } from "react";
 
 import { matchesExpected } from "@/lib/browser-python";
 import { getRunner } from "@/lib/course-code-runner";
+import { JAVA_VERSION_NOTE } from "@/lib/server-code-runner";
 import { useAccessToken } from "@/lib/use-access-token";
 import type { Block } from "@/content/courses/types";
 import { InlineText } from "@/components/courses/inline-text";
@@ -125,7 +126,10 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
 
         {/* Said before Run, not after: the code leaves this machine, and only the code does. */}
         {block.language === "java" && (
-          <p className="text-caption text-ink-subtle">Java runs on our server — only this code is sent.</p>
+          <div className="flex flex-col">
+            <p className="text-caption text-ink-subtle">Java runs on our server — only this code is sent.</p>
+            <p className="text-caption text-ink-subtle">{JAVA_VERSION_NOTE}</p>
+          </div>
         )}
       </div>
 
