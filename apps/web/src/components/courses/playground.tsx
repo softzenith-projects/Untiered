@@ -7,6 +7,7 @@ import { useCallback, useId, useMemo, useState } from "react";
 
 import { matchesExpected } from "@/lib/browser-python";
 import { getRunner } from "@/lib/course-code-runner";
+import { useAccessToken } from "@/lib/use-access-token";
 import type { Block } from "@/content/courses/types";
 import { InlineText } from "@/components/courses/inline-text";
 import { LESSON_BUTTON, LESSON_BUTTON_PRIMARY, LessonLabel, LessonPanel } from "@/components/courses/lesson-box";
@@ -42,11 +43,11 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
   const outputId = useId();
   const editorLabel = `Editable ${block.language} code`;
 
-  const runner = useMemo(() => getRunner(block.language), [block.language]);
+  const accessToken = useAccessToken();
+  const runner = useMemo(() => getRunner(block.language, accessToken), [block.language, accessToken]);
   const extensions = useMemo(() => [block.language === "java" ? java() : python()], [block.language]);
 
   const handleRun = useCallback(async () => {
-    if (!runner) return;
     setPhase("loading");
     const ready = await runner.prepare();
     if (!ready) {
@@ -54,7 +55,10 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
       setResult({
         stdout: "",
         stderr: "",
-        message: "Python could not be loaded here. Try again, or read through the code instead.",
+        message:
+          block.language === "java"
+            ? "Java runs on our server, and you need to be signed in for that. Sign in again, then press Run."
+            : "Python could not be loaded here. Try again, or read through the code instead.",
         timedOut: false,
         matchesExpected: null,
       });
@@ -73,7 +77,7 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
           ? matchesExpected(outcome.stdout, block.expectedOutput)
           : null,
     });
-  }, [runner, source, block.expectedOutput]);
+  }, [runner, source, block.expectedOutput, block.language]);
 
   const handleReset = useCallback(() => {
     setSource(block.starter);
@@ -109,25 +113,19 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
           Reset to original
         </button>
 
-        {runner ? (
-          <button
-            type="button"
-            onClick={() => void handleRun()}
-            disabled={phase !== "idle"}
-            aria-describedby={outputId}
-            className={LESSON_BUTTON_PRIMARY}
-          >
-            {phase === "loading" ? "Loading Python…" : phase === "running" ? "Running…" : "Run"}
-          </button>
-        ) : (
-          /*
-           * Said once, plainly, in place of a Run button — never a disabled control with no
-           * explanation, and never "coming soon" hype (task 049).
-           */
-          <p className="text-caption text-ink-subtle">
-            Running Java in the browser isn&rsquo;t available yet — there is no free, unencumbered way to
-            do it today. Copy still works; read through the code, or switch to a Python example to run one.
-          </p>
+        <button
+          type="button"
+          onClick={() => void handleRun()}
+          disabled={phase !== "idle"}
+          aria-describedby={outputId}
+          className={LESSON_BUTTON_PRIMARY}
+        >
+          {phase === "loading" && block.language === "python" ? "Loading Python…" : phase === "idle" ? "Run" : "Running…"}
+        </button>
+
+        {/* Said before Run, not after: the code leaves this machine, and only the code does. */}
+        {block.language === "java" && (
+          <p className="text-caption text-ink-subtle">Java runs on our server — only this code is sent.</p>
         )}
       </div>
 

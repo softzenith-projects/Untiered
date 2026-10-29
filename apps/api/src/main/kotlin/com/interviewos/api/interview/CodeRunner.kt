@@ -92,7 +92,13 @@ class CodeRunner(
                 stdout = run.path("stdout").asString().orEmpty(),
                 // A compile failure is the useful message in Java, and Piston reports it
                 // in a different place from a runtime error. Both reach the candidate.
-                stderr = listOf(compileError, run.path("stderr").asString().orEmpty()).filter { it.isNotBlank() }.joinToString("\n"),
+                // Piston's Java package renames the file before compiling, so its errors name
+                // `Main.java.java` — a file the candidate never wrote.
+                stderr =
+                    listOf(compileError, run.path("stderr").asString().orEmpty())
+                        .filter { it.isNotBlank() }
+                        .joinToString("\n")
+                        .replace("${language.fileName}.java", language.fileName),
                 exitCode = run.path("code").asInt(-1),
                 timedOut = run.path("signal").asString() == "SIGKILL",
                 available = true,
@@ -118,9 +124,12 @@ class CodeRunner(
 
             val found =
                 runtimes
+                    .values()
                     .mapNotNull { node ->
                         val name = node.path("language").asString()
-                        val aliases = node.path("aliases").map { it.asString() }
+                        // `.values()`, not `.map` on the node: in Jackson 3 the latter hands the
+                        // whole array to the lambda once, and `asString()` on an array throws.
+                        val aliases = node.path("aliases").values().map { it.asString() }
                         val version = node.path("version").asString()
                         if (version.isNullOrBlank()) {
                             null

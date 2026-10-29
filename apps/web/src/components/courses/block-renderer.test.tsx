@@ -35,9 +35,9 @@ const ALL_KINDS: Block[] = [
       frames: [{ cells: [{ value: 1 }, { value: 2 }], note: "Frame one note." }],
     },
   },
-  // Java, deliberately: getRunner("java") is null with no mocking needed, so this
-  // exercises the real Playground component (real CodeMirror, no Worker involved) in the
-  // same no-mock smoke test as every other block kind.
+  // Java, deliberately: its runner is a server call made only on Run, so this exercises
+  // the real Playground component (real CodeMirror, no Worker, no request) in the same
+  // no-mock smoke test as every other block kind.
   {
     kind: "playground",
     language: "java",
@@ -106,7 +106,7 @@ describe("BlockRenderer", () => {
     const wait = { timeout: 10_000 };
     expect(await screen.findByText("A prompt line.", {}, wait)).toBeInTheDocument();
     expect(
-      await screen.findByText(/Running Java in the browser isn.t available yet/, {}, wait),
+      await screen.findByText(/Java runs on our server — only this code is sent/, {}, wait),
     ).toBeInTheDocument();
     expect(screen.getByText("A concept title")).toBeInTheDocument();
     expect(screen.getByText("A vs B")).toBeInTheDocument();

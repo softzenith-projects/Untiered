@@ -1,6 +1,6 @@
 "use client";
 
-import type { BoardState, HintView, SessionView, TurnView } from "@untiered/shared";
+import type { BoardState, CodeRunResult, HintView, SessionView, TurnView } from "@untiered/shared";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,6 +21,7 @@ import {
   type InterviewClientPhase,
   reportInterviewClientEvent,
   requestHint,
+  runCode,
   saveBoard,
   submitAnswer,
 } from "@/lib/api";
@@ -744,6 +745,22 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
     [accessToken, flushBoard],
   );
 
+  // Java runs on the server, against this round, so the run endpoint can check the round is theirs.
+  const runJava = useCallback(
+    (source: string, stdin: string): Promise<CodeRunResult> =>
+      accessToken
+        ? runCode(accessToken, sessionId, { source, language: "java", stdin })
+        : Promise.resolve({
+            stdout: "",
+            stderr: "",
+            exitCode: -1,
+            timedOut: false,
+            available: false,
+            message: "Your sign-in has lapsed. Reload the page to run code; your work is saved.",
+          }),
+    [accessToken, sessionId],
+  );
+
   const workspace = session?.workspace ?? null;
 
   /*
@@ -772,14 +789,19 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
   const workspaceNode = useMemo(
     () =>
       workspace === null ? null : workspace.kind === "dsa" ? (
-        <DsaWorkspace problem={workspace.problem} board={session?.board ?? null} onBoardChange={onBoardChange} />
+        <DsaWorkspace
+          problem={workspace.problem}
+          board={session?.board ?? null}
+          onBoardChange={onBoardChange}
+          runJava={runJava}
+        />
       ) : (
         <DesignWorkspace
           board={session?.board ?? null}
           onBoardChange={onBoardChange}
         />
       ),
-    [workspace, session?.board, onBoardChange],
+    [workspace, session?.board, onBoardChange, runJava],
   );
 
   /*
