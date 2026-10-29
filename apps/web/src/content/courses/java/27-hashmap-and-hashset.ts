@@ -188,6 +188,77 @@ export const chapterHashMapHashSet: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Delete the `hashCode()` method from `Point` and run. The set's size goes from 2 to 3, even " +
+        "though `equals()` is still there: the set never compares two points that land in different " +
+        "buckets.",
+      starter:
+        "import java.util.HashMap;\n" +
+        "import java.util.HashSet;\n" +
+        "import java.util.Objects;\n" +
+        "import java.util.Set;\n" +
+        "import java.util.Map;\n" +
+        "\n" +
+        "public class HashDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        Set<Point> points = new HashSet<>();\n" +
+        "        points.add(new Point(1, 2));\n" +
+        "        points.add(new Point(1, 2));\n" +
+        "        points.add(new Point(3, 4));\n" +
+        '        System.out.println("Set size (equal points deduped): " + points.size());\n' +
+        "\n" +
+        "        Map<String, Integer> wordCount = new HashMap<>();\n" +
+        '        String[] words = { "the", "cat", "sat", "the", "mat", "the" };\n' +
+        "        for (String w : words) {\n" +
+        "            wordCount.put(w, wordCount.getOrDefault(w, 0) + 1);\n" +
+        "        }\n" +
+        "        System.out.println(\"'the' occurrences: \" + wordCount.get(\"the\"));\n" +
+        "        System.out.println(\"'cat' occurrences: \" + wordCount.get(\"cat\"));\n" +
+        '        System.out.println("Unknown key lookup: " + wordCount.get("dog"));\n' +
+        "\n" +
+        "        class NoEqualsPoint {\n" +
+        "            int x, y;\n" +
+        "            NoEqualsPoint(int x, int y) { this.x = x; this.y = y; }\n" +
+        "        }\n" +
+        "        Set<NoEqualsPoint> broken = new HashSet<>();\n" +
+        "        broken.add(new NoEqualsPoint(1, 1));\n" +
+        "        broken.add(new NoEqualsPoint(1, 1));\n" +
+        '        System.out.println("Without equals/hashCode, size is: " + broken.size());\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Point {\n" +
+        "    int x;\n" +
+        "    int y;\n" +
+        "\n" +
+        "    Point(int x, int y) {\n" +
+        "        this.x = x;\n" +
+        "        this.y = y;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public boolean equals(Object o) {\n" +
+        "        if (this == o) return true;\n" +
+        "        if (!(o instanceof Point)) return false;\n" +
+        "        Point p = (Point) o;\n" +
+        "        return x == p.x && y == p.y;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public int hashCode() {\n" +
+        "        return Objects.hash(x, y);\n" +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Set size (equal points deduped): 2\n" +
+        "'the' occurrences: 3\n" +
+        "'cat' occurrences: 1\n" +
+        "Unknown key lookup: null\n" +
+        "Without equals/hashCode, size is: 2",
+    },
+    {
       kind: "pitfall",
       items: [
         "Overriding `equals()` without also overriding `hashCode()` — this actively breaks HashMap/HashSet: " +

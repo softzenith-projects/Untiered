@@ -69,6 +69,25 @@ class CodeRunnerTest {
     }
 
     @Test
+    fun `a helper class above main's class gets told to move main's class to the top`() {
+        val (runner, server) = runner()
+        expectRuntimes(server)
+        server
+            .expect(once(), requestTo("$base/execute"))
+            .andRespond(
+                withSuccess(
+                    """{"run":{"stdout":"","stderr":"error: can't find main(String[]) method in class: Node\n","code":1,"signal":null}}""",
+                    MediaType.APPLICATION_JSON,
+                ),
+            )
+
+        val result = runner.run(CodeLanguage.JAVA, "class Node {}\npublic class Main {}", "")
+
+        assertThat(result.stderr).startsWith("error: can't find main(String[]) method in class: Node")
+        assertThat(result.stderr).contains("Move the class that has main to the top.")
+    }
+
+    @Test
     fun `a program killed at the deadline is reported as timed out`() {
         val (runner, server) = runner()
         expectRuntimes(server)

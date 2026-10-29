@@ -125,6 +125,51 @@ export const chapterFileIO: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Add a fourth student to `lines` and run. The total updates, because it is worked out from what " +
+        "was read back from the file, not from the list in memory.",
+      starter:
+        "import java.io.IOException;\n" +
+        "import java.nio.file.Files;\n" +
+        "import java.nio.file.Path;\n" +
+        "import java.nio.file.StandardOpenOption;\n" +
+        "import java.util.List;\n" +
+        "\n" +
+        "public class FileIODemo {\n" +
+        "    public static void main(String[] args) throws IOException {\n" +
+        '        Path file = Path.of("students.txt");\n' +
+        "\n" +
+        '        List<String> lines = List.of("Priya,87", "Arjun,91", "Vikram,78");\n' +
+        "        Files.write(file, lines);\n" +
+        '        System.out.println("Wrote " + lines.size() + " lines to " + file);\n' +
+        "\n" +
+        "        List<String> readBack = Files.readAllLines(file);\n" +
+        '        System.out.println("Read back: " + readBack);\n' +
+        "\n" +
+        "        int total = 0;\n" +
+        "        for (String line : readBack) {\n" +
+        '            String[] parts = line.split(",");\n' +
+        "            total += Integer.parseInt(parts[1]);\n" +
+        "        }\n" +
+        '        System.out.println("Total marks: " + total);\n' +
+        "\n" +
+        '        Files.writeString(file, "Neha,95" + System.lineSeparator(), StandardOpenOption.APPEND);\n' +
+        '        System.out.println("After append: " + Files.readAllLines(file));\n' +
+        "\n" +
+        "        Files.deleteIfExists(file);\n" +
+        '        System.out.println("File exists after delete: " + Files.exists(file));\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Wrote 3 lines to students.txt\n" +
+        "Read back: [Priya,87, Arjun,91, Vikram,78]\n" +
+        "Total marks: 256\n" +
+        "After append: [Priya,87, Arjun,91, Vikram,78, Neha,95]\n" +
+        "File exists after delete: false",
+    },
+    {
       kind: "pitfall",
       items: [
         "Forgetting `Files.write` overwrites by default — a second plain call erases the first one's " +

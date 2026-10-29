@@ -123,6 +123,47 @@ export const chapterLoops: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Change the `for` loop so it counts down from 5 to 1. Then change `while (false)` to `while " +
+        "(attempts < 4)` and predict the last line before you run.",
+      starter:
+        "public class Loops {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        for (int i = 1; i <= 5; i++) {\n" +
+        '            System.out.print(i + " ");\n' +
+        "        }\n" +
+        "        System.out.println();\n" +
+        "\n" +
+        "        int total = 0;\n" +
+        "        int n = 5;\n" +
+        "        while (n > 0) {\n" +
+        "            total += n;\n" +
+        "            n--;\n" +
+        "        }\n" +
+        '        System.out.println("Sum 1..5 via while: " + total);\n' +
+        "\n" +
+        "        int count = 0;\n" +
+        "        do {\n" +
+        "            count++;\n" +
+        "        } while (count < 3);\n" +
+        '        System.out.println("do-while ran, count ended at: " + count);\n' +
+        "\n" +
+        "        int attempts = 0;\n" +
+        "        do {\n" +
+        "            attempts++;\n" +
+        "        } while (false);\n" +
+        '        System.out.println("do-while runs at least once: " + attempts);\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "1 2 3 4 5\n" +
+        "Sum 1..5 via while: 15\n" +
+        "do-while ran, count ended at: 3\n" +
+        "do-while runs at least once: 1",
+    },
+    {
       kind: "pitfall",
       items: [
         "Forgetting the update step (`i++`) in a `while` loop, since — unlike `for` — nothing forces it " +

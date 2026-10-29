@@ -97,6 +97,41 @@ export const chapterPackages: Chapter = {
       ],
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "The playground runs a single file, so it can't hold the two-package example above. This uses the " +
+        "JDK's own packages to show the same idea. Delete `import java.util.ArrayList;` and run to see " +
+        "what the import was doing, then fix it by writing `java.util.ArrayList` in full.",
+      starter:
+        "import java.util.ArrayList;\n" +
+        "import java.util.List;\n" +
+        "\n" +
+        "public class PackagesDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        // Imported at the top, so the short name is enough.\n" +
+        "        List<String> names = new ArrayList<>();\n" +
+        '        names.add("Priya");\n' +
+        '        System.out.println("Names: " + names);\n' +
+        "\n" +
+        "        // Not imported, so it is written with its package in front.\n" +
+        "        java.time.LocalDate examDay = java.time.LocalDate.of(2026, 3, 2);\n" +
+        '        System.out.println("Exam day: " + examDay.getDayOfWeek());\n' +
+        "\n" +
+        '        System.out.println("ArrayList lives in " + ArrayList.class.getPackageName());\n' +
+        '        System.out.println("LocalDate lives in " + java.time.LocalDate.class.getPackageName());\n' +
+        "        // java.lang is imported for you, which is why String never needs an import.\n" +
+        '        System.out.println("String lives in " + String.class.getPackageName());\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Names: [Priya]\n" +
+        "Exam day: MONDAY\n" +
+        "ArrayList lives in java.util\n" +
+        "LocalDate lives in java.time\n" +
+        "String lives in java.lang",
+    },
+    {
       kind: "pitfall",
       items: [
         "Putting a `package` statement anywhere but the very first line (comments aside) of the file — " +

@@ -147,6 +147,50 @@ export const chapterArrayListVsLinkedList: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Call `queue.removeFirst()` three more times. The third call finds the queue empty and throws a " +
+        "NoSuchElementException, which is why real code checks `isEmpty()` first.",
+      starter:
+        "import java.util.ArrayList;\n" +
+        "import java.util.LinkedList;\n" +
+        "import java.util.List;\n" +
+        "\n" +
+        "public class ArrayListLinkedListDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        List<String> arrayList = new ArrayList<>();\n" +
+        '        arrayList.add("Priya");\n' +
+        '        arrayList.add("Arjun");\n' +
+        '        arrayList.add("Vikram");\n' +
+        '        System.out.println("ArrayList get(1): " + arrayList.get(1));\n' +
+        "\n" +
+        '        arrayList.add(1, "Neha");\n' +
+        '        System.out.println("After insert at index 1: " + arrayList);\n' +
+        "\n" +
+        "        List<String> linkedList = new LinkedList<>();\n" +
+        '        linkedList.add("Priya");\n' +
+        '        linkedList.add("Arjun");\n' +
+        '        linkedList.add("Vikram");\n' +
+        '        linkedList.add(0, "Neha");\n' +
+        '        System.out.println("LinkedList after insert at front: " + linkedList);\n' +
+        "\n" +
+        "        LinkedList<String> queue = new LinkedList<>();\n" +
+        '        queue.addLast("first");\n' +
+        '        queue.addLast("second");\n' +
+        '        queue.addLast("third");\n' +
+        '        System.out.println("Removed from front: " + queue.removeFirst());\n' +
+        '        System.out.println("Remaining queue: " + queue);\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "ArrayList get(1): Arjun\n" +
+        "After insert at index 1: [Priya, Neha, Arjun, Vikram]\n" +
+        "LinkedList after insert at front: [Neha, Priya, Arjun, Vikram]\n" +
+        "Removed from front: first\n" +
+        "Remaining queue: [second, third]",
+    },
+    {
       kind: "pitfall",
       items: [
         "Defaulting to `LinkedList` because it \"sounds efficient\" — for most real programs, which read " +

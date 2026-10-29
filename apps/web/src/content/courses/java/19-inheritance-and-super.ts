@@ -135,6 +135,62 @@ export const chapterInheritance: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Delete the `computePay` override from `Manager` and run. Priya's pay falls to her base salary, " +
+        "because `Manager` now uses `Employee`'s version unchanged.",
+      starter:
+        "public class InheritanceDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        Employee e = new Employee("Arjun", 40000);\n' +
+        '        Manager m = new Manager("Priya", 60000, 15000);\n' +
+        "\n" +
+        "        e.printPaySlip();\n" +
+        "        m.printPaySlip();\n" +
+        "\n" +
+        '        System.out.println("m instanceof Employee: " + (m instanceof Employee));\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Employee {\n" +
+        "    protected String name;\n" +
+        "    protected double baseSalary;\n" +
+        "\n" +
+        "    Employee(String name, double baseSalary) {\n" +
+        "        this.name = name;\n" +
+        "        this.baseSalary = baseSalary;\n" +
+        "    }\n" +
+        "\n" +
+        "    double computePay() {\n" +
+        "        return baseSalary;\n" +
+        "    }\n" +
+        "\n" +
+        "    void printPaySlip() {\n" +
+        "        System.out.println(name + \"'s pay: \" + computePay());\n" +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Manager extends Employee {\n" +
+        "    private double teamBonus;\n" +
+        "\n" +
+        "    Manager(String name, double baseSalary, double teamBonus) {\n" +
+        "        super(name, baseSalary);\n" +
+        "        this.teamBonus = teamBonus;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    double computePay() {\n" +
+        "        double base = super.computePay();\n" +
+        "        return base + teamBonus;\n" +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Arjun's pay: 40000.0\n" +
+        "Priya's pay: 75000.0\n" +
+        "m instanceof Employee: true",
+    },
+    {
       kind: "pitfall",
       items: [
         "Declaring fields `private` in the superclass when a subclass genuinely needs direct access — use " +

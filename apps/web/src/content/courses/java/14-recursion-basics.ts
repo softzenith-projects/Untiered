@@ -155,6 +155,50 @@ export const chapterRecursion: Chapter = {
         "property of recursion in general — is exactly the kind of thing worth being able to say out loud.",
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Print `factorial(10)` and `sumDigits(98765)`. Then delete the `if (n == 0)` base case from " +
+        "`factorial` and run: the calls never stop, and Java ends them with a StackOverflowError.",
+      starter:
+        "public class Recursion1 {\n" +
+        "    static int factorial(int n) {\n" +
+        "        if (n == 0) {\n" +
+        "            return 1;\n" +
+        "        }\n" +
+        "        return n * factorial(n - 1);\n" +
+        "    }\n" +
+        "\n" +
+        "    static int fibonacci(int n) {\n" +
+        "        if (n == 0) return 0;\n" +
+        "        if (n == 1) return 1;\n" +
+        "        return fibonacci(n - 1) + fibonacci(n - 2);\n" +
+        "    }\n" +
+        "\n" +
+        "    static int sumDigits(int n) {\n" +
+        "        if (n == 0) {\n" +
+        "            return 0;\n" +
+        "        }\n" +
+        "        return (n % 10) + sumDigits(n / 10);\n" +
+        "    }\n" +
+        "\n" +
+        "    public static void main(String[] args) {\n" +
+        '        System.out.println("factorial(5) = " + factorial(5));\n' +
+        "\n" +
+        "        for (int i = 0; i <= 8; i++) {\n" +
+        '            System.out.print(fibonacci(i) + " ");\n' +
+        "        }\n" +
+        "        System.out.println();\n" +
+        "\n" +
+        '        System.out.println("sumDigits(4321) = " + sumDigits(4321));\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "factorial(5) = 120\n" +
+        "0 1 1 2 3 5 8 13 21\n" +
+        "sumDigits(4321) = 10",
+    },
+    {
       kind: "pitfall",
       items: [
         "Writing a recursive method with no base case, or a base case the recursive calls never actually " +

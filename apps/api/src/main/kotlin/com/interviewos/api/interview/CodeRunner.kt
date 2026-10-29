@@ -98,7 +98,8 @@ class CodeRunner(
                     listOf(compileError, run.path("stderr").asString().orEmpty())
                         .filter { it.isNotBlank() }
                         .joinToString("\n")
-                        .replace("${language.fileName}.java", language.fileName),
+                        .replace("${language.fileName}.java", language.fileName)
+                        .let(::explainMissingMain),
                 exitCode = run.path("code").asInt(-1),
                 timedOut = run.path("signal").asString() == "SIGKILL",
                 available = true,
@@ -147,6 +148,18 @@ class CodeRunner(
             null
         }
     }
+
+    /**
+     * Piston runs Java as a single source file, and the launcher starts whichever class
+     * comes first. A helper class above `main`'s class is ordinary Java everywhere else,
+     * so the launcher's bare "can't find main" reads like a bug in the candidate's code.
+     */
+    private fun explainMissingMain(stderr: String): String =
+        if ("can't find main(String[]) method in class" in stderr) {
+            "$stderr\nJava runs the first class in the file. Move the class that has main to the top."
+        } else {
+            stderr
+        }
 }
 
 /** The languages a candidate may write in. Two, deliberately — this is an interview, not an IDE. */

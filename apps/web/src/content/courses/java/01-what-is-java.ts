@@ -154,6 +154,24 @@ export const chapterWhatIsJava: Chapter = {
         "real machine, which is what makes the same `.class` file portable.",
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Change the text in the first `println` to your own greeting and press Run. Then delete one " +
+        "semicolon and run again: that red message is a compile error, caught before the program ever " +
+        "starts.",
+      starter:
+        "public class Hello {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        System.out.println("Namaste, Java!");\n' +
+        '        System.out.println("This program was compiled once and can now run anywhere a JVM exists.");\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Namaste, Java!\n" +
+        "This program was compiled once and can now run anywhere a JVM exists.",
+    },
+    {
       kind: "pitfall",
       items: [
         "Saying \"Java is an interpreted language.\" It compiles to bytecode first; only that bytecode is " +

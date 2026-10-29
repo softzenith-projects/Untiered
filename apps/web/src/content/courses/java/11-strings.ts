@@ -170,6 +170,58 @@ export const chapterStrings: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        'Change `c` to `String c = "hello";` and run. `a == c` turns true, because both now point at the ' +
+        "same pooled string. `.equals()` gives true either way, which is why you should use it.",
+      starter:
+        "public class Strings1 {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        String a = "hello";\n' +
+        '        String b = "hello";\n' +
+        '        String c = new String("hello");\n' +
+        "\n" +
+        '        System.out.println("a == b: " + (a == b));\n' +
+        '        System.out.println("a == c: " + (a == c));\n' +
+        '        System.out.println("a.equals(c): " + a.equals(c));\n' +
+        "\n" +
+        '        String name = "Priya";\n' +
+        '        System.out.println("Upper: " + name.toUpperCase());\n' +
+        '        System.out.println("Length: " + name.length());\n' +
+        '        System.out.println("Char at 0: " + name.charAt(0));\n' +
+        '        System.out.println("Substring(1,3): " + name.substring(1, 3));\n' +
+        "        System.out.println(\"Contains 'iy': \" + name.contains(\"iy\"));\n" +
+        "        System.out.println(\"Index of 'y': \" + name.indexOf('y'));\n" +
+        "\n" +
+        '        String greeting = "Hello";\n' +
+        '        String modified = greeting.concat(", World");\n' +
+        '        System.out.println("Original: " + greeting);\n' +
+        '        System.out.println("Modified copy: " + modified);\n' +
+        "\n" +
+        '        String csv = "roll,name,marks";\n' +
+        '        String[] parts = csv.split(",");\n' +
+        "        for (String part : parts) {\n" +
+        '            System.out.print(part + " | ");\n' +
+        "        }\n" +
+        "        System.out.println();\n" +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "a == b: true\n" +
+        "a == c: false\n" +
+        "a.equals(c): true\n" +
+        "Upper: PRIYA\n" +
+        "Length: 5\n" +
+        "Char at 0: P\n" +
+        "Substring(1,3): ri\n" +
+        "Contains 'iy': true\n" +
+        "Index of 'y': 3\n" +
+        "Original: Hello\n" +
+        "Modified copy: Hello, World\n" +
+        "roll | name | marks |",
+    },
+    {
       kind: "pitfall",
       items: [
         "Comparing strings with `==` instead of `.equals()`. It can accidentally 'work' for two literal " +

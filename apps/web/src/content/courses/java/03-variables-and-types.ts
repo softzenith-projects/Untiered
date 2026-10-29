@@ -146,6 +146,40 @@ export const chapterVariablesAndTypes: Chapter = {
         "anyone reading the code can tell at a glance that it never changes.",
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Change `age` to your own age and run. Then add the line `age = 17.5;` and run again: Java " +
+        "refuses to put a decimal into an `int`.",
+      starter:
+        "public class Variables {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        int age = 17;\n" +
+        "        double height = 165.5;\n" +
+        "        char grade = 'A';\n" +
+        "        boolean passed = true;\n" +
+        '        String name = "Rohan";\n' +
+        "\n" +
+        '        System.out.println(name + " is " + age + " years old.");\n' +
+        '        System.out.println("Height: " + height + " cm, Grade: " + grade);\n' +
+        '        System.out.println("Passed: " + passed);\n' +
+        "\n" +
+        "        int rollNumber = 21;\n" +
+        "        rollNumber = rollNumber + 1;\n" +
+        '        System.out.println("New roll number: " + rollNumber);\n' +
+        "\n" +
+        "        final double PI = 3.14159;\n" +
+        '        System.out.println("Pi is approximately " + PI);\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Rohan is 17 years old.\n" +
+        "Height: 165.5 cm, Grade: A\n" +
+        "Passed: true\n" +
+        "New roll number: 22\n" +
+        "Pi is approximately 3.14159",
+    },
+    {
       kind: "pitfall",
       items: [
         "Using a variable before giving it a value. Unlike a class field, a *local* variable (one " +
