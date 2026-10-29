@@ -22,6 +22,17 @@ export const LEGAL = {
 
 export const CONTACT_EMAIL_DISPLAY = LEGAL.contactEmail;
 
+/**
+ * The credit packs as the public pricing page states them, for visitors who are not
+ * signed in and so cannot read `/api/v1/billing`. Kept in step with
+ * `BillingProperties.DEFAULT_PACKS` on the API, which is what is actually charged.
+ */
+export const CREDIT_PACKS: readonly { credits: number; pricePaise: number }[] = [
+  { credits: 1, pricePaise: 19_900 },
+  { credits: 5, pricePaise: 89_900 },
+  { credits: 10, pricePaise: 1_49_900 },
+];
+
 /** "1 mock interview" or "3 mock interviews", so the allowance reads correctly at any setting. */
 const freeRounds: number = LEGAL.freeRounds;
 export const FREE_ROUNDS_TEXT = `${freeRounds} mock ${freeRounds === 1 ? "interview" : "interviews"}`;
