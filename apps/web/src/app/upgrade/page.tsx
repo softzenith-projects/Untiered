@@ -4,12 +4,12 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { PremiumOffer } from "@/components/premium-offer";
 import { ProFeatureRequestForm } from "@/components/pro-feature-request-form";
-import { FREE_ROUNDS_TEXT } from "@/lib/legal";
+import { FREE_ROUNDS_LIFETIME_TEXT } from "@/lib/legal";
 
 export const metadata: Metadata = { title: "Upgrade" };
 
 const INCLUDED_NOW = [
-  `Your first ${FREE_ROUNDS_TEXT}, up to 60 minutes each`,
+  `${FREE_ROUNDS_LIFETIME_TEXT}, up to 60 minutes each`,
   "The complete evidence-backed report",
   "All enabled courses and Arena practice",
   "English and Hindi-English interviews",
@@ -32,7 +32,7 @@ export default function UpgradePage() {
           </h1>
           <p className="mt-3 max-w-2xl text-body text-on-navy-muted">
             Every interview, free or paid, comes with the full evidence-backed report. Paid
-            interviews are for practising beyond your first {FREE_ROUNDS_TEXT}.
+            interviews are for practising once your account has used its {FREE_ROUNDS_LIFETIME_TEXT}.
           </p>
         </header>
 

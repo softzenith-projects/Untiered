@@ -31,6 +31,7 @@ Runnable Java in the Java course, plus the follow-ups the owner raised in the sa
   - **Guards:**
     - `lib/free-allowance-copy.test.ts` fails on any daily-allowance wording in user-facing source, and pins `LEGAL.freeRounds` to 3. I confirmed it catches the old lines.
     - `EntitlementTest` fails if `application.yml` overrides `free-rounds`, `daily-rounds` or `daily-minutes`.
+- **"For life" stated everywhere the free tier appears** (PR, because it changes the terms and privacy policy). There is one phrase, `FREE_ROUNDS_LIFETIME_TEXT` ("3 free mock interviews for life"), used by the terms, privacy policy, upgrade page and landing page. The terms add that the allowance does not reset each day, month or year, does not come back once used, and is not returned for leaving part-way. The API's allowance messages say free interviews are for life and do not reset. Guards: `free-allowance-copy.test.ts` (each of those pages uses the lifetime phrase, and the terms keep the no-reset sentence) and the legal-page test.
 - **Content tests** (`content-integrity.test.ts`):
   - every Java chapter has runnable Java with a task and expected output
   - no playground repeats a code example's program

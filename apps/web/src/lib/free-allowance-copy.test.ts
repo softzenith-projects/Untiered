@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { FREE_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
+import { FREE_ROUNDS_LIFETIME_TEXT, FREE_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
 
 /**
  * The free tier is three interviews for life, not one a day (owner, 29 October 2026). The
@@ -31,6 +31,23 @@ describe("the free allowance, as the product states it", () => {
   it("is three mock interviews for life", () => {
     expect(LEGAL.freeRounds).toBe(3);
     expect(FREE_ROUNDS_TEXT).toBe("3 mock interviews");
+    expect(FREE_ROUNDS_LIFETIME_TEXT).toBe("3 free mock interviews for life");
+  });
+
+  // Every page that states the allowance says "for life", so "your first 3" cannot be read
+  // as a quota that comes back. The terms also say, in words, that it never resets.
+  it.each(["app/terms/page.tsx", "app/privacy/page.tsx", "app/upgrade/page.tsx", "app/page.tsx"])(
+    "%s states the allowance as a lifetime one",
+    (page) => {
+      const source = readFileSync(join(SRC, page), "utf8");
+      expect(source).toContain("FREE_ROUNDS_LIFETIME_TEXT");
+      expect(source).not.toMatch(/\bFREE_ROUNDS_TEXT\b/);
+    },
+  );
+
+  it("says in the terms that the free interviews do not reset or come back", () => {
+    const terms = readFileSync(join(SRC, "app/terms/page.tsx"), "utf8").replace(/\s+/g, " ");
+    expect(terms).toMatch(/does not reset each day, month or year, and it does not come back once used/);
   });
 
   it("is never described as a daily allowance in user-facing copy", () => {

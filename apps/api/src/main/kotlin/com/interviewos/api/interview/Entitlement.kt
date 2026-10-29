@@ -166,7 +166,7 @@ data class EntitlementDecision(
 
                         else -> {
                             "You have $remainingFree free ${if (remainingFree == 1) "interview" else "interviews"} " +
-                                "left.${paidHeld()}"
+                                "left. Free interviews are for life and do not reset.${paidHeld()}"
                         }
                     }
                 }
@@ -177,9 +177,9 @@ data class EntitlementDecision(
 
                 Entitlement.Reason.FREE_TIER_EXHAUSTED -> {
                     if (purchasable) {
-                        "You have used your free interviews. Buy an interview to keep practising."
+                        "You have used your free interviews, which do not reset. Buy an interview to keep practising."
                     } else {
-                        "You have used your free interviews. Paid interviews are coming soon."
+                        "You have used your free interviews, which do not reset. Paid interviews are coming soon."
                     }
                 }
 

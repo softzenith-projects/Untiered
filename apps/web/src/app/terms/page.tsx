@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
+import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_LIFETIME_TEXT, LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Terms of use",
@@ -48,9 +48,12 @@ export default function TermsPage() {
 
       <LegalSection id="free" title="Free practice and limits">
         <p>
-          Your first {FREE_ROUNDS_TEXT} are free, each with its full report. A free interview is
-          used when it starts, as a paid one is, and is returned if it fails because of a fault on
-          our side. After that, you can buy paid interviews (below). We may change these limits and
+          Each account gets {FREE_ROUNDS_LIFETIME_TEXT}, each with its full report. This is a
+          one-time allowance for the life of the account: it does not reset each day, month or
+          year, and it does not come back once used. A free interview is used when it starts, as
+          a paid one is, and is returned if it fails because of a fault on our side. Leaving an
+          interview part-way does not return it. After the free ones, you can buy paid interviews
+          (below). We may change these limits and
           will say so on the site before a change affects you. Courses and the Arena are free.
         </p>
       </LegalSection>

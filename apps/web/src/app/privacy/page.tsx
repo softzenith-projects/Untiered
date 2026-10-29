@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
+import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_LIFETIME_TEXT, LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
           <li>To tailor questions to your resume, and to keep track of your course and Arena progress.</li>
           <li>
             To keep free practice fair and to give you the paid interviews you bought: we count the
-            free interviews you start (currently your first {FREE_ROUNDS_TEXT}) and the paid ones
+            free interviews you start (each account gets {FREE_ROUNDS_LIFETIME_TEXT}) and the paid ones
             you buy and use.
           </li>
           <li>To keep the service secure and working, and to fix errors.</li>

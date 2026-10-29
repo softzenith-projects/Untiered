@@ -53,13 +53,13 @@ class EntitlementTest {
         assertTrue(decision.allowed)
         assertEquals(3, decision.remainingFree)
         assertEquals(Entitlement.Funding.FREE, decision.funding)
-        assertEquals("You have 3 free interviews left.", decision.message)
+        assertEquals("You have 3 free interviews left. Free interviews are for life and do not reset.", decision.message)
     }
 
     @Test
     fun `each free round started counts down the three`() {
         assertEquals(1, evaluate(freeRoundsUsed = 2).remainingFree)
-        assertEquals("You have 1 free interview left.", evaluate(freeRoundsUsed = 2).message)
+        assertEquals("You have 1 free interview left. Free interviews are for life and do not reset.", evaluate(freeRoundsUsed = 2).message)
     }
 
     @Test
