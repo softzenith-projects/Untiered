@@ -77,7 +77,16 @@ export const chapterIfElseSwitch: Chapter = {
         '        System.out.println("Season: " + season);\n' +
         "    }\n" +
         "}\n",
-      output: "Grade: A2\nDay: Wednesday\nSeason: Spring",
+      output:
+        "Grade: A2\n" +
+        "Day: Wednesday\n" +
+        "Season: Spring",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Set `marks` to 90 and run, then to 59 and run again. Then set `month` to 11 and see which arm " +
+          "of the switch expression catches it.",
+      },
     },
     {
       kind: "viz",
@@ -133,59 +142,6 @@ export const chapterIfElseSwitch: Chapter = {
         "separate variable set inside each branch the way the classic form does. For any switch where each " +
         "case simply produces one value, the arrow form is both shorter and safer, and is the form you " +
         "should reach for first in new code.",
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Set `marks` to 90 and run, then to 59 and run again. Then set `month` to 11 and see which arm of " +
-        "the switch expression catches it.",
-      starter:
-        "public class IfElseSwitch {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        int marks = 82;\n" +
-        "\n" +
-        "        if (marks >= 90) {\n" +
-        '            System.out.println("Grade: A1");\n' +
-        "        } else if (marks >= 75) {\n" +
-        '            System.out.println("Grade: A2");\n' +
-        "        } else if (marks >= 60) {\n" +
-        '            System.out.println("Grade: B1");\n' +
-        "        } else {\n" +
-        '            System.out.println("Grade: needs improvement");\n' +
-        "        }\n" +
-        "\n" +
-        "        int day = 3;\n" +
-        "        String dayName;\n" +
-        "        switch (day) {\n" +
-        "            case 1:\n" +
-        '                dayName = "Monday";\n' +
-        "                break;\n" +
-        "            case 2:\n" +
-        '                dayName = "Tuesday";\n' +
-        "                break;\n" +
-        "            case 3:\n" +
-        '                dayName = "Wednesday";\n' +
-        "                break;\n" +
-        "            default:\n" +
-        '                dayName = "Unknown";\n' +
-        "        }\n" +
-        '        System.out.println("Day: " + dayName);\n' +
-        "\n" +
-        "        int month = 4;\n" +
-        "        String season = switch (month) {\n" +
-        '            case 12, 1, 2 -> "Winter";\n' +
-        '            case 3, 4, 5 -> "Spring";\n' +
-        '            case 6, 7, 8 -> "Summer";\n' +
-        '            default -> "Autumn";\n' +
-        "        };\n" +
-        '        System.out.println("Season: " + season);\n' +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Grade: A2\n" +
-        "Day: Wednesday\n" +
-        "Season: Spring",
     },
     {
       kind: "pitfall",

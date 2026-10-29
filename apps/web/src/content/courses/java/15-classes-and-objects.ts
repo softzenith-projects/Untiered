@@ -39,16 +39,6 @@ export const chapterClassesAndObjects: Chapter = {
       kind: "code",
       caption: "A Student class and two independent Student objects, in one file.",
       code:
-        "class Student {\n" +
-        "    String name;\n" +
-        "    int rollNumber;\n" +
-        "    int marks;\n" +
-        "\n" +
-        "    void printDetails() {\n" +
-        '        System.out.println(name + " (Roll " + rollNumber + "): " + marks + " marks");\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
         "public class ClassesDemo {\n" +
         "    public static void main(String[] args) {\n" +
         "        Student s1 = new Student();\n" +
@@ -67,12 +57,28 @@ export const chapterClassesAndObjects: Chapter = {
         '        System.out.println("s1 == s2: " + (s1 == s2));\n' +
         '        System.out.println("s1.marks after editing only s1: " + s1.marks);\n' +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Student {\n" +
+        "    String name;\n" +
+        "    int rollNumber;\n" +
+        "    int marks;\n" +
+        "\n" +
+        "    void printDetails() {\n" +
+        '        System.out.println(name + " (Roll " + rollNumber + "): " + marks + " marks");\n' +
+        "    }\n" +
         "}\n",
       output:
         "Priya (Roll 12): 87 marks\n" +
         "Arjun (Roll 15): 91 marks\n" +
         "s1 == s2: false\n" +
         "s1.marks after editing only s1: 87",
+      tryIt: {
+        language: "java",
+        prompt:
+          "The class with `main` comes first in this file, because the runner starts from the top. Make a " +
+          "third student, `s3`, with your own name and marks, and print their details.",
+      },
     },
     {
       kind: "p",
@@ -127,48 +133,6 @@ export const chapterClassesAndObjects: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "The class with `main` comes first in this file, because the runner starts from the top. Make a " +
-        "third student, `s3`, with your own name and marks, and print their details.",
-      starter:
-        "public class ClassesDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        Student s1 = new Student();\n" +
-        '        s1.name = "Priya";\n' +
-        "        s1.rollNumber = 12;\n" +
-        "        s1.marks = 87;\n" +
-        "\n" +
-        "        Student s2 = new Student();\n" +
-        '        s2.name = "Arjun";\n' +
-        "        s2.rollNumber = 15;\n" +
-        "        s2.marks = 91;\n" +
-        "\n" +
-        "        s1.printDetails();\n" +
-        "        s2.printDetails();\n" +
-        "\n" +
-        '        System.out.println("s1 == s2: " + (s1 == s2));\n' +
-        '        System.out.println("s1.marks after editing only s1: " + s1.marks);\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class Student {\n" +
-        "    String name;\n" +
-        "    int rollNumber;\n" +
-        "    int marks;\n" +
-        "\n" +
-        "    void printDetails() {\n" +
-        '        System.out.println(name + " (Roll " + rollNumber + "): " + marks + " marks");\n' +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Priya (Roll 12): 87 marks\n" +
-        "Arjun (Roll 15): 91 marks\n" +
-        "s1 == s2: false\n" +
-        "s1.marks after editing only s1: 87",
     },
     {
       kind: "pitfall",

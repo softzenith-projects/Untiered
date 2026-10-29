@@ -57,24 +57,52 @@ describe("course: java, as a whole", () => {
   const javaCourse = courses.find((c) => c.slug === "java");
   const javaChapters = javaCourse ? flattenChapters(javaCourse) : [];
 
-  it("gives every chapter a Java playground with the output it should print", () => {
+  // Every program a reader can run here, from either kind of block: a code example made
+  // runnable with `tryIt`, or a separate playground.
+  function runnables(chapter: Chapter): { source: string; language: string; prompt: string; output: string }[] {
+    const fromCode = (blocksOf("code", chapter) as Extract<Block, { kind: "code" }>[]).flatMap((block) =>
+      block.tryIt
+        ? [{ source: block.code, language: block.tryIt.language, prompt: block.tryIt.prompt, output: block.output ?? "" }]
+        : [],
+    );
+    const fromPlaygrounds = (blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[]).map((block) => ({
+      source: block.starter,
+      language: block.language,
+      prompt: block.prompt ?? "",
+      output: block.expectedOutput ?? "",
+    }));
+    return [...fromCode, ...fromPlaygrounds];
+  }
+
+  it("gives every chapter Java to run, with a task and the output it should print", () => {
     expect(javaChapters.length).toBeGreaterThan(0);
     for (const chapter of javaChapters) {
-      const playgrounds = blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[];
-      expect(playgrounds.length, chapter.slug).toBeGreaterThanOrEqual(1);
-      for (const block of playgrounds) {
+      const runnable = runnables(chapter);
+      expect(runnable.length, chapter.slug).toBeGreaterThanOrEqual(1);
+      for (const block of runnable) {
         expect(block.language, chapter.slug).toBe("java");
-        expect((block.prompt ?? "").trim().length, chapter.slug).toBeGreaterThan(0);
-        expect((block.expectedOutput ?? "").trim().length, chapter.slug).toBeGreaterThan(0);
+        expect(block.prompt.trim().length, chapter.slug).toBeGreaterThan(0);
+        expect(block.output.trim().length, chapter.slug).toBeGreaterThan(0);
       }
     }
   });
 
-  it("puts the class with main first in every playground, where the runner starts", () => {
+  // The owner's complaint (29 October 2026): the same program shown as a code example and
+  // again as a playground. A program that is already a code example gets `tryIt` instead.
+  it("never repeats a code example's program as a playground", () => {
     for (const chapter of javaChapters) {
+      const examples = new Set((blocksOf("code", chapter) as Extract<Block, { kind: "code" }>[]).map((b) => b.code.trim()));
       for (const block of blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[]) {
-        const topLevelType = /^(?:public |abstract |final )*(?:class|interface|enum) /;
-        const topLevelTypes = block.starter
+        expect(examples.has(block.starter.trim()), chapter.slug).toBe(false);
+      }
+    }
+  });
+
+  it("puts the class with main first in every runnable program, where the runner starts", () => {
+    const topLevelType = /^(?:public |abstract |final )*(?:class|interface|enum) /;
+    for (const chapter of javaChapters) {
+      for (const { source } of runnables(chapter)) {
+        const topLevelTypes = source
           .split(/^(?=(?:public |abstract |final )*(?:class|interface|enum) )/m)
           .filter((part) => topLevelType.test(part));
         expect(topLevelTypes[0] ?? "", chapter.slug).toContain("public static void main(");

@@ -40,6 +40,20 @@ export const chapterAbstractInterfaces: Chapter = {
         "An abstract Vehicle with one real method and one unimplemented one, plus a Chargeable interface " +
         "implemented alongside it.",
       code:
+        "public class AbstractInterfaceDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        Vehicle car = new Car("Swift");\n' +
+        "        car.printInfo();\n" +
+        "\n" +
+        '        ElectricCar ec = new ElectricCar("Nexon EV");\n' +
+        "        ec.printInfo();\n" +
+        "        ec.chargeBattery();\n" +
+        "        ec.printChargeStatus();\n" +
+        "\n" +
+        '        System.out.println("ec instanceof Chargeable: " + (ec instanceof Chargeable));\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "abstract class Vehicle {\n" +
         "    protected String name;\n" +
         "\n" +
@@ -83,20 +97,6 @@ export const chapterAbstractInterfaces: Chapter = {
         "    public void chargeBattery() {\n" +
         '        System.out.println(name + " is charging.");\n' +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class AbstractInterfaceDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        Vehicle car = new Car("Swift");\n' +
-        "        car.printInfo();\n" +
-        "\n" +
-        '        ElectricCar ec = new ElectricCar("Nexon EV");\n' +
-        "        ec.printInfo();\n" +
-        "        ec.chargeBattery();\n" +
-        "        ec.printChargeStatus();\n" +
-        "\n" +
-        '        System.out.println("ec instanceof Chargeable: " + (ec instanceof Chargeable));\n' +
-        "    }\n" +
         "}\n",
       output:
         "Swift gives 18.5 km/l\n" +
@@ -104,6 +104,12 @@ export const chapterAbstractInterfaces: Chapter = {
         "Nexon EV is charging.\n" +
         "Charging status: OK\n" +
         "ec instanceof Chargeable: true",
+      tryIt: {
+        language: "java",
+        prompt:
+          'Add `new Vehicle("Generic")` to `main` and read the compile error. Then write a `Bike` class ' +
+          "that extends `Vehicle` and returns its own `fuelEfficiency()`.",
+      },
     },
     {
       kind: "p",
@@ -159,78 +165,6 @@ export const chapterAbstractInterfaces: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        'Add `new Vehicle("Generic")` to `main` and read the compile error. Then write a `Bike` class ' +
-        "that extends `Vehicle` and returns its own `fuelEfficiency()`.",
-      starter:
-        "public class AbstractInterfaceDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        Vehicle car = new Car("Swift");\n' +
-        "        car.printInfo();\n" +
-        "\n" +
-        '        ElectricCar ec = new ElectricCar("Nexon EV");\n' +
-        "        ec.printInfo();\n" +
-        "        ec.chargeBattery();\n" +
-        "        ec.printChargeStatus();\n" +
-        "\n" +
-        '        System.out.println("ec instanceof Chargeable: " + (ec instanceof Chargeable));\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "abstract class Vehicle {\n" +
-        "    protected String name;\n" +
-        "\n" +
-        "    Vehicle(String name) {\n" +
-        "        this.name = name;\n" +
-        "    }\n" +
-        "\n" +
-        "    abstract double fuelEfficiency();\n" +
-        "\n" +
-        "    void printInfo() {\n" +
-        '        System.out.println(name + " gives " + fuelEfficiency() + " km/l");\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class Car extends Vehicle {\n" +
-        "    Car(String name) { super(name); }\n" +
-        "\n" +
-        "    @Override\n" +
-        "    double fuelEfficiency() {\n" +
-        "        return 18.5;\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "interface Chargeable {\n" +
-        "    void chargeBattery();\n" +
-        "\n" +
-        "    default void printChargeStatus() {\n" +
-        '        System.out.println("Charging status: OK");\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class ElectricCar extends Vehicle implements Chargeable {\n" +
-        "    ElectricCar(String name) { super(name); }\n" +
-        "\n" +
-        "    @Override\n" +
-        "    double fuelEfficiency() {\n" +
-        "        return 0.0;\n" +
-        "    }\n" +
-        "\n" +
-        "    @Override\n" +
-        "    public void chargeBattery() {\n" +
-        '        System.out.println(name + " is charging.");\n' +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Swift gives 18.5 km/l\n" +
-        "Nexon EV gives 0.0 km/l\n" +
-        "Nexon EV is charging.\n" +
-        "Charging status: OK\n" +
-        "ec instanceof Chargeable: true",
     },
     {
       kind: "pitfall",

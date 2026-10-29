@@ -280,6 +280,51 @@ describe("BlockRenderer", () => {
     expect(screen.queryByText("print(1)")).not.toBeInTheDocument();
   });
 
+  it("opens a runnable code example as the editor in its own place, so the program is shown once", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <BlockRenderer
+        blocks={[
+          {
+            kind: "code",
+            code: "System.out.println(3);",
+            caption: "Prints three",
+            output: "3",
+            tryIt: { language: "java", prompt: "Make it print four." },
+          },
+        ]}
+      />,
+    );
+    expect(screen.queryByText("Make it print four.")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Edit and run" }));
+
+    expect(await screen.findByText("Make it print four.", {}, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit and run" })).not.toBeInTheDocument();
+    // The static copy is gone: the editor is the only place the program appears.
+    expect(container.querySelector("pre code")).toBeNull();
+    expect(screen.getAllByText("Prints three")).toHaveLength(1);
+    expect(screen.getByText("Expected output")).toBeInTheDocument();
+  });
+
+  it("offers no Edit and run on a code example without tryIt", () => {
+    render(<BlockRenderer blocks={[{ kind: "code", code: "int x = 1;", output: "1" }]} />);
+
+    expect(screen.queryByRole("button", { name: "Edit and run" })).not.toBeInTheDocument();
+  });
+
+  it("takes a playground's static starter copy away once its editor has mounted", async () => {
+    render(
+      <BlockRenderer
+        blocks={[{ kind: "playground", language: "java", starter: "System.out.println(5);", prompt: "A task.", expectedOutput: "5" }]}
+      />,
+    );
+    // Whether the static copy is still up at this instant depends on whether another test
+    // already loaded the editor's chunk; the smoke test above covers it being rendered.
+    expect(await screen.findByText("A task.", {}, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.queryByText("Starter code · Java")).not.toBeInTheDocument();
+  });
+
   it("renders no language toggle for a code block with no python field", () => {
     render(<BlockRenderer blocks={[{ kind: "code", code: "int x = 1;" }]} />);
 

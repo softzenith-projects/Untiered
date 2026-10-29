@@ -3,7 +3,7 @@
 import { java } from "@codemirror/lang-java";
 import { python } from "@codemirror/lang-python";
 import CodeMirror from "@uiw/react-codemirror";
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 import { matchesExpected } from "@/lib/browser-python";
 import { getRunner } from "@/lib/course-code-runner";
@@ -31,18 +31,31 @@ interface RunOutput {
  * The "try it yourself" block (task 049): an editable CodeMirror seeded from `block.starter`,
  * Run/Reset, and stdout/stderr shown distinctly.
  *
- * The static, server-rendered code sample right above this (see `block-renderer.tsx`) is
- * what a reader with JS off, or a search engine, actually sees — this component is a
- * progressive-enhancement layer on top of it, never the only copy of the content, per
- * task 049. It never fetches Pyodide on its own: `getRunner().prepare()` below is only
- * ever called from the Run click.
+ * The static, server-rendered code sample (see `block-renderer.tsx`) is what a reader with
+ * JS off actually sees; `onReady` tells `PlaygroundLazy` to take it away once this has
+ * mounted, so the same program is never on screen twice. It never fetches Pyodide on its
+ * own: `getRunner().prepare()` below is only ever called from the Run click.
  */
-export function Playground({ block }: { block: PlaygroundBlockData }) {
+export function Playground({
+  block,
+  title,
+  autoFocus,
+  onReady,
+}: {
+  block: PlaygroundBlockData;
+  title?: string;
+  autoFocus?: boolean;
+  onReady?: () => void;
+}) {
   const [source, setSource] = useState(block.starter);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<RunOutput | null>(null);
   const outputId = useId();
   const editorLabel = `Editable ${block.language} code`;
+
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
 
   const accessToken = useAccessToken();
   const runner = useMemo(() => getRunner(block.language, accessToken), [block.language, accessToken]);
@@ -86,7 +99,7 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
   }, [block.starter]);
 
   return (
-    <LessonPanel label="Try it yourself" flush>
+    <LessonPanel label="Try it yourself" title={title} flush>
       {block.prompt ? (
         <p className="border-b border-line px-5 py-3 text-body leading-relaxed text-ink sm:px-6">
           <InlineText text={block.prompt} />
@@ -98,6 +111,7 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
           value={source}
           extensions={extensions}
           onChange={setSource}
+          autoFocus={autoFocus}
           basicSetup={{ lineNumbers: true, foldGutter: false, highlightActiveLine: false }}
           aria-label={editorLabel}
         />
@@ -134,7 +148,16 @@ export function Playground({ block }: { block: PlaygroundBlockData }) {
       </div>
 
       <div id={outputId} role="status" aria-live="polite" className="border-t border-line bg-surface-sunken px-5 py-3 sm:px-6">
-        {!result && <p className="text-caption text-ink-subtle">Run to see what this prints.</p>}
+        {/* Before a run, what the starter prints: the static copy that showed it is gone now. */}
+        {!result && block.expectedOutput ? (
+          <div>
+            <LessonLabel>Expected output</LessonLabel>
+            <pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap font-mono text-caption text-ink-muted">
+              {block.expectedOutput}
+            </pre>
+          </div>
+        ) : null}
+        {!result && !block.expectedOutput && <p className="text-caption text-ink-subtle">Run to see what this prints.</p>}
         {result?.message && <p className="text-caption text-ink-muted">{result.message}</p>}
         {result && !result.message && (
           <div className="flex flex-col gap-2">

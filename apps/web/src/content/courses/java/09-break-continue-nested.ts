@@ -55,7 +55,15 @@ export const chapterBreakContinueNested: Chapter = {
         "        System.out.println();\n" +
         "    }\n" +
         "}\n",
-      output: "1 2 3 4 5 \n1 3 5 7 9",
+      output:
+        "1 2 3 4 5 \n" +
+        "1 3 5 7 9",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Swap the two keywords: put `continue` in the first loop and `break` in the second. Predict " +
+          "both lines before you run.",
+      },
     },
     {
       kind: "p",
@@ -148,36 +156,6 @@ export const chapterBreakContinueNested: Chapter = {
         "outer loop would then move on to `i = 3` and print three more lines. With `break outer`, the " +
         "whole nested structure ends the moment that one combination is hit, which is exactly the pattern " +
         "you want when searching a 2D grid for one match and stopping immediately once you find it.",
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Swap the two keywords: put `continue` in the first loop and `break` in the second. Predict both " +
-        "lines before you run.",
-      starter:
-        "public class BreakContinue {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        for (int i = 1; i <= 10; i++) {\n" +
-        "            if (i == 6) {\n" +
-        "                break;\n" +
-        "            }\n" +
-        '            System.out.print(i + " ");\n' +
-        "        }\n" +
-        "        System.out.println();\n" +
-        "\n" +
-        "        for (int i = 1; i <= 10; i++) {\n" +
-        "            if (i % 2 == 0) {\n" +
-        "                continue;\n" +
-        "            }\n" +
-        '            System.out.print(i + " ");\n' +
-        "        }\n" +
-        "        System.out.println();\n" +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "1 2 3 4 5\n" +
-        "1 3 5 7 9",
     },
     {
       kind: "pitfall",

@@ -36,19 +36,13 @@ export const chapterExceptions: Chapter = {
     {
       kind: "code",
       caption:
-        "A built-in exception (array bounds), a custom checked exception, and multi-catch, all handled — the " +
-        "program never crashes.",
+        "A built-in exception (array bounds), a custom checked exception, and multi-catch, all handled — " +
+        "the program never crashes.",
       code:
-        "class InsufficientBalanceException extends Exception {\n" +
-        "    InsufficientBalanceException(String message) {\n" +
-        "        super(message);\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
         "public class ExceptionsDemo {\n" +
         "    static void withdraw(double balance, double amount) throws InsufficientBalanceException {\n" +
         "        if (amount > balance) {\n" +
-        '            throw new InsufficientBalanceException(\n' +
+        "            throw new InsufficientBalanceException(\n" +
         '                "Cannot withdraw " + amount + " from balance " + balance);\n' +
         "        }\n" +
         '        System.out.println("Withdrawal of " + amount + " approved");\n' +
@@ -80,6 +74,12 @@ export const chapterExceptions: Chapter = {
         "\n" +
         '        System.out.println("Program continues after all handled exceptions");\n' +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "class InsufficientBalanceException extends Exception {\n" +
+        "    InsufficientBalanceException(String message) {\n" +
+        "        super(message);\n" +
+        "    }\n" +
         "}\n",
       output:
         "Caught: Index 5 out of bounds for length 3\n" +
@@ -87,6 +87,12 @@ export const chapterExceptions: Chapter = {
         "Caught custom exception: Cannot withdraw 1500.0 from balance 1000.0\n" +
         "Caught: NullPointerException\n" +
         "Program continues after all handled exceptions",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change the withdrawal to `withdraw(1000.0, 500.0)` and run. Then delete `throws " +
+          "InsufficientBalanceException` from `withdraw` and read why the compiler insists on it.",
+      },
     },
     {
       kind: "p",
@@ -134,62 +140,6 @@ export const chapterExceptions: Chapter = {
         { label: "Finally", text: "Before control leaves the try/catch entirely, the finally block always runs — whether the try succeeded, an exception was caught, or even if the exception had gone uncaught." },
         { label: "Resume", text: "Only after finally completes does execution continue to the next statement after the whole try/catch/finally." },
       ],
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Change the withdrawal to `withdraw(1000.0, 500.0)` and run. Then delete `throws " +
-        "InsufficientBalanceException` from `withdraw` and read why the compiler insists on it.",
-      starter:
-        "public class ExceptionsDemo {\n" +
-        "    static void withdraw(double balance, double amount) throws InsufficientBalanceException {\n" +
-        "        if (amount > balance) {\n" +
-        "            throw new InsufficientBalanceException(\n" +
-        '                "Cannot withdraw " + amount + " from balance " + balance);\n' +
-        "        }\n" +
-        '        System.out.println("Withdrawal of " + amount + " approved");\n' +
-        "    }\n" +
-        "\n" +
-        "    public static void main(String[] args) {\n" +
-        "        int[] marks = { 90, 85, 78 };\n" +
-        "\n" +
-        "        try {\n" +
-        '            System.out.println("Marks[5] = " + marks[5]);\n' +
-        "        } catch (ArrayIndexOutOfBoundsException e) {\n" +
-        '            System.out.println("Caught: " + e.getMessage());\n' +
-        "        } finally {\n" +
-        '            System.out.println("Finished checking the array, regardless of outcome");\n' +
-        "        }\n" +
-        "\n" +
-        "        try {\n" +
-        "            withdraw(1000.0, 1500.0);\n" +
-        "        } catch (InsufficientBalanceException e) {\n" +
-        '            System.out.println("Caught custom exception: " + e.getMessage());\n' +
-        "        }\n" +
-        "\n" +
-        "        try {\n" +
-        "            String s = null;\n" +
-        "            System.out.println(s.length());\n" +
-        "        } catch (NullPointerException | ArithmeticException e) {\n" +
-        '            System.out.println("Caught: " + e.getClass().getSimpleName());\n' +
-        "        }\n" +
-        "\n" +
-        '        System.out.println("Program continues after all handled exceptions");\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class InsufficientBalanceException extends Exception {\n" +
-        "    InsufficientBalanceException(String message) {\n" +
-        "        super(message);\n" +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Caught: Index 5 out of bounds for length 3\n" +
-        "Finished checking the array, regardless of outcome\n" +
-        "Caught custom exception: Cannot withdraw 1500.0 from balance 1000.0\n" +
-        "Caught: NullPointerException\n" +
-        "Program continues after all handled exceptions",
     },
     {
       kind: "pitfall",

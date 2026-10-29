@@ -271,25 +271,24 @@ function BlockView({
       return (
         <div className="flex flex-col gap-4">
           {/*
-            The server-rendered copy: a reader with JS off, or a crawler, sees the real
-            starter code and expected output here regardless of what the editor below
-            does. The playground is layered on top of this, never a replacement for it
-            (task 049).
+            The server-rendered copy: a reader with JS off sees the real starter code and
+            expected output here. Once the editor has mounted it takes this copy's place
+            rather than sitting under it, so the program is on screen once (task 049).
           */}
-          <LessonPanel label={`Starter code · ${block.language === "python" ? "Python" : "Java"}`} flush>
-            <div className="relative">
-              <StaticCode code={block.starter} html={highlightedHtml} />
-              <CopyCodeButton code={block.starter} />
-            </div>
-            {block.expectedOutput ? (
-              <div className="border-t border-line bg-surface-sunken px-5 py-3 sm:px-6">
-                <LessonLabel>Expected output</LessonLabel>
-                <pre className="mt-1 overflow-x-auto font-mono text-caption text-ink-muted">{block.expectedOutput}</pre>
+          <PlaygroundLazy block={block}>
+            <LessonPanel label={`Starter code · ${block.language === "python" ? "Python" : "Java"}`} flush>
+              <div className="relative">
+                <StaticCode code={block.starter} html={highlightedHtml} />
+                <CopyCodeButton code={block.starter} />
               </div>
-            ) : null}
-          </LessonPanel>
-
-          <PlaygroundLazy block={block} />
+              {block.expectedOutput ? (
+                <div className="border-t border-line bg-surface-sunken px-5 py-3 sm:px-6">
+                  <LessonLabel>Expected output</LessonLabel>
+                  <pre className="mt-1 overflow-x-auto font-mono text-caption text-ink-muted">{block.expectedOutput}</pre>
+                </div>
+              ) : null}
+            </LessonPanel>
+          </PlaygroundLazy>
         </div>
       );
   }

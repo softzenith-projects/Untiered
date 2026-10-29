@@ -129,7 +129,9 @@ export const chapterWhatIsJava: Chapter = {
     },
     {
       kind: "code",
-      caption: "A complete program — the same one traced above. Compiled with `javac Hello.java`, run with `java Hello`.",
+      caption:
+        "A complete program — the same one traced above. Compiled with `javac Hello.java`, run with `java " +
+        "Hello`.",
       code:
         "public class Hello {\n" +
         "    public static void main(String[] args) {\n" +
@@ -137,7 +139,16 @@ export const chapterWhatIsJava: Chapter = {
         '        System.out.println("This program was compiled once and can now run anywhere a JVM exists.");\n' +
         "    }\n" +
         "}\n",
-      output: "Namaste, Java!\nThis program was compiled once and can now run anywhere a JVM exists.",
+      output:
+        "Namaste, Java!\n" +
+        "This program was compiled once and can now run anywhere a JVM exists.",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change the text in the first `println` to your own greeting and press Run. Then delete one " +
+          "semicolon and run again: that red message is a compile error, caught before the program ever " +
+          "starts.",
+      },
     },
     { kind: "h", text: "Compiled, but not compiled all the way" },
     {
@@ -152,24 +163,6 @@ export const chapterWhatIsJava: Chapter = {
         "for syntax errors — but the thing it's compiled to is a made-up instruction set for an imaginary " +
         "processor (the JVM), not a real one. That imaginary processor is implemented in software for every " +
         "real machine, which is what makes the same `.class` file portable.",
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Change the text in the first `println` to your own greeting and press Run. Then delete one " +
-        "semicolon and run again: that red message is a compile error, caught before the program ever " +
-        "starts.",
-      starter:
-        "public class Hello {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        System.out.println("Namaste, Java!");\n' +
-        '        System.out.println("This program was compiled once and can now run anywhere a JVM exists.");\n' +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Namaste, Java!\n" +
-        "This program was compiled once and can now run anywhere a JVM exists.",
     },
     {
       kind: "pitfall",

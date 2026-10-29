@@ -38,6 +38,24 @@ export const chapterEncapsulation: Chapter = {
       kind: "code",
       caption: "A BankAccount with a private balance, reachable only through validated methods.",
       code:
+        "public class EncapsulationDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        BankAccount acc = new BankAccount("Priya", 1000.0);\n' +
+        "\n" +
+        "        acc.deposit(500.0);\n" +
+        '        System.out.println("Balance after deposit: " + acc.getBalance());\n' +
+        "\n" +
+        "        acc.withdraw(2000.0);\n" +
+        '        System.out.println("Balance after rejected withdrawal: " + acc.getBalance());\n' +
+        "\n" +
+        "        acc.deposit(-50.0);\n" +
+        '        System.out.println("Balance after rejected deposit: " + acc.getBalance());\n' +
+        "\n" +
+        "        acc.withdraw(300.0);\n" +
+        '        System.out.println("Balance after valid withdrawal: " + acc.getBalance());\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
         "class BankAccount {\n" +
         "    private String owner;\n" +
         "    private double balance;\n" +
@@ -66,24 +84,6 @@ export const chapterEncapsulation: Chapter = {
         "        }\n" +
         "        balance -= amount;\n" +
         "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class EncapsulationDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        BankAccount acc = new BankAccount("Priya", 1000.0);\n' +
-        "\n" +
-        "        acc.deposit(500.0);\n" +
-        '        System.out.println("Balance after deposit: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.withdraw(2000.0);\n" +
-        '        System.out.println("Balance after rejected withdrawal: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.deposit(-50.0);\n" +
-        '        System.out.println("Balance after rejected deposit: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.withdraw(300.0);\n" +
-        '        System.out.println("Balance after valid withdrawal: " + acc.getBalance());\n' +
-        "    }\n" +
         "}\n",
       output:
         "Balance after deposit: 1500.0\n" +
@@ -92,6 +92,13 @@ export const chapterEncapsulation: Chapter = {
         "Deposit rejected: amount must be positive\n" +
         "Balance after rejected deposit: 1500.0\n" +
         "Balance after valid withdrawal: 1200.0",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Add `acc.balance = 1000000;` to `main` and run. The compiler stops you, because `balance` is " +
+          "private. The only way to change it is through `deposit` and `withdraw`, which check the " +
+          "amount.",
+      },
     },
     {
       kind: "p",
@@ -137,68 +144,6 @@ export const chapterEncapsulation: Chapter = {
           { cells: [{ value: 1500.0, state: "done", pointers: ["balance"] }], note: "balance is exactly what it was before the call: 1500.0, confirmed by the next println." },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Add `acc.balance = 1000000;` to `main` and run. The compiler stops you, because `balance` is " +
-        "private. The only way to change it is through `deposit` and `withdraw`, which check the amount.",
-      starter:
-        "public class EncapsulationDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        BankAccount acc = new BankAccount("Priya", 1000.0);\n' +
-        "\n" +
-        "        acc.deposit(500.0);\n" +
-        '        System.out.println("Balance after deposit: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.withdraw(2000.0);\n" +
-        '        System.out.println("Balance after rejected withdrawal: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.deposit(-50.0);\n" +
-        '        System.out.println("Balance after rejected deposit: " + acc.getBalance());\n' +
-        "\n" +
-        "        acc.withdraw(300.0);\n" +
-        '        System.out.println("Balance after valid withdrawal: " + acc.getBalance());\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class BankAccount {\n" +
-        "    private String owner;\n" +
-        "    private double balance;\n" +
-        "\n" +
-        "    BankAccount(String owner, double balance) {\n" +
-        "        this.owner = owner;\n" +
-        "        this.balance = balance;\n" +
-        "    }\n" +
-        "\n" +
-        "    public double getBalance() {\n" +
-        "        return balance;\n" +
-        "    }\n" +
-        "\n" +
-        "    public void deposit(double amount) {\n" +
-        "        if (amount <= 0) {\n" +
-        '            System.out.println("Deposit rejected: amount must be positive");\n' +
-        "            return;\n" +
-        "        }\n" +
-        "        balance += amount;\n" +
-        "    }\n" +
-        "\n" +
-        "    public void withdraw(double amount) {\n" +
-        "        if (amount > balance) {\n" +
-        '            System.out.println("Withdrawal rejected: insufficient balance");\n' +
-        "            return;\n" +
-        "        }\n" +
-        "        balance -= amount;\n" +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Balance after deposit: 1500.0\n" +
-        "Withdrawal rejected: insufficient balance\n" +
-        "Balance after rejected withdrawal: 1500.0\n" +
-        "Deposit rejected: amount must be positive\n" +
-        "Balance after rejected deposit: 1500.0\n" +
-        "Balance after valid withdrawal: 1200.0",
     },
     {
       kind: "pitfall",

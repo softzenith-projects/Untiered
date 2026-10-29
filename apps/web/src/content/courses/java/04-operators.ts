@@ -80,6 +80,12 @@ export const chapterOperators: Chapter = {
         "passed = true, distinction = true\n" +
         "No school = true\n" +
         "Ternary result: 100",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change `a` and `b` to 20 and 6. Before you press Run, write down what you expect `a / b` and " +
+          "`a % b` to print, then check.",
+      },
     },
     {
       kind: "p",
@@ -137,56 +143,6 @@ export const chapterOperators: Chapter = {
         "three operands (a condition, a value for true, a value for false), which is why it's called " +
         "ternary. It's useful for short, single-value decisions; for anything longer, a proper if/else " +
         "(next chapter) reads more clearly.",
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Change `a` and `b` to 20 and 6. Before you press Run, write down what you expect `a / b` and `a " +
-        "% b` to print, then check.",
-      starter:
-        "public class Operators {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        int a = 17, b = 5;\n" +
-        '        System.out.println("a + b = " + (a + b));\n' +
-        '        System.out.println("a - b = " + (a - b));\n' +
-        '        System.out.println("a * b = " + (a * b));\n' +
-        '        System.out.println("a / b = " + (a / b));\n' +
-        '        System.out.println("a % b = " + (a % b));\n' +
-        "\n" +
-        "        double x = 17.0, y = 5.0;\n" +
-        '        System.out.println("x / y = " + (x / y));\n' +
-        "\n" +
-        "        int count = 0;\n" +
-        "        count++;\n" +
-        "        count++;\n" +
-        '        System.out.println("count after two increments: " + count);\n' +
-        "\n" +
-        "        int marks = 78;\n" +
-        "        boolean passed = marks >= 40;\n" +
-        "        boolean distinction = marks >= 75 && marks <= 100;\n" +
-        '        System.out.println("passed = " + passed + ", distinction = " + distinction);\n' +
-        "\n" +
-        "        boolean isHoliday = false;\n" +
-        "        boolean isWeekend = true;\n" +
-        '        System.out.println("No school = " + (isHoliday || isWeekend));\n' +
-        "\n" +
-        "        int p = 5;\n" +
-        "        int result = (p > 3) ? 100 : 200;\n" +
-        '        System.out.println("Ternary result: " + result);\n' +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "a + b = 22\n" +
-        "a - b = 12\n" +
-        "a * b = 85\n" +
-        "a / b = 3\n" +
-        "a % b = 2\n" +
-        "x / y = 3.4\n" +
-        "count after two increments: 2\n" +
-        "passed = true, distinction = true\n" +
-        "No school = true\n" +
-        "Ternary result: 100",
     },
     {
       kind: "pitfall",

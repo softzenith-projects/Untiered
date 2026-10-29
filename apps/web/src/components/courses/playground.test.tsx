@@ -88,8 +88,22 @@ describe("Playground", () => {
     expect(await screen.findByRole("button", { name: "Loading Python…" })).toBeInTheDocument();
 
     resolvePrepare(true);
-    expect(await screen.findByText("hi")).toBeInTheDocument();
+    // The expected output ("hi") is on screen before the run, so wait for the run's own result.
     expect(await screen.findByText("Matches the expected output.")).toBeInTheDocument();
+    expect(screen.getByText("Output")).toBeInTheDocument();
+    expect(screen.getByText("hi")).toBeInTheDocument();
+  });
+
+  it("shows what the starter should print before anything has run", () => {
+    render(<Playground block={pythonBlock} />);
+    expect(screen.getByText("Expected output")).toBeInTheDocument();
+    expect(screen.queryByText("Run to see what this prints.")).not.toBeInTheDocument();
+  });
+
+  it("says when it has mounted, so the static copy of its code can be taken away", () => {
+    const onReady = vi.fn();
+    render(<Playground block={pythonBlock} onReady={onReady} />);
+    expect(onReady).toHaveBeenCalled();
   });
 
   it("shows stderr distinctly and does not claim a match when the run errored", async () => {

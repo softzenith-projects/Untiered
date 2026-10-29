@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useState, type ReactNode } from "react";
 
 import type { Block } from "@/content/courses/types";
 
@@ -29,6 +30,27 @@ const Playground = dynamic(() => import("@/components/courses/playground").then(
 
 type PlaygroundBlockData = Extract<Block, { kind: "playground" }>;
 
-export function PlaygroundLazy({ block }: { block: PlaygroundBlockData }) {
-  return <Playground block={block} />;
+/**
+ * `children` is the static copy of the same code: shown until the editor has mounted and
+ * then removed, so a reader sees the code once — never a read-only copy stacked above an
+ * editable one holding the same program.
+ */
+export function PlaygroundLazy({
+  block,
+  title,
+  autoFocus,
+  children,
+}: {
+  block: PlaygroundBlockData;
+  title?: string;
+  autoFocus?: boolean;
+  children?: ReactNode;
+}) {
+  const [ready, setReady] = useState(false);
+  return (
+    <>
+      {ready ? null : children}
+      <Playground block={block} title={title} autoFocus={autoFocus} onReady={() => setReady(true)} />
+    </>
+  );
 }

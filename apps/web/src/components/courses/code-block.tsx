@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
+
 import type { Block } from "@/content/courses/types";
 import type { CodeBlockHighlight } from "@/lib/highlight-code";
 import { CopyCodeButton } from "@/components/courses/copy-code-button";
-import { LessonLabel, LessonPanel } from "@/components/courses/lesson-box";
+import { LESSON_BUTTON_PRIMARY, LessonLabel, LessonPanel } from "@/components/courses/lesson-box";
+import { PlaygroundLazy } from "@/components/courses/playground-lazy";
 import { useCodeLanguage, type CodeLanguage } from "@/components/courses/code-language-context";
 
 type CodeBlockData = Extract<Block, { kind: "code" }>;
@@ -32,6 +35,7 @@ function StaticCode({ code, html }: { code: string; html: string | null }) {
  */
 export function CodeBlock({ block, highlighted }: { block: CodeBlockData; highlighted: CodeBlockHighlight | null }) {
   const { language, setLanguage } = useCodeLanguage();
+  const [editing, setEditing] = useState(false);
   const hasPython = Boolean(block.python);
   // A block with no Python *variant* always shows its own source, regardless of the page's
   // shared choice — there is nothing to switch to. `"java"` here means "the base source",
@@ -62,7 +66,10 @@ export function CodeBlock({ block, highlighted }: { block: CodeBlockData; highli
     </div>
   ) : null;
 
-  return (
+  // Runnable only while the base source is shown: that is the program `tryIt` describes.
+  const tryIt = shown === "java" ? block.tryIt : undefined;
+
+  const panel = (
     <LessonPanel label="Code" title={block.caption} aside={toggle} flush>
       <div className="relative">
         <StaticCode code={code} html={html} />
@@ -80,6 +87,27 @@ export function CodeBlock({ block, highlighted }: { block: CodeBlockData; highli
           <p className="mt-1 text-caption leading-relaxed text-ink-muted">{block.pythonNote}</p>
         </div>
       ) : null}
+      {tryIt && !editing ? (
+        <div className="flex flex-wrap items-center gap-3 border-t border-line px-5 py-3 sm:px-6">
+          <button type="button" onClick={() => setEditing(true)} className={LESSON_BUTTON_PRIMARY}>
+            Edit and run
+          </button>
+          <p className="text-caption text-ink-subtle">Change this code and run it right here.</p>
+        </div>
+      ) : null}
     </LessonPanel>
+  );
+
+  if (!tryIt || !editing) return panel;
+
+  // The editor takes this block's place, seeded with the same program, so it is never shown twice.
+  return (
+    <PlaygroundLazy
+      block={{ kind: "playground", language: tryIt.language, starter: block.code, prompt: tryIt.prompt, expectedOutput: block.output }}
+      title={block.caption}
+      autoFocus
+    >
+      {panel}
+    </PlaygroundLazy>
   );
 }
