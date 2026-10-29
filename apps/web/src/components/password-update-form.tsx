@@ -5,6 +5,8 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { BrandWordmark } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
+import { authErrorMessage } from "@/lib/auth-errors";
+import { PASSWORD_RULE, meetsPasswordRule } from "@/lib/password-rule";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PasswordUpdateForm() {
@@ -33,6 +35,10 @@ export function PasswordUpdateForm() {
     event.preventDefault();
     if (pending) return;
     setError(null);
+    if (!meetsPasswordRule(password)) {
+      setError(PASSWORD_RULE);
+      return;
+    }
     if (password !== confirmation) {
       setError("Passwords do not match.");
       return;
@@ -45,8 +51,8 @@ export function PasswordUpdateForm() {
       setPassword("");
       setConfirmation("");
       setSaved(true);
-    } catch {
-      setError("We could not update your password. Please try again or request a new link.");
+    } catch (updateError) {
+      setError(authErrorMessage(updateError, "reset"));
     } finally {
       setPending(false);
     }
@@ -73,7 +79,7 @@ export function PasswordUpdateForm() {
           </div>
         ) : (
           <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
-            <p className="text-caption text-ink-muted">Choose a password with at least 8 characters.</p>
+            <p className="text-caption text-ink-muted">{PASSWORD_RULE}</p>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="new-password" className="text-caption font-semibold text-ink">New password</label>
               <input id="new-password" type="password" autoComplete="new-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} disabled={pending} className="min-h-11 rounded-xl border border-line bg-surface px-4 text-body text-ink outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30" />

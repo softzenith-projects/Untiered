@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
 
   if (searchParams.get("error")) {
     // Supabase reports provider failures and expired email links on the query string.
-    return NextResponse.redirect(`${origin}/login?error=${next === "/auth/update-password" ? "link_expired" : "oauth"}`);
+    // A used or superseded sign-up confirmation arrives as otp_expired; calling that a
+    // failed sign-in sent candidates looking for a problem with Google.
+    const linkExpired = next === "/auth/update-password" || searchParams.get("error_code") === "otp_expired";
+    return NextResponse.redirect(`${origin}/login?error=${linkExpired ? "link_expired" : "oauth"}`);
   }
 
   if (!code) {
