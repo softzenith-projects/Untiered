@@ -126,6 +126,26 @@ export const chapterFirstProgram: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        'Change `System.out.print("Name: ")` to `println` and run. The name drops onto its own line, and ' +
+        "that is the whole difference between the two.",
+      starter:
+        "public class Anatomy {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        System.out.println("Roll number: 21");\n' +
+        '        System.out.print("Name: ");\n' +
+        '        System.out.println("Aditi");\n' +
+        '        System.out.println("Class: XII-B");\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Roll number: 21\n" +
+        "Name: Aditi\n" +
+        "Class: XII-B",
+    },
+    {
       kind: "pitfall",
       items: [
         "Naming the file differently from the public class. `class Anatomy` must live in `Anatomy.java` " +

@@ -155,6 +155,38 @@ export const chapterRecordsModernJava: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Records and sealed types need Java 16 or newer, and this playground runs Java 15, so it covers " +
+        'the part of the chapter it can: switch expressions and `var`. Add a `case 6 -> "D";` line and ' +
+        "run again.",
+      starter:
+        "public class ModernJava {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        int[] scores = {95, 87, 72, 64};\n" +
+        "        for (var score : scores) {\n" +
+        "            var grade = switch (score / 10) {\n" +
+        '                case 10, 9 -> "A";\n' +
+        '                case 8 -> "B";\n' +
+        '                case 7 -> "C";\n' +
+        '                default -> "F";\n' +
+        "            };\n" +
+        '            System.out.println(score + " -> " + grade);\n' +
+        "        }\n" +
+        "\n" +
+        '        var message = "var worked out that this is a String";\n' +
+        '        System.out.println(message + " (length " + message.length() + ")");\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "95 -> A\n" +
+        "87 -> B\n" +
+        "72 -> C\n" +
+        "64 -> F\n" +
+        "var worked out that this is a String (length 36)",
+    },
+    {
       kind: "pitfall",
       items: [
         "Trying to add a mutable field to a record beyond its header — records are deliberately restricted " +

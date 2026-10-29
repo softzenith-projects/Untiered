@@ -50,6 +50,39 @@ describe("course registry", () => {
   });
 });
 
+// The Java course's playgrounds run on our Piston runner, which launches a single source
+// file and starts from its first class. A helper class above `main`'s class is legal Java
+// that fails there, so a starter that reads fine can still break on its first Run.
+describe("course: java, as a whole", () => {
+  const javaCourse = courses.find((c) => c.slug === "java");
+  const javaChapters = javaCourse ? flattenChapters(javaCourse) : [];
+
+  it("gives every chapter a Java playground with the output it should print", () => {
+    expect(javaChapters.length).toBeGreaterThan(0);
+    for (const chapter of javaChapters) {
+      const playgrounds = blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[];
+      expect(playgrounds.length, chapter.slug).toBeGreaterThanOrEqual(1);
+      for (const block of playgrounds) {
+        expect(block.language, chapter.slug).toBe("java");
+        expect((block.prompt ?? "").trim().length, chapter.slug).toBeGreaterThan(0);
+        expect((block.expectedOutput ?? "").trim().length, chapter.slug).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("puts the class with main first in every playground, where the runner starts", () => {
+    for (const chapter of javaChapters) {
+      for (const block of blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[]) {
+        const topLevelType = /^(?:public |abstract |final )*(?:class|interface|enum) /;
+        const topLevelTypes = block.starter
+          .split(/^(?=(?:public |abstract |final )*(?:class|interface|enum) )/m)
+          .filter((part) => topLevelType.test(part));
+        expect(topLevelTypes[0] ?? "", chapter.slug).toContain("public static void main(");
+      }
+    }
+  });
+});
+
 // Course-level rules for the AI course (task 057), asserted once rather than per chapter:
 // the owner asked for many quizzes, hands-on practice throughout, and the agent lab as the
 // thing that makes this course different. These guard all three against erosion.

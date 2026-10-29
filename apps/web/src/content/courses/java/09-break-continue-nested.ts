@@ -150,6 +150,36 @@ export const chapterBreakContinueNested: Chapter = {
         "you want when searching a 2D grid for one match and stopping immediately once you find it.",
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Swap the two keywords: put `continue` in the first loop and `break` in the second. Predict both " +
+        "lines before you run.",
+      starter:
+        "public class BreakContinue {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        for (int i = 1; i <= 10; i++) {\n" +
+        "            if (i == 6) {\n" +
+        "                break;\n" +
+        "            }\n" +
+        '            System.out.print(i + " ");\n' +
+        "        }\n" +
+        "        System.out.println();\n" +
+        "\n" +
+        "        for (int i = 1; i <= 10; i++) {\n" +
+        "            if (i % 2 == 0) {\n" +
+        "                continue;\n" +
+        "            }\n" +
+        '            System.out.print(i + " ");\n' +
+        "        }\n" +
+        "        System.out.println();\n" +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "1 2 3 4 5\n" +
+        "1 3 5 7 9",
+    },
+    {
       kind: "pitfall",
       items: [
         "Confusing `break` and `continue` — `break` leaves the loop entirely; `continue` only skips to " +

@@ -1,50 +1,52 @@
 # Handoff — 29 October 2026
 
 ## Task
-Make Java code run on the server, in the interview's coding round and in the course playgrounds (owner, in session). PRD 06. Branch `feat/java-code-runner`.
+Give every Java course chapter a runnable "try it yourself" block (owner, in session: "I don't see a run option in the Java course"). PRD 06. Branch `feat/java-course-playgrounds`.
 
 ## What I built
-- **Interview round:** Java's Run button now calls the existing `POST /api/v1/sessions/{id}/run`. It used to show a hard-coded "not configured" message. The output is checked against the selected test case, the same way Python's is.
-  - `apps/web/src/components/dsa-workspace.tsx`
-  - `apps/web/src/components/interview-room.tsx`
-- **Courses:** a new `POST /api/v1/code/run` for signed-in readers (`apps/api/.../courses/CourseCodeController.kt`). The playground gets a Java runner through the existing `getRunner` seam (`apps/web/src/lib/course-code-runner.ts`, `playground.tsx`).
-- **Shared client helper:** `apps/web/src/lib/server-code-runner.ts` turns timeouts, a missing runner, rate limits and network failures into messages. It never throws.
-- **Rate limit:** both run routes share an hourly cap per account, `code_runs`, set by `interviewos.rate-limit.code-runs-per-hour` (default 200). See `AiRateLimit.kt`.
-- **Bug fix in `CodeRunner.kt`:** the runtime lookup called `.map` on a Jackson 3 `JsonNode`. That passed the whole `aliases` array to `asString()`, which threw `JsonNodeException`. The exception isn't caught, so the **first real Run would have returned a 500**. It now uses `.values()`, the pattern used in `GroundedAnswer.kt`.
-- **Compile errors** now name `Main.java` instead of Piston's renamed `Main.java.java`.
-- **Docs:** Piston setup is in `.env.example` and `deploy/api.env.example`. Both default to off.
-- **Tests:**
-  - `CodeRunnerTest` (Piston mocked with its real response shapes)
-  - `CourseCodeControllerTest` (happy path, missing token, bad input, 429)
-  - `dsa-workspace.test.tsx`
-  - `server-code-runner.test.ts`
-  - updated playground, course-code-runner and block-renderer tests
+- **A Java playground in all 35 Java chapters**, placed just before each chapter's "common mistakes" box. Each one has:
+  - a starter program
+  - a short task to try, such as "change `bigValue` to 300 and predict the byte"
+  - the output the starter should print
+
+  Files: `apps/web/src/content/courses/java/*.ts`.
+- **Most starters are the chapter's own main example.** Where a file has helper classes, the class with `main` moved to the top (see the runner bug below).
+- **Four chapters needed a different starter**, because their example cannot run in a single-file playground:
+  - **05 input/output:** `Scanner` reads from a string instead of the keyboard. The prompt says why.
+  - **13 methods:** the chapter only has snippets, so I joined them into one full program.
+  - **22 packages:** the chapter's example is two files in two packages. The playground uses the JDK's own packages (imports, fully-qualified names, `getPackageName()`) and says why.
+  - **35 records:** see the Java 15 note below. The playground covers switch expressions and `var` only, and says why.
+- **Runner fix, which also affects interview rounds** (`apps/api/.../interview/CodeRunner.kt`):
+  - Piston launches Java as a single source file and starts from the *first* class in it.
+  - A program written as `class Node {…}` followed by `public class Main {…}` is normal Java. It failed with a bare `can't find main(String[]) method in class: Node`.
+  - 16 of the 35 chapter examples had this shape. A candidate in a coding round could hit it too.
+  - The error now adds a line saying to move the class that has `main` to the top. The test is in `CodeRunnerTest`.
+- **Tests** (`content-integrity.test.ts`):
+  - every Java chapter has a Java playground with a prompt and expected output
+  - in every Java starter, the first class is the one with `main`
+- **Docs:** fixed the out-of-date "only Python can run" comment on the playground block type (`types.ts`).
 
 ## Assumptions I made
-- The runner is **self-hosted Piston**, which `CodeRunner` was already built for. Judge0 (GPL), CheerpJ (commercial licence) and in-browser JVMs were all ruled out in earlier tasks.
-- The course endpoint accepts Python or Java, matching the round's endpoint. In practice only Java reaches it, because Python still runs in the browser.
-- **No Java chapter has a playground block yet.** Their code samples are static `code` blocks. The playground is ready for Java, but adding "try it yourself" blocks to the Java course is content work I did not do.
+- One playground per chapter, reusing the chapter's own example, so the expected output is already checked against the text.
+- I fixed the class-order problem by improving the error message, not by reordering the candidate's code on the server. Reordering would shift the line numbers in compile errors and change what the candidate wrote.
 
 ## What I could NOT verify
-- **End to end through the API with a real sign-in.** I ran Java directly against a local Piston, using the exact request shape the API sends:
-  - normal output, including a class not named `Main`
-  - a compile error
-  - an infinite loop, which Piston killed with `SIGKILL`
-
-  I did not call the API with a real Supabase token or press Run in a live round, because a live round spends Gemini (rule 7).
-- Piston's latency and memory under real use.
+- **Pressing Run in a browser while signed in.** I checked the content directly against the local Piston, using the request the API sends:
+  - all 35 starters compile and print exactly their `expectedOutput`
+  - two prompt claims hold: deleting `hashCode()` makes the set size 3, and removing `synchronized` with 100,000 increments loses updates (124k–130k out of 200k)
+- How the prompts read to a class-12 student. That's your judgement.
 
 ## Verification status
-- web typecheck / lint / test (3,216 passing) / build: pass locally
+- web typecheck / lint / test (3,218 passing) / build: pass locally
 - api ktlintCheck / test / build: pass locally
-- CI run 40816699844 on `89944f2`: api, web, images, database all green
+- CI: see merge status
 
 ## Merge status
-- Merged `feat/java-code-runner` into `develop`. No migrations in this change.
+- See the session report: merged only if CI is green on the branch.
 
 ## Suggested next task
-- Add Java "try it yourself" playground blocks to the Java course chapters.
+- Decide on a newer Java for the runner (below), then give chapter 35 a real records playground.
 
 ## Open questions for you
-- **Production hosting for Piston.** It must run `--privileged`, so a sandbox escape gives root on its host. Don't put it on the API's VM, which holds the Supabase, Gemini and Razorpay keys. The 2 GB VM also lacks the memory. A second small VM is new monthly spend, so it's your call. Until then, production keeps `CODE_RUNNER_ENABLED=false` and Java's Run button says no runner is configured.
-- **Piston's limits.** It must be started with `PISTON_RUN_TIMEOUT=5000`. Its default limit is 3000 ms, and the API asks for 5000, so every run would be refused.
+- **The runner is Java 15. Piston's package index has no newer Java.** Records, sealed types and pattern-matching `switch` don't compile on it. That breaks chapter 35's own example, and also any candidate who writes a record in a coding round. A custom Piston package for Java 17 or 21 is possible, but it's build and maintenance work. Your call.
+- Unchanged from the last handoff: production hosting for Piston. Until that's decided, production keeps `CODE_RUNNER_ENABLED=false`, and Java's Run button says no runner is configured.

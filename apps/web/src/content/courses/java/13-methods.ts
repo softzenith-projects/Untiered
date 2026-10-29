@@ -173,6 +173,65 @@ export const chapterMethods: Chapter = {
         "caller, because both references point at the one shared object.",
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Add a fourth `add` overload that takes four numbers, and call it from `main`. Then try `add(2.5, " +
+        "3)` and read why Java can't find a method that matches.",
+      starter:
+        "public class Methods {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        System.out.println("square(5) = " + square(5));\n' +
+        '        System.out.println("square(2.5) = " + square(2.5));\n' +
+        '        System.out.println("add(2,3) = " + add(2, 3));\n' +
+        '        System.out.println("add(2,3,4) = " + add(2, 3, 4));\n' +
+        "\n" +
+        "        int number = 10;\n" +
+        "        doubleValue(number);\n" +
+        '        System.out.println("After doubleValue, number = " + number);\n' +
+        "\n" +
+        "        int[] data = {10, 20, 30};\n" +
+        "        doubleFirstElement(data);\n" +
+        '        System.out.println("After doubleFirstElement, data[0] = " + data[0]);\n' +
+        "    }\n" +
+        "\n" +
+        "    static int square(int n) {\n" +
+        "        return n * n;\n" +
+        "    }\n" +
+        "\n" +
+        "    static double square(double n) {\n" +
+        "        return n * n;\n" +
+        "    }\n" +
+        "\n" +
+        "    static int add(int a, int b) {\n" +
+        "        return a + b;\n" +
+        "    }\n" +
+        "\n" +
+        "    static int add(int a, int b, int c) {\n" +
+        "        return a + b + c;\n" +
+        "    }\n" +
+        "\n" +
+        "    static void doubleValue(int x) {\n" +
+        "        x = x * 2;\n" +
+        '        System.out.println("Inside doubleValue, x = " + x);\n' +
+        "    }\n" +
+        "\n" +
+        "    static void doubleFirstElement(int[] arr) {\n" +
+        "        arr[0] = arr[0] * 2;\n" +
+        '        System.out.println("Inside doubleFirstElement, arr[0] = " + arr[0]);\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "square(5) = 25\n" +
+        "square(2.5) = 6.25\n" +
+        "add(2,3) = 5\n" +
+        "add(2,3,4) = 9\n" +
+        "Inside doubleValue, x = 20\n" +
+        "After doubleValue, number = 10\n" +
+        "Inside doubleFirstElement, arr[0] = 20\n" +
+        "After doubleFirstElement, data[0] = 20",
+    },
+    {
       kind: "pitfall",
       items: [
         "Saying \"objects are passed by reference in Java\" — imprecise, and the imprecision causes real " +

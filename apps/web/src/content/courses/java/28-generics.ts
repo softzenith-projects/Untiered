@@ -134,6 +134,74 @@ export const chapterGenerics: Chapter = {
       ],
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Add `stringBox.put(42);` and read the compile error, which is the check generics give you. Then " +
+        "make a `Pair<String, Double>` holding a name and a height.",
+      starter:
+        "import java.util.ArrayList;\n" +
+        "import java.util.List;\n" +
+        "\n" +
+        "public class GenericsDemo {\n" +
+        "    static <T> T firstElement(List<T> list) {\n" +
+        "        return list.get(0);\n" +
+        "    }\n" +
+        "\n" +
+        "    public static void main(String[] args) {\n" +
+        "        Box<String> stringBox = new Box<>();\n" +
+        '        stringBox.put("Priya");\n' +
+        "        String name = stringBox.get();\n" +
+        '        System.out.println("Box<String>: " + name);\n' +
+        "\n" +
+        "        Box<Integer> intBox = new Box<>();\n" +
+        "        intBox.put(42);\n" +
+        "        int number = intBox.get();\n" +
+        '        System.out.println("Box<Integer>: " + number);\n' +
+        "\n" +
+        '        Pair<String, Integer> marks = new Pair<>("Priya", 87);\n' +
+        '        System.out.println("Pair: " + marks);\n' +
+        "\n" +
+        "        List<String> names = new ArrayList<>();\n" +
+        '        names.add("Arjun");\n' +
+        '        names.add("Vikram");\n' +
+        '        System.out.println("First element via generic method: " + firstElement(names));\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Box<T> {\n" +
+        "    private T content;\n" +
+        "\n" +
+        "    void put(T item) {\n" +
+        "        content = item;\n" +
+        "    }\n" +
+        "\n" +
+        "    T get() {\n" +
+        "        return content;\n" +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Pair<K, V> {\n" +
+        "    private K key;\n" +
+        "    private V value;\n" +
+        "\n" +
+        "    Pair(K key, V value) {\n" +
+        "        this.key = key;\n" +
+        "        this.value = value;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public String toString() {\n" +
+        '        return key + " -> " + value;\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Box<String>: Priya\n" +
+        "Box<Integer>: 42\n" +
+        "Pair: Priya -> 87\n" +
+        "First element via generic method: Arjun",
+    },
+    {
       kind: "pitfall",
       items: [
         "Using raw types (`Box box = new Box();`, no `<...>`) — this compiles for backward compatibility " +

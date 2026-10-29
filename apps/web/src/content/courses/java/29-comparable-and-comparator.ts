@@ -138,6 +138,60 @@ export const chapterComparableComparator: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        "Swap `this.marks` and `other.marks` inside `compareTo` and run. The natural order now puts the " +
+        "highest marks first, and the two Comparator lines don't change at all.",
+      starter:
+        "import java.util.ArrayList;\n" +
+        "import java.util.Collections;\n" +
+        "import java.util.Comparator;\n" +
+        "import java.util.List;\n" +
+        "\n" +
+        "public class ComparableComparatorDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        "        List<Student> students = new ArrayList<>();\n" +
+        '        students.add(new Student("Priya", 87));\n' +
+        '        students.add(new Student("Arjun", 91));\n' +
+        '        students.add(new Student("Vikram", 78));\n' +
+        "\n" +
+        "        Collections.sort(students);\n" +
+        '        System.out.println("Sorted by marks (Comparable): " + students);\n' +
+        "\n" +
+        "        students.sort(Comparator.comparing(s -> s.name));\n" +
+        '        System.out.println("Sorted by name (Comparator): " + students);\n' +
+        "\n" +
+        "        students.sort(Comparator.comparingInt((Student s) -> s.marks).reversed());\n" +
+        '        System.out.println("Sorted by marks descending (Comparator): " + students);\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Student implements Comparable<Student> {\n" +
+        "    String name;\n" +
+        "    int marks;\n" +
+        "\n" +
+        "    Student(String name, int marks) {\n" +
+        "        this.name = name;\n" +
+        "        this.marks = marks;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public int compareTo(Student other) {\n" +
+        "        return Integer.compare(this.marks, other.marks);\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override\n" +
+        "    public String toString() {\n" +
+        '        return name + "(" + marks + ")";\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Sorted by marks (Comparable): [Vikram(78), Priya(87), Arjun(91)]\n" +
+        "Sorted by name (Comparator): [Arjun(91), Priya(87), Vikram(78)]\n" +
+        "Sorted by marks descending (Comparator): [Arjun(91), Priya(87), Vikram(78)]",
+    },
+    {
       kind: "pitfall",
       items: [
         "Writing `this.marks - other.marks` inside `compareTo` instead of `Integer.compare(...)` — this can " +

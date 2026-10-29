@@ -124,6 +124,49 @@ export const chapterConstructorsAndThis: Chapter = {
       },
     },
     {
+      kind: "playground",
+      language: "java",
+      prompt:
+        'Delete `this("Unnamed", 0);` from the no-argument constructor and run. `s2` now prints `null ' +
+        "(Roll 0)`: those are the values a field holds when nobody sets it.",
+      starter:
+        "public class ConstructorsDemo {\n" +
+        "    public static void main(String[] args) {\n" +
+        '        Student s1 = new Student("Priya", 12);\n' +
+        "        Student s2 = new Student();\n" +
+        "\n" +
+        "        s1.print();\n" +
+        "        s2.print();\n" +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Student {\n" +
+        "    String name;\n" +
+        "    int rollNumber;\n" +
+        "\n" +
+        "    Student() {\n" +
+        '        this("Unnamed", 0);\n' +
+        '        System.out.println("No-arg constructor ran, delegated to the two-arg one");\n' +
+        "    }\n" +
+        "\n" +
+        "    Student(String name, int rollNumber) {\n" +
+        "        this.name = name;\n" +
+        "        this.rollNumber = rollNumber;\n" +
+        '        System.out.println("Two-arg constructor ran for " + this.name);\n' +
+        "    }\n" +
+        "\n" +
+        "    void print() {\n" +
+        '        System.out.println(name + " (Roll " + rollNumber + ")");\n' +
+        "    }\n" +
+        "}\n",
+      expectedOutput:
+        "Two-arg constructor ran for Priya\n" +
+        "Two-arg constructor ran for Unnamed\n" +
+        "No-arg constructor ran, delegated to the two-arg one\n" +
+        "Priya (Roll 12)\n" +
+        "Unnamed (Roll 0)",
+    },
+    {
       kind: "pitfall",
       items: [
         "Writing `name = name;` instead of `this.name = name;` when a parameter shares a field's name — " +
