@@ -60,6 +60,8 @@
   --avatar-ink: #113c34;
   --course-java-start: #fff0d9;
   --course-java-end: #f7e6d5;
+  --course-js-start: #fff7cc;
+  --course-js-end: #e4f6e9;
   --course-dsa-start: #dcf5ef;
   --course-dsa-end: #e5ecff;
   --course-ai-start: #ebe6ff;
@@ -155,6 +157,8 @@
     --avatar-ink: #e8fff5;
     --course-java-start: #493515;
     --course-java-end: #3e2d1c;
+    --course-js-start: #45401a;
+    --course-js-end: #173d2a;
     --course-dsa-start: #123e37;
     --course-dsa-end: #1b3153;
     --course-ai-start: #34244f;
@@ -234,6 +238,8 @@
   --color-avatar-ink: var(--avatar-ink);
   --color-course-java-start: var(--course-java-start);
   --color-course-java-end: var(--course-java-end);
+  --color-course-js-start: var(--course-js-start);
+  --color-course-js-end: var(--course-js-end);
   --color-course-dsa-start: var(--course-dsa-start);
   --color-course-dsa-end: var(--course-dsa-end);
   --color-course-ai-start: var(--course-ai-start);

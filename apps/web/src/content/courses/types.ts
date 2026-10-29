@@ -40,7 +40,7 @@ export type Block =
        * repeating it: "Edit and run" swaps the block for the editor, seeded with `code` and
        * checked against `output`. `prompt` is the task shown above the editor.
        */
-      tryIt?: { language: "python" | "java"; prompt: string };
+      tryIt?: { language: "python" | "java" | "javascript"; prompt: string };
     }
   | { kind: "list"; items: string[]; ordered?: boolean }
   | { kind: "table"; head: string[]; rows: string[][] }
@@ -72,10 +72,13 @@ export type Block =
    * `POST /api/v1/code/run` — see `getRunner` in `lib/course-code-runner.ts`. Piston
    * launches one source file and starts from its first class, so a Java starter puts the
    * class with `main` first. Where no runner is configured, Run explains that instead.
+   * JavaScript runs in a browser worker that prints the way `node` does
+   * (`lib/javascript-runtime.ts`); it has no `require`, and cannot print a Promise's state
+   * or an Error's stack.
    */
   | {
       kind: "playground";
-      language: "python" | "java";
+      language: "python" | "java" | "javascript";
       /** Seed source. "Reset to original" restores exactly this string. */
       starter: string;
       /** A short task line shown above the editor, e.g. "Change `nums` and run again." */
@@ -254,7 +257,7 @@ export interface Course {
    * languages inside one course is not a thing any course here does, and a per-block flag
    * would be one more field for a chapter author to forget and mislabel.
    */
-  codeLanguage?: "java" | "python";
+  codeLanguage?: "java" | "python" | "javascript";
   /** Set to false for conceptual courses where forcing a code sample would be misleading. */
   requiresCodeExamples?: boolean;
   modules: Module[];

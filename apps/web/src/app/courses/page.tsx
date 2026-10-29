@@ -12,7 +12,7 @@ import { requireFeature } from "@/lib/require-feature";
 
 export const metadata: Metadata = {
   title: "Courses — Untiered",
-  description: "Free interactive courses in Java, data structures, AI agents, and system design.",
+  description: "Free interactive courses in Java, JavaScript, data structures, AI agents, and system design.",
 };
 export const dynamic = "force-dynamic";
 

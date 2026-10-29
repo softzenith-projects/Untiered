@@ -1,6 +1,7 @@
 "use client";
 
 import { java } from "@codemirror/lang-java";
+import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import CodeMirror from "@uiw/react-codemirror";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
@@ -59,7 +60,10 @@ export function Playground({
 
   const accessToken = useAccessToken();
   const runner = useMemo(() => getRunner(block.language, accessToken), [block.language, accessToken]);
-  const extensions = useMemo(() => [block.language === "java" ? java() : python()], [block.language]);
+  const extensions = useMemo(
+    () => [block.language === "java" ? java() : block.language === "javascript" ? javascript({ jsx: true }) : python()],
+    [block.language],
+  );
 
   const handleRun = useCallback(async () => {
     setPhase("loading");
@@ -72,7 +76,9 @@ export function Playground({
         message:
           block.language === "java"
             ? "Java runs on our server, and you need to be signed in for that. Sign in again, then press Run."
-            : "Python could not be loaded here. Try again, or read through the code instead.",
+            : block.language === "javascript"
+              ? "This browser could not start a sandbox for your code. Try another browser, or read through the code instead."
+              : "Python could not be loaded here. Try again, or read through the code instead.",
         timedOut: false,
         matchesExpected: null,
       });
@@ -139,6 +145,9 @@ export function Playground({
         </button>
 
         {/* Said before Run, not after: the code leaves this machine, and only the code does. */}
+        {block.language === "javascript" && (
+          <p className="text-caption text-ink-subtle">Runs in your browser, printed the way Node.js prints it.</p>
+        )}
         {block.language === "java" && (
           <div className="flex flex-col">
             <p className="text-caption text-ink-subtle">Java runs on our server — only this code is sent.</p>

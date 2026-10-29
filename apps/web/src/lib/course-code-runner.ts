@@ -1,10 +1,11 @@
 "use client";
 
 import { runCourseCode } from "@/lib/api";
+import { runJavaScript } from "@/lib/browser-javascript";
 import { loadPython, runPython } from "@/lib/browser-python";
 import { runOnServer } from "@/lib/server-code-runner";
 
-export type PlaygroundLanguage = "python" | "java";
+export type PlaygroundLanguage = "python" | "java" | "javascript";
 
 export interface RunOutcome {
   stdout: string;
@@ -31,6 +32,12 @@ const pythonRunner: CodeRunner = {
   run: (source) => runPython(source, ""),
 };
 
+/** JavaScript needs no interpreter download: the browser already is one. */
+const javascriptRunner: CodeRunner = {
+  prepare: () => Promise.resolve(true),
+  run: (source) => runJavaScript(source),
+};
+
 /**
  * Java on our server runner — there is still no free, unencumbered way to run it in a
  * browser (CheerpJ needs a commercial licence, DoppioJVM is dead, TeaVM's class library
@@ -46,5 +53,7 @@ function javaRunner(accessToken: string | null | undefined): CodeRunner {
 
 /** One runner per supported language — the pluggable seam task 049 asks for. */
 export function getRunner(language: PlaygroundLanguage, accessToken?: string | null): CodeRunner {
-  return language === "python" ? pythonRunner : javaRunner(accessToken);
+  if (language === "python") return pythonRunner;
+  if (language === "javascript") return javascriptRunner;
+  return javaRunner(accessToken);
 }

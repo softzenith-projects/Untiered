@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { courses, flattenChapters, getAdjacentChapters } from "@/content/courses";
+import { javascriptCourse } from "@/content/courses/javascript";
+import { runInNode, runInWorkerSource } from "@/lib/javascript-runtime-harness";
 import { agentLabScenarios, getScenario } from "@/lib/agent-lab/scenarios";
 import { architectureScenarios, getArchitectureScenario } from "@/lib/architecture-lab/scenarios";
 import type {
@@ -109,6 +111,75 @@ describe("course: java, as a whole", () => {
       }
     }
   });
+});
+
+// The JavaScript course (task 066). Every chapter has something to run, and every pasted
+// output is checked twice on every test run: against the real `node`, which is what the
+// author claims to have run, and against the worker source the browser runs, which is
+// what the reader will see. A sample that only one of them agrees with fails here.
+describe("course: javascript, as a whole", () => {
+  const jsChapters = flattenChapters(javascriptCourse);
+
+  function runnables(chapter: Chapter): { source: string; language: string; prompt: string; output: string }[] {
+    const fromCode = (blocksOf("code", chapter) as Extract<Block, { kind: "code" }>[]).flatMap((block) =>
+      block.tryIt
+        ? [{ source: block.code, language: block.tryIt.language, prompt: block.tryIt.prompt, output: block.output ?? "" }]
+        : [],
+    );
+    const fromPlaygrounds = (blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[]).map((block) => ({
+      source: block.starter,
+      language: block.language,
+      prompt: block.prompt ?? "",
+      output: block.expectedOutput ?? "",
+    }));
+    return [...fromCode, ...fromPlaygrounds];
+  }
+
+  const normalise = (text: string) =>
+    text
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map((line) => line.trimEnd())
+      .join("\n")
+      .trim();
+
+  it("writes its code in JavaScript", () => {
+    expect(javascriptCourse.codeLanguage).toBe("javascript");
+  });
+
+  it("has unique chapter slugs across its modules", () => {
+    const slugs = jsChapters.map((chapter) => chapter.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("never repeats a code example's program as a playground", () => {
+    for (const chapter of jsChapters) {
+      const examples = new Set((blocksOf("code", chapter) as Extract<Block, { kind: "code" }>[]).map((b) => b.code.trim()));
+      for (const block of blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[]) {
+        expect(examples.has(block.starter.trim()), chapter.slug).toBe(false);
+      }
+    }
+  });
+
+  for (const chapter of jsChapters) {
+    it(`${chapter.slug}: has JavaScript to run, and prints exactly what node and the browser print`, async () => {
+      const runnable = runnables(chapter);
+      expect(runnable.length, chapter.slug).toBeGreaterThanOrEqual(1);
+      for (const block of runnable) {
+        expect(block.language, chapter.slug).toBe("javascript");
+        expect(block.prompt.trim().length, chapter.slug).toBeGreaterThan(0);
+        expect(block.output.trim().length, chapter.slug).toBeGreaterThan(0);
+
+        const node = runInNode(block.source);
+        expect(node.stderr, `${chapter.slug}: node wrote to stderr`).toBe("");
+        expect(normalise(node.stdout), `${chapter.slug}: pasted output is not what node prints`).toBe(normalise(block.output));
+
+        const worker = await runInWorkerSource(block.source);
+        expect(worker.stderr, `${chapter.slug}: the browser runtime wrote to stderr`).toBe("");
+        expect(normalise(worker.stdout), `${chapter.slug}: the browser runtime prints differently`).toBe(normalise(block.output));
+      }
+    }, 30_000);
+  }
 });
 
 // Course-level rules for the AI course (task 057), asserted once rather than per chapter:

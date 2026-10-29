@@ -60,7 +60,7 @@ export interface Challenge {
   why: string;
   /** Source shown above the prompt, for kind `predict-output` only. */
   code?: string;
-  codeLanguage?: "java" | "python";
+  codeLanguage?: "java" | "python" | "javascript";
   /** The diagram to render at `frameIndex`, for kind `what-next` only. */
   viz?: Viz;
   frameIndex?: number;

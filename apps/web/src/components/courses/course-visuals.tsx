@@ -1,5 +1,6 @@
 const artwork: Record<string, string> = {
   java: "from-course-java-start to-course-java-end",
+  javascript: "from-course-js-start to-course-js-end",
   dsa: "from-course-dsa-start to-course-dsa-end",
   "ai-agents": "from-course-ai-start to-course-ai-end",
   "system-design": "from-course-design-start to-course-design-end",
@@ -23,6 +24,14 @@ const coursePresentation = {
     accent: "border-warning/25 bg-warning-wash text-warning",
     line: "bg-warning",
     motif: "code",
+  },
+  javascript: {
+    shortLabel: "JavaScript",
+    outcome: "Explain how JavaScript runs, then build with React, Node and Next",
+    practice: "Code that runs in your browser, and output to predict",
+    accent: "border-warning/30 bg-warning-wash text-ink",
+    line: "bg-[linear-gradient(90deg,var(--warning),var(--positive))]",
+    motif: "braces",
   },
   dsa: {
     shortLabel: "DSA",
@@ -66,6 +75,12 @@ export function CourseMotif({ courseSlug, large = false }: { courseSlug: string;
       {presentation.motif === "code" ? (
         <svg viewBox="0 0 48 48" className={large ? "size-14" : "size-8"} fill="none">
           <path d="m18 14-9 10 9 10M30 14l9 10-9 10M27 9l-6 30" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : null}
+      {presentation.motif === "braces" ? (
+        <svg viewBox="0 0 48 48" className={large ? "size-14" : "size-8"} fill="none">
+          <path d="M17 9c-4 0-5 2-5 5v5c0 2.5-1.5 4-4 5 2.5 1 4 2.5 4 5v5c0 3 1 5 5 5M31 9c4 0 5 2 5 5v5c0 2.5 1.5 4 4 5-2.5 1-4 2.5-4 5v5c0 3-1 5-5 5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="20" cy="24" r="2.2" fill="currentColor" /><circle cx="28" cy="24" r="2.2" fill="currentColor" />
         </svg>
       ) : null}
       {presentation.motif === "nodes" ? (

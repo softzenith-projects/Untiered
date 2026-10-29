@@ -1,6 +1,6 @@
 export type ProductFeature = "mockInterviews" | "courses" | "arena" | "reports" | "questions";
 
-export type GatedCourseSlug = "java" | "dsa" | "ai-agents" | "system-design";
+export type GatedCourseSlug = "java" | "javascript" | "dsa" | "ai-agents" | "system-design";
 
 /**
  * Product switches are public deployment configuration, not secrets. They are read
@@ -38,6 +38,8 @@ export function courseEnabled(courseSlug: string): boolean {
   switch (courseSlug as GatedCourseSlug) {
     case "java":
       return configured(process.env.NEXT_PUBLIC_COURSE_JAVA_ENABLED, true);
+    case "javascript":
+      return configured(process.env.NEXT_PUBLIC_COURSE_JAVASCRIPT_ENABLED, true);
     case "dsa":
       return configured(process.env.NEXT_PUBLIC_COURSE_DSA_ENABLED, true);
     case "ai-agents":
