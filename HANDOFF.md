@@ -39,10 +39,10 @@ Give every Java course chapter a runnable "try it yourself" block (owner, in ses
 ## Verification status
 - web typecheck / lint / test (3,218 passing) / build: pass locally
 - api ktlintCheck / test / build: pass locally
-- CI: see merge status
+- CI run 40822267961 on `f4572f7`: all four jobs green
 
 ## Merge status
-- See the session report: merged only if CI is green on the branch.
+- Merged `feat/java-course-playgrounds` into `develop` after CI run 40822267961 went green (api, web, images, database). No migrations in this change.
 
 ## Suggested next task
 - Decide on a newer Java for the runner (below), then give chapter 35 a real records playground.
