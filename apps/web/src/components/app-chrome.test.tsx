@@ -6,6 +6,7 @@ import { AppChrome, isShellPath } from "./app-chrome";
 const route = vi.hoisted(() => ({ pathname: "/dashboard" }));
 vi.mock("next/navigation", () => ({ usePathname: () => route.pathname }));
 vi.mock("@/components/account-summary", () => ({ AccountSummary: () => <span>Account</span> }));
+vi.mock("@/components/credit-balance", () => ({ CreditBalance: () => <span>Credits</span> }));
 vi.mock("@/components/site-footer", () => ({ SiteFooter: () => <footer>Footer</footer> }));
 vi.mock("@/components/session-link", () => ({ SessionLink: () => null }));
 

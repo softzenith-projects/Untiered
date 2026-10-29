@@ -38,8 +38,8 @@ export function RailNav() {
               aria-current={active ? "page" : undefined}
               className={`relative block h-full px-3 py-5 text-caption transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full ${
                 active
-                  ? "font-semibold text-ink after:bg-accent"
-                  : "text-ink-muted after:bg-transparent hover:text-ink"
+                  ? "font-bold text-ink after:bg-accent"
+                  : "font-semibold text-ink-muted after:bg-transparent hover:text-ink"
               }`}
             >
               {link.label}

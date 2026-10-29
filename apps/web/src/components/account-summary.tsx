@@ -242,7 +242,7 @@ function AccountMenu({ me }: { me: MeResponse }) {
               className="mb-1 flex min-h-11 w-full items-center justify-between rounded-lg bg-accent-wash px-3 py-2.5 text-left text-caption font-semibold text-accent-strong transition-colors hover:bg-accent hover:text-accent-contrast"
               onClick={() => setOpen(false)}
             >
-              Explore Untiered Pro <span aria-hidden>→</span>
+              Buy credits <span aria-hidden>→</span>
             </Link>
           </li>
           <li>
