@@ -103,12 +103,17 @@ describe("CreditPacks", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("We could not verify that payment.");
   });
 
-  it("offers nothing while the server cannot sell", async () => {
+  it("shows the packs but cannot start a purchase while the server cannot sell", async () => {
     vi.mocked(fetchBilling).mockResolvedValue({ ...overview, purchasable: false });
-    const { container } = render(<CreditPacks />);
+    render(<CreditPacks />);
 
-    await vi.waitFor(() => expect(container).toBeEmptyDOMElement());
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    const single = await screen.findByRole("button", { name: "Buy 1 interview for ₹199" });
+    expect(single).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Buy 10 interviews for ₹1,499" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(/buying is not open yet/i);
+
+    await userEvent.click(single);
+    expect(createCreditOrder).not.toHaveBeenCalled();
   });
 });
 

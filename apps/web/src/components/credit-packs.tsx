@@ -91,7 +91,9 @@ export function CreditPacks({
   if (!overview) {
     return <p className="text-caption text-ink-subtle" aria-live="polite">Loading interview packs…</p>;
   }
-  if (!overview.purchasable) return null;
+  // Until the server has Razorpay keys it still names the packs, so they are shown at
+  // their real prices with nothing to press. The daily-limit notice never gets here.
+  const closed = !overview.purchasable;
 
   return (
     <div className="flex flex-col gap-4">
@@ -119,7 +121,7 @@ export function CreditPacks({
               variant={pack.savingsPercent > 0 ? "primary" : "secondary"}
               className="mt-auto w-full"
               loading={buying === pack.id}
-              disabled={buying !== null}
+              disabled={closed || buying !== null}
               onClick={() => void buy(pack)}
               aria-label={`Buy ${pack.name} for ${formatRupees(pack.pricePaise)}`}
             >
@@ -128,6 +130,11 @@ export function CreditPacks({
           </li>
         ))}
       </ul>
+      {closed ? (
+        <p role="status" className="rounded-xl border border-line bg-surface-raised px-4 py-3 text-caption font-medium text-ink">
+          Buying is not open yet. These packs become available here as soon as payments are switched on.
+        </p>
+      ) : null}
       {status ? (
         <p
           role={status.tone === "negative" ? "alert" : "status"}
