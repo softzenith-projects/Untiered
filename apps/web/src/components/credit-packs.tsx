@@ -63,7 +63,7 @@ export function CreditPacks({
       setOverview(updated);
       setStatus({
         tone: "positive",
-        text: `Payment received. ${pack.credits === 1 ? "1 interview has" : `${pack.credits} interviews have`} been added — you now have ${updated.creditBalance}.`,
+        text: `Payment received. ${pack.credits === 1 ? "1 credit has" : `${pack.credits} credits have`} been added — you now have ${updated.creditBalance === 1 ? "1 credit" : `${updated.creditBalance} credits`}.`,
       });
       onPurchased?.(updated);
     } catch (error) {
@@ -114,8 +114,8 @@ export function CreditPacks({
             <p className="text-title text-ink">{formatRupees(pack.pricePaise)}</p>
             <p className="text-caption text-ink-muted">
               {pack.credits === 1
-                ? "One mock interview with its full report"
-                : `${formatRupees(pack.perInterviewPaise)} per interview, each with its full report`}
+                ? "1 credit = 1 mock interview with its full report"
+                : `${formatRupees(pack.perInterviewPaise)} per credit. Each credit is 1 mock interview with its full report`}
             </p>
             <Button
               variant={pack.savingsPercent > 0 ? "primary" : "secondary"}
@@ -146,8 +146,8 @@ export function CreditPacks({
         </p>
       ) : null}
       <p className="text-caption text-ink-subtle">
-        Prices include all taxes. An interview is used when it starts, and comes back automatically if it fails on
-        our side. Paid interviews do not expire. Payments are processed by Razorpay.
+        Prices include all taxes. A credit is used when an interview starts, and comes back automatically if the
+        interview fails on our side. Credits do not expire. Payments are processed by Razorpay.
       </p>
     </div>
   );

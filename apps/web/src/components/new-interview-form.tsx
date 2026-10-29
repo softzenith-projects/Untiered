@@ -816,7 +816,7 @@ function RoundSetup({
               : minutesLeftToday === null
                 ? "Real rounds are time-boxed. The clock ends this one."
                 : `Real rounds are time-boxed. ${minutesLeftToday} free minutes left today${
-                    creditBalance > 0 ? "; a longer round uses a paid interview." : "."
+                    creditBalance > 0 ? "; a longer round uses a credit." : "."
                   }`
           }
         >
@@ -885,7 +885,7 @@ function RoundSetup({
           <p className="text-caption text-ink-subtle">Voice recording is required to continue.</p>
         ) : usesCredit ? (
           <p className="text-caption text-ink-muted">
-            Uses 1 of your {creditBalance} paid {creditBalance === 1 ? "interview" : "interviews"} when it begins.
+            Uses 1 of your {creditBalance} {creditBalance === 1 ? "credit" : "credits"} when it begins.
           </p>
         ) : null}
       </div>

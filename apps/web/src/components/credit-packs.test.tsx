@@ -25,9 +25,9 @@ const overview: BillingOverview = {
   creditBalance: 0,
   currency: "INR",
   packs: [
-    { id: "single", name: "1 interview", credits: 1, pricePaise: 19_900, perInterviewPaise: 19_900, savingsPercent: 0 },
-    { id: "pack_5", name: "5 interviews", credits: 5, pricePaise: 89_900, perInterviewPaise: 17_980, savingsPercent: 10 },
-    { id: "pack_10", name: "10 interviews", credits: 10, pricePaise: 149_900, perInterviewPaise: 14_990, savingsPercent: 25 },
+    { id: "single", name: "1 credit", credits: 1, pricePaise: 19_900, perInterviewPaise: 19_900, savingsPercent: 0 },
+    { id: "pack_5", name: "5 credits", credits: 5, pricePaise: 89_900, perInterviewPaise: 17_980, savingsPercent: 10 },
+    { id: "pack_10", name: "10 credits", credits: 10, pricePaise: 149_900, perInterviewPaise: 14_990, savingsPercent: 25 },
   ],
 };
 
@@ -37,7 +37,7 @@ const order: CheckoutOrder = {
   amountPaise: 19_900,
   currency: "INR",
   packId: "single",
-  name: "1 interview",
+  name: "1 credit",
   credits: 1,
   email: "candidate@example.com",
 };
@@ -55,11 +55,11 @@ describe("CreditPacks", () => {
   it("shows each pack at its rupee price with the saving", async () => {
     render(<CreditPacks />);
 
-    expect(await screen.findByRole("button", { name: "Buy 1 interview for ₹199" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Buy 5 interviews for ₹899" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Buy 10 interviews for ₹1,499" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Buy 1 credit for ₹199" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buy 5 credits for ₹899" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buy 10 credits for ₹1,499" })).toBeInTheDocument();
     expect(screen.getByText("Save 25%")).toBeInTheDocument();
-    expect(screen.getByText(/₹149\.90 per interview/)).toBeInTheDocument();
+    expect(screen.getByText(/₹149.90 per credit/)).toBeInTheDocument();
   });
 
   it("names only the pack, pays in Checkout, and reports what the server granted", async () => {
@@ -67,7 +67,7 @@ describe("CreditPacks", () => {
     const onPurchased = vi.fn();
     render(<CreditPacks onPurchased={onPurchased} />);
 
-    await user.click(await screen.findByRole("button", { name: "Buy 1 interview for ₹199" }));
+    await user.click(await screen.findByRole("button", { name: "Buy 1 credit for ₹199" }));
 
     expect(createCreditOrder).toHaveBeenCalledWith("token", "single");
     expect(payWithRazorpay).toHaveBeenCalledWith(order);
@@ -75,7 +75,7 @@ describe("CreditPacks", () => {
       razorpayPaymentId: "pay_1",
       razorpaySignature: "sig",
     });
-    expect(await screen.findByRole("status")).toHaveTextContent("1 interview has been added — you now have 1.");
+    expect(await screen.findByRole("status")).toHaveTextContent("1 credit has been added — you now have 1 credit.");
     expect(onPurchased).toHaveBeenCalledWith({ ...overview, creditBalance: 1 });
   });
 
@@ -84,11 +84,11 @@ describe("CreditPacks", () => {
     const user = userEvent.setup();
     render(<CreditPacks />);
 
-    await user.click(await screen.findByRole("button", { name: "Buy 5 interviews for ₹899" }));
+    await user.click(await screen.findByRole("button", { name: "Buy 5 credits for ₹899" }));
 
     expect(confirmCreditOrder).not.toHaveBeenCalled();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Buy 5 interviews for ₹899" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Buy 5 credits for ₹899" })).toBeEnabled();
   });
 
   it("shows the server's reason when a payment cannot be verified", async () => {
@@ -98,7 +98,7 @@ describe("CreditPacks", () => {
     const user = userEvent.setup();
     render(<CreditPacks />);
 
-    await user.click(await screen.findByRole("button", { name: "Buy 1 interview for ₹199" }));
+    await user.click(await screen.findByRole("button", { name: "Buy 1 credit for ₹199" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("We could not verify that payment.");
   });
@@ -107,9 +107,9 @@ describe("CreditPacks", () => {
     vi.mocked(fetchBilling).mockResolvedValue({ ...overview, purchasable: false });
     render(<CreditPacks />);
 
-    const single = await screen.findByRole("button", { name: "Buy 1 interview for ₹199" });
+    const single = await screen.findByRole("button", { name: "Buy 1 credit for ₹199" });
     expect(single).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Buy 10 interviews for ₹1,499" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Buy 10 credits for ₹1,499" })).toBeDisabled();
     expect(screen.getByRole("status")).toHaveTextContent(/buying is not open yet/i);
 
     await userEvent.click(single);
@@ -146,7 +146,7 @@ describe("DailyLimitNotice", () => {
   it("puts the packs in front of the candidate where buying is open", async () => {
     render(<DailyLimitNotice entitlement={{ ...usedUp, purchasable: true }} />);
 
-    expect(await screen.findByRole("button", { name: "Buy 1 interview for ₹199" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Buy 1 credit for ₹199" })).toBeInTheDocument();
     expect(screen.queryByText("Pro · coming soon")).not.toBeInTheDocument();
   });
 

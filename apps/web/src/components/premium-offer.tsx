@@ -36,7 +36,7 @@ export function PremiumOffer() {
   if (failed) {
     return (
       <section aria-labelledby="premium-packs" className="card p-6 sm:p-8 lg:order-first lg:col-span-2">
-        <h2 id="premium-packs" className="text-title text-ink">Buy mock interviews</h2>
+        <h2 id="premium-packs" className="text-title text-ink">Buy interview credits</h2>
         <p role="alert" className="mt-2 text-body text-ink-muted">
           The interview packs could not be loaded. Refresh to try again.
         </p>
@@ -61,16 +61,16 @@ export function PremiumOffer() {
           <div>
             <p className="pill pill-accent w-fit">Premium</p>
             <h2 id="premium-packs" className="mt-4 text-title text-ink">
-              Buy mock interviews
+              Buy interview credits
             </h2>
             <p className="mt-2 max-w-2xl text-body text-ink-muted">
-              Each one is a full spoken round with its complete report. Your free practice is always used
-              first, so a paid interview is only spent when you practise beyond it.
+              Each credit is one full spoken interview with its complete report. Your free interviews are always
+              used first, so a credit is only spent when you practise beyond them.
             </p>
           </div>
           <p className="rounded-xl border border-line bg-surface-raised px-4 py-3 text-caption text-ink">
-            You have <strong className="text-heading">{overview.creditBalance}</strong> paid{" "}
-            {overview.creditBalance === 1 ? "interview" : "interviews"}
+            You have <strong className="text-heading">{overview.creditBalance}</strong>{" "}
+            {overview.creditBalance === 1 ? "credit" : "credits"}
           </p>
         </div>
         <CreditPacks initialOverview={overview} onPurchased={setOverview} />

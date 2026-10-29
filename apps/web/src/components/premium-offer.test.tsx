@@ -16,8 +16,8 @@ const overview: BillingOverview = {
   creditBalance: 2,
   currency: "INR",
   packs: [
-    { id: "single", name: "1 interview", credits: 1, pricePaise: 19_900, perInterviewPaise: 19_900, savingsPercent: 0 },
-    { id: "pack_5", name: "5 interviews", credits: 5, pricePaise: 89_900, perInterviewPaise: 17_980, savingsPercent: 10 },
+    { id: "single", name: "1 credit", credits: 1, pricePaise: 19_900, perInterviewPaise: 19_900, savingsPercent: 0 },
+    { id: "pack_5", name: "5 credits", credits: 5, pricePaise: 89_900, perInterviewPaise: 17_980, savingsPercent: 10 },
   ],
 };
 
@@ -29,9 +29,9 @@ describe("PremiumOffer", () => {
   it("puts the packs and the current balance on the upgrade page", async () => {
     render(<PremiumOffer />);
 
-    expect(await screen.findByRole("heading", { name: "Buy mock interviews" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Buy 5 interviews for ₹899" })).toBeEnabled();
-    expect(screen.getByText(/paid\s+interviews/)).toHaveTextContent("You have 2 paid interviews");
+    expect(await screen.findByRole("heading", { name: "Buy interview credits" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buy 5 credits for ₹899" })).toBeEnabled();
+    expect(screen.getByText(/You have/)).toHaveTextContent("You have 2 credits");
     expect(screen.queryByText(/not for sale/i)).not.toBeInTheDocument();
   });
 
@@ -39,7 +39,7 @@ describe("PremiumOffer", () => {
     vi.mocked(fetchBilling).mockResolvedValue({ ...overview, purchasable: false });
     render(<PremiumOffer />);
 
-    expect(await screen.findByRole("button", { name: "Buy 1 interview for ₹199" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Buy 1 credit for ₹199" })).toBeDisabled();
     expect(screen.queryByText(/untiered pro/i)).not.toBeInTheDocument();
   });
 
