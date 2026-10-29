@@ -16,7 +16,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SessionLink } from "@/components/session-link";
 import { fetchUsage } from "@/lib/api";
 import { courseEnabled, featureEnabled } from "@/lib/flags";
-import { FREE_ROUNDS_TEXT } from "@/lib/legal";
+import { FREE_ROUNDS_LIFETIME_TEXT } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Untiered — talent has no tiers",
@@ -142,7 +142,7 @@ function Hero({
           </div>
           {mockInterviewsEnabled ? (
             <ul className="flex flex-wrap gap-x-5 gap-y-2 text-caption text-on-navy-muted">
-              {[`${FREE_ROUNDS_TEXT} free`, "Full report included", "No card to start"].map((item) => (
+              {[FREE_ROUNDS_LIFETIME_TEXT, "Full report included", "No card to start"].map((item) => (
                 <li key={item} className="flex items-center gap-1.5">
                   <CheckIcon />
                   {item}
@@ -374,7 +374,7 @@ function CtaBand({
       <div className="mx-auto flex layout-content flex-col gap-10 px-4 py-16 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:py-20">
         <div className="flex flex-col gap-4">
           <h2 className="text-display text-balance text-on-navy">
-            {mockInterviewsEnabled ? `Your first ${FREE_ROUNDS_TEXT} are free.` : "Keep building the skill behind the answer."}
+            {mockInterviewsEnabled ? `${FREE_ROUNDS_LIFETIME_TEXT}.` : "Keep building the skill behind the answer."}
           </h2>
           {mockInterviewsEnabled ? (
             <ol className="flex flex-col gap-3 sm:flex-row sm:gap-6">

@@ -25,3 +25,10 @@ export const CONTACT_EMAIL_DISPLAY = LEGAL.contactEmail;
 /** "1 mock interview" or "3 mock interviews", so the allowance reads correctly at any setting. */
 const freeRounds: number = LEGAL.freeRounds;
 export const FREE_ROUNDS_TEXT = `${freeRounds} mock ${freeRounds === 1 ? "interview" : "interviews"}`;
+
+/**
+ * The free tier as the terms define it: once per account, for life, never reset (owner,
+ * 29 October 2026). Every page that states the allowance says it this way, so "your first
+ * 3" cannot be read as 3 a day or 3 a month.
+ */
+export const FREE_ROUNDS_LIFETIME_TEXT = `${freeRounds} free mock ${freeRounds === 1 ? "interview" : "interviews"} for life`;
