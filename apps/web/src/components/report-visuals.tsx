@@ -162,7 +162,7 @@ export function SkillRadar({ competencies }: { competencies: ReportCompetency[] 
                   x={label.x}
                   y={label.y + shift}
                   textAnchor={anchor}
-                  className={`hidden text-[11px] sm:inline ${active === index ? "fill-ink font-semibold" : "fill-ink-muted"}`}
+                  className={`hidden text-micro sm:inline ${active === index ? "fill-ink font-semibold" : "fill-ink-muted"}`}
                 >
                   {lines.map((line, lineIndex) => (
                     <tspan key={line} x={label.x} dy={lineIndex === 0 ? 0 : 13}>
@@ -175,7 +175,7 @@ export function SkillRadar({ competencies }: { competencies: ReportCompetency[] 
                   y={badge.y}
                   textAnchor="middle"
                   dominantBaseline="central"
-                  className={`text-[20px] font-semibold sm:hidden ${active === index ? "fill-ink" : "fill-ink-muted"}`}
+                  className={`text-heading font-semibold sm:hidden ${active === index ? "fill-ink" : "fill-ink-muted"}`}
                 >
                   {index + 1}
                 </text>
