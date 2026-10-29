@@ -4,10 +4,12 @@ import Link from "next/link";
 import { BrandWordmark } from "@/components/brand-logo";
 import { SessionLink } from "@/components/session-link";
 import { featureEnabled } from "@/lib/flags";
+import { LEGAL } from "@/lib/legal";
 
 export const LEGAL_LINKS: { href: Route; label: string }[] = [
   { href: "/privacy" as Route, label: "Privacy policy" },
   { href: "/terms" as Route, label: "Terms of use" },
+  { href: "/refund-policy" as Route, label: "Cancellation and refunds" },
   { href: "/contact" as Route, label: "Contact" },
 ];
 
@@ -17,6 +19,7 @@ export function SiteFooter() {
     featureEnabled("courses") ? { href: "/courses" as Route, label: "Courses" } : null,
     featureEnabled("arena") ? { href: "/arena" as Route, label: "Arena" } : null,
     featureEnabled("mockInterviews") ? { href: "/interview/new" as Route, label: "Mock interviews" } : null,
+    { href: "/pricing" as Route, label: "Pricing" },
   ].filter((link): link is { href: Route; label: string } => link !== null);
 
   return (
@@ -38,6 +41,7 @@ export function SiteFooter() {
         </nav>
         <nav aria-label="Support" className="flex flex-col items-start gap-3">
           <h2 className="text-caption font-semibold text-on-navy">Support</h2>
+          <Link href={"/about" as Route} className="inline-flex min-h-11 items-center text-caption text-on-navy-muted transition-colors hover:text-on-navy">About us</Link>
           <Link href="/contact" className="inline-flex min-h-11 items-center text-caption text-on-navy-muted transition-colors hover:text-on-navy">Contact us</Link>
           <SessionLink
             signedIn={{ href: "/dashboard", label: "Dashboard" }}
@@ -47,7 +51,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="layout-content page-gutter mx-auto flex flex-wrap justify-between gap-2 border-t border-on-navy/10 py-5 text-micro text-on-navy-muted">
-        <span>© {new Date().getFullYear()} Untiered</span>
+        <span>© {new Date().getFullYear()} {LEGAL.operatorName}</span>
         <span>Your voice. Your progress. Your call.</span>
       </div>
     </footer>

@@ -33,9 +33,9 @@ data class BillingProperties(
     companion object {
         val DEFAULT_PACKS =
             listOf(
-                CreditPack(id = "single", name = "1 interview", credits = 1, pricePaise = 19_900),
-                CreditPack(id = "pack_5", name = "5 interviews", credits = 5, pricePaise = 89_900),
-                CreditPack(id = "pack_10", name = "10 interviews", credits = 10, pricePaise = 1_49_900),
+                CreditPack(id = "single", name = "1 credit", credits = 1, pricePaise = 19_900),
+                CreditPack(id = "pack_5", name = "5 credits", credits = 5, pricePaise = 89_900),
+                CreditPack(id = "pack_10", name = "10 credits", credits = 10, pricePaise = 1_49_900),
             )
     }
 }

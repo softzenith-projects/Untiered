@@ -36,6 +36,17 @@ describe("auth callback", () => {
     expect(response.headers.get("location")).toBe("http://localhost:3000/login?error=link_expired");
   });
 
+  it("reports a used or superseded confirmation link as an expired link, not a failed sign-in", async () => {
+    const response = await GET(request("/auth/callback?next=/dashboard&error=access_denied&error_code=otp_expired"));
+    expect(exchangeCodeForSession).not.toHaveBeenCalled();
+    expect(response.headers.get("location")).toBe("http://localhost:3000/login?error=link_expired");
+  });
+
+  it("keeps provider failures as sign-in errors", async () => {
+    const response = await GET(request("/auth/callback?next=/dashboard&error=access_denied"));
+    expect(response.headers.get("location")).toBe("http://localhost:3000/login?error=oauth");
+  });
+
   it("does not redirect outside the application", async () => {
     const response = await GET(request("/auth/callback?code=valid&next=https://example.com"));
     expect(response.headers.get("location")).toBe("http://localhost:3000/dashboard");

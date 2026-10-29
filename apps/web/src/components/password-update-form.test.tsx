@@ -48,4 +48,30 @@ describe("PasswordUpdateForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not update/i);
     expect(screen.getByRole("button", { name: "Update password" })).toBeEnabled();
   });
+
+  it.each([
+    [{ code: "same_password" }, /different from your current one/i],
+    [{ code: "weak_password", reasons: ["pwned"] }, /known data breach/i],
+    [{ code: "weak_password", reasons: ["characters"] }, /letter and a number/i],
+  ])("names the reason Supabase gave for refusing the password (%o)", async (rejection, message) => {
+    updateUser.mockResolvedValue({ error: Object.assign(new Error("rejected"), rejection) });
+    render(<PasswordUpdateForm />);
+    await screen.findByRole("button", { name: "Update password" });
+    await userEvent.type(screen.getByLabelText("New password"), "password123");
+    await userEvent.type(screen.getByLabelText("Confirm new password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Update password" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+  });
+
+  it("checks the password rule before contacting Supabase", async () => {
+    render(<PasswordUpdateForm />);
+    await screen.findByRole("button", { name: "Update password" });
+    await userEvent.type(screen.getByLabelText("New password"), "onlyletters");
+    await userEvent.type(screen.getByLabelText("Confirm new password"), "onlyletters");
+    await userEvent.click(screen.getByRole("button", { name: "Update password" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/letter and a number/i);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
 });

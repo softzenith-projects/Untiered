@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import { AppShell } from "@/components/app-shell";
 import { PremiumOffer } from "@/components/premium-offer";
-import { ProFeatureRequestForm } from "@/components/pro-feature-request-form";
 import { FREE_ROUNDS_LIFETIME_TEXT } from "@/lib/legal";
 
 export const metadata: Metadata = { title: "Upgrade" };
@@ -17,9 +16,8 @@ const INCLUDED_NOW = [
 
 
 /**
- * A deliberately honest upgrade surface. The interview packs appear only once the server
- * can actually sell them (`PremiumOffer`); until then it is the Pro preview, with no
- * checkout, price, limit or entitlement that does not exist.
+ * The interview packs (`PremiumOffer`) beside what the free tier already includes. The
+ * packs, prices and whether they can be bought all come from the server.
  */
 export default function UpgradePage() {
   return (
@@ -58,8 +56,6 @@ export default function UpgradePage() {
 
           <PremiumOffer />
         </div>
-
-        <ProFeatureRequestForm />
 
         <p className="rounded-xl border border-line bg-surface-raised px-5 py-4 text-caption text-ink-muted">
           No card or UPI details are entered on this page: payments are made in Razorpay&rsquo;s

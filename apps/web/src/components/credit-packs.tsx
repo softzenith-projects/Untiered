@@ -10,6 +10,11 @@ import { useAccessToken } from "@/lib/use-access-token";
 
 type Status = { tone: "positive" | "negative"; text: string } | null;
 
+/** "1 credit" or "5 credits", from the count rather than the server's display name, so the card always says credits. */
+function creditCount(credits: number): string {
+  return credits === 1 ? "1 credit" : `${credits} credits`;
+}
+
 /**
  * The interview packs, each bought in one step through Razorpay Checkout.
  *
@@ -63,7 +68,7 @@ export function CreditPacks({
       setOverview(updated);
       setStatus({
         tone: "positive",
-        text: `Payment received. ${pack.credits === 1 ? "1 interview has" : `${pack.credits} interviews have`} been added — you now have ${updated.creditBalance}.`,
+        text: `Payment received. ${creditCount(pack.credits)} ${pack.credits === 1 ? "has" : "have"} been added — you now have ${creditCount(updated.creditBalance)}.`,
       });
       onPurchased?.(updated);
     } catch (error) {
@@ -91,7 +96,9 @@ export function CreditPacks({
   if (!overview) {
     return <p className="text-caption text-ink-subtle" aria-live="polite">Loading interview packs…</p>;
   }
-  if (!overview.purchasable) return null;
+  // Until the server has Razorpay keys it still names the packs, so they are shown at
+  // their real prices with nothing to press. The daily-limit notice never gets here.
+  const closed = !overview.purchasable;
 
   return (
     <div className="flex flex-col gap-4">
@@ -104,7 +111,7 @@ export function CreditPacks({
             }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-heading text-ink">{pack.name}</h3>
+              <h3 className="text-heading text-ink">{creditCount(pack.credits)}</h3>
               {pack.savingsPercent > 0 ? (
                 <span className="pill pill-positive w-fit">Save {pack.savingsPercent}%</span>
               ) : null}
@@ -112,22 +119,27 @@ export function CreditPacks({
             <p className="text-title text-ink">{formatRupees(pack.pricePaise)}</p>
             <p className="text-caption text-ink-muted">
               {pack.credits === 1
-                ? "One mock interview with its full report"
-                : `${formatRupees(pack.perInterviewPaise)} per interview, each with its full report`}
+                ? "1 credit = 1 mock interview with its full report"
+                : `${formatRupees(pack.perInterviewPaise)} per credit. Each credit is 1 mock interview with its full report`}
             </p>
             <Button
               variant={pack.savingsPercent > 0 ? "primary" : "secondary"}
               className="mt-auto w-full"
               loading={buying === pack.id}
-              disabled={buying !== null}
+              disabled={closed || buying !== null}
               onClick={() => void buy(pack)}
-              aria-label={`Buy ${pack.name} for ${formatRupees(pack.pricePaise)}`}
+              aria-label={`Buy ${creditCount(pack.credits)} for ${formatRupees(pack.pricePaise)}`}
             >
               Buy for {formatRupees(pack.pricePaise)}
             </Button>
           </li>
         ))}
       </ul>
+      {closed ? (
+        <p role="status" className="rounded-xl border border-line bg-surface-raised px-4 py-3 text-caption font-medium text-ink">
+          Buying is not open yet. These packs become available here as soon as payments are switched on.
+        </p>
+      ) : null}
       {status ? (
         <p
           role={status.tone === "negative" ? "alert" : "status"}
@@ -139,8 +151,8 @@ export function CreditPacks({
         </p>
       ) : null}
       <p className="text-caption text-ink-subtle">
-        Prices include all taxes. An interview is used when it starts, and comes back automatically if it fails on
-        our side. Paid interviews do not expire. Payments are processed by Razorpay.
+        Prices include all taxes. A credit is used when an interview starts, and comes back automatically if the
+        interview fails on our side. Credits do not expire. Payments are processed by Razorpay.
       </p>
     </div>
   );

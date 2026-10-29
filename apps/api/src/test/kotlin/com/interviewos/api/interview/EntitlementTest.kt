@@ -97,7 +97,7 @@ class EntitlementTest {
 
         assertTrue(decision.allowed)
         assertEquals(Entitlement.Funding.CREDIT, decision.funding)
-        assertEquals("Your free practice is used, so this interview uses 1 of your 1 paid interview.", decision.message)
+        assertEquals("Your free practice is used, so this interview uses 1 of your 1 credit.", decision.message)
     }
 
     @Test
@@ -108,7 +108,7 @@ class EntitlementTest {
 
         assertTrue(decision.allowed)
         assertEquals(Entitlement.Funding.FREE, decision.funding)
-        assertTrue(decision.message.contains("You also have 5 paid interviews."))
+        assertTrue(decision.message.contains("You also have 5 credits."))
     }
 
     @Test
@@ -125,7 +125,7 @@ class EntitlementTest {
         val open = evaluate(freeRoundsUsed = 3, purchasable = true)
 
         assertTrue(closed.message.contains("coming soon"))
-        assertTrue(open.message.contains("Buy an interview"))
+        assertTrue(open.message.contains("Buy credits"))
         assertTrue(open.purchasable)
     }
 

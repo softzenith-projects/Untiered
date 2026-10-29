@@ -2,8 +2,7 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 
 import { BrandWordmark } from "@/components/brand-logo";
-import { EmailPasswordAuth } from "@/components/email-password-auth";
-import { SignInWithGoogle } from "@/components/sign-in-with-google";
+import { LoginOptions } from "@/components/login-options";
 import { SiteFooter } from "@/components/site-footer";
 import { safeNext } from "@/lib/safe-next";
 
@@ -86,17 +85,12 @@ export default async function LoginPage({
           {error ? (
             <p role="alert" className="text-caption text-danger">
               {error === "link_expired" || error === "missing_code" || error === "exchange_failed"
-                ? "That email link could not be verified. Request a new link and try again."
+                ? "That email link has expired or was already used. If you have confirmed your email, sign in below. Otherwise, create your account again for a fresh link, or use Forgot password."
                 : "Sign-in could not be completed. Please try again."}
             </p>
           ) : null}
 
-          <EmailPasswordAuth next={safeNext(next)} />
-
-          <div className="flex items-center gap-3 text-micro font-semibold uppercase tracking-wider text-ink-subtle" aria-hidden="true">
-            <span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" />
-          </div>
-          <SignInWithGoogle next={safeNext(next)} />
+          <LoginOptions next={safeNext(next)} />
 
           <p className="text-caption text-ink-subtle">
             By continuing you agree to our{" "}

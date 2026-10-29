@@ -8,11 +8,21 @@ import { Button } from "@/components/ui/button";
 import { FieldHint, FieldLabel, Input } from "@/components/ui/field";
 import { Alert } from "@/components/ui/feedback";
 import { TurnstileChallenge } from "@/components/turnstile-challenge";
+import { EXISTING_ACCOUNT_MESSAGE, authErrorMessage, isExistingAccount } from "@/lib/auth-errors";
+import { PASSWORD_RULE, meetsPasswordRule } from "@/lib/password-rule";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type Mode = "sign-in" | "sign-up" | "forgot";
+export type Mode = "sign-in" | "sign-up" | "forgot";
 
-export function EmailPasswordAuth({ next }: { next: string }) {
+interface EmailPasswordAuthProps {
+  next: string;
+  /** Shared with the Google button on the login page, so the page shows one checkbox, not two. */
+  emailOptIn?: boolean;
+  onEmailOptInChange?: (value: boolean) => void;
+  onModeChange?: (mode: Mode) => void;
+}
+
+export function EmailPasswordAuth({ next, emailOptIn: sharedOptIn, onEmailOptInChange, onModeChange }: EmailPasswordAuthProps) {
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
   const turnstileRequired =
     process.env.NEXT_PUBLIC_REQUIRE_TURNSTILE === "true" || process.env.NODE_ENV === "production";
@@ -21,7 +31,9 @@ export function EmailPasswordAuth({ next }: { next: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [emailOptIn, setEmailOptIn] = useState(false);
+  const [ownOptIn, setOwnOptIn] = useState(false);
+  const emailOptIn = sharedOptIn ?? ownOptIn;
+  const setEmailOptIn = onEmailOptInChange ?? setOwnOptIn;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -31,6 +43,7 @@ export function EmailPasswordAuth({ next }: { next: string }) {
 
   function changeMode(value: Mode) {
     setMode(value);
+    onModeChange?.(value);
     setPassword("");
     setConfirmPassword("");
     setError(null);
@@ -45,6 +58,10 @@ export function EmailPasswordAuth({ next }: { next: string }) {
     setError(null);
     setSuccess(null);
 
+    if (mode === "sign-up" && !meetsPasswordRule(password)) {
+      setError(PASSWORD_RULE);
+      return;
+    }
     if (mode === "sign-up" && password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -83,6 +100,15 @@ export function EmailPasswordAuth({ next }: { next: string }) {
             ...(captchaToken ? { captchaToken } : {}),
           },
         });
+        // With confirmations on, Supabase answers a sign-up for an already confirmed
+        // email with a placeholder user that has no identities, and sends no email.
+        // Saying "check your email" there leaves the candidate waiting for nothing.
+        // With confirmations off it says so with an error code instead.
+        if (isExistingAccount(signUpError) || (!signUpError && data.user && data.user.identities?.length === 0)) {
+          changeMode("sign-in");
+          setError(EXISTING_ACCOUNT_MESSAGE);
+          return;
+        }
         if (signUpError) throw signUpError;
         if (data.session) {
           router.replace(next as Route);
@@ -101,14 +127,8 @@ export function EmailPasswordAuth({ next }: { next: string }) {
         router.replace(next as Route);
         router.refresh();
       }
-    } catch {
-      setError(
-        mode === "forgot"
-          ? "We could not send a reset link right now. Please try again."
-          : mode === "sign-up"
-            ? "We could not create your account. Check your details or try signing in."
-            : "That email and password did not work. Please try again.",
-      );
+    } catch (failure) {
+      setError(authErrorMessage(failure, mode));
     } finally {
       setPending(false);
       if (turnstileSiteKey) {
@@ -145,7 +165,7 @@ export function EmailPasswordAuth({ next }: { next: string }) {
           <div className="flex flex-col gap-1.5">
             <FieldLabel htmlFor="auth-password">Password</FieldLabel>
             <Input id="auth-password" type="password" autoComplete={mode === "sign-up" ? "new-password" : "current-password"} minLength={mode === "sign-up" ? 8 : undefined} required value={password} onChange={(event) => setPassword(event.target.value)} disabled={pending} aria-describedby={mode === "sign-up" ? "auth-password-hint" : undefined} />
-            {mode === "sign-up" ? <FieldHint id="auth-password-hint">Use at least 8 characters.</FieldHint> : null}
+            {mode === "sign-up" ? <FieldHint id="auth-password-hint">{PASSWORD_RULE}</FieldHint> : null}
           </div>
         ) : null}
         {mode === "sign-up" ? (
