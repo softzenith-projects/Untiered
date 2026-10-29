@@ -40,6 +40,9 @@
      the primary call to action — one accent still carries that meaning. */
   --accent-2: #087f68;
   --highlight: #e9a72d;
+  /* The report charts' series hue, validated for contrast against this mode's surface.
+     Never used for status. */
+  --chart-1: #2456d3;
 
   /* Slate neutrals are available for artwork and data views. UI text and surfaces use
      the semantic roles above so that light and dark themes switch together. */
@@ -161,6 +164,7 @@
 
     --accent-2: #3fc383;
     --highlight: #f7bb55;
+    --chart-1: #5b8cff;
 
     --danger: #f0938c;
     --positive: #4cc987;
@@ -197,6 +201,7 @@
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-accent: var(--accent);
+  --color-chart-1: var(--chart-1);
   --color-accent-strong: var(--accent-strong);
   --color-accent-contrast: var(--accent-contrast);
   --color-accent-on-navy: var(--accent-on-navy);

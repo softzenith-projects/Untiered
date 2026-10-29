@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { CompetencyBars, bandFor, overallScore, scoreToneForPercent } from "@/components/report-charts";
+import { ReportVisuals } from "@/components/report-visuals";
 import { SpokenEnglishPanel } from "@/components/spoken-english-panel";
 import { ApiRequestError, fetchReport } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -296,6 +297,8 @@ export function ReportDocument({ report, detailed = true }: { report: SessionRep
         assistance={report.assistance}
         strongestCompetency={strongestCompetency}
       />
+
+      {hasReliableOverallScore ? <ReportVisuals report={report} /> : null}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] lg:items-start">
         {hasReliableOverallScore ? (
