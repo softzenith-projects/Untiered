@@ -265,6 +265,9 @@ describe("DashboardView daily allowance", () => {
     remainingFree: null,
     dailyRoundLimit: 2,
     dailyMinuteLimit: 60,
+    creditBalance: 0,
+    funding: null,
+    purchasable: false,
   };
 
   it("says what is left today while practice remains", () => {
@@ -286,6 +289,30 @@ describe("DashboardView daily allowance", () => {
 
     expect(screen.getByText(/1 round and 20 minutes left/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /start an interview/i })).not.toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("says how many of the lifetime free interviews are left", () => {
+    render(
+      <DashboardView
+        entitlement={{
+          ...base,
+          dailyRoundLimit: null,
+          dailyMinuteLimit: null,
+          remainingFree: 2,
+          allowed: true,
+          reason: "allowed",
+          funding: "free",
+          message: "You have 2 free interviews left.",
+          remainingRoundsToday: null,
+          remainingMinutesToday: null,
+        }}
+        sessions={[]}
+        readiness={[]}
+        loaded
+      />,
+    );
+
+    expect(screen.getByText("You have 2 free interviews left.")).toBeInTheDocument();
   });
 
   it("replaces the start with the upgrade notice once the day is used", () => {
@@ -322,6 +349,9 @@ describe("DashboardView first run", () => {
     remainingRoundsToday: null,
     remainingMinutesToday: null,
     openSessionId: null,
+    creditBalance: 0,
+    funding: "free" as const,
+    purchasable: false,
   };
 
   it("gives a new candidate a checklist ticked from their account", () => {
@@ -375,6 +405,9 @@ describe("DashboardView open round", () => {
           remainingRoundsToday: 1,
           remainingMinutesToday: 60,
           openSessionId: "open-1",
+          creditBalance: 0,
+          funding: null,
+          purchasable: false,
         }}
         sessions={[]}
         readiness={[]}

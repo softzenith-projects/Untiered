@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { CONTACT_EMAIL_DISPLAY, DAILY_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
+import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_TEXT, LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -55,6 +55,11 @@ export default function PrivacyPage() {
             and your Arena answers, streak and badges.
           </li>
           <li>
+            <strong className="text-ink">Purchases:</strong> if you buy paid interviews, what you
+            bought, the amount, when, and Razorpay&rsquo;s order and payment references. We never
+            receive your card, UPI or bank details.
+          </li>
+          <li>
             <strong className="text-ink">Technical data:</strong> error reports and server logs,
             identified by your account number rather than your name or email, so we can fix things
             that break.
@@ -74,8 +79,9 @@ export default function PrivacyPage() {
           <li>To write your report and show how your practice is going over time.</li>
           <li>To tailor questions to your resume, and to keep track of your course and Arena progress.</li>
           <li>
-            To keep free practice fair: we count the rounds and minutes you start each day
-            (currently {DAILY_ROUNDS_TEXT} and {LEGAL.dailyMinutes} minutes; a Pro mode with more practice is coming soon).
+            To keep free practice fair and to give you the paid interviews you bought: we count the
+            free interviews you start (currently your first {FREE_ROUNDS_TEXT}) and the paid ones
+            you buy and use.
           </li>
           <li>To keep the service secure and working, and to fix errors.</li>
         </ul>
@@ -110,6 +116,11 @@ export default function PrivacyPage() {
             <strong className="text-ink">Google sign-in</strong> confirms who you are if you choose
             Google to sign in.
           </li>
+          <li>
+            <strong className="text-ink">Razorpay</strong> processes payments if you buy paid
+            interviews. You enter your payment details with Razorpay, and it receives your email
+            address to send you a receipt.
+          </li>
         </ul>
         <p>
           Some of these providers may process data outside India. Each processes it only to provide
@@ -131,8 +142,14 @@ export default function PrivacyPage() {
           <li>Your resume, profile and learning progress are kept until you delete them or your account.</li>
           <li>
             <strong className="text-ink">Deleting your account</strong> (Profile → Account) deletes
-            everything above, including stored files and your sign-in. Files are removed from
-            storage within a day.
+            everything above, including stored files, unused paid interviews and your sign-in. Files
+            are removed from storage within a day.
+          </li>
+          <li>
+            <strong className="text-ink">Payment records</strong> (what was bought, the amount, the
+            date and Razorpay&rsquo;s references) are kept after you delete your account, because
+            tax and accounting law requires it and so that refunds can still be made. They are
+            detached from your account and hold no name, email or other details of yours.
           </li>
         </ul>
       </LegalSection>

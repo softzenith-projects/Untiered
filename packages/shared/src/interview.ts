@@ -41,6 +41,15 @@ export interface EntitlementView {
   remainingMinutesToday: number | null;
   /** The round blocking a new one (`created` or `in_progress`), so a client can always offer Resume. */
   openSessionId?: string | null;
+  /** Paid interviews bought and not yet spent. */
+  creditBalance: number;
+  /**
+   * What would pay for a round started now: the free allowance, or one paid interview.
+   * Null when no round may start.
+   */
+  funding: "free" | "credit" | null;
+  /** Whether interviews can be bought here; false until the server has Razorpay keys. */
+  purchasable: boolean;
 }
 
 export interface TurnView {

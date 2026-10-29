@@ -92,7 +92,7 @@ interviewos:
     budget:
       # Set below the Google Cloud spend cap. Zero is disabled until the owner chooses a limit.
       daily-cap-micro-usd: ${AI_DAILY_SPEND_CAP_MICRO_USD:0}
-      per-user-daily-cap-micro-usd: ${AI_PER_USER_DAILY_CAP_MICRO_USD:2000000}
+      per-user-daily-cap-micro-usd: ${AI_PER_USER_DAILY_CAP_MICRO_USD:5000000}
       require-daily-cap: ${AI_DAILY_SPEND_CAP_REQUIRED:false}
     # The models to try, in order. Each is offered only the calls it can actually serve
     # (see FallbackInterviewAi) -- a text-only model is never handed a recording of
@@ -160,17 +160,20 @@ interviewos:
     base-url: ${CODE_RUNNER_BASE_URL:https://emkc.org/api/v2/piston}
     run-timeout-millis: 5000
     compile-timeout-millis: 10000
-  # How many completed rounds a candidate gets before being asked to pay.
+  # Free practice: 3 rounds for life, counted when each starts, then paid interviews
+  # (owner, 29 Oct 2026). The defaults live in EntitlementProperties; the daily allowance
+  # is off. The terms state these numbers (apps/web/src/lib/legal.ts), so change both.
   #
-  # Deliberately absent, which means unlimited. There is no paid tier to gate against
-  # yet, and a limit on an unproven product turns away the people whose use of it is
-  # currently worth more than the model calls it saves.
-  #
-  # To bring the gate back, uncomment both lines. Nothing else changes -- the arithmetic
-  # in Entitlement and the tests over it already cover both sides.
-  #
-  # entitlement:
-  #   free-rounds: 1
+  # Paid interviews, sold as credit packs through Razorpay (BillingProperties). Off until
+  # both keys are set: until then the start screen says Pro is coming, as before. The
+  # packs and their prices live in BillingProperties.DEFAULT_PACKS and can be overridden
+  # here as `packs:`. Credits only add to the free allowance above -- free practice is
+  # always spent first.
+  billing:
+    razorpay:
+      key-id: ${RAZORPAY_KEY_ID:}
+      key-secret: ${RAZORPAY_KEY_SECRET:}
+      webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
   retention:
     # How long a round's report, transcript and recordings are kept before being cleared.
     #

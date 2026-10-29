@@ -263,6 +263,24 @@ describe("NewInterviewForm", () => {
     expect(screen.getByText(/20 free minutes left today/i)).toBeInTheDocument();
   });
 
+  it("lets a candidate with paid interviews run longer, and says a paid one will be used", async () => {
+    fetchEntitlement.mockResolvedValue(
+      allowance({ remainingRoundsToday: 1, remainingMinutesToday: 20, creditBalance: 2, purchasable: true }),
+    );
+    render(<NewInterviewForm initialRoundType="system_design" roundPreselected />);
+
+    const length = screen.getByRole("combobox", { name: /Length/i });
+    await waitFor(() => expect(within(length).getAllByRole("option")).toHaveLength(5));
+    await userEvent.selectOptions(length, "60");
+    await userEvent.click(screen.getByRole("checkbox", { name: /record my voice/i }));
+
+    expect(screen.getByText("Uses 1 of your 2 paid interviews when it begins.")).toBeInTheDocument();
+
+    // A round that fits in the free minutes is still free.
+    await userEvent.selectOptions(length, "20");
+    expect(screen.queryByText(/paid interviews? when it begins/)).not.toBeInTheDocument();
+  });
+
   it("turns one line into a round, and shows it back before anything starts", async () => {
     composeRound.mockResolvedValue(draft);
     render(<NewInterviewForm />);
@@ -599,6 +617,9 @@ function allowance(over: Partial<EntitlementView>): EntitlementView {
     dailyMinuteLimit: 60,
     remainingRoundsToday: 2,
     remainingMinutesToday: 60,
+    creditBalance: 0,
+    funding: "free",
+    purchasable: false,
     ...over,
   };
 }

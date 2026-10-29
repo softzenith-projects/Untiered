@@ -13,7 +13,7 @@ class UserAiSpendGuardTest {
     fun `a candidate is blocked only after their own India-time daily cap`() {
         val user = UUID.randomUUID()
         val other = UUID.randomUUID()
-        val costs = mapOf(user to 2_000_000L, other to 300_000L)
+        val costs = mapOf(user to 5_000_000L, other to 300_000L)
         val starts = mutableMapOf<UUID, Instant>()
         val spend =
             object : AiSpendReadModel {

@@ -17,7 +17,9 @@ import java.util.UUID
  * 1. **One transaction:** durable jobs are queued to purge the user's prefix in every
  *    bucket (recordings, resumes, the profile photo), and `public.users` is deleted, which
  *    cascades to every user-owned table. The jobs live outside that foreign-key tree, so
- *    they survive it. Either both happen or neither does.
+ *    they survive it. Either both happen or neither does. The one exception is
+ *    `public.payments`: a payment record is kept for tax and refunds, detached from the
+ *    account (`on delete set null`), with nothing in it that names the person.
  * 2. **Then the auth user** is removed through the Supabase admin API. Its row cascades to
  *    `public.users` too, so if step 1 had somehow left anything, this clears it.
  *
