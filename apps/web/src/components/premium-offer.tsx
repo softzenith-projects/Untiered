@@ -97,18 +97,18 @@ export function PremiumOffer() {
 function Balance({ bought, free }: { bought: number; free: number | null }) {
   if (free === null) {
     return (
-      <p className="rounded-xl border border-line bg-surface-raised px-4 py-3 text-caption text-ink">
+      <p className="rounded-xl bg-accent px-4 py-3 text-caption text-accent-contrast shadow-[var(--shadow-md)]">
         You have <strong className="text-heading">{bought}</strong> bought {bought === 1 ? "credit" : "credits"}
       </p>
     );
   }
   const total = free + bought;
   return (
-    <div className="rounded-xl border border-line bg-surface-raised px-4 py-3 text-caption text-ink">
+    <div className="rounded-xl bg-accent px-4 py-3 text-caption text-accent-contrast shadow-[var(--shadow-md)]">
       <p>
         You have <strong className="text-heading">{total}</strong> {total === 1 ? "credit" : "credits"}
       </p>
-      <p className="mt-0.5 text-micro text-ink-subtle">
+      <p className="mt-0.5 text-micro text-accent-contrast/80">
         {free} free · {bought} bought
       </p>
     </div>
