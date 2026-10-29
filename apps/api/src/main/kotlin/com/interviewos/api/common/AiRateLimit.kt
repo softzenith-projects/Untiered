@@ -129,6 +129,7 @@ class AiRateLimitConfig(
     @Value("\${interviewos.rate-limit.loop-briefs-per-hour:10}") loopBriefs: Int,
     @Value("\${interviewos.rate-limit.resume-uploads-per-hour:6}") resumeUploads: Int,
     @Value("\${interviewos.rate-limit.hints-per-hour:40}") hints: Int,
+    @Value("\${interviewos.rate-limit.code-runs-per-hour:200}") codeRuns: Int,
 ) : WebMvcConfigurer {
     private val log = LoggerFactory.getLogger(javaClass)
     private val limiter = AiRateLimiter()
@@ -140,6 +141,9 @@ class AiRateLimitConfig(
             LimitedRoute("loop_briefs", "GET", Regex("^/api/v1/(loop-brief|prep-plan)$"), loopBriefs),
             LimitedRoute("resume_uploads", "POST", Regex("^/api/v1/me/resume$"), resumeUploads),
             LimitedRoute("hints", "POST", Regex("^/api/v1/sessions/[^/]+/turns/[^/]+/hint$"), hints),
+            // Not a model call, but a compile and a JVM start on our runner each time. The
+            // room's Run button and the courses' share one budget, far above a person's use.
+            LimitedRoute("code_runs", "POST", Regex("^/api/v1/(sessions/[^/]+/run|code/run)$"), codeRuns),
         )
 
     override fun addInterceptors(registry: InterceptorRegistry) {

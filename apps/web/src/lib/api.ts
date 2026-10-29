@@ -503,6 +503,11 @@ export function runCode(
   return apiSend<CodeRunResult>(`/api/v1/sessions/${id}/run`, "POST", accessToken, request);
 }
 
+/** Runs a course reader's code outside any round. Java only in practice; Python runs in the browser. */
+export function runCourseCode(accessToken: string, request: RunCodeRequest): Promise<CodeRunResult> {
+  return apiSend<CodeRunResult>("/api/v1/code/run", "POST", accessToken, request);
+}
+
 /**
  * Ends the round now and completes it, so the report is written from what has been
  * answered so far. The opposite of [abandonSession], which forfeits it.
