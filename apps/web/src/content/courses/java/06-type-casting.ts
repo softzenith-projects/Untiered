@@ -54,7 +54,7 @@ export const chapterTypeCasting: Chapter = {
         "\n" +
         "        char letter = 'A';\n" +
         "        int asciiValue = letter;\n" +
-        '        System.out.println("\'A\' as a number: " + asciiValue);\n' +
+        "        System.out.println(\"'A' as a number: \" + asciiValue);\n" +
         "\n" +
         "        int nextCode = asciiValue + 1;\n" +
         "        char nextLetter = (char) nextCode;\n" +
@@ -77,6 +77,12 @@ export const chapterTypeCasting: Chapter = {
         "Next letter: B\n" +
         "Parsed marks + 2: 80\n" +
         "Concatenated as text: 42!",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change `bigValue` to 300 and predict the byte before you run. A byte wraps around every 256 " +
+          "values, so subtract 256 until the number fits between -128 and 127.",
+      },
     },
     {
       kind: "p",
@@ -156,53 +162,6 @@ export const chapterTypeCasting: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Change `bigValue` to 300 and predict the byte before you run. A byte wraps around every 256 " +
-        "values, so subtract 256 until the number fits between -128 and 127.",
-      starter:
-        "public class Casting {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        int marks = 78;\n" +
-        "        double marksAsDouble = marks;\n" +
-        '        System.out.println("Widened: " + marksAsDouble);\n' +
-        "\n" +
-        "        double average = 87.9;\n" +
-        "        int truncated = (int) average;\n" +
-        '        System.out.println("Narrowed: " + truncated);\n' +
-        "\n" +
-        "        int bigValue = 130;\n" +
-        "        byte overflowed = (byte) bigValue;\n" +
-        '        System.out.println("Overflowed byte: " + overflowed);\n' +
-        "\n" +
-        "        char letter = 'A';\n" +
-        "        int asciiValue = letter;\n" +
-        "        System.out.println(\"'A' as a number: \" + asciiValue);\n" +
-        "\n" +
-        "        int nextCode = asciiValue + 1;\n" +
-        "        char nextLetter = (char) nextCode;\n" +
-        '        System.out.println("Next letter: " + nextLetter);\n' +
-        "\n" +
-        '        String marksText = "78";\n' +
-        "        int parsedMarks = Integer.parseInt(marksText);\n" +
-        '        System.out.println("Parsed marks + 2: " + (parsedMarks + 2));\n' +
-        "\n" +
-        "        int number = 42;\n" +
-        "        String numberAsText = String.valueOf(number);\n" +
-        '        System.out.println("Concatenated as text: " + (numberAsText + "!"));\n' +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Widened: 78.0\n" +
-        "Narrowed: 87\n" +
-        "Overflowed byte: -126\n" +
-        "'A' as a number: 65\n" +
-        "Next letter: B\n" +
-        "Parsed marks + 2: 80\n" +
-        "Concatenated as text: 42!",
     },
     {
       kind: "pitfall",

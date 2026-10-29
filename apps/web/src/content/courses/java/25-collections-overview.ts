@@ -62,7 +62,7 @@ export const chapterCollectionsOverview: Chapter = {
         '        marksByName.put("Priya", 87);\n' +
         '        marksByName.put("Arjun", 91);\n' +
         '        marksByName.put("Priya", 90);\n' +
-        '        System.out.println("Map (Priya\'s latest marks): " + marksByName.get("Priya"));\n' +
+        "        System.out.println(\"Map (Priya's latest marks): \" + marksByName.get(\"Priya\"));\n" +
         '        System.out.println("Map size (no duplicate keys): " + marksByName.size());\n' +
         "\n" +
         "        for (String name : names) {\n" +
@@ -77,6 +77,12 @@ export const chapterCollectionsOverview: Chapter = {
         "Map (Priya's latest marks): 90\n" +
         "Map size (no duplicate keys): 2\n" +
         "Priya Arjun Priya",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Add \"Neha\" to `names` twice. Before you run, predict the list, the set's size, and what the " +
+          "loop prints.",
+      },
     },
     {
       kind: "p",
@@ -133,51 +139,6 @@ export const chapterCollectionsOverview: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Add \"Neha\" to `names` twice. Before you run, predict the list, the set's size, and what the loop " +
-        "prints.",
-      starter:
-        "import java.util.ArrayList;\n" +
-        "import java.util.HashSet;\n" +
-        "import java.util.HashMap;\n" +
-        "import java.util.List;\n" +
-        "import java.util.Set;\n" +
-        "import java.util.Map;\n" +
-        "\n" +
-        "public class CollectionsOverviewDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        List<String> names = new ArrayList<>();\n" +
-        '        names.add("Priya");\n' +
-        '        names.add("Arjun");\n' +
-        '        names.add("Priya");\n' +
-        '        System.out.println("List (ordered, duplicates allowed): " + names);\n' +
-        "\n" +
-        "        Set<String> uniqueNames = new HashSet<>(names);\n" +
-        '        System.out.println("Set size after dedup: " + uniqueNames.size());\n' +
-        "\n" +
-        "        Map<String, Integer> marksByName = new HashMap<>();\n" +
-        '        marksByName.put("Priya", 87);\n' +
-        '        marksByName.put("Arjun", 91);\n' +
-        '        marksByName.put("Priya", 90);\n' +
-        "        System.out.println(\"Map (Priya's latest marks): \" + marksByName.get(\"Priya\"));\n" +
-        '        System.out.println("Map size (no duplicate keys): " + marksByName.size());\n' +
-        "\n" +
-        "        for (String name : names) {\n" +
-        '            System.out.print(name + " ");\n' +
-        "        }\n" +
-        "        System.out.println();\n" +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "List (ordered, duplicates allowed): [Priya, Arjun, Priya]\n" +
-        "Set size after dedup: 2\n" +
-        "Map (Priya's latest marks): 90\n" +
-        "Map size (no duplicate keys): 2\n" +
-        "Priya Arjun Priya",
     },
     {
       kind: "pitfall",

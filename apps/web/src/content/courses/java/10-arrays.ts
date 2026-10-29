@@ -72,6 +72,12 @@ export const chapterArrays: Chapter = {
         "Highest: 92\n" +
         "After correction, marks[2] = 70\n" +
         "Default int array: 0, 0, 0",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Add a sixth mark to `marks` and run. The length, total and highest all update without any " +
+          "change to the loops. Then print `marks[marks.length]` and read the exception it throws.",
+      },
     },
     {
       kind: "p",
@@ -179,48 +185,6 @@ export const chapterArrays: Chapter = {
         "`seating[row].length` for the inner bound, not a fixed number, because Java's 2D arrays don't have " +
         "to be perfectly rectangular; each row can, in principle, be a different length (a **jagged " +
         "array**), though a seating chart, sensibly, keeps every row the same size.",
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Add a sixth mark to `marks` and run. The length, total and highest all update without any change " +
-        "to the loops. Then print `marks[marks.length]` and read the exception it throws.",
-      starter:
-        "public class Arrays1 {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        int[] marks = {78, 92, 65, 88, 71};\n" +
-        '        System.out.println("Length: " + marks.length);\n' +
-        '        System.out.println("First: " + marks[0] + ", Last: " + marks[marks.length - 1]);\n' +
-        "\n" +
-        "        int total = 0;\n" +
-        "        for (int i = 0; i < marks.length; i++) {\n" +
-        "            total += marks[i];\n" +
-        "        }\n" +
-        '        System.out.println("Total: " + total);\n' +
-        "\n" +
-        "        int highest = marks[0];\n" +
-        "        for (int m : marks) {\n" +
-        "            if (m > highest) {\n" +
-        "                highest = m;\n" +
-        "            }\n" +
-        "        }\n" +
-        '        System.out.println("Highest: " + highest);\n' +
-        "\n" +
-        "        marks[2] = 70;\n" +
-        '        System.out.println("After correction, marks[2] = " + marks[2]);\n' +
-        "\n" +
-        "        int[] scoresDefault = new int[3];\n" +
-        '        System.out.println("Default int array: " + scoresDefault[0] + ", " + scoresDefault[1] + ", " + scoresDefault[2]);\n' +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Length: 5\n" +
-        "First: 78, Last: 71\n" +
-        "Total: 394\n" +
-        "Highest: 92\n" +
-        "After correction, marks[2] = 70\n" +
-        "Default int array: 0, 0, 0",
     },
     {
       kind: "pitfall",

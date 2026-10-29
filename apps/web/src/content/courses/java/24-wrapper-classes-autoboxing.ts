@@ -82,6 +82,12 @@ export const chapterWrapperClasses: Chapter = {
         "c.equals(d): true\n" +
         "parsed + 8 = 50\n" +
         "Caught NPE while unboxing null",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Set `c` and `d` to 127 and run, then to 128. The `==` answer flips at the edge of Java's " +
+          "Integer cache, which only holds -128 to 127. `.equals()` is right both times.",
+      },
     },
     {
       kind: "p",
@@ -144,58 +150,6 @@ export const chapterWrapperClasses: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Set `c` and `d` to 127 and run, then to 128. The `==` answer flips at the edge of Java's Integer " +
-        "cache, which only holds -128 to 127. `.equals()` is right both times.",
-      starter:
-        "import java.util.ArrayList;\n" +
-        "\n" +
-        "public class WrapperDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        int primitive = 10;\n" +
-        "        Integer boxed = primitive;\n" +
-        "        int unboxed = boxed;\n" +
-        '        System.out.println("boxed = " + boxed + ", unboxed = " + unboxed);\n' +
-        "\n" +
-        "        ArrayList<Integer> numbers = new ArrayList<>();\n" +
-        "        numbers.add(5);\n" +
-        "        numbers.add(10);\n" +
-        "        int sum = numbers.get(0) + numbers.get(1);\n" +
-        '        System.out.println("sum = " + sum);\n' +
-        "\n" +
-        "        Integer a = 100;\n" +
-        "        Integer b = 100;\n" +
-        "        Integer c = 200;\n" +
-        "        Integer d = 200;\n" +
-        '        System.out.println("a == b (small, cached): " + (a == b));\n' +
-        '        System.out.println("c == d (large, not cached): " + (c == d));\n' +
-        '        System.out.println("c.equals(d): " + c.equals(d));\n' +
-        "\n" +
-        '        String text = "42";\n' +
-        "        int parsed = Integer.parseInt(text);\n" +
-        '        System.out.println("parsed + 8 = " + (parsed + 8));\n' +
-        "\n" +
-        "        Integer nullable = null;\n" +
-        "        try {\n" +
-        "            int broken = nullable;\n" +
-        "            System.out.println(broken);\n" +
-        "        } catch (NullPointerException e) {\n" +
-        '            System.out.println("Caught NPE while unboxing null");\n' +
-        "        }\n" +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "boxed = 10, unboxed = 10\n" +
-        "sum = 15\n" +
-        "a == b (small, cached): true\n" +
-        "c == d (large, not cached): false\n" +
-        "c.equals(d): true\n" +
-        "parsed + 8 = 50\n" +
-        "Caught NPE while unboxing null",
     },
     {
       kind: "pitfall",

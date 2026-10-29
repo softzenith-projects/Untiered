@@ -68,6 +68,12 @@ export const chapterStringBuilder: Chapter = {
         "StringBuilder result: 01234\n" +
         "After append/insert/reverse: dlroW ,olleH >>\n" +
         "After delete/setChar: Ello, World",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Make both loops run 10 times instead of 5. The two results still match. The difference is how " +
+          "many throwaway strings the first loop created along the way.",
+      },
     },
     {
       kind: "p",
@@ -124,45 +130,6 @@ export const chapterStringBuilder: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Make both loops run 10 times instead of 5. The two results still match. The difference is how " +
-        "many throwaway strings the first loop created along the way.",
-      starter:
-        "public class Builder1 {\n" +
-        "    public static void main(String[] args) {\n" +
-        '        String result = "";\n' +
-        "        for (int i = 0; i < 5; i++) {\n" +
-        "            result = result + i;\n" +
-        "        }\n" +
-        '        System.out.println("Plain concatenation result: " + result);\n' +
-        "\n" +
-        "        StringBuilder sb = new StringBuilder();\n" +
-        "        for (int i = 0; i < 5; i++) {\n" +
-        "            sb.append(i);\n" +
-        "        }\n" +
-        '        System.out.println("StringBuilder result: " + sb.toString());\n' +
-        "\n" +
-        '        StringBuilder sb2 = new StringBuilder("Hello");\n' +
-        '        sb2.append(", World");\n' +
-        '        sb2.insert(0, ">> ");\n' +
-        "        sb2.reverse();\n" +
-        '        System.out.println("After append/insert/reverse: " + sb2);\n' +
-        "\n" +
-        '        StringBuilder sb3 = new StringBuilder("Hello, World");\n' +
-        "        sb3.deleteCharAt(0);\n" +
-        "        sb3.setCharAt(0, 'E');\n" +
-        '        System.out.println("After delete/setChar: " + sb3);\n' +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Plain concatenation result: 01234\n" +
-        "StringBuilder result: 01234\n" +
-        "After append/insert/reverse: dlroW ,olleH >>\n" +
-        "After delete/setChar: Ello, World",
     },
     {
       kind: "pitfall",

@@ -37,21 +37,11 @@ export const chapterStreams: Chapter = {
     {
       kind: "code",
       caption:
-        "A student list filtered, transformed, sorted and collected; plus average, count, sum, and a stream " +
-        "over plain integers.",
+        "A student list filtered, transformed, sorted and collected; plus average, count, sum, and a " +
+        "stream over plain integers.",
       code:
         "import java.util.List;\n" +
         "import java.util.stream.Collectors;\n" +
-        "\n" +
-        "class Student {\n" +
-        "    String name;\n" +
-        "    int marks;\n" +
-        "\n" +
-        "    Student(String name, int marks) {\n" +
-        "        this.name = name;\n" +
-        "        this.marks = marks;\n" +
-        "    }\n" +
-        "}\n" +
         "\n" +
         "public class StreamsDemo {\n" +
         "    public static void main(String[] args) {\n" +
@@ -91,6 +81,16 @@ export const chapterStreams: Chapter = {
         "            .collect(Collectors.toList());\n" +
         '        System.out.println("Squares: " + squares);\n' +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Student {\n" +
+        "    String name;\n" +
+        "    int marks;\n" +
+        "\n" +
+        "    Student(String name, int marks) {\n" +
+        "        this.name = name;\n" +
+        "        this.marks = marks;\n" +
+        "    }\n" +
         "}\n",
       output:
         "Toppers (>= 80), sorted by name: [Arjun, Neha, Priya]\n" +
@@ -98,6 +98,12 @@ export const chapterStreams: Chapter = {
         "Count above 85: 3\n" +
         "Total marks: 413\n" +
         "Squares: [1, 4, 9, 16, 25]",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Change the filter to `s.marks >= 90` and predict the toppers before you run. Then add " +
+          "`.limit(1)` after `.sorted()`.",
+      },
     },
     {
       kind: "p",
@@ -153,72 +159,6 @@ export const chapterStreams: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Change the filter to `s.marks >= 90` and predict the toppers before you run. Then add " +
-        "`.limit(1)` after `.sorted()`.",
-      starter:
-        "import java.util.List;\n" +
-        "import java.util.stream.Collectors;\n" +
-        "\n" +
-        "public class StreamsDemo {\n" +
-        "    public static void main(String[] args) {\n" +
-        "        List<Student> students = List.of(\n" +
-        '            new Student("Priya", 87),\n' +
-        '            new Student("Arjun", 91),\n' +
-        '            new Student("Vikram", 78),\n' +
-        '            new Student("Neha", 95),\n' +
-        '            new Student("Rahul", 62)\n' +
-        "        );\n" +
-        "\n" +
-        "        List<String> toppers = students.stream()\n" +
-        "            .filter(s -> s.marks >= 80)\n" +
-        "            .map(s -> s.name)\n" +
-        "            .sorted()\n" +
-        "            .collect(Collectors.toList());\n" +
-        '        System.out.println("Toppers (>= 80), sorted by name: " + toppers);\n' +
-        "\n" +
-        "        double average = students.stream()\n" +
-        "            .mapToInt(s -> s.marks)\n" +
-        "            .average()\n" +
-        "            .orElse(0.0);\n" +
-        '        System.out.printf("Average marks: %.2f%n", average);\n' +
-        "\n" +
-        "        long countAbove85 = students.stream()\n" +
-        "            .filter(s -> s.marks > 85)\n" +
-        "            .count();\n" +
-        '        System.out.println("Count above 85: " + countAbove85);\n' +
-        "\n" +
-        "        int totalMarks = students.stream()\n" +
-        "            .mapToInt(s -> s.marks)\n" +
-        "            .sum();\n" +
-        '        System.out.println("Total marks: " + totalMarks);\n' +
-        "\n" +
-        "        List<Integer> squares = List.of(1, 2, 3, 4, 5).stream()\n" +
-        "            .map(n -> n * n)\n" +
-        "            .collect(Collectors.toList());\n" +
-        '        System.out.println("Squares: " + squares);\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class Student {\n" +
-        "    String name;\n" +
-        "    int marks;\n" +
-        "\n" +
-        "    Student(String name, int marks) {\n" +
-        "        this.name = name;\n" +
-        "        this.marks = marks;\n" +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Toppers (>= 80), sorted by name: [Arjun, Neha, Priya]\n" +
-        "Average marks: 82.60\n" +
-        "Count above 85: 3\n" +
-        "Total marks: 413\n" +
-        "Squares: [1, 4, 9, 16, 25]",
     },
     {
       kind: "pitfall",

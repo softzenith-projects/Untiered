@@ -35,111 +35,9 @@ export const chapterGenerics: Chapter = {
     },
     {
       kind: "code",
-      caption: "A generic Box<T>, a two-parameter Pair<K, V>, and a generic method that works for any List<T>.",
+      caption:
+        "A generic Box<T>, a two-parameter Pair<K, V>, and a generic method that works for any List<T>.",
       code:
-        "import java.util.ArrayList;\n" +
-        "import java.util.List;\n" +
-        "\n" +
-        "class Box<T> {\n" +
-        "    private T content;\n" +
-        "\n" +
-        "    void put(T item) {\n" +
-        "        content = item;\n" +
-        "    }\n" +
-        "\n" +
-        "    T get() {\n" +
-        "        return content;\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class Pair<K, V> {\n" +
-        "    private K key;\n" +
-        "    private V value;\n" +
-        "\n" +
-        "    Pair(K key, V value) {\n" +
-        "        this.key = key;\n" +
-        "        this.value = value;\n" +
-        "    }\n" +
-        "\n" +
-        "    @Override\n" +
-        '    public String toString() {\n' +
-        '        return key + " -> " + value;\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "public class GenericsDemo {\n" +
-        "    static <T> T firstElement(List<T> list) {\n" +
-        "        return list.get(0);\n" +
-        "    }\n" +
-        "\n" +
-        "    public static void main(String[] args) {\n" +
-        "        Box<String> stringBox = new Box<>();\n" +
-        '        stringBox.put("Priya");\n' +
-        "        String name = stringBox.get();\n" +
-        '        System.out.println("Box<String>: " + name);\n' +
-        "\n" +
-        "        Box<Integer> intBox = new Box<>();\n" +
-        "        intBox.put(42);\n" +
-        "        int number = intBox.get();\n" +
-        '        System.out.println("Box<Integer>: " + number);\n' +
-        "\n" +
-        '        Pair<String, Integer> marks = new Pair<>("Priya", 87);\n' +
-        '        System.out.println("Pair: " + marks);\n' +
-        "\n" +
-        "        List<String> names = new ArrayList<>();\n" +
-        '        names.add("Arjun");\n' +
-        '        names.add("Vikram");\n' +
-        '        System.out.println("First element via generic method: " + firstElement(names));\n' +
-        "    }\n" +
-        "}\n",
-      output:
-        "Box<String>: Priya\n" +
-        "Box<Integer>: 42\n" +
-        "Pair: Priya -> 87\n" +
-        "First element via generic method: Arjun",
-    },
-    {
-      kind: "p",
-      text:
-        "`Box<T>` is defined exactly once, with `T` as a placeholder used consistently for the field, the " +
-        "`put` parameter, and the `get` return type. `new Box<String>()` tells the compiler: for *this* box, " +
-        "wherever `T` appears, treat it as `String` — so `stringBox.get()` returns a `String` directly, with " +
-        "no manual casting needed, unlike older, generic-free Java where you'd store an `Object` and have to " +
-        "cast it back yourself. `Pair<K, V>` shows two independent type parameters — `K` and `V` can be " +
-        "different types entirely, as they are here (`String` and `Integer`). `firstElement` is a **generic " +
-        "method**: the `<T>` before the return type declares a type parameter scoped to just this method, " +
-        "letting it work for a `List<String>`, a `List<Integer>`, or any other `List<T>`, all with one " +
-        "method body.",
-    },
-    { kind: "h", text: "Why not just use Object?" },
-    {
-      kind: "p",
-      text:
-        "Before generics existed (pre-Java 5), a reusable box would have stored `Object content;` — `Object` " +
-        "being the ancestor of every reference type — and gotten anything back out as an `Object`, requiring " +
-        "an explicit, unsafe cast: `String name = (String) box.get();`. That cast compiles even if the box " +
-        "actually holds an `Integer`, and only fails at run time with a `ClassCastException`, potentially far " +
-        "from where the mistake was made. Generics move that exact same check to compile time, at the " +
-        "location of the mistake, which is strictly better: a bug you can't ship instead of one you " +
-        "discover in production.",
-    },
-    {
-      kind: "steps",
-      title: "Why `stringBox.put(42);` would fail to compile, if it were written",
-      steps: [
-        { label: "Substitute", text: "stringBox's declared type is Box<String> — the compiler substitutes T with String throughout Box for this variable." },
-        { label: "Specialise", text: "put(T item) becomes, for this specific box, put(String item)." },
-        { label: "Infer", text: "42 is an int literal (autoboxes to Integer, not String)." },
-        { label: "Reject", text: "Passing an Integer where a String is required is a type mismatch — the compiler rejects the line before the program can even be built, let alone run." },
-      ],
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Add `stringBox.put(42);` and read the compile error, which is the check generics give you. Then " +
-        "make a `Pair<String, Double>` holding a name and a height.",
-      starter:
         "import java.util.ArrayList;\n" +
         "import java.util.List;\n" +
         "\n" +
@@ -195,11 +93,52 @@ export const chapterGenerics: Chapter = {
         '        return key + " -> " + value;\n' +
         "    }\n" +
         "}\n",
-      expectedOutput:
+      output:
         "Box<String>: Priya\n" +
         "Box<Integer>: 42\n" +
         "Pair: Priya -> 87\n" +
         "First element via generic method: Arjun",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Add `stringBox.put(42);` and read the compile error, which is the check generics give you. " +
+          "Then make a `Pair<String, Double>` holding a name and a height.",
+      },
+    },
+    {
+      kind: "p",
+      text:
+        "`Box<T>` is defined exactly once, with `T` as a placeholder used consistently for the field, the " +
+        "`put` parameter, and the `get` return type. `new Box<String>()` tells the compiler: for *this* box, " +
+        "wherever `T` appears, treat it as `String` — so `stringBox.get()` returns a `String` directly, with " +
+        "no manual casting needed, unlike older, generic-free Java where you'd store an `Object` and have to " +
+        "cast it back yourself. `Pair<K, V>` shows two independent type parameters — `K` and `V` can be " +
+        "different types entirely, as they are here (`String` and `Integer`). `firstElement` is a **generic " +
+        "method**: the `<T>` before the return type declares a type parameter scoped to just this method, " +
+        "letting it work for a `List<String>`, a `List<Integer>`, or any other `List<T>`, all with one " +
+        "method body.",
+    },
+    { kind: "h", text: "Why not just use Object?" },
+    {
+      kind: "p",
+      text:
+        "Before generics existed (pre-Java 5), a reusable box would have stored `Object content;` — `Object` " +
+        "being the ancestor of every reference type — and gotten anything back out as an `Object`, requiring " +
+        "an explicit, unsafe cast: `String name = (String) box.get();`. That cast compiles even if the box " +
+        "actually holds an `Integer`, and only fails at run time with a `ClassCastException`, potentially far " +
+        "from where the mistake was made. Generics move that exact same check to compile time, at the " +
+        "location of the mistake, which is strictly better: a bug you can't ship instead of one you " +
+        "discover in production.",
+    },
+    {
+      kind: "steps",
+      title: "Why `stringBox.put(42);` would fail to compile, if it were written",
+      steps: [
+        { label: "Substitute", text: "stringBox's declared type is Box<String> — the compiler substitutes T with String throughout Box for this variable." },
+        { label: "Specialise", text: "put(T item) becomes, for this specific box, put(String item)." },
+        { label: "Infer", text: "42 is an int literal (autoboxes to Integer, not String)." },
+        { label: "Reject", text: "Passing an Integer where a String is required is a type mismatch — the compiler rejects the line before the program can even be built, let alone run." },
+      ],
     },
     {
       kind: "pitfall",

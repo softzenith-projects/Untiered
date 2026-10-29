@@ -35,6 +35,12 @@ export type Block =
       python?: string;
       pythonOutput?: string;
       pythonNote?: string;
+      /**
+       * Makes this sample runnable where it stands, instead of a `playground` further down
+       * repeating it: "Edit and run" swaps the block for the editor, seeded with `code` and
+       * checked against `output`. `prompt` is the task shown above the editor.
+       */
+      tryIt?: { language: "python" | "java"; prompt: string };
     }
   | { kind: "list"; items: string[]; ordered?: boolean }
   | { kind: "table"; head: string[]; rows: string[][] }

@@ -40,16 +40,12 @@ export const chapterLambdas: Chapter = {
     {
       kind: "code",
       caption:
-        "A custom functional interface implemented with a lambda, plus java.util.function's ready-made ones: " +
-        "Predicate, Function, BiFunction, Runnable.",
+        "A custom functional interface implemented with a lambda, plus java.util.function's ready-made " +
+        "ones: Predicate, Function, BiFunction, Runnable.",
       code:
         "import java.util.function.BiFunction;\n" +
         "import java.util.function.Function;\n" +
         "import java.util.function.Predicate;\n" +
-        "\n" +
-        "interface Greeter {\n" +
-        "    String greet(String name);\n" +
-        "}\n" +
         "\n" +
         "public class LambdasDemo {\n" +
         "    static int applyTwice(Function<Integer, Integer> f, int start) {\n" +
@@ -76,6 +72,10 @@ export const chapterLambdas: Chapter = {
         '        Runnable task = () -> System.out.println("Task running via lambda");\n' +
         "        task.run();\n" +
         "    }\n" +
+        "}\n" +
+        "\n" +
+        "interface Greeter {\n" +
+        "    String greet(String name);\n" +
         "}\n",
       output:
         "Good morning, Priya.\n" +
@@ -86,6 +86,12 @@ export const chapterLambdas: Chapter = {
         "applyTwice(square, 3) = 81\n" +
         "add(4, 5) = 9\n" +
         "Task running via lambda",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Write a third `Greeter` that greets in Hindi, and a `Predicate<Integer>` that checks whether a " +
+          "number is positive. Test both.",
+      },
     },
     {
       kind: "p",
@@ -136,57 +142,6 @@ export const chapterLambdas: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Write a third `Greeter` that greets in Hindi, and a `Predicate<Integer>` that checks whether a " +
-        "number is positive. Test both.",
-      starter:
-        "import java.util.function.BiFunction;\n" +
-        "import java.util.function.Function;\n" +
-        "import java.util.function.Predicate;\n" +
-        "\n" +
-        "public class LambdasDemo {\n" +
-        "    static int applyTwice(Function<Integer, Integer> f, int start) {\n" +
-        "        return f.apply(f.apply(start));\n" +
-        "    }\n" +
-        "\n" +
-        "    public static void main(String[] args) {\n" +
-        '        Greeter formal = name -> "Good morning, " + name + ".";\n' +
-        '        Greeter casual = name -> "Hey " + name + "!";\n' +
-        '        System.out.println(formal.greet("Priya"));\n' +
-        '        System.out.println(casual.greet("Arjun"));\n' +
-        "\n" +
-        "        Predicate<Integer> isEven = n -> n % 2 == 0;\n" +
-        '        System.out.println("6 is even: " + isEven.test(6));\n' +
-        '        System.out.println("7 is even: " + isEven.test(7));\n' +
-        "\n" +
-        "        Function<Integer, Integer> square = n -> n * n;\n" +
-        '        System.out.println("square(5) = " + square.apply(5));\n' +
-        '        System.out.println("applyTwice(square, 3) = " + applyTwice(square, 3));\n' +
-        "\n" +
-        "        BiFunction<Integer, Integer, Integer> add = (x, y) -> x + y;\n" +
-        '        System.out.println("add(4, 5) = " + add.apply(4, 5));\n' +
-        "\n" +
-        '        Runnable task = () -> System.out.println("Task running via lambda");\n' +
-        "        task.run();\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "interface Greeter {\n" +
-        "    String greet(String name);\n" +
-        "}\n",
-      expectedOutput:
-        "Good morning, Priya.\n" +
-        "Hey Arjun!\n" +
-        "6 is even: true\n" +
-        "7 is even: false\n" +
-        "square(5) = 25\n" +
-        "applyTwice(square, 3) = 81\n" +
-        "add(4, 5) = 9\n" +
-        "Task running via lambda",
     },
     {
       kind: "pitfall",

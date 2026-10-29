@@ -40,21 +40,9 @@ export const chapterMultithreading: Chapter = {
     {
       kind: "code",
       caption:
-        "Two threads printing (ordered deterministically with join, so output never varies by run), then two " +
-        "threads safely sharing a synchronized counter.",
+        "Two threads printing (ordered deterministically with join, so output never varies by run), then " +
+        "two threads safely sharing a synchronized counter.",
       code:
-        "class Counter {\n" +
-        "    private int count = 0;\n" +
-        "\n" +
-        "    synchronized void increment() {\n" +
-        "        count++;\n" +
-        "    }\n" +
-        "\n" +
-        "    int getCount() {\n" +
-        "        return count;\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
         "public class ThreadsDemo {\n" +
         "    public static void main(String[] args) throws InterruptedException {\n" +
         "        Runnable printTask = () -> {\n" +
@@ -69,7 +57,7 @@ export const chapterMultithreading: Chapter = {
         "        t1.join();\n" +
         "        t2.start();\n" +
         "        t2.join();\n" +
-        '        System.out.println(\n' +
+        "        System.out.println(\n" +
         '            "Both workers finished (run one after another, in order, thanks to join)");\n' +
         "\n" +
         "        Counter counter = new Counter();\n" +
@@ -86,8 +74,20 @@ export const chapterMultithreading: Chapter = {
         "        a.join();\n" +
         "        b.join();\n" +
         "\n" +
-        '        System.out.println(\n' +
+        "        System.out.println(\n" +
         '            "Final count after two threads, each incrementing 1000 times: " + counter.getCount());\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Counter {\n" +
+        "    private int count = 0;\n" +
+        "\n" +
+        "    synchronized void increment() {\n" +
+        "        count++;\n" +
+        "    }\n" +
+        "\n" +
+        "    int getCount() {\n" +
+        "        return count;\n" +
         "    }\n" +
         "}\n",
       output:
@@ -95,6 +95,12 @@ export const chapterMultithreading: Chapter = {
         "Worker-2 starting\n" +
         "Both workers finished (run one after another, in order, thanks to join)\n" +
         "Final count after two threads, each incrementing 1000 times: 2000",
+      tryIt: {
+        language: "java",
+        prompt:
+          "Raise both loops to 100000, then delete `synchronized` from `increment()` and run a few times. " +
+          "The count usually lands below 200000, because two threads update `count` at the same moment.",
+      },
     },
     {
       kind: "p",
@@ -121,66 +127,6 @@ export const chapterMultithreading: Chapter = {
         "increment is silently overwritten by the other's. `synchronized` forces the whole read-add-write " +
         "sequence to complete for one thread before another thread can start it, which is exactly why the " +
         "count above is reliably `2000` (1000 + 1000), not some unpredictable smaller number.",
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "Raise both loops to 100000, then delete `synchronized` from `increment()` and run a few times. " +
-        "The count usually lands below 200000, because two threads update `count` at the same moment.",
-      starter:
-        "public class ThreadsDemo {\n" +
-        "    public static void main(String[] args) throws InterruptedException {\n" +
-        "        Runnable printTask = () -> {\n" +
-        "            String threadName = Thread.currentThread().getName();\n" +
-        '            System.out.println(threadName + " starting");\n' +
-        "        };\n" +
-        "\n" +
-        '        Thread t1 = new Thread(printTask, "Worker-1");\n' +
-        '        Thread t2 = new Thread(printTask, "Worker-2");\n' +
-        "\n" +
-        "        t1.start();\n" +
-        "        t1.join();\n" +
-        "        t2.start();\n" +
-        "        t2.join();\n" +
-        "        System.out.println(\n" +
-        '            "Both workers finished (run one after another, in order, thanks to join)");\n' +
-        "\n" +
-        "        Counter counter = new Counter();\n" +
-        "        Runnable incrementTask = () -> {\n" +
-        "            for (int i = 0; i < 1000; i++) {\n" +
-        "                counter.increment();\n" +
-        "            }\n" +
-        "        };\n" +
-        "\n" +
-        "        Thread a = new Thread(incrementTask);\n" +
-        "        Thread b = new Thread(incrementTask);\n" +
-        "        a.start();\n" +
-        "        b.start();\n" +
-        "        a.join();\n" +
-        "        b.join();\n" +
-        "\n" +
-        "        System.out.println(\n" +
-        '            "Final count after two threads, each incrementing 1000 times: " + counter.getCount());\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class Counter {\n" +
-        "    private int count = 0;\n" +
-        "\n" +
-        "    synchronized void increment() {\n" +
-        "        count++;\n" +
-        "    }\n" +
-        "\n" +
-        "    int getCount() {\n" +
-        "        return count;\n" +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "Worker-1 starting\n" +
-        "Worker-2 starting\n" +
-        "Both workers finished (run one after another, in order, thanks to join)\n" +
-        "Final count after two threads, each incrementing 1000 times: 2000",
     },
     {
       kind: "pitfall",

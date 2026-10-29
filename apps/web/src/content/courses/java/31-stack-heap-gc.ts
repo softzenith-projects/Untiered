@@ -43,15 +43,6 @@ export const chapterStackHeapGC: Chapter = {
         "Local variables and an object built with new, tracked across two references, with the object " +
         "outliving one of them.",
       code:
-        "class Node {\n" +
-        "    int value;\n" +
-        "    Node next;\n" +
-        "\n" +
-        "    Node(int value) {\n" +
-        "        this.value = value;\n" +
-        "    }\n" +
-        "}\n" +
-        "\n" +
         "public class StackHeapDemo {\n" +
         "    static int square(int n) {\n" +
         "        int result = n * n;\n" +
@@ -81,8 +72,17 @@ export const chapterStackHeapGC: Chapter = {
         "\n" +
         "        first = null;\n" +
         "        reference1 = null;\n" +
-        '        System.out.println(\n' +
+        "        System.out.println(\n" +
         '            "Original references cleared; reference2 still holds: " + reference2.value);\n' +
+        "    }\n" +
+        "}\n" +
+        "\n" +
+        "class Node {\n" +
+        "    int value;\n" +
+        "    Node next;\n" +
+        "\n" +
+        "    Node(int value) {\n" +
+        "        this.value = value;\n" +
         "    }\n" +
         "}\n",
       output:
@@ -90,6 +90,12 @@ export const chapterStackHeapGC: Chapter = {
         "1 -> 2 -> 3 -> null\n" +
         "Same object seen through reference2: 100\n" +
         "Original references cleared; reference2 still holds: 100",
+      tryIt: {
+        language: "java",
+        prompt:
+          "At the end of `main`, set `reference2 = null;` and then print `reference2.value`. Nothing " +
+          "points at that Node any more, so it is garbage, and the print throws a NullPointerException.",
+      },
     },
     {
       kind: "p",
@@ -143,61 +149,6 @@ export const chapterStackHeapGC: Chapter = {
           },
         ],
       },
-    },
-    {
-      kind: "playground",
-      language: "java",
-      prompt:
-        "At the end of `main`, set `reference2 = null;` and then print `reference2.value`. Nothing points " +
-        "at that Node any more, so it is garbage, and the print throws a NullPointerException.",
-      starter:
-        "public class StackHeapDemo {\n" +
-        "    static int square(int n) {\n" +
-        "        int result = n * n;\n" +
-        "        return result;\n" +
-        "    }\n" +
-        "\n" +
-        "    public static void main(String[] args) {\n" +
-        "        int a = 5;\n" +
-        "        int b = square(a);\n" +
-        '        System.out.println("a = " + a + ", b = " + b);\n' +
-        "\n" +
-        "        Node first = new Node(1);\n" +
-        "        first.next = new Node(2);\n" +
-        "        first.next.next = new Node(3);\n" +
-        "\n" +
-        "        Node current = first;\n" +
-        "        while (current != null) {\n" +
-        '            System.out.print(current.value + " -> ");\n' +
-        "            current = current.next;\n" +
-        "        }\n" +
-        '        System.out.println("null");\n' +
-        "\n" +
-        "        Node reference1 = first;\n" +
-        "        Node reference2 = first;\n" +
-        "        reference1.value = 100;\n" +
-        '        System.out.println("Same object seen through reference2: " + reference2.value);\n' +
-        "\n" +
-        "        first = null;\n" +
-        "        reference1 = null;\n" +
-        "        System.out.println(\n" +
-        '            "Original references cleared; reference2 still holds: " + reference2.value);\n' +
-        "    }\n" +
-        "}\n" +
-        "\n" +
-        "class Node {\n" +
-        "    int value;\n" +
-        "    Node next;\n" +
-        "\n" +
-        "    Node(int value) {\n" +
-        "        this.value = value;\n" +
-        "    }\n" +
-        "}\n",
-      expectedOutput:
-        "a = 5, b = 25\n" +
-        "1 -> 2 -> 3 -> null\n" +
-        "Same object seen through reference2: 100\n" +
-        "Original references cleared; reference2 still holds: 100",
     },
     {
       kind: "pitfall",
