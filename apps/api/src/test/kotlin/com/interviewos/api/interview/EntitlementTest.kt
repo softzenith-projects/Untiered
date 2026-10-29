@@ -81,6 +81,17 @@ class EntitlementTest {
     }
 
     @Test
+    fun `the shipped configuration leaves those defaults alone`() {
+        // A `daily-rounds: 1` here would quietly bring back "one free interview a day".
+        val config =
+            javaClass.getResource("/application.yml")?.readText()
+                ?: error("application.yml is not on the test classpath")
+        for (key in listOf("free-rounds", "daily-rounds", "daily-minutes")) {
+            assertFalse(Regex("""^\s*$key:""", RegexOption.MULTILINE).containsMatchIn(config), key)
+        }
+    }
+
+    @Test
     fun `a credit pays for an interview once the free one is used`() {
         val decision = evaluate(freeRoundsUsed = 3, creditBalance = 1)
 

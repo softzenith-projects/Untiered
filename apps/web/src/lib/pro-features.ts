@@ -2,7 +2,7 @@ import type { ProFeatureKey } from "@/lib/api";
 
 /** What the upgrade page asks about. The keys are the API's; the labels can change freely. */
 export const PRO_FEATURES: { key: ProFeatureKey; label: string }[] = [
-  { key: "more_practice", label: "More rounds and longer interviews each day" },
+  { key: "more_practice", label: "More interviews after your free ones" },
   { key: "progress", label: "Longer-term progress views across repeated goals" },
   { key: "recommendations", label: "Deeper practice recommendations from past reports" },
   { key: "prep_plans", label: "More control over saved preparation plans" },
