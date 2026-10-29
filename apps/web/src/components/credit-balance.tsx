@@ -25,14 +25,31 @@ export function interviewsLeft(entitlement: EntitlementView): number {
   return (entitlement.remainingFree ?? 0) + entitlement.creditBalance;
 }
 
+const CREDITS_CHANGED = "untiered:credits-changed";
+
+/**
+ * Tells the header its balance is out of date. A purchase happens without leaving the
+ * page, so the navigation that would otherwise re-read it never comes.
+ */
+export function announceCreditsChanged(): void {
+  window.dispatchEvent(new Event(CREDITS_CHANGED));
+}
+
 /**
  * The header's balance and the way to buy more. Read again on each navigation, because
- * starting a round or buying a pack changes it and the bar outlives both pages.
+ * starting a round changes it and the bar outlives the page, and again on a purchase.
  */
 export function CreditBalance() {
   const accessToken = useAccessToken();
   const pathname = usePathname();
   const [entitlement, setEntitlement] = useState<EntitlementView | null>(() => lastEntitlement);
+  const [changes, setChanges] = useState(0);
+
+  useEffect(() => {
+    const onChange = () => setChanges((count) => count + 1);
+    window.addEventListener(CREDITS_CHANGED, onChange);
+    return () => window.removeEventListener(CREDITS_CHANGED, onChange);
+  }, []);
 
   useEffect(() => {
     if (accessToken === null) lastEntitlement = null;
@@ -49,7 +66,7 @@ export function CreditBalance() {
     return () => {
       active = false;
     };
-  }, [accessToken, pathname]);
+  }, [accessToken, pathname, changes]);
 
   const left = entitlement ? interviewsLeft(entitlement) : null;
 
