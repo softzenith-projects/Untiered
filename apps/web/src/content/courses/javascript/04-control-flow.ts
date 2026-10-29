@@ -265,16 +265,6 @@ done`,
       },
     },
     {
-      kind: "interview",
-      items: [
-        "What is the difference between `for...in` and `for...of`? A strong answer: keys (including inherited, as strings) versus values of an iterable. Do not use for...in on arrays.",
-        "How do you stop a `forEach` early? A strong answer: you cannot with `break`; use a `for...of` loop, or `some` / `every`.",
-        "Why does `for (var i...)` with a `setTimeout` inside print the same number? A strong answer: var is function-scoped, so all callbacks share one `i`. `let` creates a fresh `i` per pass. (Chapter 10 covers this in detail.)",
-        "What is fall-through in a switch? A strong answer: without `break`, execution continues into the next case; it is deliberate for stacked cases and a bug otherwise.",
-        "How can you leave two nested loops at once? A strong answer: a label with `break label`, or refactor into a function and `return`.",
-      ],
-    },
-    {
       kind: "pitfall",
       items: [
         "An infinite loop: `while (n > 0)` with no `n--`. Check that something inside the loop moves the condition toward false.",
@@ -282,6 +272,25 @@ done`,
         "Using `for...in` on an array and getting indexes as strings (`\"0\"`, `\"1\"`), and sometimes extra properties. Use `for...of`.",
         "Forgetting `break` in a `switch` and running several cases.",
         "Changing the array while looping over it with an index: elements are skipped. Loop over a copy, or build a new array.",
+      ],
+    },
+    {
+      kind: "remember",
+      items: [
+        "`for...of` gives values of an iterable; `for...in` gives enumerable keys as strings. Prefer `for...of` for arrays.",
+        "A `switch` uses `===` and falls through without `break`. Stack cases on purpose or add `break`.",
+        "`break` leaves the loop, `continue` skips to the next pass, and a label lets `break` leave an outer loop.",
+        "Every loop needs something that changes its condition. If a page freezes, look for the loop first.",
+      ],
+    },
+    {
+      kind: "interview",
+      items: [
+        "What is the difference between `for...in` and `for...of`? A strong answer: keys (including inherited, as strings) versus values of an iterable. Do not use for...in on arrays.",
+        "How do you stop a `forEach` early? A strong answer: you cannot with `break`; use a `for...of` loop, or `some` / `every`.",
+        "Why does `for (var i...)` with a `setTimeout` inside print the same number? A strong answer: var is function-scoped, so all callbacks share one `i`. `let` creates a fresh `i` per pass. (Chapter 10 covers this in detail.)",
+        "What is fall-through in a switch? A strong answer: without `break`, execution continues into the next case; it is deliberate for stacked cases and a bug otherwise.",
+        "How can you leave two nested loops at once? A strong answer: a label with `break label`, or refactor into a function and `return`.",
       ],
     },
     {
@@ -309,15 +318,6 @@ for (let i = 0; i < 5; i++) {
       options: ["0", "1", "Forever", "It is a SyntaxError"],
       answer: 1,
       why: "do...while checks the condition after the body, so the body always runs at least once.",
-    },
-    {
-      kind: "remember",
-      items: [
-        "`for...of` gives values of an iterable; `for...in` gives enumerable keys as strings. Prefer `for...of` for arrays.",
-        "A `switch` uses `===` and falls through without `break`. Stack cases on purpose or add `break`.",
-        "`break` leaves the loop, `continue` skips to the next pass, and a label lets `break` leave an outer loop.",
-        "Every loop needs something that changes its condition. If a page freezes, look for the loop first.",
-      ],
     },
   ],
 };

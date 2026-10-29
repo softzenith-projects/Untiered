@@ -172,16 +172,6 @@ NaN
       text: "Three Date traps. Months run from **0 to 11**, so `new Date(2026, 0, 15)` is January. Dates are **mutable**, so `setUTCDate` changes the object, and you should copy before changing. And `new Date(\"2026-01-15\")` (date only) is read as UTC, while `new Date(\"2026-01-15T10:00\")` is read in the local time zone, so the same day can shift by a day in some zones. Use `Intl` for formatting, and a library such as date-fns for heavy date work until the Temporal API is available in all your target environments (check current support before depending on it).",
     },
     {
-      kind: "interview",
-      items: [
-        "Why does `0.1 + 0.2` not equal `0.3`? A strong answer: IEEE 754 binary floating point cannot represent 0.1 or 0.2 exactly; compare with a tolerance or use integers for money.",
-        "What is the largest safe integer, and what is BigInt for? A strong answer: 2^53 - 1; BigInt holds arbitrary-size integers and cannot be mixed with numbers.",
-        "Why does `[\"1\", \"2\", \"3\"].map(parseInt)` return `[1, NaN, NaN]`? A strong answer: map passes the index as the second argument, which parseInt treats as the radix.",
-        "How do you handle money in JavaScript? A strong answer: integers in the smallest unit, or a decimal library, and `Intl.NumberFormat` for display.",
-        "What are common Date pitfalls? A strong answer: zero-based months, mutability, ambiguous parsing of date-only strings, and time zones.",
-      ],
-    },
-    {
       kind: "pitfall",
       items: [
         "Comparing floats with `===`. Use a tolerance, or integers.",
@@ -189,6 +179,25 @@ NaN
         "Calling `parseInt` without a radix, or passing it directly to `map`.",
         "Using `new Date(2026, 1, 15)` and expecting January. Months are zero-based.",
         "Treating `\"5\" + 1` as 6. The string wins, giving \"51\". Convert first with `Number`.",
+      ],
+    },
+    {
+      kind: "remember",
+      items: [
+        "Numbers are 64-bit binary floats: `0.1 + 0.2` is `0.30000000000000004`. Compare with a tolerance and keep money as integers.",
+        "Strings are immutable: methods return new strings. `slice(a, b)` excludes `b`.",
+        "`Number()` is strict, `parseInt(text, 10)` reads a prefix, and `map(parseInt)` is a trap because of the radix.",
+        "Dates have zero-based months, are mutable, and parse date-only strings as UTC. Format with `Intl`.",
+      ],
+    },
+    {
+      kind: "interview",
+      items: [
+        "Why does `0.1 + 0.2` not equal `0.3`? A strong answer: IEEE 754 binary floating point cannot represent 0.1 or 0.2 exactly; compare with a tolerance or use integers for money.",
+        "What is the largest safe integer, and what is BigInt for? A strong answer: 2^53 - 1; BigInt holds arbitrary-size integers and cannot be mixed with numbers.",
+        "Why does `[\"1\", \"2\", \"3\"].map(parseInt)` return `[1, NaN, NaN]`? A strong answer: map passes the index as the second argument, which parseInt treats as the radix.",
+        "How do you handle money in JavaScript? A strong answer: integers in the smallest unit, or a decimal library, and `Intl.NumberFormat` for display.",
+        "What are common Date pitfalls? A strong answer: zero-based months, mutability, ambiguous parsing of date-only strings, and time zones.",
       ],
     },
     {
@@ -213,15 +222,6 @@ console.log("abc".slice(1, 2), "abc".at(-1));`,
       options: ["November", "December", "January", "It is invalid"],
       answer: 1,
       why: "Months are zero-based, so 11 is December.",
-    },
-    {
-      kind: "remember",
-      items: [
-        "Numbers are 64-bit binary floats: `0.1 + 0.2` is `0.30000000000000004`. Compare with a tolerance and keep money as integers.",
-        "Strings are immutable: methods return new strings. `slice(a, b)` excludes `b`.",
-        "`Number()` is strict, `parseInt(text, 10)` reads a prefix, and `map(parseInt)` is a trap because of the radix.",
-        "Dates have zero-based months, are mutable, and parse date-only strings as UTC. Format with `Intl`.",
-      ],
     },
   ],
 };

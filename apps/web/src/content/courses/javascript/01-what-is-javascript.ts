@@ -135,21 +135,30 @@ console.log(add(2, 3)); // 5`,
       caption: "Where the same idea looks different: a module file with import/export. Real code, not run here, because the playground runs scripts only.",
     },
     {
-      kind: "interview",
-      items: [
-        "What is the difference between JavaScript and ECMAScript? A strong answer: ECMAScript is the standard (TC39 writes it); JavaScript is an implementation of it plus the runtime's extras.",
-        "Is `setTimeout` part of JavaScript? A strong answer: no. It is supplied by the runtime (browser or Node), not by the language specification, which is why its behaviour differs slightly between them.",
-        "Is JavaScript interpreted or compiled? A strong answer: neither is required by the language. Modern engines parse, interpret, then just-in-time compile hot code. Say \"implementation-defined\".",
-        "What is the difference between Node.js and a browser? A strong answer: same engine family (V8), different runtime APIs: DOM and `window` in a browser; files, processes and sockets in Node.",
-      ],
-    },
-    {
       kind: "pitfall",
       items: [
         "Believing `document` or `window` exists everywhere. In Node, using `document` throws a `ReferenceError`. Check what runtime you are in, or keep that code out of shared files.",
         "Mixing up Java and JavaScript. They are different languages with unrelated designs; the name was a marketing choice from the 1990s.",
         "Putting `import` statements in a plain script and wondering why it throws a SyntaxError. Imports work only in modules.",
         "Typing code into the console and thinking it is saved. The console is for experiments; keep real code in files.",
+      ],
+    },
+    {
+      kind: "remember",
+      items: [
+        "The language (ECMAScript) is the rules, the engine runs them, the runtime (browser or Node) adds the extras like `document` and `fetch`.",
+        "The language does not demand interpretation or compilation: modern engines do both, using JIT compilation.",
+        "A module has its own scope and uses import and export. A classic script shares the global scope.",
+        "`console.log` is your eyes. Print a value before you reason about it.",
+      ],
+    },
+    {
+      kind: "interview",
+      items: [
+        "What is the difference between JavaScript and ECMAScript? A strong answer: ECMAScript is the standard (TC39 writes it); JavaScript is an implementation of it plus the runtime's extras.",
+        "Is `setTimeout` part of JavaScript? A strong answer: no. It is supplied by the runtime (browser or Node), not by the language specification, which is why its behaviour differs slightly between them.",
+        "Is JavaScript interpreted or compiled? A strong answer: neither is required by the language. Modern engines parse, interpret, then just-in-time compile hot code. Say \"implementation-defined\".",
+        "What is the difference between Node.js and a browser? A strong answer: same engine family (V8), different runtime APIs: DOM and `window` in a browser; files, processes and sockets in Node.",
       ],
     },
     {
@@ -177,15 +186,6 @@ console.log(add(2, 3)); // 5`,
       ],
       answer: 1,
       why: "V8 is an engine: it reads and runs JavaScript. Chrome and Node.js wrap it in different runtimes.",
-    },
-    {
-      kind: "remember",
-      items: [
-        "The language (ECMAScript) is the rules, the engine runs them, the runtime (browser or Node) adds the extras like `document` and `fetch`.",
-        "The language does not demand interpretation or compilation: modern engines do both, using JIT compilation.",
-        "A module has its own scope and uses import and export. A classic script shares the global scope.",
-        "`console.log` is your eyes. Print a value before you reason about it.",
-      ],
     },
   ],
 };

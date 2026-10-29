@@ -197,16 +197,6 @@ baNaNa`,
       text: "Read the rules once. **`+`**: if either side is a string after converting objects to primitives, it joins text; otherwise it adds numbers. **`-`, `*`, `/`**: always numbers, so `\"5\" - 2` is 3. Unary `+` turns its operand into a number: `+\"\"` is 0 and `+\"abc\"` is `NaN`. `NaN` means \"not a number\" but its type is number, and it is not equal to anything, even itself. Test it with `Number.isNaN(x)`.",
     },
     {
-      kind: "interview",
-      items: [
-        "What is the difference between `==` and `===`? A strong answer: `===` compares without conversion; `==` converts by defined rules. Mention that `x == null` is the one common intentional use because it catches both null and undefined.",
-        "What does `[] + {}` give, and why? A strong answer walks through the conversion: both become strings (`\"\"` and `\"[object Object]\"`) and are joined.",
-        "Why is `0.1 + 0.2 !== 0.3`? A strong answer: numbers are 64-bit binary floating point; 0.1 and 0.2 cannot be stored exactly. Compare with a tolerance.",
-        "When would you use `??` instead of `||`? A strong answer: when 0, \"\" or false are valid values that must not be replaced by a default.",
-        "How do you check for NaN? A strong answer: `Number.isNaN(x)` or `Object.is(x, NaN)`, because `NaN === NaN` is false.",
-      ],
-    },
-    {
       kind: "pitfall",
       items: [
         "Using `||` for defaults when `0` or `\"\"` is valid. Use `??`.",
@@ -214,6 +204,25 @@ baNaNa`,
         "Sorting or comparing numbers read from a form as strings: `\"10\" < \"9\"` is true. Convert with `Number(...)` first.",
         "Using the global `isNaN(\"abc\")`, which converts to a number first and returns true for text. Prefer `Number.isNaN`.",
         "Trusting truthiness of arrays and objects. `[]` is truthy; test `arr.length` instead.",
+      ],
+    },
+    {
+      kind: "remember",
+      items: [
+        "Prefer `===`. Use `== null` only on purpose, to catch both null and undefined.",
+        "Exactly eight falsy values: false, 0, -0, 0n, \"\", null, undefined, NaN. `[]` and `{}` are truthy.",
+        "`+` joins text if either side is a string; `-`, `*`, `/` always convert to numbers.",
+        "`??` replaces only null or undefined; `||` replaces every falsy value. NaN is not equal to itself; test with `Number.isNaN`.",
+      ],
+    },
+    {
+      kind: "interview",
+      items: [
+        "What is the difference between `==` and `===`? A strong answer: `===` compares without conversion; `==` converts by defined rules. Mention that `x == null` is the one common intentional use because it catches both null and undefined.",
+        "What does `[] + {}` give, and why? A strong answer walks through the conversion: both become strings (`\"\"` and `\"[object Object]\"`) and are joined.",
+        "Why is `0.1 + 0.2 !== 0.3`? A strong answer: numbers are 64-bit binary floating point; 0.1 and 0.2 cannot be stored exactly. Compare with a tolerance.",
+        "When would you use `??` instead of `||`? A strong answer: when 0, \"\" or false are valid values that must not be replaced by a default.",
+        "How do you check for NaN? A strong answer: `Number.isNaN(x)` or `Object.is(x, NaN)`, because `NaN === NaN` is false.",
       ],
     },
     {
@@ -239,15 +248,6 @@ console.log(3 + 4 + "5");`,
       options: ["`NaN == NaN`", "`null == undefined`", "`null == 0`", "`[] === []`"],
       answer: 1,
       why: "null and undefined equal each other under ==. NaN is never equal to itself. null does not equal 0 under ==. Two separate arrays are two different objects, so === is false.",
-    },
-    {
-      kind: "remember",
-      items: [
-        "Prefer `===`. Use `== null` only on purpose, to catch both null and undefined.",
-        "Exactly eight falsy values: false, 0, -0, 0n, \"\", null, undefined, NaN. `[]` and `{}` are truthy.",
-        "`+` joins text if either side is a string; `-`, `*`, `/` always convert to numbers.",
-        "`??` replaces only null or undefined; `||` replaces every falsy value. NaN is not equal to itself; test with `Number.isNaN`.",
-      ],
     },
   ],
 };

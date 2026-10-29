@@ -254,16 +254,6 @@ true undefined`,
       text: "JSON is text with a strict format: double-quoted keys and strings, no comments, no trailing commas, and only strings, numbers, booleans, null, arrays and objects. `JSON.stringify` skips `undefined`, functions and symbols inside objects, and turns a Date into an ISO string. `JSON.parse` of bad text throws a `SyntaxError`, so wrap it in `try/catch` when the text comes from outside.",
     },
     {
-      kind: "interview",
-      items: [
-        "Is JavaScript pass-by-value or pass-by-reference? A strong answer: always by value; for objects, the value is a reference, so mutation is visible to the caller but re-assignment is not.",
-        "How do you deep-copy an object? A strong answer: `structuredClone` first; mention that JSON round-tripping loses Dates, undefined, functions and fails on cycles; and that spread is shallow.",
-        "What is the difference between `Map` and an object? A strong answer: key types, order, size, no inherited keys, and performance for frequent changes.",
-        "What is a WeakMap used for? A strong answer: attaching data to an object without preventing its garbage collection, such as private data or caches.",
-        "What does `const` do to an object? A strong answer: stops re-binding; contents can still change. Use `Object.freeze` (shallow) for read-only data.",
-      ],
-    },
-    {
       kind: "pitfall",
       items: [
         "Copying an object with `=` and expecting a new one. Both names point to the same object.",
@@ -271,6 +261,25 @@ true undefined`,
         "Relying on `JSON.parse(JSON.stringify(x))` for data with Dates, undefined, Maps or cycles.",
         "Comparing two objects with `===` or `==`. They are equal only if they are the very same object; compare fields instead.",
         "Destructuring from `undefined` or `null`, which throws. Provide a default (`= {}`) or check first.",
+      ],
+    },
+    {
+      kind: "remember",
+      items: [
+        "A variable holding an object holds a reference. `b = a` shares one object; it does not copy.",
+        "JavaScript is always pass-by-value. For objects the value is the reference, so you can mutate through it, but re-assigning the parameter does not reach the caller.",
+        "Spread and `Object.assign` copy one level. `structuredClone` copies deeply but throws on functions; the JSON trick loses Dates and undefined.",
+        "Use `Map` for arbitrary keys, counting and order; `Set` for uniqueness; `WeakMap` to attach data without blocking garbage collection.",
+      ],
+    },
+    {
+      kind: "interview",
+      items: [
+        "Is JavaScript pass-by-value or pass-by-reference? A strong answer: always by value; for objects, the value is a reference, so mutation is visible to the caller but re-assignment is not.",
+        "How do you deep-copy an object? A strong answer: `structuredClone` first; mention that JSON round-tripping loses Dates, undefined, functions and fails on cycles; and that spread is shallow.",
+        "What is the difference between `Map` and an object? A strong answer: key types, order, size, no inherited keys, and performance for frequent changes.",
+        "What is a WeakMap used for? A strong answer: attaching data to an object without preventing its garbage collection, such as private data or caches.",
+        "What does `const` do to an object? A strong answer: stops re-binding; contents can still change. Use `Object.freeze` (shallow) for read-only data.",
       ],
     },
     {
@@ -308,15 +317,6 @@ console.log(obj.v);`,
       ],
       answer: 0,
       why: "structuredClone keeps a Date as a Date. The JSON round trip turns it into a string.",
-    },
-    {
-      kind: "remember",
-      items: [
-        "A variable holding an object holds a reference. `b = a` shares one object; it does not copy.",
-        "JavaScript is always pass-by-value. For objects the value is the reference, so you can mutate through it, but re-assigning the parameter does not reach the caller.",
-        "Spread and `Object.assign` copy one level. `structuredClone` copies deeply but throws on functions; the JSON trick loses Dates and undefined.",
-        "Use `Map` for arbitrary keys, counting and order; `Set` for uniqueness; `WeakMap` to attach data without blocking garbage collection.",
-      ],
     },
   ],
 };

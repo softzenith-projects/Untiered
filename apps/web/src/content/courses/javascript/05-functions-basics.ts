@@ -196,16 +196,6 @@ console.log(ops.map((op) => op(16)));`,
       text: "A function that takes or returns another function is called a **higher-order function**. `triple` remembers `factor = 3` even after `multiplier` has finished; that memory is a closure, the subject of chapter 10. A **pure function** gives the same output for the same input and changes nothing outside itself. They are easy to test and are the foundation of React.",
     },
     {
-      kind: "interview",
-      items: [
-        "What is the difference between a function declaration and a function expression? A strong answer: declarations are hoisted with their body; expressions exist only after their line executes.",
-        "How do arrow functions differ from regular functions? A strong answer: no own `this`, `arguments` or `prototype`, not constructible, implicit return for one expression.",
-        "What is a pure function and why do we want them? A strong answer: same input gives same output, no side effects; they are predictable, testable and cache-safe.",
-        "What are first-class functions? A strong answer: functions are values, so they can be assigned, passed and returned, which makes callbacks and higher-order functions possible.",
-        "When does a default parameter apply? A strong answer: only when the argument is undefined, not for null.",
-      ],
-    },
-    {
       kind: "pitfall",
       items: [
         "Writing `return` and the value on separate lines, so the function returns undefined. Keep the value on the same line.",
@@ -213,6 +203,25 @@ console.log(ops.map((op) => op(16)));`,
         "Using an arrow function where you need `this`, such as an object method. Chapter 11 explains why it breaks.",
         "Calling a function expression before its line: `const f = ...` is not usable above it (a ReferenceError).",
         "Mutating an argument (an object or array) and surprising the caller. Copy first, or document it.",
+      ],
+    },
+    {
+      kind: "remember",
+      items: [
+        "A function is a value. You can store it, pass it and return it; that is what makes callbacks and higher-order functions possible.",
+        "Declarations are hoisted with their body; expressions and arrows are not usable before their line runs.",
+        "Defaults apply only to `undefined`. Rest (`...args`) collects extras into an array; spread (`...arr`) expands one.",
+        "No `return` means `undefined`. Prefer pure functions: same input, same output, no side effects.",
+      ],
+    },
+    {
+      kind: "interview",
+      items: [
+        "What is the difference between a function declaration and a function expression? A strong answer: declarations are hoisted with their body; expressions exist only after their line executes.",
+        "How do arrow functions differ from regular functions? A strong answer: no own `this`, `arguments` or `prototype`, not constructible, implicit return for one expression.",
+        "What is a pure function and why do we want them? A strong answer: same input gives same output, no side effects; they are predictable, testable and cache-safe.",
+        "What are first-class functions? A strong answer: functions are values, so they can be assigned, passed and returned, which makes callbacks and higher-order functions possible.",
+        "When does a default parameter apply? A strong answer: only when the argument is undefined, not for null.",
       ],
     },
     {
@@ -249,15 +258,6 @@ const add = (a, b) => a + b;`,
       ],
       answer: 1,
       why: "The const binding is in the temporal dead zone until its declaration runs. A function declaration, by contrast, would have been hoisted and worked.",
-    },
-    {
-      kind: "remember",
-      items: [
-        "A function is a value. You can store it, pass it and return it; that is what makes callbacks and higher-order functions possible.",
-        "Declarations are hoisted with their body; expressions and arrows are not usable before their line runs.",
-        "Defaults apply only to `undefined`. Rest (`...args`) collects extras into an array; spread (`...arr`) expands one.",
-        "No `return` means `undefined`. Prefer pure functions: same input, same output, no side effects.",
-      ],
     },
   ],
 };

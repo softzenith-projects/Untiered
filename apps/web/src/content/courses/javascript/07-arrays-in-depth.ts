@@ -280,16 +280,6 @@ true -1`,
       ],
     },
     {
-      kind: "interview",
-      items: [
-        "Why does `[10, 9, 1].sort()` give `[1, 10, 9]`? A strong answer: no comparator means string comparison; use `(a, b) => a - b`.",
-        "Which array methods mutate the original? A strong answer: push, pop, shift, unshift, splice, sort, reverse, fill; the ES2023 `toSorted` family is the non-mutating version.",
-        "Implement `reduce` or `map` yourself. A strong answer handles the initial value and passes `(item, index, array)` to the callback.",
-        "What is the difference between `map` and `forEach`? A strong answer: map returns a new array; forEach returns undefined and is for side effects.",
-        "How would you remove duplicates from an array? A strong answer: `[...new Set(arr)]`, noting it uses SameValueZero comparison, so objects are only duplicates if they are the same object.",
-      ],
-    },
-    {
       kind: "pitfall",
       items: [
         "Sorting numbers without a comparator.",
@@ -297,6 +287,25 @@ true -1`,
         "Using `map` only for side effects, then ignoring the result. Use `forEach` or a `for...of`.",
         "Sorting React state in place. Copy first or use `toSorted`.",
         "Writing a comparator that returns a boolean (`a > b`). It must return a number.",
+      ],
+    },
+    {
+      kind: "remember",
+      items: [
+        "`map`, `filter` and `reduce` return new values and leave the original alone; always give `reduce` an initial value.",
+        "`sort` without a comparator sorts as text and mutates in place. Use `(a, b) => a - b`, or `toSorted` to keep the original.",
+        "Reading by index and `push`/`pop` are O(1); `shift`, `unshift`, `splice` and `indexOf` are O(n).",
+        "Holes are not the same as undefined: `forEach` and `map` skip them, `Array.from` fills them.",
+      ],
+    },
+    {
+      kind: "interview",
+      items: [
+        "Why does `[10, 9, 1].sort()` give `[1, 10, 9]`? A strong answer: no comparator means string comparison; use `(a, b) => a - b`.",
+        "Which array methods mutate the original? A strong answer: push, pop, shift, unshift, splice, sort, reverse, fill; the ES2023 `toSorted` family is the non-mutating version.",
+        "Implement `reduce` or `map` yourself. A strong answer handles the initial value and passes `(item, index, array)` to the callback.",
+        "What is the difference between `map` and `forEach`? A strong answer: map returns a new array; forEach returns undefined and is for side effects.",
+        "How would you remove duplicates from an array? A strong answer: `[...new Set(arr)]`, noting it uses SameValueZero comparison, so objects are only duplicates if they are the same object.",
       ],
     },
     {
@@ -321,15 +330,6 @@ console.log([1, 2, 3].map((x) => x * 2).filter((x) => x > 2));`,
       options: ["`splice`", "`reverse`", "`slice`", "`push`"],
       answer: 2,
       why: "slice returns a copy of part of the array. The other three change the original.",
-    },
-    {
-      kind: "remember",
-      items: [
-        "`map`, `filter` and `reduce` return new values and leave the original alone; always give `reduce` an initial value.",
-        "`sort` without a comparator sorts as text and mutates in place. Use `(a, b) => a - b`, or `toSorted` to keep the original.",
-        "Reading by index and `push`/`pop` are O(1); `shift`, `unshift`, `splice` and `indexOf` are O(n).",
-        "Holes are not the same as undefined: `forEach` and `map` skip them, `Array.from` fills them.",
-      ],
     },
   ],
 };

@@ -216,6 +216,24 @@ now set`,
       ],
     },
     {
+      kind: "pitfall",
+      items: [
+        "Using `typeof x === \"object\"` to detect an object. It is also true for `null` and arrays. Check `x !== null` first, or use `Array.isArray` for arrays.",
+        "Thinking `const arr = []` means arr can never change. It can still `push`. Use `const` for the label, not for the contents.",
+        "Declaring with `var` inside a loop and being surprised the variable survives after the loop. Prefer `let`.",
+        "Forgetting `const` or `let` entirely: `count = 5` can create an accidental global in sloppy mode. Always declare.",
+      ],
+    },
+    {
+      kind: "remember",
+      items: [
+        "Seven primitives (number, bigint, string, boolean, undefined, null, symbol) plus objects. Arrays and functions are objects.",
+        "`typeof null` is \"object\" by accident of history. Use `x === null` to test for null and `Array.isArray` for arrays.",
+        "`const` fixes the binding, not the contents. Default to `const`, use `let` when you must re-assign, avoid `var`.",
+        "`var` is function-scoped and starts as `undefined`; `let` and `const` are block-scoped and throw if used before their line.",
+      ],
+    },
+    {
       kind: "interview",
       items: [
         "Why does `typeof null` return \"object\"? A strong answer: it is a historical bug from the original implementation, kept for backwards compatibility. null is a primitive.",
@@ -223,15 +241,6 @@ now set`,
         "What is the difference between `var`, `let` and `const`? A strong answer covers scope (function vs block), re-assignment, hoisting with the temporal dead zone, and redeclaration.",
         "How do you check whether something is an array? A strong answer: `Array.isArray(x)`, because `typeof` returns \"object\" for arrays and for null.",
         "What is the difference between `null` and `undefined`? A strong answer: undefined is the language's \"no value yet\"; null is an intentional empty value.",
-      ],
-    },
-    {
-      kind: "pitfall",
-      items: [
-        "Using `typeof x === \"object\"` to detect an object. It is also true for `null` and arrays. Check `x !== null` first, or use `Array.isArray` for arrays.",
-        "Thinking `const arr = []` means arr can never change. It can still `push`. Use `const` for the label, not for the contents.",
-        "Declaring with `var` inside a loop and being surprised the variable survives after the loop. Prefer `let`.",
-        "Forgetting `const` or `let` entirely: `count = 5` can create an accidental global in sloppy mode. Always declare.",
       ],
     },
     {
@@ -268,15 +277,6 @@ console.log(nums.length);`,
       ],
       answer: 1,
       why: "The answer \"object\" comes from an early implementation mistake. Fixing it would have broken existing websites.",
-    },
-    {
-      kind: "remember",
-      items: [
-        "Seven primitives (number, bigint, string, boolean, undefined, null, symbol) plus objects. Arrays and functions are objects.",
-        "`typeof null` is \"object\" by accident of history. Use `x === null` to test for null and `Array.isArray` for arrays.",
-        "`const` fixes the binding, not the contents. Default to `const`, use `let` when you must re-assign, avoid `var`.",
-        "`var` is function-scoped and starts as `undefined`; `let` and `const` are block-scoped and throw if used before their line.",
-      ],
     },
   ],
 };
