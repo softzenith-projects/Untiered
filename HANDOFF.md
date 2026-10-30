@@ -89,6 +89,8 @@ Task file: `tasks/task-066-javascript-course.md` (PRD §10).
 ## Merge status
 - Merged into `develop` at `026302f` (fast-forward from `feat/javascript-course`) after green
   CI. No migrations. Nothing pushed to `main`.
+- Follow-up pass merged into `develop` at `542e8f2` (fast-forward from
+  `fix/js-course-cross-browser`) after green CI, run 41009402453, all four jobs.
 
 ## Notes for review
 - **New dependency: `@codemirror/lang-javascript`** (MIT, from the CodeMirror project the
