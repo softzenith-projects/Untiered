@@ -59,7 +59,8 @@ brief, pasted into the session; no task file (PRD §11).
   split naturally, since the tests and docs describe one change.
 
 ## Merge status
-- Merged into `develop`; see the commit that follows this handoff for the merge SHA and its CI result.
+- Merged into `develop` at `d6ddcfc`, CI green on all four jobs:
+  https://github.com/softzenith-projects/Untiered/actions/runs/41018358142
   No migrations. `main` is not touched: **nothing here is live until the owner advances `main`.**
 
 ## Suggested next task
