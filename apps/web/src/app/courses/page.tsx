@@ -11,7 +11,7 @@ import { courseEnabled, featureEnabled } from "@/lib/flags";
 import { requireFeature } from "@/lib/require-feature";
 
 export const metadata: Metadata = {
-  title: "Courses — Untiered",
+  title: "Courses",
   description: "Free interactive courses in Java, JavaScript, data structures, AI agents, and system design.",
 };
 export const dynamic = "force-dynamic";

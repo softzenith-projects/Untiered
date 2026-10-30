@@ -9,7 +9,7 @@ import { courses } from "@/content/courses";
 import { courseEnabled } from "@/lib/flags";
 import { requireFeature } from "@/lib/require-feature";
 
-export const metadata: Metadata = { title: "Arena — Untiered", description: "Course-specific scenario practice." };
+export const metadata: Metadata = { title: "Arena", description: "Course-specific scenario practice." };
 
 export default function ArenaPage() {
   requireFeature("arena");

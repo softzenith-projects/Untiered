@@ -5,8 +5,9 @@ import { BrandWordmark } from "@/components/brand-logo";
 import { LoginOptions } from "@/components/login-options";
 import { SiteFooter } from "@/components/site-footer";
 import { safeNext } from "@/lib/safe-next";
+import { NOINDEX_FOLLOW } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Sign in" };
+export const metadata: Metadata = { title: "Sign in", robots: NOINDEX_FOLLOW };
 
 export default async function LoginPage({
   searchParams,

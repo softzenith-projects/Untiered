@@ -25,7 +25,7 @@ export async function generateMetadata({
   const course = getCourse(slug);
   if (!course) return {};
   return {
-    title: `${course.title} — Untiered`,
+    title: course.title,
     description: course.tagline,
   };
 }

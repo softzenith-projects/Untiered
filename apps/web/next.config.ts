@@ -36,6 +36,15 @@ const SECURITY_HEADERS = [
   { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
 ];
 
+/*
+ * Pages that should never appear in search results, whoever is looking at them. Most of these
+ * redirect a signed-out crawler to /login anyway, so this is the second layer: it holds if a
+ * route guard is ever loosened. Courses and the Arena are left out because whether they
+ * belong in search is the owner's decision, not a side effect of this list.
+ */
+const NOINDEX_ROUTES =
+  "/:route(dashboard|history|profile|report|rounds|interview|questions|upgrade|daily-challenge|unsubscribe|login|auth|api)/:path*";
+
 const nextConfig: NextConfig = {
   // A self-contained server for the container image (apps/web/Dockerfile sets this). Off
   // otherwise, so `next dev`, `next start` and Vercel-style hosts are unchanged.
@@ -66,7 +75,10 @@ const nextConfig: NextConfig = {
     staleTimes: { dynamic: 60 },
   },
   async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
+      { source: NOINDEX_ROUTES, headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
+    ];
   },
 };
 

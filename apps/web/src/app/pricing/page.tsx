@@ -5,11 +5,13 @@ import { LegalPage, LegalSection } from "@/components/legal-page";
 import { SessionLink } from "@/components/session-link";
 import { CREDIT_PACKS, FREE_ROUNDS_LIFETIME_TEXT, LEGAL } from "@/lib/legal";
 import { formatRupees } from "@/lib/razorpay-checkout";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Pricing",
-  description: `${LEGAL.productName} pricing: ${FREE_ROUNDS_LIFETIME_TEXT}, then interview credits from ${formatRupees(CREDIT_PACKS[0]!.pricePaise)}.`,
-};
+export const metadata: Metadata = publicPageMetadata({
+  title: "AI Mock Interview Pricing",
+  description: `${LEGAL.productName} pricing: ${FREE_ROUNDS_LIFETIME_TEXT}, then interview credits from ${formatRupees(CREDIT_PACKS[0]!.pricePaise)}. One-off payments, no subscription.`,
+  path: "/pricing",
+});
 
 /**
  * The prices, readable without signing in. Buying itself happens on /upgrade, where the
@@ -28,7 +30,8 @@ export default function PricingPage() {
       <LegalSection id="free" title="Free">
         <p>
           Every account gets {FREE_ROUNDS_LIFETIME_TEXT}, each with the complete report, plus the
-          courses and Arena practice. No card or payment details are needed to start.
+          courses and Arena practice. No card or payment details are needed to start.{" "}
+          <Link href="/" className="font-medium text-accent hover:underline">See how a mock interview works</Link>.
         </p>
       </LegalSection>
 

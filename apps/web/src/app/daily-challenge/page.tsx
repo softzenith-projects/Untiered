@@ -5,8 +5,9 @@ import { AppShell } from "@/components/app-shell";
 import { DashboardQuestionOfDay } from "@/components/dashboard-question-of-day";
 import { dailyQuestionsByDate } from "@/lib/arena/daily-question";
 import { requireFeature } from "@/lib/require-feature";
+import { NOINDEX_FOLLOW } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Today's challenge" };
+export const metadata: Metadata = { title: "Today's challenge", robots: NOINDEX_FOLLOW };
 export const dynamic = "force-dynamic";
 
 export default function DailyChallengePage() {
