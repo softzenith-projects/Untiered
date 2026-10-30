@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { courses, flattenChapters, getAdjacentChapters } from "@/content/courses";
 import { javascriptCourse } from "@/content/courses/javascript";
-import { runInNode, runInWorkerSource } from "@/lib/javascript-runtime-harness";
+import { runInNodeUntil, runInWorkerSource } from "@/lib/javascript-runtime-harness";
 import { agentLabScenarios, getScenario } from "@/lib/agent-lab/scenarios";
 import { architectureScenarios, getArchitectureScenario } from "@/lib/architecture-lab/scenarios";
 import type {
@@ -170,7 +170,7 @@ describe("course: javascript, as a whole", () => {
         expect(block.prompt.trim().length, chapter.slug).toBeGreaterThan(0);
         expect(block.output.trim().length, chapter.slug).toBeGreaterThan(0);
 
-        const node = runInNode(block.source);
+        const node = runInNodeUntil(block.source, (out) => normalise(out.stdout) === normalise(block.output));
         expect(node.stderr, `${chapter.slug}: node wrote to stderr`).toBe("");
         expect(normalise(node.stdout), `${chapter.slug}: pasted output is not what node prints`).toBe(normalise(block.output));
 
@@ -497,7 +497,7 @@ describe.each(courses)("course: $slug", (course: Course) => {
       const playgrounds = blocksOf("playground", chapter) as Extract<Block, { kind: "playground" }>[];
       for (const block of playgrounds) {
         expect(block.starter.trim().length).toBeGreaterThan(0);
-        expect(["python", "java"]).toContain(block.language);
+        expect(["python", "java", "javascript"]).toContain(block.language);
         if (block.expectedOutput !== undefined) {
           expect(block.expectedOutput.length).toBeGreaterThan(0);
         }

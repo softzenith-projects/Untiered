@@ -81,7 +81,7 @@ describe("deriveChallenges", () => {
     expect(predictOutput.length).toBeGreaterThan(0);
     for (const challenge of predictOutput) {
       expect(challenge.code?.trim().length).toBeGreaterThan(0);
-      expect(["java", "python"]).toContain(challenge.codeLanguage);
+      expect(["java", "python", "javascript"]).toContain(challenge.codeLanguage);
     }
   });
 

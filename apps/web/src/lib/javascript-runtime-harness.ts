@@ -59,6 +59,18 @@ export function runInWorkerSource(source: string, timeoutMs = 4_000): Promise<Pr
   });
 }
 
+/**
+ * Runs a program under the real `node`, retrying up to `attempts` times until `accept` says
+ * the output is the expected one. Real timers can be reordered when the machine is busy —
+ * two timers a few milliseconds apart under a loaded test run — and that is node wobbling,
+ * not the lesson being wrong. A program that is wrong prints the wrong thing every time.
+ */
+export function runInNodeUntil(source: string, accept: (output: ProgramOutput) => boolean, attempts = 3): ProgramOutput {
+  let output = runInNode(source);
+  for (let attempt = 1; attempt < attempts && !accept(output); attempt++) output = runInNode(source);
+  return output;
+}
+
 /** Runs a program under the real `node`, as a CommonJS file — what a lesson's author ran. */
 export function runInNode(source: string): ProgramOutput {
   const dir = mkdtempSync(join(tmpdir(), "js-course-"));

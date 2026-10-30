@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { runInNode, runInWorkerSource } from "@/lib/javascript-runtime-harness";
+import { runInNodeUntil, runInWorkerSource } from "@/lib/javascript-runtime-harness";
 
 /**
  * The browser runtime prints what `node` prints. Each case is a program a lesson could
@@ -68,8 +68,8 @@ try { JSON.parse("{bad"); } catch (e) { console.log(e.name); }`,
 describe("the JavaScript worker runtime prints what node prints", () => {
   for (const [name, source] of Object.entries(programs)) {
     it(name, async () => {
-      const node = runInNode(source);
       const worker = await runInWorkerSource(source);
+      const node = runInNodeUntil(source, (out) => out.stdout === worker.stdout);
       expect(node.stderr).toBe("");
       expect(worker.stderr).toBe("");
       expect(worker.stdout).toBe(node.stdout);

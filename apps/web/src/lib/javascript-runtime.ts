@@ -24,6 +24,11 @@
  * A program counts as finished once it has run and no timer it set is still pending —
  * the same point at which `node` would exit. Output is streamed line by line, so a run
  * stopped at the deadline still shows what it printed before it was stopped.
+ *
+ * Timers run on a virtual clock: they fire in deadline order, one per real macrotask with
+ * every microtask drained in between, without actually waiting. That is the order an
+ * unloaded `node` keeps, and unlike a real clock it cannot be reordered by a busy machine,
+ * so a lesson's output is the same on every run. `Date.now()` does not advance with it.
  */
 export const JAVASCRIPT_WORKER_SOURCE = String.raw`
 "use strict";
@@ -371,13 +376,19 @@ function format(args) {
 }
 
 const realSetTimeout = self.setTimeout.bind(self);
-const realClearTimeout = self.clearTimeout.bind(self);
-const realSetInterval = self.setInterval.bind(self);
-const realClearInterval = self.clearInterval.bind(self);
+// Timers run on a virtual clock (see the note at the top of this file); these bound a
+// program whose timers never stop, which on a virtual clock would otherwise spin for ever.
+const MAX_TIMER_CALLBACKS = 10000;
+const MAX_VIRTUAL_MS = 10 * 60 * 1000;
 
 self.onmessage = (event) => {
   const { id, source } = event.data;
-  const pending = new Set();
+  const timers = new Map();
+  let now = 0;
+  let seq = 0;
+  let nextHandle = 1;
+  let fired = 0;
+  let stepping = false;
   let finished = false;
 
   const write = (stream, args) => {
@@ -394,10 +405,46 @@ self.onmessage = (event) => {
     write("stderr", [error instanceof Error ? "Uncaught " + message : message]);
     finish();
   };
+  // One timer per real macrotask, so every microtask a callback queues has run before the
+  // next timer fires — the order node keeps.
+  const step = () => {
+    stepping = false;
+    if (finished) return;
+    let next = null;
+    for (const timer of timers.values()) {
+      if (!next || timer.at < next.at || (timer.at === next.at && timer.seq < next.seq)) next = timer;
+    }
+    if (!next) {
+      finish();
+      return;
+    }
+    if (++fired > MAX_TIMER_CALLBACKS || next.at > MAX_VIRTUAL_MS) {
+      write("stderr", ["Stopped: a timer keeps firing — most likely a setInterval that is never cleared."]);
+      finish();
+      return;
+    }
+    now = next.at;
+    if (!next.interval) timers.delete(next.handle);
+    guarded(next.fn, next.args);
+    // Node re-arms an interval after its callback, behind any timer the callback set.
+    if (next.interval && timers.has(next.handle)) {
+      next.at = now + next.ms;
+      next.seq = ++seq;
+    }
+    settleSoon();
+  };
   const settleSoon = () => {
-    realSetTimeout(() => {
-      if (pending.size === 0) finish();
-    }, 0);
+    if (stepping || finished) return;
+    stepping = true;
+    realSetTimeout(step, 0);
+  };
+  const addTimer = (fn, ms, args, interval) => {
+    // Node's rule: anything that is not a delay from 1 to 2^31-1 ms becomes 1 ms.
+    let delay = Number(ms);
+    if (!(delay >= 1 && delay <= 2147483647)) delay = 1;
+    const handle = nextHandle++;
+    timers.set(handle, { handle, fn, args, ms: delay, at: now + delay, seq: ++seq, interval });
+    return handle;
   };
   const guarded = (fn, args) => {
     try {
@@ -416,31 +463,19 @@ self.onmessage = (event) => {
     error: (...a) => write("stderr", a),
     trace: (...a) => write("stderr", ["Trace: " + format(a)]),
   };
-  const setTimeout = (fn, ms, ...args) => {
-    const handle = realSetTimeout(() => {
-      pending.delete(handle);
-      guarded(fn, args);
-      settleSoon();
-    }, ms);
-    pending.add(handle);
-    return handle;
-  };
+  const setTimeout = (fn, ms, ...args) => addTimer(fn, ms, args, false);
+  const setInterval = (fn, ms, ...args) => addTimer(fn, ms, args, true);
   const clearTimeout = (handle) => {
-    realClearTimeout(handle);
-    pending.delete(handle);
-    settleSoon();
+    timers.delete(handle);
   };
-  const setInterval = (fn, ms, ...args) => {
-    const handle = realSetInterval(() => guarded(fn, args), ms);
-    pending.add(handle);
+  const clearInterval = clearTimeout;
+  // Ahead of any timer of 1 ms or more, as it is when node is already inside the loop.
+  // (From the top of a script node itself leaves that order to chance; lessons avoid it.)
+  const setImmediate = (fn, ...args) => {
+    const handle = nextHandle++;
+    timers.set(handle, { handle, fn, args, ms: 0, at: now, seq: ++seq, interval: false });
     return handle;
   };
-  const clearInterval = (handle) => {
-    realClearInterval(handle);
-    pending.delete(handle);
-    settleSoon();
-  };
-  const setImmediate = (fn, ...args) => setTimeout(fn, 0, ...args);
 
   if (typeof self.addEventListener === "function") {
     self.addEventListener("unhandledrejection", (e) => {

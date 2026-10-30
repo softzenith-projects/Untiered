@@ -9,7 +9,7 @@ export const chapterEventLoop: Chapter = {
   blocks: [
     {
       kind: "p",
-      text: "JavaScript runs your code on **one thread**: it can do exactly one thing at a time. Yet a page can fetch data, run timers and answer clicks without freezing. The trick is the **event loop**, and it is the single most asked topic in JavaScript interviews. Once you can draw it, every ordering puzzle becomes mechanical.",
+      text: "JavaScript runs your code on **one thread**: it can do exactly one thing at a time. Yet a page can fetch data, run timers and answer clicks without freezing. The trick is the **event loop**, and it is one of the topics JavaScript interviews return to most often. Once you can draw it, every ordering puzzle becomes mechanical.",
     },
     {
       kind: "h",

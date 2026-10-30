@@ -17,7 +17,8 @@ describe("scenario Arena pages", () => {
   it("links each course to its own Arena instead of serving a standalone daily set", () => {
     render(<ArenaPage />);
     expect(screen.getByRole("heading", { name: /practise decisions/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /java/i })).toHaveAttribute("href", "/arena/java");
+    expect(screen.getByRole("link", { name: /java(?!script)/i })).toHaveAttribute("href", "/arena/java");
+    expect(screen.getByRole("link", { name: /javascript/i })).toHaveAttribute("href", "/arena/javascript");
     expect(screen.getByRole("link", { name: /system design/i })).toHaveAttribute("href", "/arena/system-design");
   });
 
