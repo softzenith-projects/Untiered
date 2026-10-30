@@ -1,65 +1,105 @@
-# Handoff — 29 October 2026
+# Handoff — 30 October 2026
 
 ## Task
-Runnable Java in the Java course, plus the follow-ups the owner raised in the same session (PRD 06, PRD §10):
-1. A Run button in every Java chapter.
-2. A notice that the runner is Java 15.
-3. Java's Run said "No java runtime is available right now".
-4. Remove the "1 free interview per day" wording, and guard against it.
-5. Stop showing the same Java program twice.
+A JavaScript course on `/courses`: the language from basics to interview depth, then React,
+Node.js and Next.js, built on researched, properly licensed sources. Owner's ask, in their
+words: "javascript basics, and interview type details and coursework and not w3schools kind".
+Task file: `tasks/task-066-javascript-course.md` (PRD §10).
 
 ## What I built
-- **Runnable Java in every chapter** (`apps/web/src/content/courses/java/*.ts`). Each chapter has a task to try and the output to expect.
-  - **31 chapters:** the chapter's own main example is runnable where it stands. A new `tryIt` field on the `code` block adds an **Edit and run** button, which swaps the block for the editor in place (`components/courses/code-block.tsx`).
-  - **4 chapters** have a separate playground, because their example can't run as one file: 05 input/output, 13 methods, 22 packages and 35 records. Each playground's task says why.
-- **No program on screen twice** (owner's screenshots).
-  - **The duplicate:** chapters showed the example, then a playground with the same code. The playground itself also showed a static "Starter code" copy above its editor, so up to three copies in all.
-  - **Fix for the example:** it is now runnable in place (above). The duplicate playgrounds are gone.
-  - **Fix for the playground:** its static copy shows only until the editor mounts (`playground-lazy.tsx`). The editor then shows the expected output before any run.
-- **Class order.** Piston runs the *first* class in a file, so a helper class above `main`'s class fails.
-  - The examples now put `main`'s class first.
-  - The runner's error says to do the same (`CodeRunner.kt`). This also helps candidates in coding rounds.
-- **Java 15 notice** beside every Java Run button, in the course and in the coding round. The text lives in `JAVA_VERSION_NOTE` (`lib/server-code-runner.ts`).
-- **Fixed: "No java runtime is available right now"** (`CodeRunner.kt`).
-  - **Cause:** the JDK HTTP client's default HTTP/2 opens a plain-http connection with an `h2c` upgrade. Piston answers that with a 400.
-  - **Why nothing caught it:** curl and Node never send the upgrade, so Piston looked healthy from the shell. The unit tests mock the HTTP layer.
-  - **Fix:** the runner now uses HTTP/1.1.
-  - **Guard:** `CodeRunnerProtocolTest` runs over a real socket against a stand-in that refuses upgrades. I confirmed it fails on HTTP/2.
-- **Free tier wording: 3 interviews for life.**
-  - `develop` already enforced 3 for life (API default, terms, privacy, upgrade page). The "1 round … a day" wording is still on **`main`**, which is about 100 commits behind `develop`.
-  - On `develop` I removed what was left: "Sit one round today" on the landing page, "More rounds and longer interviews each day" on the Pro list, "no daily limit" on the used-up notice, and an out-of-date comment in the shared types.
-  - **Guards:**
-    - `lib/free-allowance-copy.test.ts` fails on any daily-allowance wording in user-facing source, and pins `LEGAL.freeRounds` to 3. I confirmed it catches the old lines.
-    - `EntitlementTest` fails if `application.yml` overrides `free-rounds`, `daily-rounds` or `daily-minutes`.
-- **"For life" stated everywhere the free tier appears** (PR, because it changes the terms and privacy policy). There is one phrase, `FREE_ROUNDS_LIFETIME_TEXT` ("3 free mock interviews for life"), used by the terms, privacy policy, upgrade page and landing page. The terms add that the allowance does not reset each day, month or year, does not come back once used, and is not returned for leaving part-way. The API's allowance messages say free interviews are for life and do not reset. Guards: `free-allowance-copy.test.ts` (each of those pages uses the lifetime phrase, and the terms keep the no-reset sentence) and the legal-page test.
-- **Content tests** (`content-integrity.test.ts`):
-  - every Java chapter has runnable Java with a task and expected output
-  - no playground repeats a code example's program
-  - `main`'s class comes first in every runnable program
+- **The course, 44 chapters in 8 modules**, in `apps/web/src/content/courses/javascript/`:
+  foundations (1–8), core mechanics at interview depth (9–16: scope, closures, `this`,
+  prototypes, classes, functional patterns, iterators/generators, errors and modules), async
+  (17–21: event loop, promises, async/await, fetch and abort, machine-coding utilities such as
+  debounce and promise-all), browser (22–26), React (27–34), Node.js (35–39), Next.js (40–42),
+  TypeScript and an interview playbook (43–44). Every chapter has an analogy, runnable code
+  with real output, pitfalls, one "remember" box, interview questions with what a strong answer
+  contains, and 2–3 quizzes, most of them "what does this print?".
+- **Runnable JavaScript in the browser.** `lib/javascript-runtime.ts` is a Web Worker (started
+  from a Blob URL, fresh per run) whose `console` is a port of Node 24's `util.inspect`, so the
+  reader sees exactly what `node` prints: array column grouping, `<ref *1>` circular markers,
+  Map/Set, null-prototype objects, getters, format specifiers. `lib/browser-javascript.ts`
+  runs it with a 6-second stop.
+- **Timers on a virtual clock**: they fire in deadline order, one per macrotask with microtasks
+  drained between, without real waiting. Event-loop lessons print the same order on every run,
+  which a real clock on a busy machine does not guarantee.
+- **The bar is enforced by a test.** `content-integrity.test.ts` has a `course: javascript, as a
+  whole` block that runs every runnable sample under the real `node` *and* under the worker
+  source, and fails if either differs from the output pasted in the chapter. Nobody can paste a
+  guessed output. `lib/javascript-runtime.test.ts` holds the runtime's printing to Node's on 17
+  programs.
+- Wiring: editor highlighting (CodeMirror JS with JSX), Shiki `tsx` highlighting, Arena
+  predict-the-output challenges derived from the JS playgrounds (`/arena/javascript`), catalogue
+  card artwork (`--course-js-*` tokens), feature flag `NEXT_PUBLIC_COURSE_JAVASCRIPT_ENABLED`
+  (default on, added to `.env.example`).
+- Research and licences: `docs/javascript-course-research.md` (sources, licences, verified
+  version facts, 25 commonly wrong facts, the syllabus) and `javascript/THIRD_PARTY_NOTICES.md`.
+  All prose and examples are original; non-commercial and ShareAlike sources (javascript.info,
+  YDKJS, Odin, Eloquent JS, MDN prose) were used only as heading checklists or references,
+  never copied. Nothing was scraped. No question is attributed to a company.
 
 ## Assumptions I made
-- Edit and run starts with the read-only example, not the editor. That keeps the output visible without running anything. It also matters in production, where the runner is off and Run only explains that.
-- Reordering the classes in 15 examples changes none of their text. I checked the prose for references to class order and found none.
-- Prompt text wrapped onto two source lines sometimes splits inside a backtick span. It joins back together at build time, so readers see it correctly.
+- "Not w3schools" read as: explain *why* the engine behaves as it does, at the depth an
+  interviewer probes, and make the reader predict and run it, rather than list syntax.
+- Code that cannot run in a browser worker (real Express, `fs`, React components, Next route
+  files, DOM) is shown in plain code blocks, and the runnable sample beside it is a plain-JS
+  **model** of the mechanism (a `useState` with a closure, a keyed diff, a middleware chain, an
+  EventEmitter, event bubbling over an object tree), each labelled as a model.
+- Output is "what Node prints". In Chrome/Edge (V8) error messages match too; Firefox and
+  Safari phrase some error *messages* differently (e.g. the TDZ message). Error *names* are the
+  same everywhere, with one exception I fixed: chapter 14's stack overflow now prints a fixed
+  line, because Firefox calls that error `InternalError`.
+- The course is listed second, after Java, in the catalogue.
 
 ## What I could NOT verify
-- **Edit and run and Run in a signed-in browser.** I verified on the local Piston directly, with the request the API sends: every runnable program prints exactly its expected output, and the 15 reordered programs still match the chapter's output.
-- **How Edit and run looks and feels.** That's your judgement: the button and the swap into the editor.
+- **Visual check: none.** I have not looked at the chapters, the `viz` frames (call stack,
+  queue), the catalogue artwork, or the light/dark colours in a browser.
+- **The Run button in a real browser.** The worker source is tested in a Node `vm` context,
+  not in Chrome, Firefox or Safari. Worth one click per browser.
+- Facts the writers could not check against a source (each is worded cautiously in its
+  chapter):
+  - Node: the version where global `fetch` became stable, `--watch` and `--env-file`
+    stability, the CommonJS-loads-sync-ESM rule (ch 35 points to the Node docs rather than
+    naming a version), `AbortSignal.timeout`, the Node 15 change to throw on unhandled
+    rejections, the 4 ms nested-timer clamp, `structuredClone` availability.
+  - Browser: `toSorted` support, which events do not bubble, rAF timing, the "about 4 KB"
+    cookie limit, the CSP/CORS/CSRF header examples (marked illustrative).
+  - React: `renderHook` and `loading.tsx` as a Suspense fallback; the simplifications in the
+    ch 41 caching model; `next/font` and layout persistence.
+  - The note that V8 does not implement tail calls (ch 14).
+  - Checked and confirmed: Next 16.4.3's `error.tsx` `retry` prop (against the docs bundled
+    in `node_modules/next`); TypeScript blocks compile under tsc 7.0.2 with
+    `erasableSyntaxOnly`; Node 24.13's `nextTick`/promise order in CJS vs ESM.
+- Chapter 14's deep-recursion sample depends on stack size; it passes in Node and the
+  worker here.
 
 ## Verification status
-- web typecheck / lint / test (3,224 passing) / build: pass locally
-- api ktlintCheck / test / build: pass locally
-- CI green and merged: `feat/java-15-disclaimer`, `fix/piston-http1`, `fix/free-interviews-lifetime-copy`
-- `feat/runnable-code-blocks`: CI run 40826303144 green (api, web, images, database)
+- typecheck / lint / tests / build: **pass** locally. 102 test files, 3977 tests; `next build`
+  compiles and pre-renders `/courses/javascript` and `/arena/javascript`.
+- CI: **green** on `026302f`, all four jobs (run 41006166351).
 
 ## Merge status
-- Merged into `develop`: `feat/java-course-playgrounds`, `feat/java-15-disclaimer`, `fix/piston-http1`, `fix/free-interviews-lifetime-copy`. No migrations.
-- Merged `feat/runnable-code-blocks` into `develop` after CI run 40826303144 went green.
+- Merged into `develop` at `026302f` (fast-forward from `feat/javascript-course`) after green
+  CI. No migrations. Nothing pushed to `main`.
+
+## Notes for review
+- **New dependency: `@codemirror/lang-javascript`** (MIT, from the CodeMirror project the
+  editor already uses). The playground has no other way to highlight and indent JavaScript;
+  the Java and Python language packs are from the same family.
+- **CI's web job now runs on Node 24** (`.github/workflows/ci.yml`). The integrity test runs
+  every sample under the machine's `node` and compares with output pasted from Node 24, which
+  prints symbol keys differently from Node 22.
+- **Size: about 13,000 lines over 79 files**, far beyond the 800-line guideline. Almost all of
+  it is chapter content (44 files); the code change (runtime, harness, tests, wiring) is about 950
+  lines over 22 files. It could have been split per module; I kept one branch because the runtime and the
+  integrity test had to land with the first chapters.
+- Two existing tests changed legitimately when a second "java…" course appeared: the Arena
+  link matcher is now `/java(?!script)/i`, and the derive test's language list includes
+  `javascript`. No assertion was weakened.
 
 ## Suggested next task
-- Decide on a newer Java for the runner (below), then give chapter 35 a real records example.
+- A browser pass over the course: open a chapter from each module in Chrome and Firefox, press
+  Run, and check the `viz` frames and the catalogue card in light and dark mode.
 
 ## Open questions for you
-- **`main` still says 1 free interview a day.** Merging `develop` into `main` is yours to do. It is what puts the 3-for-life wording live.
-- **The runner is Java 15. Piston's package index has no newer Java.** A custom Piston package for Java 17 or 21 is possible, but it's build and maintenance work. Your call.
-- **Production hosting for Piston** is unchanged. Production keeps `CODE_RUNNER_ENABLED=false` until you decide.
+- None blocking.
