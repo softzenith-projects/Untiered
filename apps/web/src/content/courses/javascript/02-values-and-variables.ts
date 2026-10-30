@@ -153,15 +153,15 @@ console.log(user);
 try {
   user = { name: "Meera", age: 22 };
 } catch (e) {
-  console.log(e.name + ": " + e.message);
+  console.log(e.name);
 }
 
 const frozen = Object.freeze({ city: "Pune" });
 frozen.city = "Delhi";
 console.log(frozen.city);`,
-      caption: "const protects the binding (the label), not the value inside. Changing the object's contents is allowed; moving the label is not.",
+      caption: "const protects the binding (the label), not the value inside. Changing the object's contents is allowed; moving the label is not. Node and Chrome word the error \"Assignment to constant variable.\"; Firefox and Safari phrase it differently, so the sample prints only its name.",
       output: `{ name: 'Ravi', age: 21 }
-TypeError: Assignment to constant variable.
+TypeError
 Pune`,
       tryIt: {
         language: "javascript",

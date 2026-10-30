@@ -73,7 +73,10 @@ machine's Node (24.x) **before** pasting its output.
 - Print with `console.log` only. `console.error` goes to stderr, which the test rejects.
 - Do not print a Promise object (no runtime can read its state, so the browser prints
   `Promise { <unknown> }`), an Error object (Node prints a stack naming a file), or top-level
-  `this`. Print `err.message`, `err.name`, or `typeof`.
+  `this`. Print `err.name`, `typeof`, or the `message` of an error your own code threw. Do not
+  print the message of an error the engine throws (`TypeError`, `ReferenceError`, a stack
+  overflow): Firefox and Safari word those differently from Node and Chrome, so the reader
+  would see something other than the pasted output. Quote Node's wording in the caption.
 - No `require`, `import`, `process`, `fs`, `http`, DOM, `fetch`, or JSX. Those cannot run in a
   browser worker. Node, React, Next and DOM chapters still need one runnable sample each, so
   write an **honest plain-JavaScript model** of the mechanism. These are real interview

@@ -91,14 +91,14 @@ var early = 1;
 try {
   console.log(late);
 } catch (err) {
-  console.log(err.name + ": " + err.message);
+  console.log(err.name);
 }
 let late = 2;
 console.log(late);`,
-      caption: "The function works above its line, the `var` is undefined, and the `let` throws.",
+      caption: "The function works above its line, the `var` is undefined, and the `let` throws. In Node and Chrome the message reads \"Cannot access 'late' before initialization\"; Firefox and Safari word it differently, so the sample prints only the error's name.",
       output: `function undefined
 works before its line
-ReferenceError: Cannot access 'late' before initialization
+ReferenceError
 2`,
       tryIt: {
         language: "javascript",
