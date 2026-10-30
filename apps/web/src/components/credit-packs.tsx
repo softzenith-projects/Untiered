@@ -3,6 +3,7 @@
 import type { BillingOverview, CreditPackView } from "@untiered/shared";
 import { useEffect, useState } from "react";
 
+import { announceCreditsChanged } from "@/components/credit-balance";
 import { Button } from "@/components/ui/button";
 import { ApiRequestError, confirmCreditOrder, createCreditOrder, fetchBilling } from "@/lib/api";
 import { CheckoutDismissed, formatRupees, payWithRazorpay } from "@/lib/razorpay-checkout";
@@ -66,6 +67,7 @@ export function CreditPacks({
       const payment = await payWithRazorpay(order);
       const updated = await confirmCreditOrder(accessToken, order.orderId, payment);
       setOverview(updated);
+      announceCreditsChanged();
       setStatus({
         tone: "positive",
         text: `Payment received. ${creditCount(pack.credits)} ${pack.credits === 1 ? "has" : "have"} been added — you now have ${creditCount(updated.creditBalance)}.`,

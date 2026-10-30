@@ -24,7 +24,9 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          # 24: the JavaScript course runtime prints the way this Node prints, and its
+          # content tests run every lesson sample under it (lib/javascript-runtime.ts).
+          node-version: 24
           cache: npm
 
       - run: npm ci
@@ -40,6 +42,12 @@ jobs:
       # Node 24 / Windows locally; the glob form worked everywhere tried).
       - run: node --test scripts/*.test.mjs
       - run: npm run build
+      # What a crawler actually receives from the build: robots, sitemap, canonicals, noindex
+      # and redirects. None of it reaches Supabase, because a crawler sends no session.
+      - name: SEO checks against the production build
+        run: |
+          npm run start --workspace @untiered/web -- -p 3100 &
+          node apps/web/scripts/check-seo.mjs http://localhost:3100
 
   api:
     name: api (ktlint, test, build)

@@ -100,11 +100,72 @@ export function scoreToneForPercent(percent: number): ScoreTone {
   return "danger";
 }
 
+/**
+ * What each tone looks like, everywhere the report uses one. Fills use the vivid amber
+ * (`highlight`) so the middle reads as yellow-orange at a glance; text on a wash uses the
+ * darker `warning` so it stays readable. Every use pairs the colour with its `label` or a
+ * band name, so colour is never the only signal.
+ */
+export const TONE_STYLES: Record<
+  ScoreTone,
+  { label: string; fill: string; svgFill: string; stroke: string; wash: string; border: string; text: string }
+> = {
+  positive: {
+    label: "Strong",
+    fill: "bg-positive",
+    svgFill: "fill-positive",
+    stroke: "stroke-positive",
+    wash: "bg-positive-wash",
+    border: "border-positive",
+    text: "text-positive",
+  },
+  warning: {
+    label: "Getting there",
+    fill: "bg-highlight",
+    svgFill: "fill-highlight",
+    stroke: "stroke-highlight",
+    wash: "bg-warning-wash",
+    border: "border-highlight",
+    text: "text-warning",
+  },
+  danger: {
+    label: "Needs work",
+    fill: "bg-danger",
+    svgFill: "fill-danger",
+    stroke: "stroke-danger",
+    wash: "bg-danger-wash",
+    border: "border-danger",
+    text: "text-danger",
+  },
+};
+
+export function toneFor(score: number, maxScore: number): ScoreTone {
+  return scoreToneForPercent(maxScore > 0 ? (score / maxScore) * 100 : 0);
+}
+
 function scoreFillClass(percent: number): string {
-  const tone = scoreToneForPercent(percent);
-  if (tone === "positive") return "bg-positive";
-  if (tone === "warning") return "bg-warning";
-  return "bg-danger";
+  return TONE_STYLES[scoreToneForPercent(percent)].fill;
+}
+
+/** The key to the report's colours, stated once where the colours start. */
+export function ToneLegend() {
+  const entries: Array<{ tone: ScoreTone; range: string }> = [
+    { tone: "danger", range: "below 50%" },
+    { tone: "warning", range: "50–70%" },
+    { tone: "positive", range: "above 70%" },
+  ];
+  return (
+    <ul aria-label="What the colours mean" className="flex flex-wrap gap-x-5 gap-y-2">
+      {entries.map(({ tone, range }) => (
+        <li key={tone} className="flex items-center gap-2 text-caption text-ink-muted">
+          <span aria-hidden="true" className={`size-3 rounded-full ${TONE_STYLES[tone].fill}`} />
+          <span>
+            <span className="font-semibold text-ink">{TONE_STYLES[tone].label}</span> · {range}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /**

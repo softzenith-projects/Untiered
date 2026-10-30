@@ -4,8 +4,9 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { PremiumOffer } from "@/components/premium-offer";
 import { FREE_ROUNDS_LIFETIME_TEXT } from "@/lib/legal";
+import { NOINDEX_FOLLOW } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Upgrade" };
+export const metadata: Metadata = { title: "Upgrade", robots: NOINDEX_FOLLOW };
 
 const INCLUDED_NOW = [
   `${FREE_ROUNDS_LIFETIME_TEXT}, up to 60 minutes each`,

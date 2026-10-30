@@ -1,11 +1,13 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { InlineText } from "@/components/courses/inline-text";
 import { useGuidedLessonProgress } from "@/components/courses/guided-lesson-progress";
 import { summarizeChapters } from "@/lib/course-progress";
+import { useAccessToken } from "@/lib/use-access-token";
 import { useCourseProgress } from "@/lib/use-course-progress";
 
 /** The chapter data the client needs — slugs and titles only, never chapter content. */
@@ -45,8 +47,30 @@ export function ProgressBar({ done, total, label }: { done: number; total: numbe
   );
 }
 
+/**
+ * A link to a chapter. Chapters need an account, so signed out a prefetch only fetches the
+ * redirect to sign-in, once for every row of a syllabus. Prefetching waits until signed in.
+ */
+export function ChapterLink({ href, className, children }: { href: string; className: string; children: React.ReactNode }) {
+  const token = useAccessToken();
+  return <Link href={href as Route} prefetch={token ? undefined : false} className={className}>{children}</Link>;
+}
+
+const subscribeToNothing = () => () => {};
+
+/**
+ * False on the server and while hydrating, true after. The header hydrates first and caches
+ * the session, so by the time a page section hydrates the token can already differ from what
+ * the server rendered with, and anything that branches on it directly is a hydration error.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(subscribeToNothing, () => true, () => false);
+}
+
 /** Course-page hero: how far along, and one button that goes to the right place. */
 export function CourseHeroProgress({ courseSlug, chapters }: { courseSlug: string; chapters: ChapterRef[] }) {
+  const token = useAccessToken();
+  const hydrated = useHydrated();
   const { completed, ready } = useCourseProgress(courseSlug);
   const summary = summarizeChapters(chapters, completed);
   const first = chapters[0];
@@ -59,12 +83,18 @@ export function CourseHeroProgress({ courseSlug, chapters }: { courseSlug: strin
     <div className="flex max-w-md flex-col gap-4">
       {started ? <ProgressBar done={summary.done} total={summary.total} label="Course progress" /> : null}
       {target ? (
-        <Link
+        <ChapterLink
           href={`/courses/${courseSlug}/${target.slug}`}
           className="w-fit rounded-md bg-accent px-5 py-2.5 text-caption font-medium text-accent-contrast transition-colors hover:bg-accent-strong"
         >
           {ready && summary.finished ? "Review from the start" : started ? "Continue learning" : "Start course"}
-        </Link>
+        </ChapterLink>
+      ) : null}
+      {/* The space is held from the start, so the note appearing does not move the page. */}
+      {!started ? (
+        <p className="min-h-10 text-caption text-ink-muted sm:min-h-5">
+          {hydrated && token === null ? "Free. Sign in or create an account to open the chapters." : null}
+        </p>
       ) : null}
       {started && !summary.finished && summary.next ? (
         <p className="text-caption text-ink-muted">
@@ -131,7 +161,8 @@ export function ChapterDoneMark({ courseSlug, chapterSlug }: { courseSlug: strin
       }`}
     >
       {done ? <CheckIcon className="size-3" /> : null}
-      <span className="sr-only">{done ? "Completed" : "Not completed"}</span>
+      {/* Unknown until progress has loaded, and this is in the HTML a crawler reads. */}
+      {ready ? <span className="sr-only">{done ? "Completed" : "Not completed"}</span> : null}
     </span>
   );
 }

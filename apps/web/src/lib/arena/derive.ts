@@ -177,7 +177,7 @@ function derivePredictOutput(loc: ChapterLoc, pool: string[], used: Set<string>)
 
   const playgroundBlocks = loc.chapter.blocks.filter(
     (b): b is PlaygroundBlock =>
-      b.kind === "playground" && b.language === "python" && Boolean(b.expectedOutput && b.expectedOutput.trim().length > 0),
+      b.kind === "playground" && b.language !== "java" && Boolean(b.expectedOutput && b.expectedOutput.trim().length > 0),
   );
   for (const block of playgroundBlocks) {
     const correct = block.expectedOutput!;
@@ -200,7 +200,7 @@ function derivePredictOutput(loc: ChapterLoc, pool: string[], used: Set<string>)
       correctIndex: built.correctIndex,
       why: "This is the real, run-and-checked output of the code above.",
       code: block.starter,
-      codeLanguage: "python",
+      codeLanguage: block.language,
     });
   }
 

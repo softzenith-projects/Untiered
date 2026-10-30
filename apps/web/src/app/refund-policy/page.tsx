@@ -4,11 +4,13 @@ import Link from "next/link";
 import { LegalPage, LegalSection } from "@/components/legal-page";
 import { RefundTerms } from "@/components/refund-terms";
 import { CONTACT_EMAIL_DISPLAY, LEGAL } from "@/lib/legal";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Cancellation and refund policy",
-  description: `How cancellations and refunds work for ${LEGAL.productName} purchases.`,
-};
+  description: `How cancellations and refunds work for ${LEGAL.productName} interview credit purchases.`,
+  path: "/refund-policy",
+});
 
 /** The refund terms on a page of their own, as payment providers ask for. Same text as /terms. */
 export default function RefundPolicyPage() {

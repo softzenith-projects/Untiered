@@ -1,0 +1,92 @@
+"use client";
+
+import type { EntitlementView } from "@untiered/shared";
+import type { Route } from "next";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { fetchEntitlement } from "@/lib/api";
+import { useAccessToken } from "@/lib/use-access-token";
+
+/**
+ * The last allowance this tab read, so the bar does not blink back to nothing on every
+ * navigation while it asks again. Memory only, like the account block's profile.
+ */
+let lastEntitlement: EntitlementView | null = null;
+
+/**
+ * Interviews a candidate can still start: the free ones left plus the credits they bought.
+ *
+ * The server keeps the two apart — the free allowance is spent first, and only then a
+ * credit — but to the candidate each is one interview, so the bar shows a single number.
+ */
+export function interviewsLeft(entitlement: EntitlementView): number {
+  return (entitlement.remainingFree ?? 0) + entitlement.creditBalance;
+}
+
+const CREDITS_CHANGED = "untiered:credits-changed";
+
+/**
+ * Tells the header its balance is out of date. A purchase happens without leaving the
+ * page, so the navigation that would otherwise re-read it never comes.
+ */
+export function announceCreditsChanged(): void {
+  window.dispatchEvent(new Event(CREDITS_CHANGED));
+}
+
+/**
+ * The header's balance and the way to buy more. Read again on each navigation, because
+ * starting a round changes it and the bar outlives the page, and again on a purchase.
+ */
+export function CreditBalance() {
+  const accessToken = useAccessToken();
+  const pathname = usePathname();
+  const [entitlement, setEntitlement] = useState<EntitlementView | null>(() => lastEntitlement);
+  const [changes, setChanges] = useState(0);
+
+  useEffect(() => {
+    const onChange = () => setChanges((count) => count + 1);
+    window.addEventListener(CREDITS_CHANGED, onChange);
+    return () => window.removeEventListener(CREDITS_CHANGED, onChange);
+  }, []);
+
+  useEffect(() => {
+    if (accessToken === null) lastEntitlement = null;
+    if (!accessToken) return;
+    let active = true;
+    fetchEntitlement({ accessToken })
+      .then((value) => {
+        lastEntitlement = value;
+        if (active) setEntitlement(value);
+      })
+      .catch(() => {
+        // The balance is a convenience; the button to buy more works without it.
+      });
+    return () => {
+      active = false;
+    };
+  }, [accessToken, pathname, changes]);
+
+  const left = entitlement ? interviewsLeft(entitlement) : null;
+
+  return (
+    <div className="flex items-center gap-2">
+      {left !== null && (
+        <span
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-surface-sunken px-3 py-2 text-caption font-semibold text-ink"
+          title="Free interviews left plus credits you bought. Each interview uses one."
+        >
+          <span className="tabular-nums">{left}</span>
+          <span className="text-ink-muted">{left === 1 ? "credit" : "credits"}</span>
+        </span>
+      )}
+      <Link
+        href={"/upgrade" as Route}
+        className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3.5 py-2 text-caption font-semibold text-accent-contrast shadow-[var(--shadow-sm)] transition-colors hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        Buy credits
+      </Link>
+    </div>
+  );
+}

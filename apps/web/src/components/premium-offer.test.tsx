@@ -1,14 +1,15 @@
-import type { BillingOverview } from "@untiered/shared";
+import type { BillingOverview, EntitlementView } from "@untiered/shared";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PremiumOffer } from "./premium-offer";
-import { fetchBilling } from "@/lib/api";
+import { fetchBilling, fetchEntitlement } from "@/lib/api";
 
 vi.mock("@/lib/use-access-token", () => ({ useAccessToken: vi.fn(() => "token") }));
 vi.mock("@/lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api")>()),
   fetchBilling: vi.fn(),
+  fetchEntitlement: vi.fn(),
 }));
 
 const overview: BillingOverview = {
@@ -24,6 +25,7 @@ const overview: BillingOverview = {
 describe("PremiumOffer", () => {
   beforeEach(() => {
     vi.mocked(fetchBilling).mockReset().mockResolvedValue(overview);
+    vi.mocked(fetchEntitlement).mockReset().mockRejectedValue(new Error("offline"));
   });
 
   it("puts the packs and the current balance on the upgrade page", async () => {
@@ -31,8 +33,16 @@ describe("PremiumOffer", () => {
 
     expect(await screen.findByRole("heading", { name: "Buy interview credits" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Buy 5 credits for ₹899" })).toBeEnabled();
-    expect(screen.getByText(/You have/)).toHaveTextContent("You have 2 credits");
+    expect(screen.getByText(/You have/)).toHaveTextContent("You have 2 bought credits");
     expect(screen.queryByText(/not for sale/i)).not.toBeInTheDocument();
+  });
+
+  it("counts free interviews into the balance, the same number as the header", async () => {
+    vi.mocked(fetchEntitlement).mockResolvedValue({ remainingFree: 3 } as EntitlementView);
+    render(<PremiumOffer />);
+
+    expect(await screen.findByText(/You have/)).toHaveTextContent("You have 5 credits");
+    expect(screen.getByText("3 free · 2 bought")).toBeInTheDocument();
   });
 
   it("still shows the packs, not a preview, before payments are switched on", async () => {

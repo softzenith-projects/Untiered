@@ -1,11 +1,18 @@
 import { aiAgentsCourse } from "@/content/courses/ai-agents";
 import { dsaCourse } from "@/content/courses/dsa";
 import { javaCourse } from "@/content/courses/java";
+import { javascriptCourse } from "@/content/courses/javascript";
 import { systemDesignCourse } from "@/content/courses/system-design";
 import type { Chapter, Course, Module } from "@/content/courses/types";
 
 /** Every course the site serves. Add a new course here, not by scattering imports. */
-export const courses: Course[] = [javaCourse, dsaCourse, aiAgentsCourse, systemDesignCourse];
+export const courses: Course[] = [
+  javaCourse,
+  javascriptCourse,
+  dsaCourse,
+  aiAgentsCourse,
+  systemDesignCourse,
+];
 
 export function getCourse(slug: string): Course | undefined {
   return courses.find((course) => course.slug === slug);

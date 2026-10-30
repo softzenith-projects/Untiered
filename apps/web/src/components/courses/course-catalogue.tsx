@@ -21,6 +21,7 @@ export type CatalogueCourse = {
 
 const CATEGORY: Record<string, string> = {
   java: "Programming",
+  javascript: "Programming",
   dsa: "DSA",
   "ai-agents": "AI",
   "system-design": "System Design",

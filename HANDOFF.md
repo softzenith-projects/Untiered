@@ -1,65 +1,59 @@
-# Handoff — 29 October 2026
+# Handoff — 30 October 2026
 
 ## Task
-Runnable Java in the Java course, plus the follow-ups the owner raised in the same session (PRD 06, PRD §10):
-1. A Run button in every Java chapter.
-2. A notice that the runner is Java 15.
-3. Java's Run said "No java runtime is available right now".
-4. Remove the "1 free interview per day" wording, and guard against it.
-5. Stop showing the same Java program twice.
+Make the course catalogue and the five course overviews public and indexable, with chapters still
+behind sign-in. Owner's decision in this session, following the SEO audit in `docs/seo/` (PRD §11).
 
 ## What I built
-- **Runnable Java in every chapter** (`apps/web/src/content/courses/java/*.ts`). Each chapter has a task to try and the output to expect.
-  - **31 chapters:** the chapter's own main example is runnable where it stands. A new `tryIt` field on the `code` block adds an **Edit and run** button, which swaps the block for the editor in place (`components/courses/code-block.tsx`).
-  - **4 chapters** have a separate playground, because their example can't run as one file: 05 input/output, 13 methods, 22 packages and 35 records. Each playground's task says why.
-- **No program on screen twice** (owner's screenshots).
-  - **The duplicate:** chapters showed the example, then a playground with the same code. The playground itself also showed a static "Starter code" copy above its editor, so up to three copies in all.
-  - **Fix for the example:** it is now runnable in place (above). The duplicate playgrounds are gone.
-  - **Fix for the playground:** its static copy shows only until the editor mounts (`playground-lazy.tsx`). The editor then shows the expected output before any run.
-- **Class order.** Piston runs the *first* class in a file, so a helper class above `main`'s class fails.
-  - The examples now put `main`'s class first.
-  - The runner's error says to do the same (`CodeRunner.kt`). This also helps candidates in coding rounds.
-- **Java 15 notice** beside every Java Run button, in the course and in the coding round. The text lives in `JAVA_VERSION_NOTE` (`lib/server-code-runner.ts`).
-- **Fixed: "No java runtime is available right now"** (`CodeRunner.kt`).
-  - **Cause:** the JDK HTTP client's default HTTP/2 opens a plain-http connection with an `h2c` upgrade. Piston answers that with a 400.
-  - **Why nothing caught it:** curl and Node never send the upgrade, so Piston looked healthy from the shell. The unit tests mock the HTTP layer.
-  - **Fix:** the runner now uses HTTP/1.1.
-  - **Guard:** `CodeRunnerProtocolTest` runs over a real socket against a stand-in that refuses upgrades. I confirmed it fails on HTTP/2.
-- **Free tier wording: 3 interviews for life.**
-  - `develop` already enforced 3 for life (API default, terms, privacy, upgrade page). The "1 round … a day" wording is still on **`main`**, which is about 100 commits behind `develop`.
-  - On `develop` I removed what was left: "Sit one round today" on the landing page, "More rounds and longer interviews each day" on the Pro list, "no daily limit" on the used-up notice, and an out-of-date comment in the shared types.
-  - **Guards:**
-    - `lib/free-allowance-copy.test.ts` fails on any daily-allowance wording in user-facing source, and pins `LEGAL.freeRounds` to 3. I confirmed it catches the old lines.
-    - `EntitlementTest` fails if `application.yml` overrides `free-rounds`, `daily-rounds` or `daily-minutes`.
-- **"For life" stated everywhere the free tier appears** (PR, because it changes the terms and privacy policy). There is one phrase, `FREE_ROUNDS_LIFETIME_TEXT` ("3 free mock interviews for life"), used by the terms, privacy policy, upgrade page and landing page. The terms add that the allowance does not reset each day, month or year, does not come back once used, and is not returned for leaving part-way. The API's allowance messages say free interviews are for life and do not reset. Guards: `free-allowance-copy.test.ts` (each of those pages uses the lifetime phrase, and the terms keep the no-reset sentence) and the legal-page test.
-- **Content tests** (`content-integrity.test.ts`):
-  - every Java chapter has runnable Java with a task and expected output
-  - no playground repeats a code example's program
-  - `main`'s class comes first in every runnable program
+- **The guard:** `isPublicCoursePage` in `apps/web/src/lib/supabase/session.ts` opens `/courses` and
+  `/courses/<course>` only. Anything deeper stays protected. Signed-in sessions keep refreshing on them.
+- **Search:** the 6 pages are in `app/sitemap.ts` (a switched-off course is left out), with their
+  own title, description and canonical. `seoTitle` and `seoDescription` are new required fields on
+  `Course`. Overviews have `Course` structured data with no ratings or offers.
+- **No gated content on public pages:** the daily Arena banner, whose props include the answer, now
+  renders only when signed in (`app/courses/page.tsx`, tested in `page.test.tsx`).
+- **The header with no session** (`app-chrome.tsx`, `rail-nav.tsx`, `lib/nav-links.ts`): the logo goes
+  home, the nav is Courses and Pricing, and Sign in returns to the current page. This also improves
+  `/upgrade` and `/daily-challenge`, which showed the signed-in bar to visitors.
+- **Chapter links** (`ChapterLink` in `course-progress.tsx`) do not prefetch while signed out, and the
+  overview says "Free. Sign in or create an account to open the chapters."
+- `apps/web/scripts/check-seo.mjs` now fails if a public course page sends chapter content or Arena
+  answers, or if any chapter link serves anything but a redirect to sign-in.
+- `CLAUDE.md` and `AGENTS.md` record the new decision. `docs/seo/` is updated.
 
 ## Assumptions I made
-- Edit and run starts with the read-only example, not the editor. That keeps the output visible without running anything. It also matters in production, where the runner is off and Run only explains that.
-- Reordering the classes in 15 examples changes none of their text. I checked the prose for references to class order and found none.
-- Prompt text wrapped onto two source lines sometimes splits inside a backtick span. It joins back together at build time, so readers see it correctly.
+- "Catalogue and overviews" means exactly those six URLs. The Arena, interviews and chapters are
+  unchanged.
+- `/daily-challenge` stays as it is, because you did not answer that question. It is public, noindex,
+  and still sends the day's question and answer.
+- No BreadcrumbList: page breadcrumbs are hidden in the UI, and the markup should match what is visible.
 
 ## What I could NOT verify
-- **Edit and run and Run in a signed-in browser.** I verified on the local Piston directly, with the request the API sends: every runnable program prints exactly its expected output, and the 15 reordered programs still match the chapter's output.
-- **How Edit and run looks and feels.** That's your judgement: the button and the swap into the editor.
+- **Signed-in behaviour in a real browser**, because no test account was used. Unit tests cover the
+  banner, header and progress in both states. Please click through once while signed in.
+- **Whether these pages will be indexed.** They are a syllabus plus a short description, and Google
+  may treat them as thin. Search Console will say.
+- **The effect on sign-ups**: the site has no analytics to measure it with.
+- Production: not live until this PR is merged and `main` is advanced.
+- `api.untiered.tech` still timed out from this machine on the last attempt. Please check it.
 
 ## Verification status
-- web typecheck / lint / test (3,224 passing) / build: pass locally
-- api ktlintCheck / test / build: pass locally
-- CI green and merged: `feat/java-15-disclaimer`, `fix/piston-http1`, `fix/free-interviews-lifetime-copy`
-- `feat/runnable-code-blocks`: CI run 40826303144 green (api, web, images, database)
+- typecheck, lint, build: pass. Web tests: 4,031 pass, with the exception below.
+- Crawler check on a verified fresh build: 438 of 438. Headless Chrome as a visitor: 21 of 21, and no
+  console or hydration errors on 10 pages. That check caught a hydration bug of mine, now fixed.
+- **Existing flake, not from this change:** `content-integrity.test.ts`, chapter
+  `machine-coding-utilities` in the JavaScript course, failed 2 of 3 local runs (`end d` and `end a`
+  swap). It races real timers under `node`, and this machine was busy. CI has been passing it. I did
+  not weaken it. It should get wider timer gaps in the sample, and may eventually fail a CI run.
+- Local quirk: `next build` does not clear `.next/server/route-cache`, so a stale `/` can refer to CSS
+  that no longer exists. Details in `docs/seo/SEO_VERIFICATION.md`.
 
 ## Merge status
-- Merged into `develop`: `feat/java-course-playgrounds`, `feat/java-15-disclaimer`, `fix/piston-http1`, `fix/free-interviews-lifetime-copy`. No migrations.
-- Merged `feat/runnable-code-blocks` into `develop` after CI run 40826303144 went green.
+- PR into `develop`, not merged, because it changes the route guard (rule 1). No migrations.
+  `main` is not touched. The earlier SEO work is on `develop` at `d6ddcfc`.
 
 ## Suggested next task
-- Decide on a newer Java for the runner (below), then give chapter 35 a real records example.
+- Widen the timer gaps in the `machine-coding-utilities` sample so its test stops racing.
 
 ## Open questions for you
-- **`main` still says 1 free interview a day.** Merging `develop` into `main` is yours to do. It is what puts the 3-for-life wording live.
-- **The runner is Java 15. Piston's package index has no newer Java.** A custom Piston package for Java 17 or 21 is possible, but it's build and maintenance work. Your call.
-- **Production hosting for Piston** is unchanged. Production keeps `CODE_RUNNER_ENABLED=false` until you decide.
+- `/daily-challenge` is public but `CLAUDE.md` says the Arena is behind sign-in. Intended?

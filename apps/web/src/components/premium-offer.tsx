@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { CreditPacks } from "@/components/credit-packs";
-import { fetchBilling } from "@/lib/api";
+import { fetchBilling, fetchEntitlement } from "@/lib/api";
 import { useAccessToken } from "@/lib/use-access-token";
 
 /**
@@ -17,6 +17,8 @@ export function PremiumOffer() {
   const accessToken = useAccessToken();
   const [overview, setOverview] = useState<BillingOverview | null>(null);
   const [failed, setFailed] = useState(false);
+  // The free interviews left, so the balance here is the same number as the header's.
+  const [remainingFree, setRemainingFree] = useState<number | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -27,6 +29,13 @@ export function PremiumOffer() {
       })
       .catch(() => {
         if (active) setFailed(true);
+      });
+    fetchEntitlement({ accessToken })
+      .then((value) => {
+        if (active) setRemainingFree(value.remainingFree);
+      })
+      .catch(() => {
+        // Without it the page still shows the credits bought, labelled as such.
       });
     return () => {
       active = false;
@@ -68,18 +77,40 @@ export function PremiumOffer() {
               used first, so a credit is only spent when you practise beyond them.
             </p>
           </div>
-          <p className="rounded-xl border border-line bg-surface-raised px-4 py-3 text-caption text-ink">
-            You have <strong className="text-heading">{overview.creditBalance}</strong>{" "}
-            {overview.creditBalance === 1 ? "credit" : "credits"}
-          </p>
+          <Balance bought={overview.creditBalance} free={remainingFree} />
         </div>
         <CreditPacks initialOverview={overview} onPurchased={setOverview} />
-        {overview.creditBalance > 0 ? (
+        {overview.creditBalance + (remainingFree ?? 0) > 0 ? (
           <Link href="/interview/new" className="action-primary self-start">
             Start an interview <span aria-hidden>→</span>
           </Link>
         ) : null}
       </div>
     </section>
+  );
+}
+
+/**
+ * The same total the header shows — free interviews left plus credits bought — with the
+ * split underneath, since the free ones are spent first.
+ */
+function Balance({ bought, free }: { bought: number; free: number | null }) {
+  if (free === null) {
+    return (
+      <p className="rounded-xl bg-accent px-4 py-3 text-caption text-accent-contrast shadow-[var(--shadow-md)]">
+        You have <strong className="text-heading">{bought}</strong> bought {bought === 1 ? "credit" : "credits"}
+      </p>
+    );
+  }
+  const total = free + bought;
+  return (
+    <div className="rounded-xl bg-accent px-4 py-3 text-caption text-accent-contrast shadow-[var(--shadow-md)]">
+      <p>
+        You have <strong className="text-heading">{total}</strong> {total === 1 ? "credit" : "credits"}
+      </p>
+      <p className="mt-0.5 text-micro text-accent-contrast/80">
+        {free} free · {bought} bought
+      </p>
+    </div>
   );
 }

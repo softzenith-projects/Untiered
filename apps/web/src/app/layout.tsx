@@ -1,7 +1,8 @@
-import type { Metadata, Viewport } from "next";
+import type { Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 
 import { AppChrome } from "@/components/app-chrome";
+import { rootMetadata } from "@/lib/seo";
 
 import "./globals.css";
 
@@ -15,15 +16,7 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Untiered",
-    template: "%s · Untiered",
-  },
-  description:
-    "Voice-first AI mock interviews grounded in how interviews at real employers actually run — " +
-    "product companies, service-based IT, consulting, European employers and beyond.",
-};
+export const metadata = rootMetadata;
 
 export const viewport: Viewport = {
   width: "device-width",

@@ -55,19 +55,28 @@ export interface CodeBlockHighlight {
  */
 export function highlightChapterBlocks(
   blocks: Block[],
-  baseLanguage: "java" | "python" = "java",
+  baseLanguage: "java" | "python" | "javascript" = "java",
 ): Promise<Array<string | CodeBlockHighlight | null>> {
   return Promise.all(
     blocks.map(async (block) => {
       if (block.kind === "code") {
         const [base, python] = await Promise.all([
-          highlightCode(block.code, baseLanguage),
+          highlightCode(block.code, shikiLanguage(baseLanguage)),
           block.python ? highlightCode(block.python, "python") : Promise.resolve(null),
         ]);
         return { base, python };
       }
-      if (block.kind === "playground") return highlightCode(block.starter, block.language);
+      if (block.kind === "playground") return highlightCode(block.starter, shikiLanguage(block.language));
       return null;
     }),
   );
+}
+
+/**
+ * The JavaScript course's React and Next chapters carry JSX, and one chapter carries
+ * TypeScript; the `tsx` grammar is a superset of all three, so plain JavaScript highlights
+ * exactly as it would under `javascript`.
+ */
+function shikiLanguage(language: "java" | "python" | "javascript"): string {
+  return language === "javascript" ? "tsx" : language;
 }

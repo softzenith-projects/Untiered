@@ -194,6 +194,31 @@ describe("shared progress across components", () => {
 });
 
 describe("CourseHeroProgress", () => {
+  const SIGN_IN_NOTE = /sign in or create an account to open the chapters/i;
+
+  it("tells a signed-out visitor what opening a chapter takes, and still links to it", async () => {
+    useAccessToken.mockReturnValue(null);
+    render(<CourseHeroProgress courseSlug="java" chapters={chapters} />);
+
+    expect(await screen.findByText(SIGN_IN_NOTE)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /start course/i })).toHaveAttribute("href", "/courses/java/one");
+  });
+
+  it("does not show a signed-in learner the sign-in note", async () => {
+    fetchCourseProgress.mockResolvedValue({ completed: {} });
+    render(<CourseHeroProgress courseSlug="java" chapters={chapters} />);
+
+    await waitFor(() => expect(fetchCourseProgress).toHaveBeenCalled());
+    expect(screen.queryByText(SIGN_IN_NOTE)).not.toBeInTheDocument();
+  });
+
+  it("does not guess at the session while it is still unknown", () => {
+    useAccessToken.mockReturnValue(undefined);
+    render(<CourseHeroProgress courseSlug="java" chapters={chapters} />);
+
+    expect(screen.queryByText(SIGN_IN_NOTE)).not.toBeInTheDocument();
+  });
+
   it("resumes at the first unfinished chapter", async () => {
     fetchCourseProgress.mockResolvedValue({ completed: { java: ["one"] } });
     render(<CourseHeroProgress courseSlug="java" chapters={chapters} />);

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { featureEnabled } from "@/lib/flags";
-import { NAV_LINKS } from "@/lib/nav-links";
+import { NAV_LINKS, PUBLIC_NAV_LINKS } from "@/lib/nav-links";
 
 /**
  * The signed-in product navigation, with the page you are on marked.
@@ -16,12 +16,13 @@ import { NAV_LINKS } from "@/lib/nav-links";
  * shapes to work elsewhere (badges, tags), so a pill here reads as the same visual
  * language rather than as one rounded solid on an otherwise square screen.
  */
-export function RailNav() {
+export function RailNav({ signedOut = false }: { signedOut?: boolean }) {
   const pathname = usePathname();
+  const links = signedOut ? PUBLIC_NAV_LINKS : NAV_LINKS;
 
   return (
-    <ul className="flex min-w-max items-stretch gap-1" aria-label="Workspace">
-      {NAV_LINKS.filter((link) => !("feature" in link) || featureEnabled(link.feature)).map((link) => {
+    <ul className="flex min-w-max items-stretch gap-1" aria-label={signedOut ? "Site" : "Workspace"}>
+      {links.filter((link) => !("feature" in link) || featureEnabled(link.feature)).map((link) => {
         const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
         return (
           <li key={link.href}>
@@ -38,8 +39,8 @@ export function RailNav() {
               aria-current={active ? "page" : undefined}
               className={`relative block h-full px-3 py-5 text-caption transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full ${
                 active
-                  ? "font-semibold text-ink after:bg-accent"
-                  : "text-ink-muted after:bg-transparent hover:text-ink"
+                  ? "font-bold text-ink after:bg-accent"
+                  : "font-semibold text-ink-muted after:bg-transparent hover:text-ink"
               }`}
             >
               {link.label}

@@ -11,7 +11,8 @@ import type {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { CompetencyBars, bandFor, overallScore, scoreToneForPercent } from "@/components/report-charts";
+import { CompetencyBars, TONE_STYLES, bandFor, overallScore, scoreToneForPercent } from "@/components/report-charts";
+import { ReportVisuals } from "@/components/report-visuals";
 import { SpokenEnglishPanel } from "@/components/spoken-english-panel";
 import { ApiRequestError, fetchReport } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -297,6 +298,8 @@ export function ReportDocument({ report, detailed = true }: { report: SessionRep
         strongestCompetency={strongestCompetency}
       />
 
+      {hasReliableOverallScore ? <ReportVisuals report={report} /> : null}
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] lg:items-start">
         {hasReliableOverallScore ? (
           <section className="flex flex-col gap-7 rounded-2xl border border-line bg-surface-raised p-6 shadow-[var(--shadow-sm)] sm:p-8">
@@ -362,20 +365,19 @@ export function ReportDocument({ report, detailed = true }: { report: SessionRep
               {competencies.map((item) => {
                 const percent = item.maxScore > 0 ? (item.score / item.maxScore) * 100 : 0;
                 const band = bandFor(percent);
+                const tone = TONE_STYLES[scoreToneForPercent(percent)];
                 return (
-                  <li key={item.competency} className="flex flex-col gap-3">
+                  <li key={item.competency} className={cn("flex flex-col gap-3 rounded-xl border-l-4 py-1 pl-5", tone.border)}>
                     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                         <h3 className="text-heading text-ink">{item.competency}</h3>
                         {/*
-                          * The band name, not a colour, carries the one-line verdict here —
-                          * the bars above already carry the comparison, this is the word for
-                          * where it landed. Neutral styling on purpose: this list holds
-                          * "Under par" and "Exceptional" side by side, and colouring one red
-                          * and the other green would be a second, louder verdict than the
-                          * text already gives (CLAUDE.md: never colour-code meaning alone).
+                          * The band name in its traffic-light colour (owner, 29 October 2026:
+                          * the report should read at a glance). The word is still there, so the
+                          * colour is never the only signal.
                           */}
-                        <span className="rounded-full border border-line-strong px-2.5 py-0.5 font-mono text-micro tracking-widest text-ink-subtle uppercase">
+                        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-micro font-semibold tracking-widest uppercase", tone.wash, tone.text)}>
+                          <span aria-hidden="true" className={cn("size-2 rounded-full", tone.fill)} />
                           {band.name}
                         </span>
                       </div>
@@ -793,11 +795,18 @@ function AreaColumn({
   empty: string;
 }) {
   const rule = tone === "positive" ? "border-positive" : "border-danger";
+  const wash = tone === "positive" ? "bg-positive-wash" : "bg-danger-wash";
+  const mark = tone === "positive" ? "bg-positive" : "bg-danger";
 
   return (
-    <section aria-label={heading} className="flex flex-col gap-5">
+    <section aria-label={heading} className={cn("flex flex-col gap-5 rounded-xl p-5", wash)}>
       <div className={cn("flex items-baseline justify-between gap-3 border-t-2 pt-3", rule)}>
-        <h3 className="text-heading text-ink">{heading}</h3>
+        <h3 className="flex items-center gap-2 text-heading text-ink">
+          <span aria-hidden="true" className={cn("grid size-6 place-items-center rounded-full text-micro font-bold text-surface-raised", mark)}>
+            {tone === "positive" ? "✓" : "!"}
+          </span>
+          {heading}
+        </h3>
         <span className="shrink-0 font-mono text-micro tracking-widest text-ink-subtle uppercase">
           {areas.length} {areas.length === 1 ? "thing" : "things"}
         </span>

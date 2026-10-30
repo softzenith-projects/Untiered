@@ -12,3 +12,9 @@ export const NAV_LINKS = [
   { href: "/arena", label: "Arena", feature: "arena" },
   { href: "/questions", label: "Questions", feature: "questions" },
 ] as const satisfies readonly { href: string; label: string; feature?: ProductFeature }[];
+
+/** What the same bar offers with no session: only places a visitor can actually go. */
+export const PUBLIC_NAV_LINKS = [
+  { href: "/courses", label: "Courses", feature: "courses" },
+  { href: "/pricing", label: "Pricing" },
+] as const satisfies readonly { href: string; label: string; feature?: ProductFeature }[];

@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { BrandMark, BrandWordmark } from "@/components/brand-logo";
 import { CourseArtwork } from "@/components/courses/course-visuals";
+import { HeaderActions } from "@/components/landing/header-actions";
 import { LoopPicker } from "@/components/landing/loop-picker";
 import { ReportPreview } from "@/components/landing/report-preview";
 import { SampleTurn } from "@/components/landing/sample-turn";
@@ -13,17 +14,18 @@ import { Testimonials } from "@/components/testimonials";
 import { courses, totalChapters, totalMinutes } from "@/content/courses";
 import { LANDING_TESTIMONIALS } from "@/content/landing-testimonials";
 import { SiteFooter } from "@/components/site-footer";
-import { SessionLink } from "@/components/session-link";
 import { fetchUsage } from "@/lib/api";
 import { courseEnabled, featureEnabled } from "@/lib/flags";
 import { FREE_ROUNDS_LIFETIME_TEXT } from "@/lib/legal";
+import { homepageJsonLd, publicPageMetadata, serializeJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Untiered — talent has no tiers",
+export const metadata: Metadata = publicPageMetadata({
+  title: "AI Mock Interviews for Software and IT Roles · Untiered",
   description:
-    "Spoken mock interviews for the loops people actually sit: service-based IT, Big Four, " +
-    "European competency rounds, global product. Every score in the report quotes what you said.",
-};
+    "Spoken AI mock interviews for the loops people actually sit: service-based IT, Big Four, " +
+    `European competency rounds, global product. Every score quotes what you said. ${FREE_ROUNDS_LIFETIME_TEXT}.`,
+  path: "/",
+});
 
 /**
  * The public landing page.
@@ -50,6 +52,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-dvh bg-surface">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(homepageJsonLd()) }} />
       <SiteHeader mockInterviewsEnabled={mockInterviewsEnabled} coursesEnabled={coursesEnabled} />
       <main>
         <Hero
@@ -86,17 +89,14 @@ function SiteHeader({ mockInterviewsEnabled, coursesEnabled }: { mockInterviewsE
           {coursesEnabled ? (
             <Link href={"/courses" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">Courses</Link>
           ) : null}
+          <Link href={"/pricing" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">Pricing</Link>
         </nav>
-        <div className="flex items-center gap-3">
-          <SessionLink
-            signedIn={{ href: "/dashboard", label: "Dashboard" }}
-            signedOut={{ href: "/login", label: "Sign in" }}
-            className="hidden min-h-11 items-center rounded-lg px-3 py-2 text-caption font-medium text-ink transition-colors hover:bg-surface-sunken sm:inline-flex"
-          />
-          <ActionLink href={coursesEnabled && !mockInterviewsEnabled ? "/courses" : mockInterviewsEnabled ? "/interview/new" : "/login"} size="sm">
-            {mockInterviewsEnabled ? "Start free" : coursesEnabled ? "Start learning" : "Sign in"}
-          </ActionLink>
-        </div>
+        <HeaderActions
+          cta={{
+            href: coursesEnabled && !mockInterviewsEnabled ? "/courses" : mockInterviewsEnabled ? "/interview/new" : "/login",
+            label: mockInterviewsEnabled ? "Start free" : coursesEnabled ? "Start learning" : "Sign in",
+          }}
+        />
       </div>
     </header>
   );

@@ -54,6 +54,8 @@ import type { Course } from "@/content/courses/types";
 export const aiAgentsCourse: Course = {
   slug: "ai-agents",
   title: "AI and Agentic AI",
+  seoTitle: "AI and Agentic AI Course for Beginners",
+  seoDescription: "From what a language model is to an agent you assemble and run yourself, in plain language. No machine learning background needed.",
   tagline:
     "From \"what is a language model\" to an agent you assemble and run yourself — in plain language, " +
     "grounded in the papers and specs, with nothing invented.",
