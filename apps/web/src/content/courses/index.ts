@@ -8,8 +8,7 @@ import type { Chapter, Course, Module } from "@/content/courses/types";
 /** Every course the site serves. Add a new course here, not by scattering imports. */
 export const courses: Course[] = [
   javaCourse,
-  // Task 066 writes this course a module at a time; it is listed once it has a chapter.
-  ...(javascriptCourse.modules.length > 0 ? [javascriptCourse] : []),
+  javascriptCourse,
   dsaCourse,
   aiAgentsCourse,
   systemDesignCourse,

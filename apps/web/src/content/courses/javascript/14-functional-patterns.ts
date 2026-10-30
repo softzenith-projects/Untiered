@@ -103,12 +103,12 @@ console.log(sum(100));
 try {
   sum(1e6);
 } catch (err) {
-  console.log(err.name);
+  console.log("the call stack overflowed");
 }`,
-      caption: "Memoised Fibonacci makes 31 calls instead of over a million. Recursion needs a base case, and a very deep one overflows the call stack.",
+      caption: "Memoised Fibonacci makes 31 calls instead of over a million. Recursion needs a base case, and a very deep one overflows the call stack. Node and Chrome throw a RangeError there; Firefox names it InternalError, so this prints a fixed line instead of err.name.",
       output: `832040 31
 5050
-RangeError`,
+the call stack overflowed`,
       tryIt: {
         language: "javascript",
         prompt: "Remove the `memoize(...)` wrapper (call the plain function) and try `fib(25)`. Count the calls.",
@@ -121,7 +121,7 @@ RangeError`,
     },
     {
       kind: "p",
-      text: "Recursion is a function calling itself on a smaller problem. Every recursive function needs a **base case** that stops, and each call adds a frame to the call stack. The stack is finite, so a recursion a million deep throws a `RangeError`. The standard answer is to turn the recursion into a loop. Do not count on tail-call optimisation: it is in the language specification but most engines, V8 included, do not implement it.",
+      text: "Recursion is a function calling itself on a smaller problem. Every recursive function needs a **base case** that stops, and each call adds a frame to the call stack. The stack is finite, so a recursion a million deep throws (a `RangeError` in Node and Chrome). The standard answer is to turn the recursion into a loop. Do not count on tail-call optimisation: it is in the language specification but most engines, V8 included, do not implement it.",
     },
     {
       kind: "h",

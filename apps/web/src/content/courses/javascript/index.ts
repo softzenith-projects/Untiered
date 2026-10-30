@@ -22,7 +22,6 @@ export const javascriptCourse: Course = {
   tagline: "How JavaScript really runs, then React, Node.js and Next.js — to the depth interviews ask.",
   level: "Beginner to interview-ready — no prior JavaScript assumed",
   codeLanguage: "javascript",
-  // A module appears once its chapters are written; an empty one would be a dead heading.
   modules: [
     moduleFoundations,
     moduleCoreMechanics,
@@ -32,5 +31,5 @@ export const javascriptCourse: Course = {
     moduleNode,
     moduleNextjs,
     moduleTypescriptAndInterviews,
-  ].filter((module) => module.chapters.length > 0),
+  ],
 };
