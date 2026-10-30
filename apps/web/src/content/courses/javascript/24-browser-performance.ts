@@ -209,7 +209,7 @@ worker.onmessage = (event) => console.log("sum:", event.data);
       items: [
         "What is the difference between reflow and repaint? A strong answer: reflow recomputes geometry and is expensive; repaint redraws pixels without changing layout; transform and opacity can avoid both.",
         "What is layout thrashing and how do you avoid it? A strong answer: alternating reads and writes forces synchronous layouts; batch all reads, then all writes.",
-        "When would you use `requestAnimationFrame` over `setTimeout`? A strong answer: for visual updates, because it runs aligned with the next paint and pauses in background tabs.",
+        "When would you use `requestAnimationFrame` over `setTimeout`? A strong answer: for visual updates, because it runs just before the next repaint, and most browsers pause it in background tabs.",
         "How do you keep a heavy calculation from freezing the page? A strong answer: split it into chunks, or run it in a Web Worker and message the result back.",
         "How do you find and prevent a memory leak? A strong answer: take heap snapshots to find retained nodes; remove listeners, clear timers, and drop references when done.",
       ],

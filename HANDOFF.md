@@ -51,27 +51,35 @@ Task file: `tasks/task-066-javascript-course.md` (PRD §10).
   line, because Firefox calls that error `InternalError`.
 - The course is listed second, after Java, in the catalogue.
 
+## Follow-up pass (same day): browsers, visuals, facts
+- **Every runnable sample in three real engines.** All 101 samples were run through the
+  shipped worker source in Chromium 156, Firefox 157 and WebKit 27.2 (Playwright, installed
+  in a scratch folder, not in the repo). Two printed engine-written error messages, which
+  Firefox and Safari word differently; they now print the error's name and quote Node's
+  message in the caption. **101/101 match in all three.** The task brief now forbids
+  printing engine-written messages.
+- **Run button clicked in the real UI** in all three engines (event-loop chapter): output
+  correct, "Matches the expected output" shown.
+- **Looked at, in Chromium:** catalogue card in light and dark, course page, event-loop
+  chapter with its call-stack `viz` and stepper, the React chapter in dark mode, the
+  playbook on a 390 px phone (no sideways overflow). All consistent with the other courses.
+  To do this I ran `next dev` locally with `/courses` taken out of the route guard; that
+  edit was reverted and never committed.
+- **Facts checked against primary sources** (Node API docs, MDN, react.dev, nextjs.org,
+  Express, Testing Library releases): 22 claims, none false. Fixed two wordings: cookie size
+  is "about 4 KB (name, value and attributes)" and web storage "about 5 MB per origin"
+  (ch 23); "most browsers" pause rAF in background tabs (ch 24). `next/font` "downloaded at
+  build time" confirmed in the bundled Next 16.4.3 docs. Already correct as written: fetch,
+  `--watch`, `--env-file`, `node:test`, unhandled rejections, `AbortSignal.timeout`,
+  `structuredClone`, `require(esm)`, `UV_THREADPOOL_SIZE`, Express 5 async errors, type
+  stripping versions, the 4 ms clamp, `renderHook`, `loading.tsx`, layout persistence.
+
 ## What I could NOT verify
-- **Visual check: none.** I have not looked at the chapters, the `viz` frames (call stack,
-  queue), the catalogue artwork, or the light/dark colours in a browser.
-- **The Run button in a real browser.** The worker source is tested in a Node `vm` context,
-  not in Chrome, Firefox or Safari. Worth one click per browser.
-- Facts the writers could not check against a source (each is worded cautiously in its
-  chapter):
-  - Node: the version where global `fetch` became stable, `--watch` and `--env-file`
-    stability, the CommonJS-loads-sync-ESM rule (ch 35 points to the Node docs rather than
-    naming a version), `AbortSignal.timeout`, the Node 15 change to throw on unhandled
-    rejections, the 4 ms nested-timer clamp, `structuredClone` availability.
-  - Browser: `toSorted` support, which events do not bubble, rAF timing, the "about 4 KB"
-    cookie limit, the CSP/CORS/CSRF header examples (marked illustrative).
-  - React: `renderHook` and `loading.tsx` as a Suspense fallback; the simplifications in the
-    ch 41 caching model; `next/font` and layout persistence.
-  - The note that V8 does not implement tail calls (ch 14).
-  - Checked and confirmed: Next 16.4.3's `error.tsx` `retry` prop (against the docs bundled
-    in `node_modules/next`); TypeScript blocks compile under tsc 7.0.2 with
-    `erasableSyntaxOnly`; Node 24.13's `nextTick`/promise order in CJS vs ESM.
-- Chapter 14's deep-recursion sample depends on stack size; it passes in Node and the
-  worker here.
+- Safari itself: WebKit 27.2 under Playwright on Windows is the engine, not the Safari app.
+- That V8 does not implement proper tail calls (ch 14) has only secondary sources; the
+  chapter says "most engines, V8 included", which is the safe form.
+- A visual check of every chapter: I looked at five pages, not 44.
+- Chapter 14's deep-recursion sample depends on stack size; it passes in all three engines.
 
 ## Verification status
 - typecheck / lint / tests / build: **pass** locally. 102 test files, 3977 tests; `next build`

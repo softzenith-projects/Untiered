@@ -65,9 +65,9 @@ export const chapterFormsAndStorage: Chapter = {
       kind: "table",
       head: ["Store", "Lifetime", "Size (roughly)", "Sent to server?", "Readable by page JavaScript?"],
       rows: [
-        ["Cookie", "Until it expires, or end of session", "About 4 KB each", "Yes, with every matching request", "Yes, unless marked `HttpOnly`"],
-        ["localStorage", "Until cleared by the user or code", "A few MB per origin", "No", "Yes"],
-        ["sessionStorage", "Until the tab is closed", "A few MB per origin", "No", "Yes"],
+        ["Cookie", "Until it expires, or end of session", "About 4 KB each (name, value and attributes)", "Yes, with every matching request", "Yes, unless marked `HttpOnly`"],
+        ["localStorage", "Until cleared by the user or code", "About 5 MB per origin", "No", "Yes"],
+        ["sessionStorage", "Until the tab is closed", "About 5 MB per origin", "No", "Yes"],
         ["IndexedDB", "Until cleared", "Large (browser-managed quota)", "No", "Yes"],
       ],
     },
