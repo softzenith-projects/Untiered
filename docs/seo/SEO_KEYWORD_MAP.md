@@ -46,12 +46,14 @@ Titles and descriptions below are live in the code on `develop`.
 Navigational and trust pages. Indexable because people look for them and because payment review
 and Google's OAuth review read them. Not worth targeting a keyword. Titles and descriptions are set.
 
-## Pages that exist but are behind sign-in
+## Course pages
 
-**None can rank while the gate stands**, and all depend on the owner's decision in the
-[audit](SEO_AUDIT.md). Facts below come from the course content on `develop`.
+The catalogue and overviews are public and indexable once released (owner, 30 October 2026).
+Chapters stay behind sign-in and cannot rank. The titles and descriptions below are the plan; the
+live text is `seoTitle` and `seoDescription` in each course's `index.ts`, with minor wording
+differences. Facts come from the course content on `develop`.
 
-| Proposed URL (exists, gated) | Intent | Main theme | Related queries | Audience | Recommended title | Recommended description | H1 | Substantiated by |
+| URL | Intent | Main theme | Related queries | Audience | Recommended title | Recommended description | H1 | Substantiated by |
 |---|---|---|---|---|---|---|---|---|
 | `/courses` | Informational | Free software interview courses | free coding courses for interviews, interview preparation course | Freshers and early-career engineers | Free Software Engineering Interview Courses · Untiered | Free interactive courses in Java, JavaScript, data structures, AI agents and system design, written for interview preparation. | Courses | 5 courses, 201 chapters |
 | `/courses/java` | Informational | Java interview preparation | learn Java from scratch, Java interview questions for freshers | Beginners; assumes no programming | Java Programming Course for Interviews · Untiered | From your first line of code to the interview round that asks about it. 35 chapters of runnable Java. | Java Programming | 35 chapters, about 8 h |
@@ -59,11 +61,11 @@ and Google's OAuth review read them. Not worth targeting a keyword. Titles and d
 | `/courses/dsa` | Informational | Data structures and algorithms preparation | DSA for coding interviews, coding interview patterns | Coding-round candidates | Data Structures and Algorithms for Coding Interviews · Untiered | The patterns behind every coding round, explained once so you keep them. 30 chapters. | Data Structures & Algorithms | 30 chapters, about 7 h |
 | `/courses/system-design` | Informational | System design interview preparation | system design for beginners, system design interview practice | Mid-level engineers and ambitious freshers | System Design Interview Course · Untiered | From one request to resilient distributed and AI systems: practise the trade-offs, then assemble the architecture yourself. 59 chapters. | System Design | 59 chapters, about 15 h |
 | `/courses/ai-agents` | Informational | AI agents explained | what is an AI agent, how language models work, agentic AI course | Beginners; no ML background | AI and Agentic AI Course for Beginners · Untiered | From what a language model is to an agent you assemble and run yourself, in plain language and grounded in the papers. 33 chapters. | AI and Agentic AI | 33 chapters, about 8 h |
-| `/courses/<course>/<chapter>` | Informational | Specific concept, for example "closures" or "binary search" | Per chapter | Learners | Chapter title · Untiered | From the chapter's own summary | Chapter title | Only if public. Original prose, runnable code, self-check |
+| `/courses/<course>/<chapter>` (gated) | Informational | Specific concept, for example "closures" or "binary search" | Per chapter | Learners | Chapter title · Untiered | From the chapter's own summary | Chapter title | Only if opened later. Original prose, runnable code, self-check |
 
-Each overview page needs: who it is for, what you can do afterwards, the syllabus, and a sample of
-the teaching. A list of chapter titles alone would be thin. Link each to its prerequisite course,
-to the Arena, and to `/` for the matching mock interview.
+Each overview now shows who it is for (`level`), what you can do afterwards (`outcome`) and the
+syllabus. **Content gap:** there is no sample of the teaching yet, which is the likeliest reason a
+search engine would treat an overview as thin. Add one if Search Console reports that.
 
 ## Pages that do not exist
 
@@ -88,9 +90,9 @@ be both a doorway-page problem and that failure. Start with a few employers with
 |---|---|---|
 | AI mock interviews for software engineers | `/` | Live on `develop` |
 | Online technical interview practice | `/` now; `/mock-interviews` proposed | Partly covered |
-| Software engineering interview preparation | `/courses` | Gated |
-| Coding interview practice | `/courses/dsa`, `/arena` | Gated |
-| Data structures and algorithms preparation | `/courses/dsa` | Gated |
-| System design interview preparation | `/courses/system-design` | Gated |
+| Software engineering interview preparation | `/courses` | Public once released |
+| Coding interview practice | `/courses/dsa`; `/arena` stays gated | Public once released |
+| Data structures and algorithms preparation | `/courses/dsa` | Public once released |
+| System design interview preparation | `/courses/system-design` | Public once released |
 | Interview preparation for freshers | `/mock-interviews/freshers` | Proposed |
-| Java interview preparation | `/courses/java`. The live course offering is real, so the theme is relevant | Gated |
+| Java interview preparation | `/courses/java`. The live course offering is real, so the theme is relevant | Public once released |

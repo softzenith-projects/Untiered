@@ -4,9 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 
 /**
- * Routes that require a signed-in candidate. Everything except the landing page and the
- * sign-in flow: courses and the Arena were public until the owner decided (21 Sep 2026)
- * that a visitor should sign up or in before seeing any of it.
+ * Routes that require a signed-in candidate. Courses and the Arena were public until the
+ * owner decided (21 Sep 2026) that a visitor should sign up or in before seeing any of it.
+ * The course catalogue and overviews are the one exception since; see `isPublicCoursePage`.
  */
 const PROTECTED_PREFIXES = [
   "/dashboard",
@@ -20,8 +20,18 @@ const PROTECTED_PREFIXES = [
   "/report",
 ];
 
+/**
+ * The catalogue and each course's overview are public so they can be found in search, and
+ * reading a chapter still takes an account (owner, 30 Oct 2026). Matches exactly those two
+ * shapes: anything deeper under `/courses`, however it is spelled, stays protected.
+ */
+function isPublicCoursePage(pathname: string): boolean {
+  return pathname === "/courses" || /^\/courses\/[^/]+$/.test(pathname);
+}
+
 /** Matches the prefix itself or anything beneath it — `/arena` but not `/arenas`. */
 function isProtected(pathname: string): boolean {
+  if (isPublicCoursePage(pathname)) return false;
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
@@ -41,7 +51,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   // Public marketing and legal pages do not need a verified identity. Let them serve
   // without a proxy auth round trip, including when the browser prefetches footer links.
-  if (!isProtected(pathname) && !SIGNED_OUT_ONLY.includes(pathname)) {
+  // Public course pages still go through: a signed-in learner's session keeps refreshing
+  // there, and with no session cookie there is nothing to verify and no round trip.
+  if (!isProtected(pathname) && !isPublicCoursePage(pathname) && !SIGNED_OUT_ONLY.includes(pathname)) {
     return NextResponse.next({ request });
   }
 

@@ -270,11 +270,11 @@ interviewbit.com: a bright, confident, polished learning-platform look.
   a strip of the employers we cover, product sections (mock interviews, reports,
   courses), stats that are true, and a real footer. No invented user counts or
   testimonials. A number must be true or it does not appear.
-- **Courses are a product surface** (`/courses`): free, but behind sign-in — the owner
-  decided on 21 September 2026 that a visitor signs up or in before seeing any course,
-  the Arena, or an interview (only the landing page and `/login` are public). This
-  trades away organic search on course content; do not restore public access without
-  the owner. Every chapter is written for a class-12 student: one vivid everyday analogy,
+- **Courses are a product surface** (`/courses`): free. The catalogue and each course's
+  overview are public and indexable (owner, 30 October 2026), so that the syllabus can be
+  found in search. Reading a chapter still takes an account, and the Arena and interviews
+  stay behind sign-in: a visitor signs up at the moment they start reading. A crawler must
+  get the same page a visitor does. Do not open chapters without the owner. Every chapter is written for a class-12 student: one vivid everyday analogy,
   small steps, complete runnable code with output, a "remember this" box, common
   mistakes, and a quick self-check.
 - **Still true:** the live session screen stays near-empty (speaking indicator, timer,

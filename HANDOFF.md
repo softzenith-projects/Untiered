@@ -1,73 +1,59 @@
 # Handoff — 30 October 2026
 
 ## Task
-Audit and fix technical SEO on untiered.tech so public pages can be crawled and indexed. Owner's
-brief, pasted into the session; no task file (PRD §11).
+Make the course catalogue and the five course overviews public and indexable, with chapters still
+behind sign-in. Owner's decision in this session, following the SEO audit in `docs/seo/` (PRD §11).
 
 ## What I built
-- `apps/web/src/app/robots.ts`, `sitemap.ts`, `opengraph-image.tsx`: all three were missing. The
-  sitemap lists 7 public pages and nothing that redirects.
-- `apps/web/src/lib/seo.ts`: the canonical host, which routes are indexable or noindex, the page
-  metadata helper, and the homepage's Organization and WebSite JSON-LD.
-- Canonical, description and share tags on the 7 public pages, and a homepage title that says what
-  the product is.
-- `noindex` on `/login`, `/upgrade`, `/daily-challenge`, `/auth/update-password`, and an
-  `X-Robots-Tag` on private routes in `next.config.ts`.
-- Removed the doubled brand from titles ("Courses — Untiered · Untiered") on 5 gated pages. Added
-  Pricing to the landing header, and links back to `/` from `/about` and `/pricing`.
-- `apps/web/src/lib/seo.test.ts`: a new page fails until it is classified as indexable, noindex, or
-  behind sign-in.
-- `apps/web/scripts/check-seo.mjs`: checks what a crawler receives from a running site. CI now runs
-  it against the production build; it also works against production.
-- `docs/seo/`: `SEO_AUDIT.md`, `SEO_IMPLEMENTATION_PLAN.md`, `SEO_KEYWORD_MAP.md`,
-  `SEO_VERIFICATION.md` (includes the Search Console and Bing steps).
+- **The guard:** `isPublicCoursePage` in `apps/web/src/lib/supabase/session.ts` opens `/courses` and
+  `/courses/<course>` only. Anything deeper stays protected. Signed-in sessions keep refreshing on them.
+- **Search:** the 6 pages are in `app/sitemap.ts` (a switched-off course is left out), with their
+  own title, description and canonical. `seoTitle` and `seoDescription` are new required fields on
+  `Course`. Overviews have `Course` structured data with no ratings or offers.
+- **No gated content on public pages:** the daily Arena banner, whose props include the answer, now
+  renders only when signed in (`app/courses/page.tsx`, tested in `page.test.tsx`).
+- **The header with no session** (`app-chrome.tsx`, `rail-nav.tsx`, `lib/nav-links.ts`): the logo goes
+  home, the nav is Courses and Pricing, and Sign in returns to the current page. This also improves
+  `/upgrade` and `/daily-challenge`, which showed the signed-in bar to visitors.
+- **Chapter links** (`ChapterLink` in `course-progress.tsx`) do not prefetch while signed out, and the
+  overview says "Free. Sign in or create an account to open the chapters."
+- `apps/web/scripts/check-seo.mjs` now fails if a public course page sends chapter content or Arena
+  answers, or if any chapter link serves anything but a redirect to sign-in.
+- `CLAUDE.md` and `AGENTS.md` record the new decision. `docs/seo/` is updated.
 
 ## Assumptions I made
-- **Courses stay behind sign-in.** The brief mentions course pages, but also says to preserve
-  authentication and product behaviour, and `CLAUDE.md` says public access is not restored without
-  the owner. So the sitemap has 7 URLs, and the decision is written up in the audit.
-- Signed-in routes are left out of robots.txt deliberately: a blocked URL can still be indexed from
-  links, and the crawler would never see the redirect. They redirect to a noindex page instead.
-- The canonical host is a constant, not an environment variable, so a misconfigured deployment
-  cannot point Google at a preview.
-- Metadata and links on auth pages are not "touching auth", so this merged rather than going through
-  a PR. `session.ts` and `proxy.ts` are unchanged. The same goes for `/upgrade` and payments: only
-  its metadata changed.
-- No `lastModified` in the sitemap, since nothing tracks real page changes.
+- "Catalogue and overviews" means exactly those six URLs. The Arena, interviews and chapters are
+  unchanged.
+- `/daily-challenge` stays as it is, because you did not answer that question. It is public, noindex,
+  and still sends the day's question and answer.
+- No BreadcrumbList: page breadcrumbs are hidden in the UI, and the markup should match what is visible.
 
 ## What I could NOT verify
-- **Whether Google or Bing have indexed anything, and why not if they have not.** No Search Console
-  access. The audit found no technical blocker on the public pages, and the domain is only 16 days
-  old (registered 14 October 2026), but the cause is not established.
-- Production behaviour with these fixes: they are not live. Production looks like it builds from
-  `main` (inferred: it lacks the JavaScript course), and Netlify's settings are not in the repo.
-- Real sign-in, course and interview flows in a browser. Unit and integration tests only, with no
-  live interviews per rule 7.
-- The JSON-LD in Google's Rich Results Test, which needs a live URL.
-- Performance improvement: none was attempted or claimed. Baseline Lighthouse numbers are in the
-  audit. No field data.
-- **`api.untiered.tech` timed out from this machine** on five attempts over ports 443 and 80. It may be
-  this network, or the API may be down. Please check it.
+- **Signed-in behaviour in a real browser**, because no test account was used. Unit tests cover the
+  banner, header and progress in both states. Please click through once while signed in.
+- **Whether these pages will be indexed.** They are a syllabus plus a short description, and Google
+  may treat them as thin. Search Console will say.
+- **The effect on sign-ups**: the site has no analytics to measure it with.
+- Production: not live until this PR is merged and `main` is advanced.
+- `api.untiered.tech` still timed out from this machine on the last attempt. Please check it.
 
 ## Verification status
-- typecheck / lint / tests / build: all pass locally and on CI. 4,012 web tests in 103 files.
-- Crawler check on the production build: 140 of 140, locally and on CI. Production before the fix:
-  24 passed, 13 failed.
-- CI on the code commit, all four jobs green:
-  https://github.com/softzenith-projects/Untiered/actions/runs/41017259089
-- About 1,200 changed lines including about 500 of documents; the code is about 670. It did not
-  split naturally, since the tests and docs describe one change.
+- typecheck, lint, build: pass. Web tests: 4,031 pass, with the exception below.
+- Crawler check on a verified fresh build: 438 of 438. Headless Chrome as a visitor: 21 of 21, and no
+  console or hydration errors on 10 pages. That check caught a hydration bug of mine, now fixed.
+- **Existing flake, not from this change:** `content-integrity.test.ts`, chapter
+  `machine-coding-utilities` in the JavaScript course, failed 2 of 3 local runs (`end d` and `end a`
+  swap). It races real timers under `node`, and this machine was busy. CI has been passing it. I did
+  not weaken it. It should get wider timer gaps in the sample, and may eventually fail a CI run.
+- Local quirk: `next build` does not clear `.next/server/route-cache`, so a stale `/` can refer to CSS
+  that no longer exists. Details in `docs/seo/SEO_VERIFICATION.md`.
 
 ## Merge status
-- Merged into `develop` at `d6ddcfc`, CI green on all four jobs:
-  https://github.com/softzenith-projects/Untiered/actions/runs/41018358142
-  No migrations. `main` is not touched: **nothing here is live until the owner advances `main`.**
+- PR into `develop`, not merged, because it changes the route guard (rule 1). No migrations.
+  `main` is not touched. The earlier SEO work is on `develop` at `d6ddcfc`.
 
 ## Suggested next task
-- Once the owner has decided: open the course catalogue and overviews to signed-out visitors, through
-  a PR because it changes the route guard (P1 in the plan).
+- Widen the timer gaps in the `machine-coding-utilities` sample so its test stops racing.
 
 ## Open questions for you
-- Should some course content be public? It is the largest remaining SEO lever and is your call.
-  Options and a recommendation are in `docs/seo/SEO_AUDIT.md`.
-- `/daily-challenge` is not behind sign-in, though `CLAUDE.md` says the Arena is. Intended?
+- `/daily-challenge` is public but `CLAUDE.md` says the Arena is behind sign-in. Intended?

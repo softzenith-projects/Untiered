@@ -38,6 +38,8 @@ import type { Course } from "@/content/courses/types";
 export const dsaCourse: Course = {
   slug: "dsa",
   title: "Data Structures & Algorithms",
+  seoTitle: "Data Structures and Algorithms for Coding Interviews",
+  seoDescription: "The patterns behind every coding round, explained once so you keep them: arrays, hashing, recursion, trees, graphs and more.",
   tagline: "The patterns behind every coding round, explained once so you actually keep them.",
   level: "Beginner — assumes the Java Programming course, or equivalent basics",
   modules: [

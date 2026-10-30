@@ -12,13 +12,17 @@ import { LEGAL } from "@/lib/legal";
 export const SITE_URL = "https://untiered.tech";
 
 /**
- * Every page that should appear in search results, and so everything in the sitemap.
+ * The fixed pages that should appear in search results. The sitemap adds the course pages
+ * below, which depend on which courses are switched on.
  *
- * Courses and the Arena are not here because they redirect signed-out visitors to /login
- * (owner, 21 September 2026): a crawler has no session, so listing them would submit
- * redirects. `seo.test.ts` fails when a page is added without being classified.
+ * Chapters and the Arena are not here because they redirect signed-out visitors to /login: a
+ * crawler has no session, so listing them would submit redirects. `seo.test.ts` fails when a
+ * page is added without being classified.
  */
 export const INDEXABLE_ROUTES = ["/", "/pricing", "/about", "/contact", "/privacy", "/terms", "/refund-policy"] as const;
+
+/** Public and indexable since 30 October 2026 (owner): the catalogue and each course's overview. */
+export const PUBLIC_COURSE_ROUTES = ["/courses", "/courses/[course]"] as const;
 
 /** Reachable without signing in, but nothing a searcher should land on. */
 export const NOINDEX_PUBLIC_ROUTES = ["/login", "/upgrade", "/daily-challenge", "/auth/update-password", "/unsubscribe"] as const;
@@ -44,7 +48,7 @@ export const rootMetadata: Metadata = {
  * `openGraph` replaces the layout's, and the file-based image goes with it. */
 const SHARE_IMAGE = { url: "/opengraph-image", width: 1200, height: 630, alt: "Untiered: spoken AI mock interviews" };
 
-/** Metadata for a page in `INDEXABLE_ROUTES`: its canonical URL and matching social tags. */
+/** Metadata for an indexable page: its canonical URL and matching social tags. */
 export function publicPageMetadata({
   title,
   description,
@@ -52,7 +56,7 @@ export function publicPageMetadata({
 }: {
   title: string;
   description: string;
-  path: (typeof INDEXABLE_ROUTES)[number];
+  path: string;
 }): Metadata {
   // Nested fields replace the layout's rather than merge, so these are restated in full. The
   // title template only reaches <title>, and the homepage's title has no template applied.
@@ -96,6 +100,22 @@ export function homepageJsonLd() {
         publisher: { "@id": organizationId },
       },
     ],
+  };
+}
+
+/**
+ * What a course overview states about the course, and nothing it does not. There is no
+ * rating, price or schedule, so this may not qualify for Google's course rich results.
+ */
+export function courseJsonLd({ slug, title, tagline }: { slug: string; title: string; tagline: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: title,
+    description: tagline,
+    url: `${SITE_URL}/courses/${slug}`,
+    inLanguage: "en",
+    provider: { "@type": "Organization", name: LEGAL.productName, url: `${SITE_URL}/` },
   };
 }
 

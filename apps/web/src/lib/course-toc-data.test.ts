@@ -8,6 +8,8 @@ describe("toCourseTocData", () => {
     const course: Course = {
       slug: "example",
       title: "Example",
+      seoTitle: "Example course title",
+      seoDescription: "Example course description",
       tagline: "Example course",
       level: "Beginner",
       modules: [

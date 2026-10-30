@@ -43,6 +43,8 @@ import type { Course } from "@/content/courses/types";
 export const javaCourse: Course = {
   slug: "java",
   title: "Java Programming",
+  seoTitle: "Java Programming Course for Interviews",
+  seoDescription: "Learn Java from your first line of code to the interview round that asks about it, with runnable examples. No programming experience needed.",
   tagline: "From your first line of code to the interview round that asks about it.",
   level: "Beginner — no prior programming experience assumed",
   modules: [

@@ -3,17 +3,22 @@ import { join, relative, sep } from "node:path";
 
 import type { Metadata } from "next";
 import { NextRequest } from "next/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { generateMetadata as courseMetadata } from "@/app/courses/[course]/page";
+import { metadata as catalogueMetadata } from "@/app/courses/page";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
+import { courses } from "@/content/courses";
 import { updateSession } from "@/lib/supabase/session";
 
 import {
+  courseJsonLd,
   homepageJsonLd,
   INDEXABLE_ROUTES,
   isProductionDeployment,
   NOINDEX_PUBLIC_ROUTES,
+  PUBLIC_COURSE_ROUTES,
   rootMetadata,
   serializeJsonLd,
   SITE_URL,
@@ -65,7 +70,7 @@ async function redirectsSignedOutVisitorToLogin(route: string): Promise<boolean>
 
 describe("page classification", () => {
   it("makes every page choose: indexable, deliberately noindex, or behind sign-in", async () => {
-    const declared = [...INDEXABLE_ROUTES, ...NOINDEX_PUBLIC_ROUTES] as string[];
+    const declared = [...INDEXABLE_ROUTES, ...PUBLIC_COURSE_ROUTES, ...NOINDEX_PUBLIC_ROUTES] as string[];
     const unclassified: string[] = [];
     for (const route of appRoutes()) {
       if (declared.includes(route)) continue;
@@ -77,12 +82,12 @@ describe("page classification", () => {
   });
 
   it("does not let an indexable route also be behind sign-in", async () => {
-    for (const route of INDEXABLE_ROUTES) {
+    for (const route of [...INDEXABLE_ROUTES, ...PUBLIC_COURSE_ROUTES]) {
       expect(await redirectsSignedOutVisitorToLogin(route), route).toBe(false);
     }
   });
 
-  it.each(["/dashboard", "/profile", "/history", "/rounds", "/report/abc", "/interview/abc", "/questions", "/courses", "/arena"])(
+  it.each(["/dashboard", "/profile", "/history", "/rounds", "/report/abc", "/interview/abc", "/questions", "/arena", "/courses/java/variables"])(
     "keeps %s behind sign-in and out of the sitemap",
     async (path) => {
       expect(await redirectsSignedOutVisitorToLogin(path)).toBe(true);
@@ -133,10 +138,70 @@ describe("page metadata", () => {
   });
 });
 
+describe("course page metadata", () => {
+  async function overview(slug: string): Promise<Metadata> {
+    return courseMetadata({ params: Promise.resolve({ course: slug }) });
+  }
+
+  it("gives the catalogue and every overview its own title, description and self-canonical", async () => {
+    const pages = [catalogueMetadata, ...(await Promise.all(courses.map((course) => overview(course.slug))))];
+    expect(new Set(pages.map((page) => String(page.title))).size).toBe(pages.length);
+    expect(new Set(pages.map((page) => String(page.description))).size).toBe(pages.length);
+    expect(pages.map((page) => page.alternates?.canonical)).toEqual(["/courses", ...courses.map((course) => `/courses/${course.slug}`)]);
+    for (const page of pages) {
+      expect(String(page.description).length, String(page.title)).toBeGreaterThanOrEqual(50);
+      expect(String(page.description).length, String(page.title)).toBeLessThanOrEqual(210);
+      expect(page.robots, String(page.title)).toBeUndefined();
+    }
+  });
+
+  it("states each course's real chapter count", async () => {
+    const java = courses.find((course) => course.slug === "java")!;
+    const chapters = java.modules.reduce((sum, module) => sum + module.chapters.length, 0);
+    expect(String((await overview("java")).description)).toContain(`${chapters} chapters.`);
+  });
+
+  it("has nothing to say about a course that does not exist", async () => {
+    expect((await overview("no-such-course")).alternates).toBeUndefined();
+  });
+
+  it("states only what the overview shows in its structured data", () => {
+    const java = courses.find((course) => course.slug === "java")!;
+    const data = courseJsonLd(java);
+    expect(data).toMatchObject({ "@type": "Course", name: java.title, description: java.tagline, url: `${SITE_URL}/courses/java` });
+    const text = JSON.stringify(data);
+    for (const field of ["aggregateRating", "review", "offers", "hasCourseInstance"]) expect(text).not.toContain(field);
+  });
+});
+
 describe("sitemap.xml", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("lists the catalogue and every enabled course's overview, and no chapter", () => {
+    const paths = sitemap().map((entry) => new URL(entry.url).pathname);
+    expect(paths).toContain("/courses");
+    for (const course of courses) expect(paths).toContain(`/courses/${course.slug}`);
+    expect(paths.filter((path) => path.split("/").length > 3)).toEqual([]);
+  });
+
+  it("leaves out a course that is switched off, which would 404", () => {
+    vi.stubEnv("NEXT_PUBLIC_COURSE_JAVA_ENABLED", "false");
+    const paths = sitemap().map((entry) => new URL(entry.url).pathname);
+    expect(paths).not.toContain("/courses/java");
+    expect(paths).toContain("/courses/dsa");
+  });
+
+  it("leaves out every course page when courses are switched off", () => {
+    vi.stubEnv("NEXT_PUBLIC_FEATURE_COURSES", "false");
+    const paths = sitemap().map((entry) => new URL(entry.url).pathname);
+    expect(paths.filter((path) => path.startsWith("/courses"))).toEqual([]);
+  });
+
   it("lists exactly the indexable routes, as canonical production URLs", () => {
     const urls = sitemap().map((entry) => entry.url);
-    expect(new Set(urls).size).toBe(INDEXABLE_ROUTES.length);
+    expect(new Set(urls).size).toBe(INDEXABLE_ROUTES.length + 1 + courses.length);
     expect(urls).toContain(`${SITE_URL}/`);
     for (const url of urls.filter((value) => value !== `${SITE_URL}/`)) {
       expect(url.startsWith(`${SITE_URL}/`), url).toBe(true);

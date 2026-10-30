@@ -9,6 +9,8 @@ import { makeLesson } from "@/content/courses/system-design/lesson";
 export const systemDesignCourse: Course = {
   slug: "system-design",
   title: "System Design",
+  seoTitle: "System Design Interview Course",
+  seoDescription: "From one request to resilient distributed and AI systems. Practise the trade-offs, then assemble the architecture yourself.",
   tagline: "From one request to resilient distributed and AI systems — practise the trade-offs, then assemble the architecture yourself.",
   level: "Beginner to interview-ready — no distributed-systems background assumed",
   codeLanguage: "python",
