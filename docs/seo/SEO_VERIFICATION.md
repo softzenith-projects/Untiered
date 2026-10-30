@@ -92,6 +92,28 @@ script now compares parsed URLs.
   already do, but not the proxy's redirects. That is fine: those redirects lead to a noindex page.
 - How the share image looks in real link previews. The PNG was viewed and looks right.
 
+## Public course pages (30 October 2026)
+
+Run on a verified fresh production build, signed out:
+
+| Check | Result |
+|---|---|
+| `check-seo.mjs` | 438 passed, 0 failed. All 201 chapter links redirect to sign-in. Public course pages carry no chapter content and no Arena answers |
+| Headless Chrome (one-off, not in the repo) | 21 passed. Signed-out header, no chapter requests, no API or Supabase calls, Start course goes to `/login?next=<chapter>`, no sideways scroll at 390px |
+| Console and hydration errors | None on `/`, `/courses`, the five overviews, `/pricing`, `/upgrade`, `/daily-challenge` |
+| Screenshots | Catalogue and overview on desktop, overview on a phone: looked right |
+
+The browser check caught a real hydration error from the first version of the sign-in note, now fixed.
+
+**Not verified:** signed-in behaviour in a real browser, because no test account was used. The
+daily banner, header and progress are covered by unit tests in both states. Returning to a chapter
+after signing in is existing behaviour and was not re-run.
+
+**Local quirk:** `next build` does not clear `.next/server/route-cache`. A stale copy of `/` from an
+earlier build refers to CSS that no longer exists, which shows as 404s in a browser. Delete that
+folder between local builds. A fresh build, as on CI, does not have it. Whether Netlify carries it
+across deploys was not checked, so look at the homepage's styling after the release.
+
 ## After the release
 
 Run this first. It should exit 0:
@@ -116,12 +138,12 @@ Button names can change. These are correct as far as is known, but were not clic
 ### Submit the sitemap
 
 1. Sitemaps → enter `sitemap.xml` → Submit.
-2. Expect status **Success** and **7** discovered pages. It may start as "Couldn't fetch" and clear
+2. Expect status **Success** and **13** discovered pages. It may start as "Couldn't fetch" and clear
    on a later attempt.
 
 ### Inspect and request indexing
 
-Paste each URL into the top search bar: `https://untiered.tech/`, then `/pricing`, then `/about`.
+Paste each URL into the top search bar: `https://untiered.tech/`, then `/courses`, then `/pricing`.
 Then click **Test Live URL**, and if it says the URL is available to Google, **Request Indexing**.
 
 There is a daily limit, and these requests do not guarantee indexing. Do not repeat them daily.
@@ -148,9 +170,10 @@ How to read the most likely Pages reasons:
   domain. Time and real inbound links help; resubmitting does not.
 - **Crawled, currently not indexed:** Google read it and chose not to index it. Points at content
   value, which makes the course decision matter more.
-- **Page with redirect:** expected for `/courses` and other gated URLs.
+- **Page with redirect:** expected for chapters and other gated URLs. Not expected for `/courses`
+  or a course overview.
 - **Excluded by 'noindex' tag:** expected for `/login`, `/upgrade`, `/daily-challenge`. Not expected
-  for any of the 7 sitemap URLs.
+  for any of the 13 sitemap URLs.
 - **Blocked by robots.txt:** expected only for `/api/` and `/auth/`.
 
 ### Monitor

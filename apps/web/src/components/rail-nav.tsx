@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { featureEnabled } from "@/lib/flags";
-import { NAV_LINKS } from "@/lib/nav-links";
+import { NAV_LINKS, PUBLIC_NAV_LINKS } from "@/lib/nav-links";
 
 /**
  * The signed-in product navigation, with the page you are on marked.
@@ -16,12 +16,13 @@ import { NAV_LINKS } from "@/lib/nav-links";
  * shapes to work elsewhere (badges, tags), so a pill here reads as the same visual
  * language rather than as one rounded solid on an otherwise square screen.
  */
-export function RailNav() {
+export function RailNav({ signedOut = false }: { signedOut?: boolean }) {
   const pathname = usePathname();
+  const links = signedOut ? PUBLIC_NAV_LINKS : NAV_LINKS;
 
   return (
-    <ul className="flex min-w-max items-stretch gap-1" aria-label="Workspace">
-      {NAV_LINKS.filter((link) => !("feature" in link) || featureEnabled(link.feature)).map((link) => {
+    <ul className="flex min-w-max items-stretch gap-1" aria-label={signedOut ? "Site" : "Workspace"}>
+      {links.filter((link) => !("feature" in link) || featureEnabled(link.feature)).map((link) => {
         const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
         return (
           <li key={link.href}>

@@ -14,10 +14,11 @@ yet in search.
 The reason is not established. The two strongest pieces of context are:
 
 1. **The domain is 16 days old.** RDAP records its registration on 14 October 2026.
-2. **Only 7 URLs are indexable, and most of those are legal or support pages.** Every course
-   and chapter (201 chapters, about 52 hours of original material) redirects to `/login`, by
-   the owner's decision of 21 September 2026. The homepage's course links all end at the
-   sign-in page.
+2. **Only 7 URLs were indexable, and most of those are legal or support pages.** Every course
+   and chapter (201 chapters, about 52 hours of original material) redirected to `/login`, by
+   the owner's decision of 21 September 2026. The homepage's course links all ended at the
+   sign-in page. The owner has since opened the catalogue and overviews (30 October 2026),
+   which makes 13 indexable URLs once released. Chapters stay behind sign-in.
 
 URL Inspection in Search Console is what can settle it. See
 [SEO_VERIFICATION.md](SEO_VERIFICATION.md) for the exact evidence to collect.
@@ -48,7 +49,7 @@ URL Inspection in Search Console is what can settle it. See
 | `/` | No structured data | `grep -c ld+json` = 0 | No site-name or logo signal | Medium | Organization and WebSite JSON-LD | Verified; fixed in code |
 | `/login`, `/login?next=…` | 200 and indexable | `check-seo.mjs` | The sign-in page could rank, and every gated link leads to it | High | `noindex, follow` | Verified; fixed in code |
 | `/upgrade`, `/daily-challenge`, `/auth/update-password` | 200 and indexable | Same | Thin app pages eligible for the index | Medium | `noindex, follow` | Verified; fixed in code |
-| `/courses`, `/courses/*`, `/arena`, `/interview/*` and similar | 307 → `/login?next=…` | `curl` | Correct for private pages. For courses it removes all substantive content from search | **High, decision needed** | None. See "Decision for the owner" | Verified; deliberately unchanged |
+| `/courses`, `/courses/*`, `/arena`, `/interview/*` and similar | 307 → `/login?next=…` | `curl` | Correct for private pages. For courses it removed all substantive content from search | **High** | Catalogue and overviews opened; chapters, Arena and interviews unchanged. See "Owner's decision" | Verified; fixed in code |
 | Gated page titles | "Courses — Untiered · Untiered" | Source: title plus layout template | Doubled brand in tabs | Low | Removed from 5 pages | Verified from source; fixed |
 | Public pages | 200, no noindex, no X-Robots-Tag | Per-route probe | **No accidental noindex on public pages** | n/a | None needed | Verified healthy |
 | `www`, `http` | 301 to `https://untiered.tech/`; `http://www` takes two hops | `curl` | Fine. Host is consistent | Low | Netlify setting, not worth changing | Verified healthy |
@@ -71,8 +72,9 @@ URL Inspection in Search Console is what can settle it. See
 ## Private content
 
 Verified on the production build with no session: `/dashboard`, `/profile`, `/history`,
-`/rounds`, `/report/*`, `/interview/*`, `/questions`, `/courses` and `/arena` all redirect to
-`/login`. None is in the sitemap, and the route guard was not changed.
+`/rounds`, `/report/*`, `/interview/*`, `/questions`, `/arena` and all 201 chapter URLs redirect to
+`/login`, and none is in the sitemap. The public course pages send chapter titles only, no chapter
+content and no Arena answers; `check-seo.mjs` checks this on every run.
 
 The guard itself is a redirect, not the security boundary. The API authorises every call
 (per the comment in `session.ts`). This audit did not test the API's authorisation.
@@ -114,7 +116,6 @@ doubled titles, header pricing link, automated checks.
 **Unresolved:**
 
 - Actual index status and the reason for it: needs Search Console.
-- Whether courses should be public: needs the owner.
 - Going live: production appears to build from `main`, which only the owner advances.
 - **`/daily-challenge` is not behind sign-in**, though `CLAUDE.md` says the Arena is. It shows
   daily Arena questions to anyone. It is now noindex, but the guard was not changed because that
@@ -124,18 +125,21 @@ doubled titles, header pricing link, automated checks.
   firewall or this network, or the API may be down. It is not an SEO issue, but if it is down,
   signed-in features and conversions are affected. Check it from your side.
 
-## Decision for the owner
+## Owner's decision (30 October 2026)
 
-**Should some course content be public?** `CLAUDE.md` records that the sign-in gate trades away
-organic search on course content, and that public access is not restored without the owner. This
-audit did not change it.
+**The catalogue and the five course overviews are public; chapters stay behind sign-in.** This
+replaces the 21 September decision for those six pages and is recorded in `CLAUDE.md`.
 
-| Option | Indexable pages gained | Trade-off |
+| Option considered | Indexable pages gained | Trade-off |
 |---|---|---|
 | A. Keep the gate | 0 | 7 pages compete for search. Growth depends on other channels |
-| B. Public catalogue and course overviews; chapters gated | 6 | Shows syllabus and depth, keeps the sign-up moment at reading. **Recommended first step** |
+| **B. Public catalogue and course overviews; chapters gated (chosen)** | 6 | Shows syllabus and depth, keeps the sign-up moment at reading |
 | C. B, plus the first chapters of each course | About 6 + 5–15 | Real teaching content can rank; visitors sample before signing up |
 | D. All chapters public | About 200 | Largest search surface; gives up the gate |
 
-Do not serve crawlers content that signed-out visitors cannot see. That is cloaking and a
-Google spam-policy risk. Whichever option you pick, crawler and visitor must get the same page.
+What to watch: overview pages are a syllabus plus a short description, so Google may treat them as
+thin ("Crawled, currently not indexed"). If so, option C or fuller overview text is the next step.
+The effect on sign-ups is not measured, because the site has no analytics to measure it with.
+
+Crawlers must never be served content that signed-out visitors cannot see. That is cloaking and a
+Google spam-policy risk. The pages opened here serve everyone the same HTML.

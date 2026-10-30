@@ -1,9 +1,11 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppChrome, isShellPath } from "./app-chrome";
 
 const route = vi.hoisted(() => ({ pathname: "/dashboard" }));
+const session = vi.hoisted(() => ({ token: "a-token" as string | null | undefined }));
+vi.mock("@/lib/use-access-token", () => ({ useAccessToken: () => session.token }));
 vi.mock("next/navigation", () => ({ usePathname: () => route.pathname }));
 vi.mock("@/components/account-summary", () => ({ AccountSummary: () => <span>Account</span> }));
 vi.mock("@/components/credit-balance", () => ({ CreditBalance: () => <span>Credits</span> }));
@@ -23,6 +25,43 @@ describe("isShellPath", () => {
 });
 
 describe("AppChrome", () => {
+  beforeEach(() => {
+    session.token = "a-token";
+  });
+
+  it("gives a signed-out visitor a way home, somewhere to go, and a way back after signing in", () => {
+    session.token = null;
+    route.pathname = "/courses/java";
+    render(<AppChrome><p>Overview</p></AppChrome>);
+
+    expect(screen.getByRole("link", { name: "Untiered home" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Courses" })).toHaveAttribute("href", "/courses");
+    expect(screen.getByRole("link", { name: "Pricing" })).toHaveAttribute("href", "/pricing");
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?next=%2Fcourses%2Fjava");
+    expect(screen.queryByRole("link", { name: "Dashboard" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Account")).not.toBeInTheDocument();
+    expect(screen.queryByText("Credits")).not.toBeInTheDocument();
+  });
+
+  it("keeps the signed-in bar for a signed-in candidate", () => {
+    route.pathname = "/courses/java";
+    render(<AppChrome><p>Overview</p></AppChrome>);
+
+    expect(screen.getByRole("link", { name: "Untiered dashboard" })).toHaveAttribute("href", "/dashboard");
+    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByText("Account")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+  });
+
+  it("does not flash the signed-out bar while the session is still unknown", () => {
+    session.token = undefined;
+    route.pathname = "/courses/java";
+    render(<AppChrome><p>Overview</p></AppChrome>);
+
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+  });
+
   it("keeps the same bar mounted when the page underneath changes", () => {
     route.pathname = "/dashboard";
     const view = render(<AppChrome><p>Dashboard body</p></AppChrome>);

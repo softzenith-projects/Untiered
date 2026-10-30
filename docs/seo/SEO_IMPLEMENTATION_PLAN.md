@@ -30,7 +30,7 @@ Merged into `develop`, not yet in `main`. Each is checked by `apps/web/src/lib/s
 | Open a PR from `develop` to `main` and merge it | CI green on `develop` | The PR also carries everything else on `develop`, including the JavaScript course. Review it as a release |
 | Confirm which branch Netlify builds for production | Netlify access | Written down; `deploy/README.md` still describes Vercel |
 | Run `node apps/web/scripts/check-seo.mjs https://untiered.tech` after deploy | Release | Exits 0 |
-| Verify the domain in Search Console and submit the sitemap | Release | Sitemap status "Success", 7 URLs discovered |
+| Verify the domain in Search Console and submit the sitemap | Release | Sitemap status "Success", 13 URLs discovered |
 | Inspect the homepage and request indexing | Above | Live test shows "URL is available to Google" |
 | Set up Bing Webmaster Tools | Search Console | Sitemap accepted |
 
@@ -38,26 +38,27 @@ Exact steps are in [SEO_VERIFICATION.md](SEO_VERIFICATION.md).
 
 ## P1: decide, then build
 
-### Decide whether courses are public (owner)
+### Public catalogue and course overviews (decided by the owner, built in a PR)
 
-The largest remaining lever and the only one that adds substantial content to search. Options and
-a recommendation are in the audit. **Risk:** the gate is a deliberate product decision about
-conversion, and this plan has no data on what opening it would cost in sign-ups.
-
-If option B or C is chosen, the work is:
+Goes through a **PR, not a merge**, per `CLAUDE.md`, because it changes the route guard.
 
 | Task | Code location | Acceptance criteria |
 |---|---|---|
-| Remove `/courses` and chosen paths from the guard | `PROTECTED_PREFIXES` in `src/lib/supabase/session.ts`, `session.test.ts` | Change goes through a **PR, not a merge**, per `CLAUDE.md` (touches auth). Signed-out visitors get the same page as crawlers |
-| Add the routes to `INDEXABLE_ROUTES`, generated from `courses` | `src/lib/seo.ts`, `src/app/sitemap.ts` | Respects `courseEnabled`; a disabled course is not listed |
-| Canonical, title and description on course pages | `courses/[course]/page.tsx`, `courses/page.tsx` | Descriptions come from course content, as `tagline` already does |
-| Check that course pages render signed out | `courses/[course]/page.tsx`, reader components | Progress and sign-in prompts degrade cleanly; content is in the initial HTML |
-| BreadcrumbList on course and chapter pages | Same | Matches visible navigation |
-| `Course` structured data only if eligible | Same | Validate against Google's current requirements first. No invented ratings or provider claims |
+| Open `/courses` and `/courses/<course>` only | `isPublicCoursePage` in `src/lib/supabase/session.ts` | Anything deeper stays protected; signed-in sessions keep refreshing |
+| List them in the sitemap | `src/app/sitemap.ts` | Respects `courseEnabled`; a disabled course is not listed |
+| Title, description, canonical | `courses/page.tsx`, `courses/[course]/page.tsx`, `seoTitle` and `seoDescription` on `Course` | Unique; chapter count computed |
+| No gated content on public pages | `courses/page.tsx` (daily banner only when signed in) | `check-seo.mjs`: no chapter blocks, no `correctIndex` |
+| Header works with no session | `app-chrome.tsx`, `rail-nav.tsx` | Logo goes home; Courses, Pricing, Sign in with a return path |
+| No prefetching of chapters signed out | `ChapterLink` in `course-progress.tsx` | Browser check: no chapter requests |
+| `Course` structured data | `courseJsonLd` in `src/lib/seo.ts` | Name and description appear on the page; no ratings or offers |
 
-**Dependencies:** owner decision. **Risks:** duplicate or thin overview pages if the syllabus is
-all they contain, so each needs real outcome text; a chapter's interactive pieces may need work
-to render signed out.
+Not added: **BreadcrumbList**, because page-level breadcrumbs are intentionally hidden in the UI
+and the markup should match visible navigation.
+
+### After release, if overviews are not indexed
+
+If Search Console reports them as "Crawled, currently not indexed", add real outcome text to each
+overview, or open the first chapters of each course (option C in the audit; owner's decision).
 
 ### Measure sign-ups from organic search (owner, then code)
 

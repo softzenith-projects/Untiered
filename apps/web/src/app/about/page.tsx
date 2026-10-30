@@ -27,8 +27,9 @@ export default function AboutPage() {
           <Link href="/" className="font-medium text-accent hover:underline">See how it works</Link>.
         </p>
         <p>
-          Interviews run in English or in Hindi-English. Alongside them there are self-paced
-          courses and practice questions.
+          Interviews run in English or in Hindi-English. Alongside them there are self-paced{" "}
+          <Link href={"/courses" as Route} className="font-medium text-accent hover:underline">courses</Link>{" "}
+          and practice questions.
         </p>
       </LegalSection>
 

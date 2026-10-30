@@ -13,7 +13,7 @@ const PRODUCTION = "https://untiered.tech";
 /** Next writes the homepage as "https://untiered.tech" and a sitemap as ".../"; they are one URL. */
 const sameUrl = (a, b) => Boolean(a) && Boolean(b) && new URL(a).href === new URL(b).href;
 
-const SIGNED_IN_ROUTES = ["/dashboard", "/profile", "/history", "/rounds", "/report/example", "/interview/new", "/questions", "/courses", "/courses/java", "/arena"];
+const SIGNED_IN_ROUTES = ["/dashboard", "/profile", "/history", "/rounds", "/report/example", "/interview/new", "/questions", "/arena", "/courses/java/example-chapter"];
 const NOINDEX_ROUTES = ["/login", "/login?next=%2Fcourses", "/upgrade", "/daily-challenge", "/auth/update-password", "/unsubscribe"];
 
 let failures = 0;
@@ -113,6 +113,21 @@ async function checkPublicPage(url, seen, links) {
   return html;
 }
 
+/** A public course page may show titles, never the lessons or the Arena's answers. */
+function checkNoGatedContent(path, html) {
+  check(!/\\?"kind\\?":\\?"(quiz|playground|remember|pitfall|interview)/.test(html), `${path} sends no chapter content`);
+  check(!/correctIndex/.test(html), `${path} sends no Arena answers`);
+}
+
+async function checkCourseStructuredData(path, html) {
+  const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((match) => JSON.parse(match[1]));
+  check(blocks.length === 1 && blocks[0]["@type"] === "Course", `${path} declares a Course`, `${blocks.length} blocks`);
+  if (blocks.length !== 1) return;
+  const decode = (text) => text.replaceAll("&amp;", "&").replaceAll("&#x27;", "'").replaceAll("&quot;", '"');
+  const text = decode(textOf(html));
+  check(text.includes(blocks[0].name) && text.includes(blocks[0].description), `${path} Course name and description appear on the page`);
+}
+
 async function checkStructuredData(html) {
   const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((match) => match[1]);
   check(blocks.length === 1, "the homepage has one JSON-LD block", `found ${blocks.length}`);
@@ -150,6 +165,12 @@ async function checkErrors() {
   check(missing.status === 404, "an unknown route returns 404, not a soft 404", `got ${missing.status}`);
   check(isNoindex(missing, html), "the 404 page is noindex");
 
+  const noCourse = await get("/courses/no-such-course");
+  check(noCourse.status === 404, "an unknown course returns 404", `got ${noCourse.status}`);
+
+  const encoded = await get("/courses/java%2Fexample-chapter");
+  check(encoded.status === 404, "an encoded slash cannot reach a chapter through the public route", `got ${encoded.status}`);
+
   const slash = await get("/pricing/");
   check(slash.status === 308 && new URL(slash.headers.get("location") ?? "/", base).pathname === "/pricing", "a trailing slash redirects once to the canonical URL", `${slash.status} ${slash.headers.get("location") ?? ""}`);
 
@@ -157,9 +178,18 @@ async function checkErrors() {
   check(canonicalsOf(await query.text())[0] === `${PRODUCTION}/pricing`, "a query-string URL canonicalises to the clean URL");
 }
 
-/** Every same-site link on a public page must end somewhere real, after any sign-in redirect. */
+/**
+ * Every same-site link on a public page must end somewhere real, after any sign-in redirect,
+ * and every link to a chapter must stop at sign-in rather than serve the chapter.
+ */
 async function checkInternalLinks(links) {
   for (const link of [...links].sort()) {
+    if (/^\/courses\/[^/?]+\/[^/?]+/.test(link)) {
+      const response = await get(link);
+      const location = response.headers.get("location") ?? "";
+      check(response.status === 307 && new URL(location, base).pathname === "/login", `chapter stays behind sign-in: ${link}`, `${response.status} ${location}`);
+      continue;
+    }
     const response = await fetch(`${base}${link}`, { redirect: "follow", headers: { "User-Agent": "untiered-seo-check" } });
     check(response.status === 200, `link resolves: ${link}`, `got ${response.status}`);
   }
@@ -173,7 +203,10 @@ const seen = { titles: new Set(), descriptions: new Set() };
 const links = new Set();
 for (const url of urls) {
   const html = await checkPublicPage(url, seen, links);
-  if (new URL(url).pathname === "/") await checkStructuredData(html);
+  const pagePath = new URL(url).pathname;
+  if (pagePath === "/") await checkStructuredData(html);
+  if (pagePath.startsWith("/courses")) checkNoGatedContent(pagePath, html);
+  if (/^\/courses\/[^/]+$/.test(pagePath)) await checkCourseStructuredData(pagePath, html);
 }
 await checkSignedInRoutes();
 await checkNoindexRoutes();

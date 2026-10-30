@@ -29,8 +29,9 @@ export default function PricingPage() {
     >
       <LegalSection id="free" title="Free">
         <p>
-          Every account gets {FREE_ROUNDS_LIFETIME_TEXT}, each with the complete report, plus the
-          courses and Arena practice. No card or payment details are needed to start.{" "}
+          Every account gets {FREE_ROUNDS_LIFETIME_TEXT}, each with the complete report, plus the{" "}
+          <Link href={"/courses" as Route} className="font-medium text-accent hover:underline">courses</Link>{" "}
+          and Arena practice. No card or payment details are needed to start.{" "}
           <Link href="/" className="font-medium text-accent hover:underline">See how a mock interview works</Link>.
         </p>
       </LegalSection>

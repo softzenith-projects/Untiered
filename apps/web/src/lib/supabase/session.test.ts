@@ -55,9 +55,8 @@ describe("updateSession", () => {
   });
 
   it.each([
-    "/courses",
-    "/courses/java",
     "/courses/dsa/11-backtracking",
+    "/courses/java/variables/extra",
     "/arena",
     "/arena/dsa",
     "/interview/new",
@@ -85,6 +84,34 @@ describe("updateSession", () => {
       expect((await updateSession(requestFor(path))).headers.get("location")).toBeNull();
     },
   );
+
+  it.each(["/courses", "/courses/java", "/courses/no-such-course"])(
+    "lets a signed-out visitor see %s, which the page itself may then 404",
+    async (path) => {
+      signedOut();
+
+      const response = await updateSession(requestFor(path));
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+    },
+  );
+
+  it("keeps refreshing a signed-in learner's session on public course pages", async () => {
+    signedIn();
+
+    await updateSession(requestFor("/courses/java"));
+
+    expect(getClaims).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not open a chapter when the path is spelled to look like an overview", async () => {
+    signedOut();
+
+    const response = await updateSession(requestFor("/courses/java//variables"));
+
+    expect(response.status).toBe(307);
+  });
 
   it("does not treat a look-alike path as protected", async () => {
     signedOut();

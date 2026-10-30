@@ -19,6 +19,8 @@ import type { Course } from "@/content/courses/types";
 export const javascriptCourse: Course = {
   slug: "javascript",
   title: "JavaScript, React and Node",
+  seoTitle: "JavaScript, React and Node for Interviews",
+  seoDescription: "How JavaScript really runs, then React, Node.js and Next.js, to the depth interviews ask, with runnable examples.",
   tagline: "How JavaScript really runs, then React, Node.js and Next.js — to the depth interviews ask.",
   level: "Beginner to interview-ready — no prior JavaScript assumed",
   codeLanguage: "javascript",

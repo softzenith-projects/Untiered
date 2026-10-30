@@ -248,6 +248,10 @@ export interface Course {
   title: string;
   tagline: string;
   level: string;
+  /** The page title in search results. The site name is added by the layout's template. */
+  seoTitle: string;
+  /** The search snippet. The chapter count is added when it is used, so it cannot drift. */
+  seoDescription: string;
   /**
    * The language every `code` block in this course is written in — what the syntax
    * highlighter is told, and what the Arena labels a `predict-output` challenge with

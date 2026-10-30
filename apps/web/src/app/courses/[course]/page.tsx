@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
-import { ChapterDoneMark, CourseHeroProgress, ModuleProgress } from "@/components/courses/course-progress";
+import { ChapterDoneMark, ChapterLink, CourseHeroProgress, ModuleProgress } from "@/components/courses/course-progress";
 import { CourseMotif, getCoursePresentation } from "@/components/courses/course-visuals";
 import { courses, getCourse, totalChapters, totalMinutes } from "@/content/courses";
 import { InlineText } from "@/components/courses/inline-text";
 import { courseEnabled, featureEnabled } from "@/lib/flags";
 import { requireCourse } from "@/lib/require-feature";
+import { courseJsonLd, publicPageMetadata, serializeJsonLd } from "@/lib/seo";
 
 export function generateStaticParams() {
   if (!featureEnabled("courses")) return [];
@@ -24,10 +24,11 @@ export async function generateMetadata({
   if (!featureEnabled("courses") || !courseEnabled(slug)) return {};
   const course = getCourse(slug);
   if (!course) return {};
-  return {
-    title: course.title,
-    description: course.tagline,
-  };
+  return publicPageMetadata({
+    title: course.seoTitle,
+    description: `${course.seoDescription} ${totalChapters(course)} chapters.`,
+    path: `/courses/${course.slug}`,
+  });
 }
 
 /** A course's home page: hero band, module-by-module chapter list, start CTA. */
@@ -40,6 +41,7 @@ export default async function CoursePage({ params }: { params: Promise<{ course:
 
   return (
     <AppShell breadcrumb={course.title.toLowerCase()} parent={{ label: "courses", href: "/courses" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(courseJsonLd(course)) }} />
       <section className="relative overflow-hidden rounded-3xl border border-accent/20 bg-surface-raised p-7 shadow-[var(--shadow-md)] md:p-10">
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-accent via-positive to-warning" />
         <div className="course-hero-grid">
@@ -109,7 +111,7 @@ export default async function CoursePage({ params }: { params: Promise<{ course:
                 <ol className="mt-5 grid gap-1 border-t border-line pt-3 lg:grid-cols-2 lg:gap-x-8">
                   {module.chapters.map((chapter, ci) => (
                     <li key={chapter.slug}>
-                      <Link
+                      <ChapterLink
                         href={`/courses/${course.slug}/${chapter.slug}`}
                         className="flex items-center justify-between gap-4 rounded-xl px-2 py-3 transition-colors hover:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                       >
@@ -119,7 +121,7 @@ export default async function CoursePage({ params }: { params: Promise<{ course:
                           <span className="truncate text-caption text-ink"><InlineText text={chapter.title} /></span>
                         </span>
                         <span className="shrink-0 font-mono text-micro text-ink-subtle">{chapter.minutes} min</span>
-                      </Link>
+                      </ChapterLink>
                     </li>
                   ))}
                 </ol>
