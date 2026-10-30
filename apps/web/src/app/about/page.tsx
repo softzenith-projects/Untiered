@@ -3,11 +3,13 @@ import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
 import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_LIFETIME_TEXT, LEGAL } from "@/lib/legal";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "About us",
-  description: `${LEGAL.productName} is a voice-first mock interview platform operated by ${LEGAL.operatorName}.`,
-};
+  description: `${LEGAL.productName} is a voice-first mock interview platform operated by ${LEGAL.operatorName}. Speak your answers, handle follow-ups, and get a report on what you said.`,
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (
@@ -21,7 +23,8 @@ export default function AboutPage() {
         <p>
           Before each practice interview you choose the company and the role you are preparing
           for. The interview adapts to your answers, the way a real interviewer would, and
-          afterwards you get a report that points to what you actually said.
+          afterwards you get a report that points to what you actually said.{" "}
+          <Link href="/" className="font-medium text-accent hover:underline">See how it works</Link>.
         </p>
         <p>
           Interviews run in English or in Hindi-English. Alongside them there are self-paced

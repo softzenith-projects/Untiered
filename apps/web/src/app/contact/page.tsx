@@ -3,11 +3,13 @@ import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
 import { LEGAL } from "@/lib/legal";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Contact",
-  description: `How to reach the ${LEGAL.productName} team.`,
-};
+  description: `Get help with your ${LEGAL.productName} account, a mock interview, or a privacy request. Write to ${LEGAL.contactEmail}.`,
+  path: "/contact",
+});
 
 export default function ContactPage() {
   return (

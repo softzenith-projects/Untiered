@@ -3,11 +3,13 @@ import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
 import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_LIFETIME_TEXT, LEGAL } from "@/lib/legal";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Privacy policy",
-  description: `How ${LEGAL.productName} collects, uses, stores and deletes your data.`,
-};
+  description: `How ${LEGAL.productName} collects, uses, stores and deletes your data, and how to exercise your rights over it.`,
+  path: "/privacy",
+});
 
 /**
  * Written from what the code does, not from a template: every retention period, provider

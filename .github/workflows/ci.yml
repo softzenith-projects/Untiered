@@ -42,6 +42,12 @@ jobs:
       # Node 24 / Windows locally; the glob form worked everywhere tried).
       - run: node --test scripts/*.test.mjs
       - run: npm run build
+      # What a crawler actually receives from the build: robots, sitemap, canonicals, noindex
+      # and redirects. None of it reaches Supabase, because a crawler sends no session.
+      - name: SEO checks against the production build
+        run: |
+          npm run start --workspace @untiered/web -- -p 3100 &
+          node apps/web/scripts/check-seo.mjs http://localhost:3100
 
   api:
     name: api (ktlint, test, build)

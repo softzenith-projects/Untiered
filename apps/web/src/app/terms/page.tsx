@@ -4,11 +4,13 @@ import Link from "next/link";
 import { LegalPage, LegalSection } from "@/components/legal-page";
 import { RefundTerms } from "@/components/refund-terms";
 import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_LIFETIME_TEXT, LEGAL } from "@/lib/legal";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Terms of use",
-  description: `The terms for using ${LEGAL.productName}.`,
-};
+  description: `The terms for using ${LEGAL.productName}: your account, free practice and paid interviews, fair use, your content, and liability.`,
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

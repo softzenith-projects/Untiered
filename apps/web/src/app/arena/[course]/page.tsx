@@ -17,7 +17,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ course: string }> }): Promise<Metadata> {
   const { course: slug } = await params;
   const course = getCourse(slug);
-  return course ? { title: `${course.title} — Arena — Untiered`, description: `Scenario practice for ${course.title}.` } : {};
+  return course ? { title: `${course.title} — Arena`, description: `Scenario practice for ${course.title}.` } : {};
 }
 
 export default async function ArenaCoursePage({ params }: { params: Promise<{ course: string }> }) {

@@ -17,13 +17,15 @@ import { SiteFooter } from "@/components/site-footer";
 import { fetchUsage } from "@/lib/api";
 import { courseEnabled, featureEnabled } from "@/lib/flags";
 import { FREE_ROUNDS_LIFETIME_TEXT } from "@/lib/legal";
+import { homepageJsonLd, publicPageMetadata, serializeJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Untiered — talent has no tiers",
+export const metadata: Metadata = publicPageMetadata({
+  title: "AI Mock Interviews for Software and IT Roles · Untiered",
   description:
-    "Spoken mock interviews for the loops people actually sit: service-based IT, Big Four, " +
-    "European competency rounds, global product. Every score in the report quotes what you said.",
-};
+    "Spoken AI mock interviews for the loops people actually sit: service-based IT, Big Four, " +
+    `European competency rounds, global product. Every score quotes what you said. ${FREE_ROUNDS_LIFETIME_TEXT}.`,
+  path: "/",
+});
 
 /**
  * The public landing page.
@@ -50,6 +52,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-dvh bg-surface">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(homepageJsonLd()) }} />
       <SiteHeader mockInterviewsEnabled={mockInterviewsEnabled} coursesEnabled={coursesEnabled} />
       <main>
         <Hero
@@ -86,6 +89,7 @@ function SiteHeader({ mockInterviewsEnabled, coursesEnabled }: { mockInterviewsE
           {coursesEnabled ? (
             <Link href={"/courses" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">Courses</Link>
           ) : null}
+          <Link href={"/pricing" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">Pricing</Link>
         </nav>
         <HeaderActions
           cta={{
