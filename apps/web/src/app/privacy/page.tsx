@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalPage, LegalSection } from "@/components/legal-page";
+import { AnalyticsChoice } from "@/components/site-analytics";
 import { CONTACT_EMAIL_DISPLAY, FREE_ROUNDS_LIFETIME_TEXT, LEGAL } from "@/lib/legal";
 import { publicPageMetadata } from "@/lib/seo";
 
@@ -66,6 +67,11 @@ export default function PrivacyPage() {
             identified by your account number rather than your name or email, so we can fix things
             that break.
           </li>
+          <li>
+            <strong className="text-ink">Visits, if you allow it:</strong> which public pages you
+            view, how you reached them, and your approximate location, device and browser, through
+            Google Analytics. This is not linked to your account, name or email.
+          </li>
         </ul>
         <p>
           <strong className="text-ink">Your camera is never recorded.</strong> If you turn it on
@@ -86,6 +92,7 @@ export default function PrivacyPage() {
             you buy and use.
           </li>
           <li>To keep the service secure and working, and to fix errors.</li>
+          <li>If you allow it, to count visits to our public pages and see which ones people use.</li>
         </ul>
         <p>
           We do not sell your data, show you advertising, or use your answers, resume or reports
@@ -122,6 +129,11 @@ export default function PrivacyPage() {
             <strong className="text-ink">Razorpay</strong> processes payments if you buy paid
             interviews. You enter your payment details with Razorpay, and it receives your email
             address to send you a receipt.
+          </li>
+          <li>
+            <strong className="text-ink">Google Analytics</strong> counts visits to our public pages
+            if you allow it. It stays off on your interviews, reports, dashboard and course
+            chapters, and it receives no recordings, resume, name or email.
           </li>
         </ul>
         <p>
@@ -182,9 +194,12 @@ export default function PrivacyPage() {
 
       <LegalSection id="cookies" title="Cookies">
         <p>
-          We use only the cookies needed to keep you signed in. There are no advertising or
-          third-party tracking cookies.
+          We always use the cookies needed to keep you signed in. If you allow it, Google Analytics
+          also sets its own cookies (named <code>_ga</code>), which can last up to two years. We ask
+          first, and nothing from Google Analytics loads unless you say yes. There are no advertising
+          cookies. Your answer is saved in this browser, and you can change it here at any time.
         </p>
+        <AnalyticsChoice />
       </LegalSection>
 
       <LegalSection id="security" title="Security">
