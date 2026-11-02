@@ -216,6 +216,10 @@ Resumes, interview audio, and transcripts are personal data. Treat them accordin
 - Every user-data table needs a clear owner column and row-level security.
 - Account deletion must actually delete, including storage objects. The one exception is
   payment records, kept detached for tax and refunds (owner, 29 October 2026).
+- **Google Analytics is opt-in and public-pages-only** (`lib/analytics.ts`, owner's go-ahead
+  2 November 2026). The allowlist of tracked pages is deliberate: no interview room, report,
+  dashboard or chapter, and no user id. The privacy policy states all of this, so it changes
+  in the same commit as any widening.
 - Community-contributed interview reports are anonymised before they enter the
   shared corpus — never store them in a form that can be traced to a user.
 - **Do not write scrapers.** Bulk scraping of LeetCode, Blind, Reddit, Glassdoor,

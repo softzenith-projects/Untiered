@@ -1,59 +1,44 @@
-# Handoff — 30 October 2026
+# Handoff — 2 November 2026
 
 ## Task
-Make the course catalogue and the five course overviews public and indexable, with chapters still
-behind sign-in. Owner's decision in this session, following the SEO audit in `docs/seo/` (PRD §11).
+Deploy the website from GitHub Actions, because Netlify's free plan stopped building this private
+organisation repository ("organization-owned private repository detected"). Owner's request in this
+session.
 
 ## What I built
-- **The guard:** `isPublicCoursePage` in `apps/web/src/lib/supabase/session.ts` opens `/courses` and
-  `/courses/<course>` only. Anything deeper stays protected. Signed-in sessions keep refreshing on them.
-- **Search:** the 6 pages are in `app/sitemap.ts` (a switched-off course is left out), with their
-  own title, description and canonical. `seoTitle` and `seoDescription` are new required fields on
-  `Course`. Overviews have `Course` structured data with no ratings or offers.
-- **No gated content on public pages:** the daily Arena banner, whose props include the answer, now
-  renders only when signed in (`app/courses/page.tsx`, tested in `page.test.tsx`).
-- **The header with no session** (`app-chrome.tsx`, `rail-nav.tsx`, `lib/nav-links.ts`): the logo goes
-  home, the nav is Courses and Pricing, and Sign in returns to the current page. This also improves
-  `/upgrade` and `/daily-challenge`, which showed the signed-in bar to visitors.
-- **Chapter links** (`ChapterLink` in `course-progress.tsx`) do not prefetch while signed out, and the
-  overview says "Free. Sign in or create an account to open the chapters."
-- `apps/web/scripts/check-seo.mjs` now fails if a public course page sends chapter content or Arena
-  answers, or if any chapter link serves anything but a redirect to sign-in.
-- `CLAUDE.md` and `AGENTS.md` record the new decision. `docs/seo/` is updated.
+- A `deploy-web` job in `.github/workflows/ci.yml`. It runs `netlify-cli@27.16.1 deploy --prod
+  --filter @untiered/web` after `web`, `api`, `database` and `images` are all green, on a push to the
+  branch named in the `NETLIFY_PRODUCTION_BRANCH` repository variable. With the variable unset it is
+  skipped, so merging this changes nothing until you configure it.
+- It is a job in CI rather than its own workflow because `workflow_run` and `workflow_dispatch` only
+  work from the default branch (`main`). The job deploys from whichever branch you name.
+- `deploy/README.md` has a "Web on Netlify" section with the setup steps.
 
 ## Assumptions I made
-- "Catalogue and overviews" means exactly those six URLs. The Arena, interviews and chapters are
-  unchanged.
-- `/daily-challenge` stays as it is, because you did not answer that question. It is public, noindex,
-  and still sends the day's question and answer.
-- No BreadcrumbList: page breadcrumbs are hidden in the UI, and the markup should match what is visible.
+- Which branch Netlify treated as production is not recorded. The runbook says releases come from a
+  green `develop`, and `CLAUDE.md` says `main` is release-only. So the branch is a variable you set.
+- Build settings and environment variables stay in Netlify's dashboard. The CLI fetches them with the
+  token, so `NEXT_PUBLIC_GA_MEASUREMENT_ID` and the Supabase keys are still set in Netlify.
+- Node 24, as in the CI web job.
 
 ## What I could NOT verify
-- **Signed-in behaviour in a real browser**, because no test account was used. Unit tests cover the
-  banner, header and progress in both states. Please click through once while signed in.
-- **Whether these pages will be indexed.** They are a syllabus plus a short description, and Google
-  may treat them as thin. Search Console will say.
-- **The effect on sign-ups**: the site has no analytics to measure it with.
-- Production: not live until this PR is merged and `main` is advanced.
-- `api.untiered.tech` still timed out from this machine on the last attempt. Please check it.
+- **A real deploy.** There is no Netlify token or site id here. The first run after you add them is
+  the test. Watch the `deploy web (Netlify)` job log.
+- That the free plan accepts CLI deploys from this repository. The block is on Netlify's Git
+  integration, and CLI deploys do not use it, but I have not seen Netlify state this for this case.
+- That the CLI picks up the base directory and build command from the Netlify dashboard in this
+  monorepo. If it does not, the job log will say so, and a `netlify.toml` is the fix.
 
 ## Verification status
-- typecheck, lint, build: pass. Web tests: 4,031 pass, with the exception below.
-- Crawler check on a verified fresh build: 438 of 438. Headless Chrome as a visitor: 21 of 21, and no
-  console or hydration errors on 10 pages. That check caught a hydration bug of mine, now fixed.
-- **Existing flake, not from this change:** `content-integrity.test.ts`, chapter
-  `machine-coding-utilities` in the JavaScript course, failed 2 of 3 local runs (`end d` and `end a`
-  swap). It races real timers under `node`, and this machine was busy. CI has been passing it. I did
-  not weaken it. It should get wider timer gaps in the sample, and may eventually fail a CI run.
-- Local quirk: `next build` does not clear `.next/server/route-cache`, so a stale `/` can refer to CSS
-  that no longer exists. Details in `docs/seo/SEO_VERIFICATION.md`.
+- The workflow parses. CI on this branch: see the run; `deploy-web` is expected to be skipped.
 
 ## Merge status
-- PR into `develop`, not merged, because it changes the route guard (rule 1). No migrations.
-  `main` is not touched. The earlier SEO work is on `develop` at `d6ddcfc`.
+- See the commit and CI run for this branch. Merged into `develop` once CI is green.
 
 ## Suggested next task
-- Widen the timer gaps in the `machine-coding-utilities` sample so its test stops racing.
+- Once the first deploy works, remove the Vercel sections from `deploy/README.md`.
 
 ## Open questions for you
-- `/daily-challenge` is public but `CLAUDE.md` says the Arena is behind sign-in. Intended?
+- Set in GitHub (Settings → Secrets and variables → Actions): secrets `NETLIFY_AUTH_TOKEN` and
+  `NETLIFY_SITE_ID`, and the variable `NETLIFY_PRODUCTION_BRANCH` (`develop` or `main`).
+- In Netlify, stop builds or unlink the repository, so the failing Git builds stop.
