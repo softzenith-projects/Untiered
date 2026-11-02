@@ -35,6 +35,23 @@ ssh ubuntu@<vm-ip> 'docker load -i ~/untiered/untiered-api.tar'
 
 Set `RELEASE_TAG=<sha>` in the VM's `deploy/.env`, then from that directory run `docker compose config -q` and `docker compose up -d`. Check `https://api.untiered.tech/actuator/health/readiness` and `docker compose logs --tail=100 api proxy`. The proxy is the only published service. Observe VM memory and restarts under actual traffic. For rollback, set `RELEASE_TAG` to the previous loaded green image and run `docker compose up -d` again; database migration compatibility must be checked separately.
 
+## Web on Netlify (current)
+
+The site is served by Netlify, not the Vercel plan below. Netlify's free plan refuses to build
+a private repository owned by a GitHub organisation, so the `deploy-web` job in
+`.github/workflows/ci.yml` builds and deploys it with the Netlify CLI after CI is green.
+
+1. In Netlify, create a personal access token (User settings → Applications) and copy the
+   site's Project ID (Project configuration → General).
+2. In GitHub (Settings → Secrets and variables → Actions), add the secrets `NETLIFY_AUTH_TOKEN`
+   and `NETLIFY_SITE_ID`, and the variable `NETLIFY_PRODUCTION_BRANCH` set to the branch that
+   should go live. Until the variable is set, nothing deploys.
+3. In Netlify, under Build & deploy → Continuous deployment, stop builds or unlink the
+   repository, so the failing Git-triggered builds stop.
+
+Environment variables stay in Netlify's dashboard: the CLI fetches the Production values for
+the build. To redeploy without a new commit, re-run the `deploy web (Netlify)` job.
+
 ## 4. Configure Vercel web
 
 Import the GitHub repository as **one Next.js project**, with Root Directory `apps/web`; enable “Include source files outside of the Root Directory” for `packages/shared` and the workspace lockfile. Set the Production branch to **`develop` before the first production deploy**. Set Node.js 22 and use the repository's normal install/build commands unless Vercel's detected workspace build proves inadequate. Add `untiered.tech` as its production domain; follow Vercel's displayed DNS records for the apex. Avoid pointing `api.untiered.tech` to Vercel. [Vercel monorepos](https://vercel.com/docs/monorepos/monorepo-faq), [production branch](https://vercel.com/docs/git#production-branch).

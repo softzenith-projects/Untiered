@@ -144,3 +144,33 @@ jobs:
           done
           docker logs web
           exit 1
+
+  # The website, deployed to Netlify from here because Netlify's free plan will not build a
+  # private repository owned by a GitHub organisation. Only a push to the branch named in the
+  # NETLIFY_PRODUCTION_BRANCH repository variable deploys, and only after every job above is
+  # green; with the variable unset, nothing deploys. The build runs here with the site's
+  # Netlify settings and Production environment variables, which the CLI fetches with the token.
+  deploy-web:
+    name: deploy web (Netlify)
+    needs: [web, api, database, images]
+    if: github.event_name == 'push' && vars.NETLIFY_PRODUCTION_BRANCH != '' && github.ref_name == vars.NETLIFY_PRODUCTION_BRANCH
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-web
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build and deploy to production
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          DEPLOY_MESSAGE: ${{ github.ref_name }} ${{ github.sha }}
+        run: npx --yes netlify-cli@27.16.1 deploy --prod --filter @untiered/web --message "$DEPLOY_MESSAGE"

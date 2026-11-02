@@ -1,56 +1,44 @@
 # Handoff — 2 November 2026
 
 ## Task
-Add Google Analytics to the site, at the owner's request in this session (PRD §11).
+Deploy the website from GitHub Actions, because Netlify's free plan stopped building this private
+organisation repository ("organization-owned private repository detected"). Owner's request in this
+session.
 
 ## What I built
-- **The tag** (`apps/web/src/lib/analytics.ts`, `components/site-analytics.tsx`, mounted in
-  `app/layout.tsx`): GA4 through `next/script`, so no new dependency. With
-  `NEXT_PUBLIC_GA_MEASUREMENT_ID` unset, nothing renders and nothing loads.
-- **Consent banner:** Google's script does not load until the visitor clicks Allow. Allow and Decline
-  have equal weight, and the answer is kept in `localStorage`.
-- **Public pages only:** `/`, `/about`, `/contact`, `/pricing`, `/privacy`, `/terms`, `/refund-policy`,
-  `/login`, `/courses`, `/courses/<course>`. It is an allowlist, so a new page is untracked by default.
-  Elsewhere there is no banner, and Google's `ga-disable` switch is set.
-- **What is sent:** page views without query strings, and no user id. Google signals and ad
-  personalisation are off.
-- **Privacy policy** (`app/privacy/page.tsx`, `lib/legal.ts`): collection, use, processors and cookies
-  now describe GA, and the Cookies section has a control to change the answer, which also deletes the
-  `_ga` cookies. Last-updated date is 2 November 2026.
-- `.env.example`, `apps/web/Dockerfile` and `deploy/README.md` carry the new variable. `CLAUDE.md` and
-  `AGENTS.md` record the rule.
+- A `deploy-web` job in `.github/workflows/ci.yml`. It runs `netlify-cli@27.16.1 deploy --prod
+  --filter @untiered/web` after `web`, `api`, `database` and `images` are all green, on a push to the
+  branch named in the `NETLIFY_PRODUCTION_BRANCH` repository variable. With the variable unset it is
+  skipped, so merging this changes nothing until you configure it.
+- It is a job in CI rather than its own workflow because `workflow_run` and `workflow_dispatch` only
+  work from the default branch (`main`). The job deploys from whichever branch you name.
+- `deploy/README.md` has a "Web on Netlify" section with the setup steps.
 
 ## Assumptions I made
-- **Opt-in for every visitor, worldwide.** You said to get it done without answering the banner
-  question, so I took the stricter option: the site serves people applying to European employers, and
-  it keeps the policy honest. GA will undercount, because people who decline or ignore the banner are
-  not counted. Showing the banner only in some regions, or loading before consent, is your decision.
-- `/upgrade` and `/daily-challenge` are untracked. `/pricing` is the page a visitor sees.
-- Page views only. No sign-up or purchase events.
+- Which branch Netlify treated as production is not recorded. The runbook says releases come from a
+  green `develop`, and `CLAUDE.md` says `main` is release-only. So the branch is a variable you set.
+- Build settings and environment variables stay in Netlify's dashboard. The CLI fetches them with the
+  token, so `NEXT_PUBLIC_GA_MEASUREMENT_ID` and the Supabase keys are still set in Netlify.
+- Node 24, as in the CI web job.
 
 ## What I could NOT verify
-- **A real hit reaching GA.** There is no measurement id yet. Tests check what is queued for Google,
-  not what Google receives. After setting the id, click Allow and check GA's Realtime report.
-- **Legal sufficiency.** The policy wording and the consent approach need your judgement.
-- **The banner at phone width.** Headless Chrome will not render below 500px. Desktop looks right.
-- **Clicking Allow in a real browser.** Covered by unit tests only, because no browser driver is
-  installed.
+- **A real deploy.** There is no Netlify token or site id here. The first run after you add them is
+  the test. Watch the `deploy web (Netlify)` job log.
+- That the free plan accepts CLI deploys from this repository. The block is on Netlify's Git
+  integration, and CLI deploys do not use it, but I have not seen Netlify state this for this case.
+- That the CLI picks up the base directory and build command from the Netlify dashboard in this
+  monorepo. If it does not, the job log will say so, and a `netlify.toml` is the fix.
 
 ## Verification status
-- typecheck, lint, build: pass. Web tests: 4,068 pass, including 37 new ones.
-- Headless Chrome against a production build with a dummy id: banner present and no Google script on
-  `/`, `/courses/java`, `/privacy` and the sign-in page.
-- CI: see the PR.
+- The workflow parses. CI on this branch: see the run; `deploy-web` is expected to be skipped.
 
 ## Merge status
-- PR into `develop`, not merged, because it changes the privacy policy and data-protection posture
-  (rule 1). No migrations. `main` is not touched.
-- `docs/guides/` was already untracked and is not part of this change.
+- See the commit and CI run for this branch. Merged into `develop` once CI is green.
 
 ## Suggested next task
-- Add sign-up and purchase events, so GA can answer whether the public course pages bring sign-ups.
+- Once the first deploy works, remove the Vercel sections from `deploy/README.md`.
 
 ## Open questions for you
-- To switch it on: create a GA4 property, set `NEXT_PUBLIC_GA_MEASUREMENT_ID` on the production web
-  build and redeploy, and in the data stream turn off Enhanced measurement → "Page changes based on
-  browser history events". Left on, in-app navigation is counted twice.
+- Set in GitHub (Settings → Secrets and variables → Actions): secrets `NETLIFY_AUTH_TOKEN` and
+  `NETLIFY_SITE_ID`, and the variable `NETLIFY_PRODUCTION_BRANCH` (`develop` or `main`).
+- In Netlify, stop builds or unlink the repository, so the failing Git builds stop.
