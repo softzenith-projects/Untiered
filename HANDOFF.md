@@ -1,59 +1,56 @@
-# Handoff — 30 October 2026
+# Handoff — 2 November 2026
 
 ## Task
-Make the course catalogue and the five course overviews public and indexable, with chapters still
-behind sign-in. Owner's decision in this session, following the SEO audit in `docs/seo/` (PRD §11).
+Add Google Analytics to the site, at the owner's request in this session (PRD §11).
 
 ## What I built
-- **The guard:** `isPublicCoursePage` in `apps/web/src/lib/supabase/session.ts` opens `/courses` and
-  `/courses/<course>` only. Anything deeper stays protected. Signed-in sessions keep refreshing on them.
-- **Search:** the 6 pages are in `app/sitemap.ts` (a switched-off course is left out), with their
-  own title, description and canonical. `seoTitle` and `seoDescription` are new required fields on
-  `Course`. Overviews have `Course` structured data with no ratings or offers.
-- **No gated content on public pages:** the daily Arena banner, whose props include the answer, now
-  renders only when signed in (`app/courses/page.tsx`, tested in `page.test.tsx`).
-- **The header with no session** (`app-chrome.tsx`, `rail-nav.tsx`, `lib/nav-links.ts`): the logo goes
-  home, the nav is Courses and Pricing, and Sign in returns to the current page. This also improves
-  `/upgrade` and `/daily-challenge`, which showed the signed-in bar to visitors.
-- **Chapter links** (`ChapterLink` in `course-progress.tsx`) do not prefetch while signed out, and the
-  overview says "Free. Sign in or create an account to open the chapters."
-- `apps/web/scripts/check-seo.mjs` now fails if a public course page sends chapter content or Arena
-  answers, or if any chapter link serves anything but a redirect to sign-in.
-- `CLAUDE.md` and `AGENTS.md` record the new decision. `docs/seo/` is updated.
+- **The tag** (`apps/web/src/lib/analytics.ts`, `components/site-analytics.tsx`, mounted in
+  `app/layout.tsx`): GA4 through `next/script`, so no new dependency. With
+  `NEXT_PUBLIC_GA_MEASUREMENT_ID` unset, nothing renders and nothing loads.
+- **Consent banner:** Google's script does not load until the visitor clicks Allow. Allow and Decline
+  have equal weight, and the answer is kept in `localStorage`.
+- **Public pages only:** `/`, `/about`, `/contact`, `/pricing`, `/privacy`, `/terms`, `/refund-policy`,
+  `/login`, `/courses`, `/courses/<course>`. It is an allowlist, so a new page is untracked by default.
+  Elsewhere there is no banner, and Google's `ga-disable` switch is set.
+- **What is sent:** page views without query strings, and no user id. Google signals and ad
+  personalisation are off.
+- **Privacy policy** (`app/privacy/page.tsx`, `lib/legal.ts`): collection, use, processors and cookies
+  now describe GA, and the Cookies section has a control to change the answer, which also deletes the
+  `_ga` cookies. Last-updated date is 2 November 2026.
+- `.env.example`, `apps/web/Dockerfile` and `deploy/README.md` carry the new variable. `CLAUDE.md` and
+  `AGENTS.md` record the rule.
 
 ## Assumptions I made
-- "Catalogue and overviews" means exactly those six URLs. The Arena, interviews and chapters are
-  unchanged.
-- `/daily-challenge` stays as it is, because you did not answer that question. It is public, noindex,
-  and still sends the day's question and answer.
-- No BreadcrumbList: page breadcrumbs are hidden in the UI, and the markup should match what is visible.
+- **Opt-in for every visitor, worldwide.** You said to get it done without answering the banner
+  question, so I took the stricter option: the site serves people applying to European employers, and
+  it keeps the policy honest. GA will undercount, because people who decline or ignore the banner are
+  not counted. Showing the banner only in some regions, or loading before consent, is your decision.
+- `/upgrade` and `/daily-challenge` are untracked. `/pricing` is the page a visitor sees.
+- Page views only. No sign-up or purchase events.
 
 ## What I could NOT verify
-- **Signed-in behaviour in a real browser**, because no test account was used. Unit tests cover the
-  banner, header and progress in both states. Please click through once while signed in.
-- **Whether these pages will be indexed.** They are a syllabus plus a short description, and Google
-  may treat them as thin. Search Console will say.
-- **The effect on sign-ups**: the site has no analytics to measure it with.
-- Production: not live until this PR is merged and `main` is advanced.
-- `api.untiered.tech` still timed out from this machine on the last attempt. Please check it.
+- **A real hit reaching GA.** There is no measurement id yet. Tests check what is queued for Google,
+  not what Google receives. After setting the id, click Allow and check GA's Realtime report.
+- **Legal sufficiency.** The policy wording and the consent approach need your judgement.
+- **The banner at phone width.** Headless Chrome will not render below 500px. Desktop looks right.
+- **Clicking Allow in a real browser.** Covered by unit tests only, because no browser driver is
+  installed.
 
 ## Verification status
-- typecheck, lint, build: pass. Web tests: 4,031 pass, with the exception below.
-- Crawler check on a verified fresh build: 438 of 438. Headless Chrome as a visitor: 21 of 21, and no
-  console or hydration errors on 10 pages. That check caught a hydration bug of mine, now fixed.
-- **Existing flake, not from this change:** `content-integrity.test.ts`, chapter
-  `machine-coding-utilities` in the JavaScript course, failed 2 of 3 local runs (`end d` and `end a`
-  swap). It races real timers under `node`, and this machine was busy. CI has been passing it. I did
-  not weaken it. It should get wider timer gaps in the sample, and may eventually fail a CI run.
-- Local quirk: `next build` does not clear `.next/server/route-cache`, so a stale `/` can refer to CSS
-  that no longer exists. Details in `docs/seo/SEO_VERIFICATION.md`.
+- typecheck, lint, build: pass. Web tests: 4,068 pass, including 37 new ones.
+- Headless Chrome against a production build with a dummy id: banner present and no Google script on
+  `/`, `/courses/java`, `/privacy` and the sign-in page.
+- CI: see the PR.
 
 ## Merge status
-- PR into `develop`, not merged, because it changes the route guard (rule 1). No migrations.
-  `main` is not touched. The earlier SEO work is on `develop` at `d6ddcfc`.
+- PR into `develop`, not merged, because it changes the privacy policy and data-protection posture
+  (rule 1). No migrations. `main` is not touched.
+- `docs/guides/` was already untracked and is not part of this change.
 
 ## Suggested next task
-- Widen the timer gaps in the `machine-coding-utilities` sample so its test stops racing.
+- Add sign-up and purchase events, so GA can answer whether the public course pages bring sign-ups.
 
 ## Open questions for you
-- `/daily-challenge` is public but `CLAUDE.md` says the Arena is behind sign-in. Intended?
+- To switch it on: create a GA4 property, set `NEXT_PUBLIC_GA_MEASUREMENT_ID` on the production web
+  build and redeploy, and in the data stream turn off Enhanced measurement → "Page changes based on
+  browser history events". Left on, in-app navigation is counted twice.

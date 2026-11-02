@@ -49,6 +49,7 @@ Set these **Production** variables before building:
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Site key paired with Supabase Auth secret |
 | `NEXT_PUBLIC_REQUIRE_TURNSTILE` | Explicit opt-in for non-production deploys; production builds require CAPTCHA automatically |
 | `NEXT_PUBLIC_FEATURE_MOCK_INTERVIEWS` | `true` only when API and AI budgets are ready |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4 id, Production only. See `.env.example` for the GA setting to turn off |
 
 The legal details need the owner's judgement. Do not publish their placeholder text as a finished legal page. Other feature flags may retain repo defaults. Public `NEXT_PUBLIC_*` values are compiled into the bundle; changing them requires redeployment. Keep Preview deployments away from production Supabase credentials until their callback URLs and access policy are defined. Do not put `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_PASSWORD`, or `GEMINI_API_KEY` in Vercel.
 

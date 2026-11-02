@@ -17,7 +17,7 @@ export const LEGAL = {
   freeRounds: 3,
   /** How long after paying an unused pack can be refunded. Needs the owner's sign-off. */
   refundWindowDays: 7,
-  lastUpdated: "29 October 2026",
+  lastUpdated: "2 November 2026",
 } as const;
 
 export const CONTACT_EMAIL_DISPLAY = LEGAL.contactEmail;
