@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { AppShell } from "@/components/app-shell";
+import { HalfCreditAnnouncement } from "@/components/half-credit-announcement";
 import { NewInterviewForm } from "@/components/new-interview-form";
 import { ROUND_CATALOGUE } from "@/lib/rounds";
 import { requireFeature } from "@/lib/require-feature";
@@ -31,7 +32,8 @@ export default async function NewInterviewPage({
   const roundType = ROUND_CATALOGUE.find((round) => round.value === requestedRound)?.value;
   return (
     <AppShell breadcrumb="new interview">
-      <div className="w-full">
+      <div className="flex w-full flex-col gap-6">
+        <HalfCreditAnnouncement variant="card" onSetupPage />
         <NewInterviewForm
           initialRoundType={roundType}
           initialTopic={topic}
