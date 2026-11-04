@@ -236,6 +236,11 @@ export function fetchProfile(options: ApiGetOptions): Promise<ProfileDetails> {
   return apiGet<ProfileDetails>("/api/v1/me/profile", options);
 }
 
+/** Just the profile photo, for the account menu: a signed URL, or null when none is set. */
+export function fetchAvatar(options: ApiGetOptions): Promise<{ avatarUrl: string | null }> {
+  return apiGet<{ avatarUrl: string | null }>("/api/v1/me/avatar", options);
+}
+
 export function updateProfile(
   accessToken: string,
   body: UpdateProfileRequest,

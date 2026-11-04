@@ -74,10 +74,15 @@ export function CreditBalance() {
     <div className="flex items-center gap-2">
       {left !== null && (
         <span
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-surface-sunken px-3 py-2 text-caption font-semibold text-ink"
+          className={`inline-flex min-h-11 items-center gap-2 rounded-full border py-1.5 pr-3.5 pl-1.5 text-caption font-semibold text-ink shadow-[var(--shadow-sm)] ${
+            left > 0
+              ? "border-highlight/40 bg-gradient-to-r from-warning-wash to-accent-wash"
+              : "border-danger/30 bg-danger-wash"
+          }`}
           title="Free interviews left plus credits you bought. Each interview uses one."
         >
-          <span className="tabular-nums">{left}</span>
+          <CreditCoin empty={left === 0} />
+          <span className="text-body font-bold tabular-nums">{left}</span>
           <span className="text-ink-muted">{left === 1 ? "credit" : "credits"}</span>
         </span>
       )}
@@ -88,5 +93,21 @@ export function CreditBalance() {
         Buy credits
       </Link>
     </div>
+  );
+}
+
+/** The balance's badge: warm when there is credit to spend, red when there is none. */
+function CreditCoin({ empty }: { empty: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`grid size-8 place-items-center rounded-full shadow-[var(--shadow-sm)] ${
+        empty ? "bg-danger text-danger-contrast" : "bg-highlight text-navy"
+      }`}
+    >
+      <svg viewBox="0 0 20 20" className="size-4 fill-current">
+        <path d="M10 2.5l1.9 5.1 5.1 1.9-5.1 1.9-1.9 5.1-1.9-5.1-5.1-1.9 5.1-1.9z" />
+      </svg>
+    </span>
   );
 }

@@ -55,9 +55,9 @@ export default async function LoginPage({
               ["02", "Employer-aware rounds"],
               ["03", "Evidence in every report"],
             ].map(([number, label]) => (
-              <li key={number} className="rounded-xl bg-on-navy p-4 shadow-[var(--shadow-md)]">
-                <span className="font-mono text-micro font-bold text-navy/60">{number}</span>
-                <span className="mt-2 block text-caption font-semibold text-navy">{label}</span>
+              <li key={number} className="rounded-xl border border-on-navy/15 bg-on-navy/10 p-4 shadow-[var(--shadow-md)] backdrop-blur-sm">
+                <span className="font-mono text-micro font-bold text-accent-on-navy">{number}</span>
+                <span className="mt-2 block text-caption font-semibold text-on-navy">{label}</span>
               </li>
             ))}
           </ul>

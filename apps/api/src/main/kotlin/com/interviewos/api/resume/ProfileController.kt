@@ -169,21 +169,33 @@ class ProfileController(
         @PathVariable name: String,
     ) = repository.deleteSkill(SupabaseIdentity.from(jwt).id, name)
 
-    private fun details(userId: UUID): ProfileDetails {
+    /**
+     * Just the photo, for the account menu on every page. `/profile` also reads the resume
+     * and skills, which is far too much to load for a 44-pixel circle.
+     */
+    @GetMapping("/avatar")
+    fun avatar(
+        @AuthenticationPrincipal jwt: Jwt,
+    ): AvatarView = AvatarView(signedAvatarUrl(SupabaseIdentity.from(jwt).id))
+
+    /** A short-lived URL for the candidate's own photo, or null when they have none. */
+    private fun signedAvatarUrl(userId: UUID): String? {
         val avatarPath =
             repository.avatarPath(userId)?.takeIf { path ->
                 StorageKeys.isDirectChildOf(path, userId.toString()) &&
                     path.substringAfterLast('/').startsWith("avatar-")
             }
-        val avatar =
-            avatarPath?.let {
-                runCatching { storage.createSignedUrl(storageProperties.resumeBucket, it, AVATAR_URL_SECONDS) }.getOrNull()
-            }
+        return avatarPath?.let {
+            runCatching { storage.createSignedUrl(storageProperties.resumeBucket, it, AVATAR_URL_SECONDS) }.getOrNull()
+        }
+    }
+
+    private fun details(userId: UUID): ProfileDetails {
         val profile = repository.findProfile(userId)
         return ProfileDetails(
             resume = resumeService.current(userId),
             skills = repository.listSkills(userId),
-            avatarUrl = avatar,
+            avatarUrl = signedAvatarUrl(userId),
             // Returned so the form can show what was saved. Without these the profile was
             // write-only: everything the candidate entered persisted and none of it ever
             // came back, which reads as the save having silently failed.
@@ -248,4 +260,9 @@ data class ProfileDetails(
     val currentLevel: String?,
     val targetLevel: String?,
     val linkedinUrl: String?,
+)
+
+/** The caller's profile photo as a signed URL, or null when they have not set one. */
+data class AvatarView(
+    val avatarUrl: String?,
 )

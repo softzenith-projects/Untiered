@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { BrandMark } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Checkbox, CONTROL_CLASS, Input, Radio } from "@/components/ui/field";
 import { DailyLimitNotice, isDailyLimitReached } from "@/components/daily-limit-notice";
@@ -336,8 +337,8 @@ export function NewInterviewForm({
         </div>
 
         <aside aria-live="polite" className="hero-band flex flex-col p-6 sm:p-8">
-          <span aria-hidden className="grid size-14 place-items-center rounded-2xl bg-highlight text-title font-bold text-navy">
-            {(structuredCompany.trim()[0] ?? structuredRole.trim()[0] ?? "U").toUpperCase()}
+          <span aria-hidden className="grid size-14 place-items-center rounded-2xl bg-on-navy shadow-[var(--shadow-md)]">
+            <BrandMark />
           </span>
           <p className="mt-7 eyebrow text-accent-on-navy">Your practice session</p>
           <h2 className="mt-3 text-title text-on-navy">{structuredRole.trim() || (campus ? "Campus placement" : "Choose your target role")}</h2>
