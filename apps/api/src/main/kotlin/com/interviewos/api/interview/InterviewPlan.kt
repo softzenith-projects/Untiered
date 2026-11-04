@@ -164,8 +164,20 @@ object InterviewPlan {
     /**
      * A ceiling, not a target — the clock ends the round. It exists so a pathological
      * session cannot run up an unbounded model bill.
+     *
+     * It scales with the round. A flat 16 ended a 40-minute round at 18 minutes for a
+     * candidate who answered in about a minute a turn (4 November 2026): the ceiling, not
+     * the clock, decided how long the interview was. One and a half turns a minute is
+     * faster than anyone has answered in practice, so only a runaway session reaches it;
+     * the floor keeps short rounds where they were.
      */
-    const val MAX_TURNS = 16
+    fun maxTurnsFor(durationMinutes: Int): Int = maxOf(MIN_TURN_CEILING, durationMinutes * TURN_CEILING_PER_TEN_MINUTES / 10)
+
+    /** The ceiling for the shortest rounds, and what every round had before it scaled. */
+    const val MIN_TURN_CEILING = 16
+
+    /** Fifteen turns per ten minutes — integer arithmetic, so the ceiling never rounds up. */
+    private const val TURN_CEILING_PER_TEN_MINUTES = 15
 
     /**
      * With less than this left, the round ends rather than asking another question.
@@ -226,7 +238,7 @@ object InterviewPlan {
             warmupFocus = if (warmingUp) WarmupFocus.forTurn(answeredTurns) else null,
             // Said once, on the first turn that is no longer warm-up.
             briefTheCandidate = justFinishedWarmup && phase != TurnPhase.WARMUP,
-            mustConclude = outOfTime || answeredTurns >= MAX_TURNS,
+            mustConclude = outOfTime || answeredTurns >= maxTurnsFor(durationMinutes),
             outOfTime = outOfTime,
         )
     }
