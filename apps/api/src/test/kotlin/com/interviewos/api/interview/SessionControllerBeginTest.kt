@@ -100,7 +100,7 @@ class SessionControllerBeginTest {
             durationMinutes = 5,
             scheduledEndAt = startedAt.plusSeconds(5 * 60),
             turnsCompleted = 0,
-            maxTurns = InterviewPlan.MAX_TURNS,
+            maxTurns = InterviewPlan.maxTurnsFor(5),
             currentTurn = null,
         )
 

@@ -67,6 +67,8 @@ const VOICE_GRACE_MS = 25_000;
 /** Save while drawing at a measured cadence, and flush on window blur. */
 const BOARD_SAVE_MS = 5_000;
 const MAX_BOARD_BYTES = 5 * 1024 * 1024;
+/** The server heard a copy of the previous answer and kept nothing (`EchoedAnswer.ERROR_CODE`). */
+const ANSWER_NOT_HEARD = "answer_not_heard";
 
 /** How often the design rail re-checks which phase the round is in. */
 const ROUND_CLOCK_TICK_MS = 10_000;
@@ -379,6 +381,12 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
     [browserVoice, capture, speaksLocally],
   );
 
+  // Opens the microphone on the same question again. Set alongside `handOver`, below.
+  const answerAgain = useRef<() => Promise<void>>(async () => {});
+  // Counts microphone openings, so a second take on the same question restarts the silence
+  // detector even when the phase went answering → submitting → answering in one render.
+  const [answerTake, setAnswerTake] = useState(0);
+
   const finishAnswer = useCallback(async (endRound = false) => {
     if (!accessToken || !turn) return;
     const priorPhase = phase;
@@ -443,6 +451,19 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
       );
       setPhase("asking");
     } catch (cause) {
+      /*
+       * The answer came back transcribed as a copy of the one before, so the server kept
+       * nothing. The question still stands: say so and open the microphone again, the way
+       * an interviewer who missed an answer asks for it again. A fresh request id, because
+       * this take is a new answer and not a retry of the old one.
+       */
+      if (cause instanceof ApiRequestError && cause.code === ANSWER_NOT_HEARD) {
+        answerRequestIds.current.delete(turn.turnIndex);
+        reportRoomEvent("answer_submission_failed", "answering", turn.turnIndex, requestId);
+        setError(cause.message);
+        void answerAgain.current();
+        return;
+      }
       reportRoomEvent("answer_submission_failed", "error", turn.turnIndex, requestId);
       setPhase("error");
       setError(
@@ -486,12 +507,13 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
     }, TICK_MS);
 
     return () => clearInterval(id);
-  }, [phase, hasWorkspace]);
+  }, [phase, hasWorkspace, answerTake]);
 
   const beginAnswering = useCallback(async () => {
     const started = await capture.start();
     if (started) {
       setElapsed(0);
+      setAnswerTake((take) => take + 1);
       lastWorkspaceChange.current = null;
       // Workspace rounds use the microphone meter for feedback and do not display a
       // running transcript. In spoken-only rounds, clear the previous answer first.
@@ -517,6 +539,7 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
   const handOver = useRef(beginAnswering);
   useEffect(() => {
     handOver.current = beginAnswering;
+    answerAgain.current = beginAnswering;
   });
 
   /*
@@ -564,7 +587,7 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
           element.pause();
           reportSpeechEvent(failure, turnIndex, Date.now() - startedAt);
         }
-        void handOver.current();
+        void answerAgain.current();
       };
       const armStall = () => {
         clearStall();

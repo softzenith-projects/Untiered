@@ -753,6 +753,28 @@ class InterviewService(
                 durationMs = elapsedMillis(assessmentStartedAt),
             )
 
+            // A transcript identical to the previous answer is a failed transcription. Nothing is
+            // recorded, the claim is released in `finally`, and the room asks for the answer
+            // again. Not when the round is ending anyway: the clock and the End button both
+            // mean there is no "again" to ask for.
+            if (!endRound && !plan.outOfTime &&
+                EchoedAnswer.isEcho(assessment.value.transcript, priorTurns.lastOrNull()?.answerTranscript)
+            ) {
+                recordEvent(
+                    userId,
+                    sessionId,
+                    "answer_rejected",
+                    turnIndex,
+                    requestId,
+                    outcome = "failed",
+                    errorType = "echoed_transcript",
+                )
+                throw ApiException.unprocessable(
+                    "We didn't catch that answer clearly. Please give it again.",
+                    code = EchoedAnswer.ERROR_CODE,
+                )
+            }
+
             val suggestedAction = normaliseAction(assessment.value.suggestedNextAction)
             // The model advises how to continue; it does not own the clock. It sometimes
             // returned `conclude` after one or two short answers, which completed the
@@ -1301,7 +1323,7 @@ class InterviewService(
             // sleeps cannot buy the candidate extra time.
             scheduledEndAt = session.enteredAt?.plus(Duration.ofMinutes(session.durationMinutes.toLong())),
             turnsCompleted = repository.countAnsweredTurns(sessionId, userId),
-            maxTurns = InterviewPlan.MAX_TURNS,
+            maxTurns = InterviewPlan.maxTurnsFor(session.durationMinutes),
             workspace = workspace,
             board = session.board?.let(objectMapper::readTree),
             currentTurn =
