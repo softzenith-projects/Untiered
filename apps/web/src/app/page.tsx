@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { BrandMark, BrandWordmark } from "@/components/brand-logo";
+import { HalfCreditAnnouncement } from "@/components/half-credit-announcement";
 import { CourseArtwork } from "@/components/courses/course-visuals";
 import { HeaderActions } from "@/components/landing/header-actions";
 import { LoopPicker } from "@/components/landing/loop-picker";
@@ -53,6 +54,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-dvh bg-surface">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(homepageJsonLd()) }} />
+      {mockInterviewsEnabled ? <HalfCreditAnnouncement variant="bar" /> : null}
       <SiteHeader mockInterviewsEnabled={mockInterviewsEnabled} coursesEnabled={coursesEnabled} />
       <main>
         <Hero
