@@ -1,17 +1,19 @@
 import type { MeResponse } from "@untiered/shared";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AccountSummary, forgetAccount } from "./account-summary";
+import { AccountSummary, announceAvatarChanged, forgetAccount } from "./account-summary";
 
 const fetchMe = vi.hoisted(() => vi.fn());
+const fetchAvatar = vi.hoisted(() => vi.fn());
 const updateEmailPreferences = vi.hoisted(() => vi.fn());
 const signOut = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(() => ({ token: "token-abc" as string | null | undefined }));
 
 vi.mock("@/lib/api", () => ({
   fetchMe,
+  fetchAvatar,
   updateEmailPreferences,
   ApiRequestError: class extends Error {},
 }));
@@ -54,6 +56,30 @@ describe("AccountSummary", () => {
     window.sessionStorage.clear();
     auth.token = "token-abc";
     route.pathname = "/dashboard";
+    fetchAvatar.mockResolvedValue({ avatarUrl: null });
+  });
+
+  it("shows the candidate's photo in place of their initials when they have one", async () => {
+    fetchMe.mockResolvedValue(me);
+    fetchAvatar.mockResolvedValue({ avatarUrl: "https://signed.example/avatar.png" });
+
+    const { container } = render(<AccountSummary />);
+
+    await waitFor(() =>
+      expect(container.querySelector('img[src="https://signed.example/avatar.png"]')).toBeInTheDocument(),
+    );
+    expect(screen.queryByText("TC")).not.toBeInTheDocument();
+  });
+
+  it("keeps the initials when there is no photo, and swaps in a newly uploaded one", async () => {
+    fetchMe.mockResolvedValue(me);
+
+    const { container } = render(<AccountSummary />);
+
+    expect(await screen.findByText("TC")).toBeInTheDocument();
+    act(() => announceAvatarChanged("https://signed.example/new.png"));
+    expect(container.querySelector('img[src="https://signed.example/new.png"]')).toBeInTheDocument();
+    expect(screen.queryByText("TC")).not.toBeInTheDocument();
   });
 
   it("applies a Google signup email choice after authentication", async () => {

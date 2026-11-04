@@ -1,5 +1,5 @@
 import type { ProfileDetails } from "@untiered/shared";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,6 +13,8 @@ const fetchSessions = vi.hoisted(() => vi.fn());
 const fetchArenaProgress = vi.hoisted(() => vi.fn());
 const fetchCourseProgress = vi.hoisted(() => vi.fn());
 const uploadResume = vi.hoisted(() => vi.fn());
+const uploadAvatar = vi.hoisted(() => vi.fn());
+const ApiRequestError = vi.hoisted(() => class ApiRequestError extends Error {});
 const auth = vi.hoisted(() => ({ token: "token" as string | null | undefined }));
 
 vi.mock("@/lib/api", () => ({
@@ -24,10 +26,10 @@ vi.mock("@/lib/api", () => ({
   updateProfile,
   uploadResume,
   deleteResume: vi.fn(),
-  uploadAvatar: vi.fn(),
+  uploadAvatar,
   upsertSkill: vi.fn(),
   deleteSkill: vi.fn(),
-  ApiRequestError: class ApiRequestError extends Error {},
+  ApiRequestError,
 }));
 vi.mock("@/lib/use-access-token", () => ({ useAccessToken: () => auth.token }));
 
@@ -87,6 +89,34 @@ describe("ProfilePanel", () => {
     expect(await screen.findByText("Working toward Staff Engineer")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Resume & Skills" })).toBeInTheDocument();
     expect(screen.getByText("Rounds completed").parentElement).toHaveTextContent("—");
+  });
+
+  it("says a photo was refused beside the photo, not at the foot of the page", async () => {
+    fetchProfile.mockResolvedValue(profile());
+    uploadAvatar.mockRejectedValue(new ApiRequestError("Keep the photo under 2MB."));
+
+    const { container } = render(<ProfilePanel />);
+    await screen.findByRole("button", { name: "Add profile photo" });
+    const input = container.querySelector<HTMLInputElement>('input[type="file"][accept*="image"]');
+    await userEvent.upload(input!, new File(["x"], "me.png", { type: "image/png" }));
+
+    const identity = screen.getByRole("region", { name: "Profile identity" });
+    expect(await within(identity).findByRole("alert")).toHaveTextContent("Keep the photo under 2MB.");
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+  });
+
+  it("confirms a new photo beside the photo", async () => {
+    fetchProfile.mockResolvedValue(profile());
+    uploadAvatar.mockResolvedValue(profile({ avatarUrl: "https://example.com/new.png" }));
+
+    const { container } = render(<ProfilePanel />);
+    await screen.findByRole("button", { name: "Add profile photo" });
+    const input = container.querySelector<HTMLInputElement>('input[type="file"][accept*="image"]');
+    await userEvent.upload(input!, new File(["x"], "me.png", { type: "image/png" }));
+
+    const identity = screen.getByRole("region", { name: "Profile identity" });
+    await waitFor(() => expect(within(identity).getByRole("status")).toBeInTheDocument());
+    expect(screen.getByAltText("Profile photo")).toHaveAttribute("src", "https://example.com/new.png");
   });
 
   it("shows the uploaded resume before the profile reconciliation finishes", async () => {

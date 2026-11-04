@@ -64,6 +64,28 @@ class ProfileAvatarTest {
         assertEquals(upload.arguments[1], replacement.arguments[1])
     }
 
+    @Test
+    fun `the photo alone is returned as a signed url for the account menu`() {
+        given(repository.avatarPath(userId)).willReturn("$userId/avatar-1.png")
+        given(storage.createSignedUrl("resumes", "$userId/avatar-1.png", 3600)).willReturn("https://signed.example/avatar")
+
+        assertEquals("https://signed.example/avatar", controller.avatar(jwt).avatarUrl)
+    }
+
+    @Test
+    fun `no photo means no url and no storage call`() {
+        assertEquals(null, controller.avatar(jwt).avatarUrl)
+        verifyNoInteractions(storage)
+    }
+
+    @Test
+    fun `a stored path outside the caller's own folder is never signed`() {
+        given(repository.avatarPath(userId)).willReturn("${UUID.randomUUID()}/avatar-1.png")
+
+        assertEquals(null, controller.avatar(jwt).avatarUrl)
+        verifyNoInteractions(storage)
+    }
+
     private fun file(
         contentType: String,
         bytes: ByteArray,
