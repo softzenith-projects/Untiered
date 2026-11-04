@@ -32,10 +32,12 @@ describe("InterviewerPresence", () => {
   });
 
   /** It has no name, and never acquires one — the same rule the opening prompt follows. */
-  it("is the interviewer, not a character with a name", () => {
+  // The owner named the interviewer Krivih on 4 November 2026; it used to be nameless.
+  // It is still labelled as an AI, so nobody takes it for a person.
+  it("is Krivih, and says plainly that it is an AI", () => {
     render(<InterviewerPresence state="waiting" />);
 
-    expect(screen.getByText(/your interviewer/i)).toBeInTheDocument();
+    expect(screen.getByText("Krivih · your AI interviewer")).toBeInTheDocument();
   });
 
   /**

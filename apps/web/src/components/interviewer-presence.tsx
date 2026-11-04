@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 /**
  * The person on the other side of the table.
  *
@@ -8,15 +10,14 @@
  * either being on camera with a person or being on neither. This is what the camera
  * reciprocates.
  *
- * **Drawn, not photographed, and deliberately so.** A synthetic photoreal face gets
- * mistaken for a real person, and the moment a candidate believes there is a human here
- * the product has lied to them. An illustration is honest about what it is and still
- * occupies the chair. It also sidesteps the uncanny valley, which is unpleasant at the
- * best of times and much worse when someone is already nervous.
+ * **Drawn, and unmistakably a machine.** A synthetic photoreal face gets mistaken for a
+ * real person, and the moment a candidate believes there is a human here the product has
+ * lied to them. Krivih is a glowing circuit-drawn head: it occupies the chair and is
+ * honest about what it is.
  *
- * It has no name and never introduces itself as one — the same rule the opening prompt
- * follows. It is "your interviewer", the way an unfamiliar face across a table is until
- * they say otherwise.
+ * **It has a name: Krivih** (owner, 4 November 2026; earlier it had none). The name is
+ * shown here and in marketing. The spoken prompts do not yet introduce it by name — that
+ * changes what the model says, and wants a live check first.
  *
  * **Nothing here is lip-synced.** The obvious next step would be to run the question
  * audio through a Web Audio analyser and drive the mouth from the real amplitude, and it
@@ -74,7 +75,7 @@ export function InterviewerPresence({ state, level = 0, compact = false }: Inter
 
       <div className="flex flex-col gap-0.5">
         <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">
-          Your interviewer
+          Krivih · your AI interviewer
         </span>
         {/*
          * The one accessible announcement of what the interviewer is doing. The portrait
@@ -97,16 +98,22 @@ const DESCRIPTION: Record<PresenceState, string> = {
 };
 
 /**
- * An editorial line portrait: a drawn face, contour lines and one weight of ink, in the
- * register of a well-set technical book rather than a product illustration.
+ * Krivih: a glowing, circuit-drawn AI head in a dark disc (owner, 4 November 2026).
  *
- * The first attempt filled the head with solid ink and knocked the features out of it in
- * the page colour. Rendered, that is a balaclava — a dark mass with light slits for eyes
- * and a light hole for a mouth. Genuinely sinister, and pointed at someone who is already
- * nervous about their livelihood. Drawing it as line-work on a light face is not a style
- * preference; it is the difference between a person and a threat.
+ * Unmistakably a machine — cyan line-work, circuit traces, lit eyes — so nobody sitting
+ * across from it believes there is a person here, which was the reason the earlier
+ * portrait was drawn rather than photographed. Fixed colours rather than theme tokens:
+ * it is artwork, and it should look the same on a light page and a dark one.
+ *
+ * The `presence-*` class hooks are the same as before, so it still breathes, talks and
+ * glances while thinking.
  */
 function Portrait({ state, compact }: { state: PresenceState; compact: boolean }) {
+  const id = useId().replace(/:/g, "");
+  const glow = `krivih-glow-${id}`;
+  const disc = `krivih-disc-${id}`;
+  const frame = `krivih-frame-${id}`;
+
   return (
     <svg
       viewBox="0 0 120 120"
@@ -116,69 +123,71 @@ function Portrait({ state, compact }: { state: PresenceState; compact: boolean }
       aria-hidden
     >
       <defs>
-        <clipPath id="presence-frame">
-          <circle cx="60" cy="60" r="54" />
+        <radialGradient id={disc} cx="50%" cy="42%" r="62%">
+          <stop offset="0%" stopColor="#123a6e" />
+          <stop offset="60%" stopColor="#0a1f42" />
+          <stop offset="100%" stopColor="#050d1f" />
+        </radialGradient>
+        <filter id={glow} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <clipPath id={frame}>
+          <circle cx="60" cy="60" r="56" />
         </clipPath>
       </defs>
 
-      <circle cx="60" cy="60" r="54" className="fill-surface-sunken" />
+      <circle cx="60" cy="60" r="56" fill={`url(#${disc})`} />
 
-      <g
-        clipPath="url(#presence-frame)"
-        className="presence-figure stroke-ink"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {/*
-         * Neck first, and as a fill with the two side lines drawn separately. Stroking it
-         * as a closed shape puts a line across the chest that the shoulders — a wash, not
-         * a solid — do not hide.
-         */}
-        <path d="M51 58h18v32H51z" className="fill-surface-raised stroke-none" />
-        <path d="M51 68v20M69 68v20" className="fill-none" />
-
-        {/* Shoulders. A wash rather than a fill, so the ink stays in the line. */}
-        <path
-          d="M15 122c0-20 13-30 28-33l17-4 17 4c15 3 28 13 28 33z"
-          className="fill-ink/10 stroke-ink"
-        />
-        {/* The collar, which is most of what makes a shape read as somebody dressed for this. */}
-        <path d="M51 86l9 12 9-12" className="fill-none" />
-
-        {/* Head. */}
-        <ellipse cx="60" cy="49" rx="22" ry="25" className="fill-surface-raised" />
-        {/* An ear, because a head without one reads as a mannequin. */}
-        <path d="M38 47c-4 0-5 4-4 7s3 5 5 5" className="fill-surface-raised" />
-
-        {/* Hair, as one confident shape rather than strands. */}
-        <path
-          d="M38 46c-1-17 9-27 22-27s23 10 22 27c-3-10-8-14-15-15-8-1-12 2-18 3-5 1-9 4-11 12z"
-          className="fill-ink stroke-ink"
-        />
-
-        {/* Brows, then eyes. Small marks: a portrait, not a character. */}
-        <g className="presence-eyes">
-          <path d="M49 44.5c2-1.6 5-1.6 7 0M64 44.5c2-1.6 5-1.6 7 0" className="fill-none" />
-          <circle cx="52.5" cy="51" r="2.1" className="fill-ink stroke-none" />
-          <circle cx="67.5" cy="51" r="2.1" className="fill-ink stroke-none" />
+      <g clipPath={`url(#${frame})`}>
+        {/* Circuit traces behind the head: the room it lives in. */}
+        <g stroke="#38bdf8" strokeOpacity="0.35" strokeWidth="1" fill="none">
+          <path d="M8 34h18l6 6h8M8 78h14l8-8h8M112 30H94l-6 6h-8M112 82H96l-8-8h-8M20 100l12-12M100 100L88 88" />
+          <circle cx="40" cy="40" r="1.6" fill="#38bdf8" />
+          <circle cx="38" cy="70" r="1.6" fill="#38bdf8" />
+          <circle cx="80" cy="36" r="1.6" fill="#38bdf8" />
+          <circle cx="80" cy="74" r="1.6" fill="#38bdf8" />
         </g>
 
-        {/* Nose. */}
-        <path d="M60 53v7h3.5" className="fill-none" />
+        <g
+          className="presence-figure"
+          filter={`url(#${glow})`}
+          stroke="#7dd3fc"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        >
+          {/* Shoulders and neck, as a glowing contour. */}
+          <path d="M18 122c2-18 14-27 28-30l8-2v-10M102 122c-2-18-14-27-28-30l-8-2v-10" />
+          <path d="M54 92l6 7 6-7" strokeOpacity="0.8" />
+          {/* Head: a smooth shell with a seam across the brow. */}
+          <path d="M60 18c-14 0-24 10-24 26 0 13 6 25 15 31 3 2 6 3 9 3s6-1 9-3c9-6 15-18 15-31 0-16-10-26-24-26z" fill="#0b2a52" fillOpacity="0.55" />
+          <path d="M40 38c6-4 13-5 20-5s14 1 20 5" strokeOpacity="0.55" />
+          <path d="M60 22v9M48 60l-6 4M72 60l6 4" strokeOpacity="0.5" />
 
-        {/* The mouth. A closed line at rest, and what moves when the interviewer talks. */}
-        <rect
-          x="54"
-          y="65"
-          width="12"
-          height="2.6"
-          rx="1.3"
-          className="presence-mouth fill-ink stroke-none"
-        />
+          <g className="presence-eyes">
+            <path d="M47 47h8M65 47h8" stroke="#e0f2fe" strokeWidth="3" />
+          </g>
+
+          {/* The mouth: a light bar that pulses when Krivih talks. */}
+          <rect
+            x="53"
+            y="62"
+            width="14"
+            height="2.6"
+            rx="1.3"
+            className="presence-mouth"
+            fill="#e0f2fe"
+            stroke="none"
+          />
+        </g>
       </g>
 
-      <circle cx="60" cy="60" r="54" className="fill-none stroke-line-strong" strokeWidth="1" />
+      <circle cx="60" cy="60" r="56" fill="none" stroke="#38bdf8" strokeOpacity="0.55" strokeWidth="1.5" />
     </svg>
   );
 }
