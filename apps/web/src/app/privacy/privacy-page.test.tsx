@@ -50,7 +50,7 @@ describe("legal pages", () => {
   it("states the same free allowance the API enforces", () => {
     render(<TermsPage />);
 
-    const free = screen.getByText(/each account gets 3 free mock interviews for life/i);
+    const free = screen.getByText(/your first 3 mock interviews are on us\. forever\. each comes with its full report/i);
     expect(free).toHaveTextContent(/does not reset each day, month or year/i);
   });
 

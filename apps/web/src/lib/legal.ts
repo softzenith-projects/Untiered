@@ -39,7 +39,12 @@ export const FREE_ROUNDS_TEXT = `${freeRounds} mock ${freeRounds === 1 ? "interv
 
 /**
  * The free tier as the terms define it: once per account, for life, never reset (owner,
- * 29 October 2026). Every page that states the allowance says it this way, so "your first
- * 3" cannot be read as 3 a day or 3 a month.
+ * 29 October 2026). Every page that states the allowance says it this way, and "Forever."
+ * is there so "your first 3" cannot be read as 3 a day or 3 a month. A whole sentence,
+ * full stop included (owner's wording, 4 November 2026), so it is never dropped
+ * mid-sentence.
  */
-export const FREE_ROUNDS_LIFETIME_TEXT = `${freeRounds} free mock ${freeRounds === 1 ? "interview" : "interviews"} for life`;
+export const FREE_ROUNDS_LIFETIME_TEXT =
+  freeRounds === 1
+    ? "Your first mock interview is on us. Forever."
+    : `Your first ${freeRounds} mock interviews are on us. Forever.`;

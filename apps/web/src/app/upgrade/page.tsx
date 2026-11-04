@@ -9,7 +9,7 @@ import { NOINDEX_FOLLOW } from "@/lib/seo";
 export const metadata: Metadata = { title: "Upgrade", robots: NOINDEX_FOLLOW };
 
 const INCLUDED_NOW = [
-  `${FREE_ROUNDS_LIFETIME_TEXT}, up to 60 minutes each`,
+  `${FREE_ROUNDS_LIFETIME_TEXT} Up to 60 minutes each.`,
   "The complete evidence-backed report",
   "All enabled courses and Arena practice",
   "English and Hindi-English interviews",
@@ -31,7 +31,7 @@ export default function UpgradePage() {
           </h1>
           <p className="mt-3 max-w-2xl text-body text-on-navy-muted">
             Every interview, free or paid, comes with the full evidence-backed report. Paid
-            interviews are for practising once your account has used its {FREE_ROUNDS_LIFETIME_TEXT}.
+            interviews are for practising beyond your free ones. {FREE_ROUNDS_LIFETIME_TEXT}
           </p>
         </header>
 

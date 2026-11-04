@@ -90,8 +90,7 @@ export default function PrivacyPage() {
           <li>To tailor questions to your resume, and to keep track of your course and Arena progress.</li>
           <li>
             To keep free practice fair and to give you the paid interviews you bought: we count the
-            free interviews you start (each account gets {FREE_ROUNDS_LIFETIME_TEXT}) and the paid ones
-            you buy and use.
+            free interviews you start and the paid ones you buy and use. ({FREE_ROUNDS_LIFETIME_TEXT})
           </li>
           <li>To keep the service secure and working, and to fix errors.</li>
           <li>If you allow it, to count visits to our public pages and see which ones people use.</li>

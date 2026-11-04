@@ -25,7 +25,7 @@ describe("payment review pages", () => {
     expect(within(packs).getByText("₹899")).toBeInTheDocument();
     expect(within(packs).getByText("₹1,499")).toBeInTheDocument();
     expect(screen.getByText(/include all taxes/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/3 free mock interviews for life/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/your first 3 mock interviews are on us\. forever\./i).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Sign in to buy credits" })).toHaveAttribute("href", "/login?next=%2Fupgrade");
   });
 
