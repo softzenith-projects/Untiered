@@ -9,6 +9,7 @@ import { DailyLimitNotice, isDailyLimitReached } from "@/components/daily-limit-
 import { deleteSession, fetchEntitlement, fetchMe, fetchProfile, fetchReadiness, fetchSessions, SESSION_PAGE_SIZE } from "@/lib/api";
 import { featureEnabled } from "@/lib/flags";
 import { useAccessToken } from "@/lib/use-access-token";
+import { displayNameFor } from "@/lib/display-name";
 
 /**
  * The dashboard's job is to start the next interview, so there is one primary action and
@@ -380,7 +381,7 @@ export function DashboardView({
   const completed = sessions.filter((s) => s.status === "completed");
   const lastCompleted = completed[0];
   const { greeting, dateLabel } = useTimeBoundGreeting();
-  const firstName = formatFirstName(me?.displayName);
+  const firstName = formatFirstName(me ? displayNameFor(me) : null);
 
   return (
     <div className="flex flex-col gap-9 md:gap-11">
@@ -762,7 +763,8 @@ export function greetingForHour(hour: number): string {
 
 export function formatFirstName(displayName?: string | null): string | null {
   const firstName = displayName?.trim().split(/\s+/)[0];
-  if (!firstName) return null;
+  // An email address is never a first name: "Good morning, 12345@example.com."
+  if (!firstName || firstName.includes("@")) return null;
   return firstName.charAt(0).toLocaleUpperCase() + firstName.slice(1);
 }
 
