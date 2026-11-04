@@ -122,14 +122,14 @@ function Hero({
           <span className="pill pill-navy w-fit">Talent has no tiers.</span>
           <h1 className="text-hero text-balance text-on-navy">
             {mockInterviewsEnabled ? (
-              <>A mock interview that <span className="text-accent-on-navy">interrupts you.</span></>
+              <>They judged your college. <span className="text-accent-on-navy">Let&rsquo;s judge your answers.</span></>
             ) : (
               <>Build skills that <span className="text-accent-on-navy">hold up under pressure.</span></>
             )}
           </h1>
           <p className="max-w-lg text-body text-on-navy-muted">
             {mockInterviewsEnabled
-              ? "You talk. It follows up on what you actually said, cuts in when you ramble, and quotes you in the report."
+              ? "Your college doesn't define your potential. Your skills do. Practise real-world tech interviews, get challenged by Krivih, our AI interviewer, and become the candidate they can't ignore."
               : "Complete learning paths, short daily recall rounds, and a clear next step every time you come back."}
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -263,6 +263,7 @@ function Loops() {
     <section className="border-b border-line">
       <div className="mx-auto layout-content px-4 py-16 sm:px-6 lg:py-24">
         <div className="flex flex-col gap-3 pb-8">
+          <span className="pill pill-accent w-fit">Your college tier isn&rsquo;t your skill level.</span>
           <h2 className="text-display text-balance text-ink">An Infosys panel is not a Google loop.</h2>
           <p className="max-w-xl text-body text-ink-muted">Each type runs its own rounds and its own rubric. Pick one.</p>
         </div>
@@ -281,7 +282,7 @@ function Report() {
     <section className="border-b border-line bg-surface-sunken">
       <div className="mx-auto grid layout-content gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-16 lg:py-24">
         <div className="flex flex-col gap-4">
-          <span className="pill pill-accent w-fit">The report</span>
+          <span className="pill pill-accent w-fit">Get roasted here. Get hired out there.</span>
           <h2 className="text-display text-balance text-ink">Every score quotes you.</h2>
           <p className="max-w-md text-body text-ink-muted">A score that can&rsquo;t be tied to something you said is dropped, not shown.</p>
           <ul className="flex flex-wrap gap-2 pt-2">
@@ -375,6 +376,9 @@ function CtaBand({
     <section className="bg-navy text-on-navy">
       <div className="mx-auto flex layout-content flex-col gap-10 px-4 py-16 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:py-20">
         <div className="flex flex-col gap-4">
+          {mockInterviewsEnabled ? (
+            <p className="eyebrow text-accent-on-navy">Fail the mock. Not the actual interview.</p>
+          ) : null}
           <h2 className="text-display text-balance text-on-navy">
             {mockInterviewsEnabled ? `${FREE_ROUNDS_LIFETIME_TEXT}.` : "Keep building the skill behind the answer."}
           </h2>

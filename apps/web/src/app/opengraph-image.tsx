@@ -21,8 +21,8 @@ export default function OpengraphImage() {
       }}
     >
       <div style={{ fontSize: 40, fontWeight: 700, color: "#b9d0ff" }}>Untiered</div>
-      <div style={{ marginTop: 28, fontSize: 76, fontWeight: 700, lineHeight: 1.1 }}>A mock interview that interrupts you.</div>
-      <div style={{ marginTop: 28, fontSize: 34, color: "#b9d0ff" }}>You talk. It follows up. The report quotes you.</div>
+      <div style={{ marginTop: 28, fontSize: 76, fontWeight: 700, lineHeight: 1.1 }}>They judged your college. Let&apos;s judge your answers.</div>
+      <div style={{ marginTop: 28, fontSize: 34, color: "#b9d0ff" }}>Talent has no tiers. Practise with Krivih, our AI interviewer.</div>
     </div>,
     size,
   );

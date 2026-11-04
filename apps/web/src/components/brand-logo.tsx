@@ -23,17 +23,27 @@ export function BrandWordmark({ inverse = false }: { inverse?: boolean }) {
     );
   }
 
+  // In dark mode the supplied dark-surface wordmark loses its "U" against the page, the
+  // same failure as on navy. So dark mode uses the white chip too (owner, 4 November 2026).
   return (
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcSet="/brand/wordmark-dark.png" />
+    <>
       <Image
         src="/brand/wordmark-light.png"
         alt="Untiered"
         width={378}
         height={82}
-        className="h-auto w-[9.5rem] sm:w-[10.5rem]"
+        className="h-auto w-[9.5rem] dark:hidden sm:w-[10.5rem]"
       />
-    </picture>
+      <span className="hidden rounded-xl bg-on-navy px-3 py-1.5 shadow-[var(--shadow-sm)] dark:inline-flex">
+        <Image
+          src="/brand/wordmark-light.png"
+          alt="Untiered"
+          width={378}
+          height={82}
+          className="h-auto w-[8.5rem] sm:w-[9.5rem]"
+        />
+      </span>
+    </>
   );
 }
 

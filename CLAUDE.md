@@ -315,10 +315,12 @@ interviewbit.com: a bright, confident, polished learning-platform look.
   `new-interview-form.tsx` currently promises, in as many words, that nothing is uploaded —
   so it changes in the same commit as any camera recording, or the product is lying.
 
-  The interviewer is **drawn, not photoreal, and has no name.** A synthetic photoreal face
-  gets mistaken for a real person, and a candidate who believes there is a human here has
-  been lied to. A photoreal talking-head vendor is a live option but commits real spend, so
-  it is the owner's call.
+  The interviewer is **Krivih**, drawn as an unmistakably artificial, glowing circuit-style
+  head (owner, 4 November 2026; it used to be nameless). It must never look like a real
+  person: a synthetic photoreal human face gets mistaken for one, and a candidate who
+  believes there is a human here has been lied to. The name is in the UI and marketing; the
+  spoken prompts do not introduce it yet (that needs a live check). A photoreal
+  talking-head vendor is a live option but commits real spend, so it is the owner's call.
 - **Recording consent is a hard gate.** Explicit, specific consent before capture
   starts, stored with a timestamp. No consent, no session. Account deletion removes the
   media objects, not just the rows. `consentVideo` now means "open the camera", not "keep
