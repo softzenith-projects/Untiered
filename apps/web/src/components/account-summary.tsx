@@ -258,6 +258,7 @@ function AccountMenu({ me }: { me: MeResponse }) {
             width={44}
             height={44}
             unoptimized
+            referrerPolicy="no-referrer"
             onError={forgetAvatar}
             className="size-11 shrink-0 rounded-full object-cover ring-1 ring-line"
           />
