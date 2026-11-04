@@ -81,6 +81,39 @@ class SupabaseIdentityTest {
         }
     }
 
+    @Test
+    fun `reads the Google account photo from a Google sign-in`() {
+        val identity =
+            SupabaseIdentity.from(
+                token(
+                    subject = userId.toString(),
+                    claims =
+                        mapOf(
+                            "email" to "candidate@example.com",
+                            "user_metadata" to mapOf("avatar_url" to "https://lh3.googleusercontent.com/a/photo=s96-c"),
+                            "app_metadata" to mapOf("provider" to "google", "providers" to listOf("google")),
+                        ),
+                ),
+            )
+
+        assertEquals("https://lh3.googleusercontent.com/a/photo=s96-c", identity.providerPhotoUrl)
+    }
+
+    @Test
+    fun `believes a photo only from a Google account and Google's image host`() {
+        val google = setOf("google")
+        val photo = "https://lh3.googleusercontent.com/a/photo"
+
+        assertEquals(photo, SupabaseIdentity.googlePhotoFrom(mapOf("picture" to photo), google))
+        // An email account can write any URL into its own metadata from the browser.
+        assertNull(SupabaseIdentity.googlePhotoFrom(mapOf("avatar_url" to photo), setOf("email")))
+        assertNull(SupabaseIdentity.googlePhotoFrom(mapOf("avatar_url" to "https://evil.example/x.png"), google))
+        assertNull(SupabaseIdentity.googlePhotoFrom(mapOf("avatar_url" to "http://lh3.googleusercontent.com/a"), google))
+        assertNull(SupabaseIdentity.googlePhotoFrom(mapOf("avatar_url" to "https://googleusercontent.com.evil.example/a"), google))
+        assertNull(SupabaseIdentity.googlePhotoFrom(mapOf("avatar_url" to "https://x@lh3.googleusercontent.com/a"), google))
+        assertNull(SupabaseIdentity.googlePhotoFrom(emptyMap(), google))
+    }
+
     private fun token(
         subject: String,
         claims: Map<String, Any>,

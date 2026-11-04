@@ -35,7 +35,9 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-2 pl-5">
           <li>
             <strong className="text-ink">Your sign-in:</strong> your email address, and your name and
-            Google account identifier if you choose Google. Supabase handles email passwords;
+            Google account identifier if you choose Google. If you choose Google, we also show your
+            Google profile photo in your account until you upload one of your own; we read it from
+            Google when you sign in and do not keep a copy. Supabase handles email passwords;
             we never see your password in plain text or your Google password.
           </li>
           <li>

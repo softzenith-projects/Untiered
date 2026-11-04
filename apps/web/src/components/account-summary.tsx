@@ -180,12 +180,17 @@ export function announceAvatarChanged(avatarUrl: string | null) {
 function useAvatar(): [string | null, () => void] {
   const accessToken = useAccessToken();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // A photo announced by an upload is newer than whatever a fetch still in flight will say,
+  // so a late fetch must not put the old photo (or none) back.
+  const announced = useRef(false);
 
   useEffect(() => {
     if (!accessToken) return;
     const controller = new AbortController();
     fetchAvatar({ accessToken, signal: controller.signal })
-      .then((view) => setAvatarUrl(view.avatarUrl))
+      .then((view) => {
+        if (!announced.current) setAvatarUrl(view.avatarUrl);
+      })
       .catch(() => {
         // The initials are a complete answer; a missing photo is not worth an error.
       });
@@ -193,7 +198,10 @@ function useAvatar(): [string | null, () => void] {
   }, [accessToken]);
 
   useEffect(() => {
-    const onChange = (event: Event) => setAvatarUrl((event as CustomEvent<string | null>).detail);
+    const onChange = (event: Event) => {
+      announced.current = true;
+      setAvatarUrl((event as CustomEvent<string | null>).detail);
+    };
     window.addEventListener(AVATAR_CHANGED, onChange);
     return () => window.removeEventListener(AVATAR_CHANGED, onChange);
   }, []);
@@ -258,6 +266,7 @@ function AccountMenu({ me }: { me: MeResponse }) {
             width={44}
             height={44}
             unoptimized
+            referrerPolicy="no-referrer"
             onError={forgetAvatar}
             className="size-11 shrink-0 rounded-full object-cover ring-1 ring-line"
           />

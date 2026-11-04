@@ -71,6 +71,20 @@ describe("AccountSummary", () => {
     expect(screen.queryByText("TC")).not.toBeInTheDocument();
   });
 
+  it("does not let a slow first photo lookup undo a photo uploaded meanwhile", async () => {
+    fetchMe.mockResolvedValue(me);
+    let answer!: (view: { avatarUrl: string | null }) => void;
+    fetchAvatar.mockReturnValue(new Promise((resolve) => { answer = resolve; }));
+
+    const { container } = render(<AccountSummary />);
+
+    expect(await screen.findByText("TC")).toBeInTheDocument();
+    act(() => announceAvatarChanged("https://signed.example/new.png"));
+    await act(async () => answer({ avatarUrl: null }));
+
+    expect(container.querySelector('img[src="https://signed.example/new.png"]')).toBeInTheDocument();
+  });
+
   it("keeps the initials when there is no photo, and swaps in a newly uploaded one", async () => {
     fetchMe.mockResolvedValue(me);
 

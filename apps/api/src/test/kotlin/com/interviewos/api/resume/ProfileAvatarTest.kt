@@ -86,6 +86,27 @@ class ProfileAvatarTest {
         verifyNoInteractions(storage)
     }
 
+    @Test
+    fun `a Google account's photo stands in until the candidate uploads their own`() {
+        val google = googleJwt("https://lh3.googleusercontent.com/a/photo")
+        assertEquals("https://lh3.googleusercontent.com/a/photo", controller.avatar(google).avatarUrl)
+        verifyNoInteractions(storage)
+
+        given(repository.avatarPath(userId)).willReturn("$userId/avatar-1.png")
+        given(storage.createSignedUrl("resumes", "$userId/avatar-1.png", 3600)).willReturn("https://signed.example/own")
+        assertEquals("https://signed.example/own", controller.avatar(google).avatarUrl)
+    }
+
+    private fun googleJwt(photo: String) =
+        Jwt
+            .withTokenValue("test")
+            .header("alg", "RS256")
+            .subject(userId.toString())
+            .claim("email", "candidate@example.invalid")
+            .claim("user_metadata", mapOf("avatar_url" to photo))
+            .claim("app_metadata", mapOf("provider" to "google"))
+            .build()
+
     private fun file(
         contentType: String,
         bytes: ByteArray,
