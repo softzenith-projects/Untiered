@@ -2,7 +2,8 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LOOPS, LoopPicker } from "@/components/landing/loop-picker";
-import { COMPETENCIES, ReportPreview } from "@/components/landing/report-preview";
+import { ReportPreview } from "@/components/landing/report-preview";
+import { SAMPLE_REPORT } from "@/content/sample-report";
 import { SAMPLES, SampleTurn } from "@/components/landing/sample-turn";
 
 const service = SAMPLES[0];
@@ -98,14 +99,27 @@ describe("LoopPicker", () => {
 });
 
 describe("ReportPreview", () => {
-  it("reveals the quote a score was based on", () => {
+  it("draws each report section from the report's own components", () => {
     render(<ReportPreview />);
-    const target = COMPETENCIES[1];
-    const button = screen.getByRole("button", { name: new RegExp(target.name) });
 
-    fireEvent.click(button);
-    expect(button).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(`“${target.quote}”`)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /overall score [\d.]+ percent/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "At a glance" }));
+    expect(screen.getByRole("button", { name: "At a glance" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Answered without help")).toBeInTheDocument();
+  });
+
+  it("shows each score next to the sentence it was scored on", () => {
+    render(<ReportPreview />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Evidence" }));
+    const first = SAMPLE_REPORT.competencies[0]!;
+    expect(screen.getByText(`“${first.evidenceQuote}”`)).toBeInTheDocument();
+  });
+
+  it("says the round is a demo, not a real candidate", () => {
+    render(<ReportPreview />);
+
+    expect(screen.getByText(/a demo round, drawn by the report itself\. no real candidate/i)).toBeInTheDocument();
   });
 });
 
