@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { ApiRequestError, confirmCreditOrder, createCreditOrder, fetchBilling } from "@/lib/api";
 import { CheckoutDismissed, formatRupees, payWithRazorpay } from "@/lib/razorpay-checkout";
 import { useAccessToken } from "@/lib/use-access-token";
+import { formatCreditNumber } from "@/lib/credits";
 
 type Status = { tone: "positive" | "negative"; text: string } | null;
 
 /** "1 credit" or "5 credits", from the count rather than the server's display name, so the card always says credits. */
 function creditCount(credits: number): string {
-  return credits === 1 ? "1 credit" : `${credits} credits`;
+  return credits === 1 ? "1 credit" : `${formatCreditNumber(credits)} credits`;
 }
 
 /**
@@ -121,8 +122,8 @@ export function CreditPacks({
             <p className="text-title text-ink">{formatRupees(pack.pricePaise)}</p>
             <p className="text-caption text-ink-muted">
               {pack.credits === 1
-                ? "1 credit = 1 mock interview with its full report"
-                : `${formatRupees(pack.perInterviewPaise)} per credit. Each credit is 1 mock interview with its full report`}
+                ? "1 credit = one 45 or 60-minute mock interview, or two 30-minute ones, each with its full report"
+                : `${formatRupees(pack.perInterviewPaise)} per credit. Each credit is one 45 or 60-minute interview, or two 30-minute ones`}
             </p>
             <Button
               variant={pack.savingsPercent > 0 ? "primary" : "secondary"}
@@ -153,7 +154,7 @@ export function CreditPacks({
         </p>
       ) : null}
       <p className="text-caption text-ink-subtle">
-        Prices include all taxes. A credit is used when an interview starts, and comes back automatically if the
+        Prices include all taxes. A credit — or half of one, for a 30-minute round — is used when an interview starts, and comes back automatically if the
         interview fails on our side. Credits do not expire. Payments are processed by Razorpay.
       </p>
     </div>

@@ -50,12 +50,12 @@ class BillingControllerTest {
 
     @Test
     fun `reads the caller's own balance and packs`() {
-        given(service.overview(id)).willReturn(BillingOverview(true, 4, "INR", emptyList()))
+        given(service.overview(id)).willReturn(BillingOverview(true, 4.5, "INR", emptyList()))
 
         mockMvc
             .perform(get("/api/v1/billing").with(token()))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.creditBalance").value(4))
+            .andExpect(jsonPath("$.creditBalance").value(4.5))
             .andExpect(jsonPath("$.purchasable").value(true))
     }
 

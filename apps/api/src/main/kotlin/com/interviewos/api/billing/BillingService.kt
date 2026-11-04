@@ -1,6 +1,7 @@
 package com.interviewos.api.billing
 
 import com.interviewos.api.common.ApiException
+import com.interviewos.api.interview.RoundLength
 import com.interviewos.api.interview.SessionRepository
 import com.interviewos.api.user.SupabaseIdentity
 import com.interviewos.api.user.UserRepository
@@ -23,7 +24,8 @@ data class PackView(
 
 data class BillingOverview(
     val purchasable: Boolean,
-    val creditBalance: Int,
+    /** In credits; may be a half, since a 30-minute round costs half a credit. */
+    val creditBalance: Double,
     val currency: String,
     val packs: List<PackView>,
 )
@@ -79,7 +81,7 @@ class BillingService(
         val dearest = properties.packs.maxOfOrNull { it.pricePaise / it.credits } ?: 0
         return BillingOverview(
             purchasable = properties.enabled,
-            creditBalance = sessions.creditBalance(userId),
+            creditBalance = RoundLength.toCredits(sessions.halfCreditBalance(userId)),
             currency = CURRENCY,
             packs =
                 properties.packs.map { pack ->

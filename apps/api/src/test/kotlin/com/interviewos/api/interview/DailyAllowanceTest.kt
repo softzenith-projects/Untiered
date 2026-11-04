@@ -25,7 +25,7 @@ class DailyAllowanceTest {
         purchasable: Boolean = false,
     ) = Entitlement.evaluate(
         freeRoundsUsed = 5,
-        creditBalance = creditBalance,
+        halfCreditBalance = creditBalance * RoundLength.HALF_CREDITS_PER_CREDIT,
         sessionInProgress = sessionInProgress,
         freeRounds = null,
         daily = daily,
@@ -92,7 +92,7 @@ class DailyAllowanceTest {
 
         assertTrue(decision.allowed)
         assertEquals(Entitlement.Funding.CREDIT, decision.funding)
-        assertEquals(3, decision.creditBalance)
+        assertEquals(3.0, decision.creditBalance)
     }
 
     /** 20 minutes left: a 45-minute round needs a credit, a 20-minute one is still free. */

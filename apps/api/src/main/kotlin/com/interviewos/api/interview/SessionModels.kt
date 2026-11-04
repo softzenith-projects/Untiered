@@ -51,9 +51,9 @@ data class StartSessionRequest(
      * How long the round should run. Real loops are time-boxed and so is this one — the
      * clock is what ends the interview, not a turn counter.
      */
-    @field:Min(10)
-    @field:Max(120)
-    val durationMinutes: Int = 40,
+    @field:Min(30)
+    @field:Max(60)
+    val durationMinutes: Int = RoundLength.DEFAULT_MINUTES,
     /**
      * The candidate saying, in their own words, where they are: `student`,
      * `recent_graduate` or `professional` (task 051). Optional — null reproduces today's
@@ -228,8 +228,8 @@ data class EntitlementView(
      * progress" next to a disabled Start button and no way back into the round.
      */
     val openSessionId: UUID? = null,
-    /** Paid interviews bought and not yet spent. */
-    val creditBalance: Int = 0,
+    /** Paid credit not yet spent, in credits: may be a half (2.5) since a 30-minute round costs half. */
+    val creditBalance: Double = 0.0,
     /** What would pay for a round started now — `free` or `credit` — or null when none may start. */
     val funding: String? = null,
     /** Whether interviews can be bought here; false until Razorpay keys are configured. */

@@ -2,6 +2,7 @@ package com.interviewos.api.billing
 
 import com.interviewos.api.interview.Archetype
 import com.interviewos.api.interview.Confidence
+import com.interviewos.api.interview.RoundLength
 import com.interviewos.api.interview.SessionRepository
 import com.interviewos.api.storage.StorageProperties
 import org.junit.jupiter.api.AfterEach
@@ -21,6 +22,11 @@ import kotlin.test.assertTrue
 /** The credit ledger's real SQL, against a local Supabase instance with every migration applied. */
 @EnabledIfEnvironmentVariable(named = "TEST_DB_URL", matches = ".+")
 class CreditLedgerDatabaseIntegrationTest {
+    private companion object {
+        /** A 45- or 60-minute round's charge. */
+        val WHOLE = RoundLength.halfCreditsFor(45)
+    }
+
     private val userId = UUID.randomUUID()
     private val otherUserId = UUID.randomUUID()
     private val jdbc =
@@ -62,7 +68,7 @@ class CreditLedgerDatabaseIntegrationTest {
         assertFalse(billing.markPaidAndGrant(orderId, "pay_1", amountPaise = 89_900))
         assertFalse(billing.markPaidAndGrant(orderId, "pay_1", userId = userId))
 
-        assertEquals(5, sessions.creditBalance(userId))
+        assertEquals(5.0, creditsHeld(userId))
         assertEquals("paid", billing.findOrder(userId, orderId)?.status)
     }
 
@@ -73,8 +79,8 @@ class CreditLedgerDatabaseIntegrationTest {
 
         assertNull(billing.findOrder(otherUserId, orderId))
         assertFalse(billing.markPaidAndGrant(orderId, "pay_1", userId = otherUserId))
-        assertEquals(0, sessions.creditBalance(otherUserId))
-        assertEquals(0, sessions.creditBalance(userId))
+        assertEquals(0.0, creditsHeld(otherUserId))
+        assertEquals(0.0, creditsHeld(userId))
     }
 
     @Test
@@ -83,7 +89,7 @@ class CreditLedgerDatabaseIntegrationTest {
         billing.insertOrder(userId, orderId, fivePack, "INR")
 
         assertFalse(billing.markPaidAndGrant(orderId, "pay_1", amountPaise = 100))
-        assertEquals(0, sessions.creditBalance(userId))
+        assertEquals(0.0, creditsHeld(userId))
         assertTrue(billing.markPaidAndGrant(orderId, "pay_1", amountPaise = 89_900))
     }
 
@@ -95,36 +101,48 @@ class CreditLedgerDatabaseIntegrationTest {
         billing.markFailed(orderId)
         assertEquals("failed", billing.findOrder(userId, orderId)?.status)
         assertTrue(billing.markPaidAndGrant(orderId, "pay_2", amountPaise = 89_900))
-        assertEquals(5, sessions.creditBalance(userId))
+        assertEquals(5.0, creditsHeld(userId))
     }
 
     @Test
     fun `a round charged a credit is refunded once when it fails on our side`() {
         grant(1)
         val session = openSession()
-        sessions.spendCredit(userId, session)
-        assertEquals(0, sessions.creditBalance(userId))
+        sessions.spendCredit(userId, session, WHOLE)
+        assertEquals(0.0, creditsHeld(userId))
         // A session is charged at most once.
-        assertFailsWith<DataAccessException> { sessions.spendCredit(userId, session) }
+        assertFailsWith<DataAccessException> { sessions.spendCredit(userId, session, WHOLE) }
 
         assertTrue(sessions.failSessionAndRefundUsage(session, userId))
         assertFalse(sessions.failSessionAndRefundUsage(session, userId))
-        assertEquals(1, sessions.creditBalance(userId))
+        assertEquals(1.0, creditsHeld(userId))
+    }
+
+    /** 4 November 2026: a 30-minute round is charged, and refunded, half a credit. */
+    @Test
+    fun `a thirty-minute round is charged half a credit and refunded exactly that`() {
+        grant(1)
+        val session = openSession()
+        sessions.spendCredit(userId, session, RoundLength.halfCreditsFor(30))
+        assertEquals(0.5, creditsHeld(userId))
+
+        assertTrue(sessions.failSessionAndRefundUsage(session, userId))
+        assertEquals(1.0, creditsHeld(userId))
     }
 
     @Test
     fun `a completed or abandoned paid round keeps its charge`() {
         grant(2)
         val completed = openSession()
-        sessions.spendCredit(userId, completed)
+        sessions.spendCredit(userId, completed, WHOLE)
         assertTrue(sessions.markSessionStatus(completed, userId, "completed"))
         assertFalse(sessions.failSessionAndRefundUsage(completed, userId))
 
         val abandoned = openSession()
-        sessions.spendCredit(userId, abandoned)
+        sessions.spendCredit(userId, abandoned, WHOLE)
         assertTrue(sessions.markSessionStatus(abandoned, userId, "abandoned"))
 
-        assertEquals(0, sessions.creditBalance(userId))
+        assertEquals(0.0, creditsHeld(userId))
     }
 
     @Test
@@ -133,14 +151,14 @@ class CreditLedgerDatabaseIntegrationTest {
         sessions.recordPracticeUsage(userId, session, 30)
 
         assertTrue(sessions.failSessionAndRefundUsage(session, userId))
-        assertEquals(0, sessions.creditBalance(userId))
+        assertEquals(0.0, creditsHeld(userId))
     }
 
     @Test
     fun `only free rounds started count against the lifetime free tier`() {
         grant(1)
         val paid = openSession()
-        sessions.spendCredit(userId, paid)
+        sessions.spendCredit(userId, paid, WHOLE)
         assertTrue(sessions.markSessionStatus(paid, userId, "completed"))
         assertEquals(0, sessions.countFreeRoundsStarted(userId))
 
@@ -198,16 +216,18 @@ class CreditLedgerDatabaseIntegrationTest {
     fun `the ledger outlives a deleted round, so deleting it neither refunds nor loses the charge`() {
         grant(1)
         val session = openSession()
-        sessions.spendCredit(userId, session)
+        sessions.spendCredit(userId, session, WHOLE)
         jdbc.sql("delete from public.sessions where id = :s").param("s", session).update()
 
-        assertEquals(0, sessions.creditBalance(userId))
+        assertEquals(0.0, creditsHeld(userId))
     }
 
     @Test
     fun `locking for admission works for a provisioned candidate`() {
         sessions.lockForAdmission(userId)
     }
+
+    private fun creditsHeld(user: UUID): Double = RoundLength.toCredits(sessions.halfCreditBalance(user))
 
     private fun grant(credits: Int) {
         val orderId = "order_${UUID.randomUUID()}"

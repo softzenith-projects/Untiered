@@ -100,7 +100,7 @@ describe("NewInterviewForm", () => {
       ...draft,
       roundType: "custom_topic",
       roundLabel: "Custom topic",
-      durationMinutes: 20,
+      durationMinutes: 30,
       focusTopic: "Java collections",
     });
     startSession.mockResolvedValue({ id: "8b0d1e2f-3a4b-4c5d-9e6f-7a8b9c0d1e2f" });
@@ -118,7 +118,7 @@ describe("NewInterviewForm", () => {
       within(screen.getByRole("combobox", { name: /Length/i }))
         .getAllByRole("option")
         .map((option) => option.getAttribute("value")),
-    ).toEqual(["10", "20", "30"]);
+    ).toEqual(["30"]);
 
     await userEvent.click(screen.getByRole("checkbox", { name: /record my voice/i }));
     await userEvent.click(screen.getByRole("button", { name: /begin interview/i }));
@@ -129,7 +129,7 @@ describe("NewInterviewForm", () => {
         expect.objectContaining({
           roundType: "custom_topic",
           focusTopic: "Java collections",
-          durationMinutes: 20,
+          durationMinutes: 30,
           companyName: "General practice",
           roleTitle: "Topic practice",
         }),
@@ -142,7 +142,7 @@ describe("NewInterviewForm", () => {
 
     expect(screen.getByRole("radio", { name: /custom topic/i })).toBeChecked();
     expect(screen.getByDisplayValue("Java: Collections")).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: /Length/i })).toHaveValue("20");
+    expect(screen.getByRole("combobox", { name: /Length/i })).toHaveValue("30");
     expect(composeRound).not.toHaveBeenCalled();
   });
 
@@ -158,7 +158,7 @@ describe("NewInterviewForm", () => {
     render(<NewInterviewForm initialRoundType="system_design" />);
 
     expect(screen.getByRole("radio", { name: /system or solution design/i })).toBeChecked();
-    expect(screen.getByRole("combobox", { name: /Length/i })).toHaveValue("40");
+    expect(screen.getByRole("combobox", { name: /Length/i })).toHaveValue("45");
     expect(composeRound).not.toHaveBeenCalled();
   });
 
@@ -175,7 +175,7 @@ describe("NewInterviewForm", () => {
     expect(screen.getByRole("link", { name: /change round/i })).toHaveAttribute("href", "/rounds");
     // A topic only survives on the server for a custom-topic round, so it is not asked for here.
     expect(screen.queryByLabelText(/topic to practise/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: /Length/i })).toHaveValue("40");
+    expect(screen.getByRole("combobox", { name: /Length/i })).toHaveValue("45");
 
     await userEvent.click(screen.getByRole("checkbox", { name: /record my voice/i }));
     const begin = screen.getByRole("button", { name: /begin interview/i });
@@ -217,7 +217,7 @@ describe("NewInterviewForm", () => {
     expect(screen.getByLabelText(/topic to practise/i)).toBeRequired();
     expect(screen.queryByRole("textbox", { name: /company/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: /role/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: /Length/i })).toHaveValue("20");
+    expect(screen.getByRole("combobox", { name: /Length/i })).toHaveValue("30");
 
     await userEvent.type(screen.getByLabelText(/topic to practise/i), "Java collections");
     await userEvent.click(screen.getByRole("checkbox", { name: /record my voice/i }));
@@ -253,32 +253,67 @@ describe("NewInterviewForm", () => {
   });
 
   it("offers only round lengths that fit in the minutes left today", async () => {
-    fetchEntitlement.mockResolvedValue(allowance({ remainingRoundsToday: 1, remainingMinutesToday: 20 }));
+    fetchEntitlement.mockResolvedValue(allowance({ remainingRoundsToday: 1, remainingMinutesToday: 45 }));
     render(<NewInterviewForm initialRoundType="system_design" roundPreselected />);
 
     const length = screen.getByRole("combobox", { name: /Length/i });
-    await waitFor(() => expect(length).toHaveValue("20"));
+    await waitFor(() => expect(length).toHaveValue("45"));
     const offered = within(length).getAllByRole("option").map((option) => option.getAttribute("value"));
-    expect(offered).toEqual(["10", "20"]);
-    expect(screen.getByText(/20 free minutes left today/i)).toBeInTheDocument();
+    expect(offered).toEqual(["30", "45"]);
+    expect(screen.getByText(/45 free minutes left today/i)).toBeInTheDocument();
   });
 
   it("lets a candidate with paid interviews run longer, and says a paid one will be used", async () => {
     fetchEntitlement.mockResolvedValue(
-      allowance({ remainingRoundsToday: 1, remainingMinutesToday: 20, creditBalance: 2, purchasable: true }),
+      allowance({ remainingRoundsToday: 1, remainingMinutesToday: 30, creditBalance: 2, purchasable: true }),
     );
     render(<NewInterviewForm initialRoundType="system_design" roundPreselected />);
 
     const length = screen.getByRole("combobox", { name: /Length/i });
-    await waitFor(() => expect(within(length).getAllByRole("option")).toHaveLength(5));
+    await waitFor(() => expect(within(length).getAllByRole("option")).toHaveLength(3));
     await userEvent.selectOptions(length, "60");
     await userEvent.click(screen.getByRole("checkbox", { name: /record my voice/i }));
 
-    expect(screen.getByText("Uses 1 of your 2 credits when it begins.")).toBeInTheDocument();
+    expect(screen.getByText("Uses 1 credit of your 2 credits when it begins.")).toBeInTheDocument();
 
     // A round that fits in the free minutes is still free.
-    await userEvent.selectOptions(length, "20");
+    await userEvent.selectOptions(length, "30");
     expect(screen.queryByText(/credits? when it begins/)).not.toBeInTheDocument();
+  });
+
+  /** 4 November 2026: 30 minutes costs half a credit, 45 or 60 a whole one. */
+  it("prices a paid 30-minute round at half a credit", async () => {
+    fetchEntitlement.mockResolvedValue(
+      allowance({ dailyRoundLimit: null, dailyMinuteLimit: null, remainingRoundsToday: null, remainingMinutesToday: null, remainingFree: 0, creditBalance: 1.5, funding: "credit" }),
+    );
+    render(<NewInterviewForm initialRoundType="system_design" roundPreselected />);
+
+    const length = screen.getByRole("combobox", { name: /Length/i });
+    await waitFor(() => expect(within(length).getAllByRole("option")).toHaveLength(3));
+    await userEvent.click(screen.getByRole("checkbox", { name: /record my voice/i }));
+    await userEvent.selectOptions(length, "30");
+
+    expect(screen.getByText("Uses half a credit of your 1.5 credits when it begins.")).toBeInTheDocument();
+    await userEvent.selectOptions(length, "45");
+    expect(screen.getByText("Uses 1 credit of your 1.5 credits when it begins.")).toBeInTheDocument();
+  });
+
+  it("does not start a longer round on half a credit, and says 30 minutes would fit", async () => {
+    fetchEntitlement.mockResolvedValue(
+      allowance({ dailyRoundLimit: null, dailyMinuteLimit: null, remainingRoundsToday: null, remainingMinutesToday: null, remainingFree: 0, creditBalance: 0.5, funding: "credit" }),
+    );
+    render(<NewInterviewForm initialRoundType="system_design" roundPreselected />);
+
+    const length = screen.getByRole("combobox", { name: /Length/i });
+    await waitFor(() => expect(within(length).getAllByRole("option")).toHaveLength(3));
+    await userEvent.click(screen.getByRole("checkbox", { name: /record my voice/i }));
+    await userEvent.selectOptions(length, "45");
+
+    expect(screen.getByText(/you have half a credit, and this round needs a whole one/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /begin interview/i })).toBeDisabled();
+
+    await userEvent.selectOptions(length, "30");
+    expect(screen.getByRole("button", { name: /begin interview/i })).toBeEnabled();
   });
 
   it("turns one line into a round, and shows it back before anything starts", async () => {

@@ -80,7 +80,7 @@ class FresherRoundServiceTest {
                             language = "english",
                             consentAudio = true,
                             consentVideo = false,
-                            durationMinutes = 40,
+                            durationMinutes = 45,
                         ),
                 )
             }

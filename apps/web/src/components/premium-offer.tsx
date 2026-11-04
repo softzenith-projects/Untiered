@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { CreditPacks } from "@/components/credit-packs";
 import { fetchBilling, fetchEntitlement } from "@/lib/api";
 import { useAccessToken } from "@/lib/use-access-token";
+import { formatCreditNumber } from "@/lib/credits";
 
 /**
  * The paid side of the upgrade page: the interview packs and what the candidate already
@@ -73,8 +74,9 @@ export function PremiumOffer() {
               Buy interview credits
             </h2>
             <p className="mt-2 max-w-2xl text-body text-ink-muted">
-              Each credit is one full spoken interview with its complete report. Your free interviews are always
-              used first, so a credit is only spent when you practise beyond them.
+              Each credit is one full spoken interview of 45 or 60 minutes with its complete report, or two
+              30-minute ones. Your free interviews are always used first, so a credit is only spent when you
+              practise beyond them.
             </p>
           </div>
           <Balance bought={overview.creditBalance} free={remainingFree} />
@@ -98,7 +100,7 @@ function Balance({ bought, free }: { bought: number; free: number | null }) {
   if (free === null) {
     return (
       <p className="rounded-xl bg-accent px-4 py-3 text-caption text-accent-contrast shadow-[var(--shadow-md)]">
-        You have <strong className="text-heading">{bought}</strong> bought {bought === 1 ? "credit" : "credits"}
+        You have <strong className="text-heading">{formatCreditNumber(bought)}</strong> bought {bought === 1 ? "credit" : "credits"}
       </p>
     );
   }
@@ -106,10 +108,10 @@ function Balance({ bought, free }: { bought: number; free: number | null }) {
   return (
     <div className="rounded-xl bg-accent px-4 py-3 text-caption text-accent-contrast shadow-[var(--shadow-md)]">
       <p>
-        You have <strong className="text-heading">{total}</strong> {total === 1 ? "credit" : "credits"}
+        You have <strong className="text-heading">{formatCreditNumber(total)}</strong> {total === 1 ? "credit" : "credits"}
       </p>
       <p className="mt-0.5 text-micro text-accent-contrast/80">
-        {free} free · {bought} bought
+        {free} free · {formatCreditNumber(bought)} bought
       </p>
     </div>
   );
