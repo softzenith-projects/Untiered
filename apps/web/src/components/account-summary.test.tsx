@@ -216,12 +216,20 @@ describe("AccountSummary", () => {
     expect(fetchMe).toHaveBeenCalledWith(expect.objectContaining({ accessToken: "token-abc" }));
   });
 
-  it("falls back to the email address when no display name was supplied", async () => {
-    fetchMe.mockResolvedValue({ ...me, displayName: null });
+  it("reads a name from the email address when no display name was supplied", async () => {
+    fetchMe.mockResolvedValue({ ...me, displayName: null, email: "naman.kaushik06@gmail.com" });
 
     render(<AccountSummary />);
 
-    expect(await screen.findByText("candidate@example.com")).toBeInTheDocument();
+    expect(await screen.findByText("Naman Kaushik")).toBeInTheDocument();
+  });
+
+  it("shows the email address itself when no name can be read from it", async () => {
+    fetchMe.mockResolvedValue({ ...me, displayName: null, email: "12345@example.com" });
+
+    render(<AccountSummary />);
+
+    expect(await screen.findByText("12345@example.com")).toBeInTheDocument();
   });
 
   it("reports a failed profile load as an alert rather than an empty panel", async () => {

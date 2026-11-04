@@ -26,6 +26,7 @@ import { summarizeChapters } from "@/lib/course-progress";
 import { featureEnabled } from "@/lib/flags";
 import { useAccessToken } from "@/lib/use-access-token";
 import { useAllCourseProgress } from "@/lib/use-course-progress";
+import { displayNameFor } from "@/lib/display-name";
 
 /**
  * The candidate's profile.
@@ -439,7 +440,7 @@ function ProfileHeader({
   onAvatar: (file: File) => void;
   onEdit: () => void;
 }) {
-  const name = me?.displayName ?? me?.email ?? "Your profile";
+  const name = me ? displayNameFor(me) : "Your profile";
   const role = currentRoleFrom(details) ?? details?.currentLevel;
   const location = me?.profile.location;
   const resume = details?.resume ?? null;

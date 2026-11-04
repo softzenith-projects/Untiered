@@ -9,6 +9,7 @@ import { SPEECH_LEVEL } from "@/lib/silence";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { useInterviewCapture } from "@/lib/use-interview-capture";
 import { liveTranscriptSupported } from "@/lib/use-live-transcript";
+import { displayNameFor } from "@/lib/display-name";
 
 type Capture = ReturnType<typeof useInterviewCapture>;
 
@@ -590,7 +591,9 @@ function useCandidateFirstName(): string | null {
       if (!session) return;
 
       const me = await fetchMe({ accessToken: session.access_token, signal: controller.signal });
-      const first = me.displayName?.trim().split(/\s+/)[0];
+      // Never a whole email address as a first name: "Ready, naman.kaushik06@gmail.com?"
+      const name = displayNameFor(me);
+      const first = name.includes("@") ? undefined : name.split(/\s+/)[0];
       if (first && !controller.signal.aborted) setFirstName(first);
     }
 

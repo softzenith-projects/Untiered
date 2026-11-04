@@ -46,10 +46,49 @@ interface InterviewerPresenceProps {
   /** Microphone level, 0 to 1. Only meaningful while listening. */
   level?: number;
   compact?: boolean;
+  /**
+   * The centred stage for spoken-only rounds: Krivih large, then name, designation and
+   * status (owner, 4 November 2026). Workspace rounds keep the compact row.
+   */
+  stage?: { designation: string };
 }
 
-export function InterviewerPresence({ state, level = 0, compact = false }: InterviewerPresenceProps) {
+export function InterviewerPresence({ state, level = 0, compact = false, stage }: InterviewerPresenceProps) {
   const attentive = state === "listening";
+
+  if (stage) {
+    return (
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="relative grid size-40 place-items-center">
+          {/* Two soft halos; the inner one breathes with the candidate's voice while listening. */}
+          <span aria-hidden className="absolute inset-0 rounded-full border border-accent/10 bg-accent-wash/40" />
+          <span
+            aria-hidden
+            className={`absolute inset-4 rounded-full border transition-[transform,border-color] duration-500 ${
+              state === "speaking" ? "border-accent/60" : attentive ? "border-positive/50" : "border-accent/15"
+            } bg-accent-wash/70`}
+            style={attentive ? { transform: `scale(${1 + Math.min(level, 1) * 0.08})` } : undefined}
+          />
+          <span className="relative">
+            <Portrait state={state} size="stage" />
+          </span>
+        </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="flex items-center gap-2 text-heading font-bold text-ink">
+            Krivih
+            <span className="rounded-full bg-accent-wash px-2 py-0.5 font-mono text-micro font-bold tracking-widest text-accent uppercase">
+              AI
+            </span>
+          </span>
+          <span className="text-caption text-ink-muted">{stage.designation}</span>
+        </div>
+        <span role="status" className="flex items-center gap-2 text-caption font-semibold text-ink">
+          <span aria-hidden className={`size-2 rounded-full ${STATUS_DOT[state]}`} />
+          {STAGE_STATUS[state]}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-center ${compact ? "gap-2.5" : "gap-4"}`}>
@@ -70,7 +109,7 @@ export function InterviewerPresence({ state, level = 0, compact = false }: Inter
           }`}
           style={attentive ? { transform: `scale(${1 + Math.min(level, 1) * 0.06})` } : undefined}
         />
-        <Portrait state={state} compact={compact} />
+        <Portrait state={state} size={compact ? "compact" : "regular"} />
       </div>
 
       <div className="flex flex-col gap-0.5">
@@ -88,6 +127,21 @@ export function InterviewerPresence({ state, level = 0, compact = false }: Inter
     </div>
   );
 }
+
+/** The stage's status line: a little warmer than the row's, since it stands alone. */
+const STAGE_STATUS: Record<PresenceState, string> = {
+  speaking: "Asking you a question",
+  listening: "Listening to your answer",
+  thinking: "Considering your answer",
+  waiting: "Ready when you are",
+};
+
+const STATUS_DOT: Record<PresenceState, string> = {
+  speaking: "bg-accent",
+  listening: "bg-positive",
+  thinking: "bg-highlight",
+  waiting: "bg-ink-subtle",
+};
 
 /** What the figure is doing, in words, for anyone who would rather read than watch. */
 const DESCRIPTION: Record<PresenceState, string> = {
@@ -108,7 +162,7 @@ const DESCRIPTION: Record<PresenceState, string> = {
  * The `presence-*` class hooks are the same as before, so it still breathes, talks and
  * glances while thinking.
  */
-function Portrait({ state, compact }: { state: PresenceState; compact: boolean }) {
+function Portrait({ state, size }: { state: PresenceState; size: "compact" | "regular" | "stage" }) {
   const id = useId().replace(/:/g, "");
   const glow = `krivih-glow-${id}`;
   const disc = `krivih-disc-${id}`;
@@ -117,7 +171,7 @@ function Portrait({ state, compact }: { state: PresenceState; compact: boolean }
   return (
     <svg
       viewBox="0 0 120 120"
-      className={`${compact ? "size-11" : "size-[72px]"} ${state === "speaking" ? "presence-speaking" : ""} ${
+      className={`${size === "compact" ? "size-11" : size === "stage" ? "size-28" : "size-[72px]"} ${state === "speaking" ? "presence-speaking" : ""} ${
         state === "thinking" ? "presence-thinking" : ""
       }`}
       aria-hidden

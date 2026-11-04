@@ -9,7 +9,7 @@ import { publicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "AI Mock Interview Pricing",
-  description: `${LEGAL.productName} pricing: ${FREE_ROUNDS_LIFETIME_TEXT}, then interview credits from ${formatRupees(CREDIT_PACKS[0]!.pricePaise)}. One-off payments, no subscription.`,
+  description: `${LEGAL.productName} pricing. ${FREE_ROUNDS_LIFETIME_TEXT} Then interview credits from ${formatRupees(CREDIT_PACKS[0]!.pricePaise)}. One-off payments, no subscription.`,
   path: "/pricing",
 });
 
@@ -24,12 +24,12 @@ export default function PricingPage() {
     <LegalPage
       eyebrow="Untiered · Pricing"
       title="Pricing"
-      intro={`Start with ${FREE_ROUNDS_LIFETIME_TEXT}. After that, buy interview credits: one credit is one 45 or 60-minute spoken mock interview, or two 30-minute ones, each with its full evidence-backed report.`}
+      intro={`${FREE_ROUNDS_LIFETIME_TEXT} After that, buy interview credits: one credit is one 45 or 60-minute spoken mock interview, or two 30-minute ones, each with its full evidence-backed report.`}
       showUpdated={false}
     >
       <LegalSection id="free" title="Free">
         <p>
-          Every account gets {FREE_ROUNDS_LIFETIME_TEXT}, each with the complete report, plus the{" "}
+          {FREE_ROUNDS_LIFETIME_TEXT} Each comes with the complete report, and you also get the{" "}
           <Link href={"/courses" as Route} className="font-medium text-accent hover:underline">courses</Link>{" "}
           and Arena practice. No card or payment details are needed to start.{" "}
           <Link href="/" className="font-medium text-accent hover:underline">See how a mock interview works</Link>.

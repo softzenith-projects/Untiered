@@ -24,7 +24,7 @@ export const metadata: Metadata = publicPageMetadata({
   title: "AI Mock Interviews for Software and IT Roles · Untiered",
   description:
     "Spoken AI mock interviews for the loops people actually sit: service-based IT, Big Four, " +
-    `European competency rounds, global product. Every score quotes what you said. ${FREE_ROUNDS_LIFETIME_TEXT}.`,
+    `European competency rounds, global product. No mystery scores. ${FREE_ROUNDS_LIFETIME_TEXT}`,
   path: "/",
 });
 
@@ -264,8 +264,11 @@ function Loops() {
       <div className="mx-auto layout-content px-4 py-16 sm:px-6 lg:py-24">
         <div className="flex flex-col gap-3 pb-8">
           <span className="pill pill-accent w-fit">Your college tier isn&rsquo;t your skill level.</span>
-          <h2 className="text-display text-balance text-ink">An Infosys panel is not a Google loop.</h2>
-          <p className="max-w-xl text-body text-ink-muted">Each type runs its own rounds and its own rubric. Pick one.</p>
+          <h2 className="text-display text-balance text-ink">An Infosys panel isn&rsquo;t a Google loop.</h2>
+          <p className="text-body text-pretty text-ink-muted">
+            A Salesforce onsite isn&rsquo;t a Stripe screen. An Amazon loop isn&rsquo;t a Microsoft round. Different
+            companies, different interview playbooks. Pick yours.
+          </p>
         </div>
         <LoopPicker />
         <p className="max-w-xl pt-5 text-caption text-ink-subtle">
@@ -283,8 +286,10 @@ function Report() {
       <div className="mx-auto grid layout-content gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-16 lg:py-24">
         <div className="flex flex-col gap-4">
           <span className="pill pill-accent w-fit">Get roasted here. Get hired out there.</span>
-          <h2 className="text-display text-balance text-ink">Every score quotes you.</h2>
-          <p className="max-w-md text-body text-ink-muted">A score that can&rsquo;t be tied to something you said is dropped, not shown.</p>
+          <h2 className="text-display text-balance text-ink">No mystery scores. Just receipts.</h2>
+          <p className="max-w-md text-body text-ink-muted">
+            Every score comes with evidence from your actual answers. See what worked, what didn&rsquo;t, and exactly why.
+          </p>
           <ul className="flex flex-wrap gap-2 pt-2">
             {extras.map((item) => (
               <li key={item} className="rounded-full border border-line bg-surface-raised px-3 py-1.5 text-caption font-medium text-ink-muted">
@@ -371,7 +376,12 @@ function CtaBand({
   arenaEnabled: boolean;
 }) {
   const href = mockInterviewsEnabled ? "/interview/new" : coursesEnabled ? "/courses" : arenaEnabled ? "/arena" : "/login";
-  const steps = ["Pick a company and role", "Talk through up to 8 exchanges", "Read the report"];
+  // Rounds run 30 to 60 minutes on the clock, so no step promises a fixed number of questions.
+  const steps = [
+    { title: "Pick your target", detail: "Any company, any role. Or just a topic." },
+    { title: "Face Krivih", detail: "30, 45 or 60 minutes of real follow-ups." },
+    { title: "Get the receipts", detail: "A report that quotes what you said." },
+  ];
   return (
     <section className="bg-navy text-on-navy">
       <div className="mx-auto flex layout-content flex-col gap-10 px-4 py-16 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:py-20">
@@ -380,16 +390,26 @@ function CtaBand({
             <p className="eyebrow text-accent-on-navy">Fail the mock. Not the actual interview.</p>
           ) : null}
           <h2 className="text-display text-balance text-on-navy">
-            {mockInterviewsEnabled ? `${FREE_ROUNDS_LIFETIME_TEXT}.` : "Keep building the skill behind the answer."}
+            {mockInterviewsEnabled ? FREE_ROUNDS_LIFETIME_TEXT : "Keep building the skill behind the answer."}
           </h2>
           {mockInterviewsEnabled ? (
-            <ol className="flex flex-col gap-3 sm:flex-row sm:gap-6">
+            <ol className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-2">
               {steps.map((step, index) => (
-                <li key={step} className="flex items-center gap-2.5 text-caption text-on-navy-muted">
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-navy-raised font-mono text-micro font-bold text-on-navy">
-                    {index + 1}
-                  </span>
-                  {step}
+                <li key={step.title} className="flex items-center gap-2 sm:flex-1">
+                  <div className="flex flex-1 items-center gap-3 rounded-2xl border border-on-navy/15 bg-on-navy/5 px-4 py-3.5 shadow-[var(--shadow-sm)] backdrop-blur-sm sm:h-full">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-on-navy to-highlight font-mono text-caption font-bold text-navy shadow-[var(--shadow-sm)]">
+                      {index + 1}
+                    </span>
+                    <span className="flex flex-col gap-0.5">
+                      <span className="text-caption font-bold text-on-navy">{step.title}</span>
+                      <span className="text-micro text-on-navy-muted">{step.detail}</span>
+                    </span>
+                  </div>
+                  {index < steps.length - 1 ? (
+                    <span aria-hidden className="hidden text-heading text-accent-on-navy/60 sm:block">
+                      →
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ol>

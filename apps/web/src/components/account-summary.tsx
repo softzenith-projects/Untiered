@@ -13,6 +13,7 @@ import { fetchAvatar, fetchMe, updateEmailPreferences } from "@/lib/api";
 import { forgetReports } from "@/lib/report-cache";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAccessToken } from "@/lib/use-access-token";
+import { displayNameFor } from "@/lib/display-name";
 
 type State =
   | { status: "loading" }
@@ -217,7 +218,7 @@ function AccountMenu({ me }: { me: MeResponse }) {
   const [signingOut, setSigningOut] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  const name = me.displayName ?? me.email;
+  const name = displayNameFor(me);
 
   // Closes on Escape (handing focus back to the name) and on a press anywhere else.
   useEffect(() => {
