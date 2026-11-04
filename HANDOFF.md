@@ -1,44 +1,61 @@
-# Handoff — 2 November 2026
+# Handoff — 4 November 2026
 
 ## Task
-Deploy the website from GitHub Actions, because Netlify's free plan stopped building this private
-organisation repository ("organization-owned private repository detected"). Owner's request in this
-session.
+A candidate's 40-minute round ended at 18 minutes. Find out why, fix it, then (owner's follow-up
+in the same session) offer only 30/45/60-minute rounds, with a 30-minute round costing half a
+credit. No task file; owner requests in session.
 
 ## What I built
-- A `deploy-web` job in `.github/workflows/ci.yml`. It runs `netlify-cli@27.16.1 deploy --prod
-  --filter @untiered/web` after `web`, `api`, `database` and `images` are all green, on a push to the
-  branch named in the `NETLIFY_PRODUCTION_BRANCH` repository variable. With the variable unset it is
-  skipped, so merging this changes nothing until you configure it.
-- It is a job in CI rather than its own workflow because `workflow_run` and `workflow_dispatch` only
-  work from the default branch (`main`). The job deploys from whichever branch you name.
-- `deploy/README.md` has a "Web on Netlify" section with the setup steps.
+**1. Turn ceiling and echoed answers** — merged into `develop` (PRD §06)
+- Cause: a flat `MAX_TURNS = 16` ended the round. The candidate answered in about a minute a
+  turn and reached 16 answers at 18 minutes. Two of those 16 were transcribed by Gemini as exact
+  copies of the previous answer.
+- `InterviewPlan.maxTurnsFor(duration)`: 1.5 turns a minute, floor 16 (30 → 45, 45 → 67, 60 → 90).
+- `EchoedAnswer.kt`: a transcript of 40+ characters identical to the previous answer is refused
+  with `answer_not_heard`. Nothing is recorded and the claim is released. Exempt when End is
+  pressed or time is up.
+- `interview-room.tsx`: on `answer_not_heard`, shows "We didn't catch that answer clearly"
+  and reopens the mic on the same question with a fresh request id. The silence detector is
+  now keyed per take (`answerTake`): otherwise a fast failure left it stopped.
+
+**2. Round lengths and half-credit pricing** — PR #142 (payments, so not merged by me)
+- `RoundLength.kt`: lengths 30/45/60 (default 45); custom topic 30 only; price 1 half-credit
+  for 30 minutes, 2 for longer.
+- Migration `20261104120000_half_credit_ledger.sql`: `interview_credits.delta` →
+  `half_credits`, existing rows doubled.
+- Entitlement, charge, refund and grant SQL use half-credits. New refusal `CREDIT_SHORT`.
+  `creditBalance` in the API is now a number that can be a half.
+- Web: length picker, credit copy (`lib/credits.ts`), pricing/upgrade/pack text.
+- CLAUDE.md product decisions record the new pricing.
 
 ## Assumptions I made
-- Which branch Netlify treated as production is not recorded. The runbook says releases come from a
-  green `develop`, and `CLAUDE.md` says `main` is release-only. So the branch is a variable you set.
-- Build settings and environment variables stay in Netlify's dashboard. The CLI fetches them with the
-  token, so `NEXT_PUBLIC_GA_MEASUREMENT_ID` and the Supabase keys are still set in Netlify.
-- Node 24, as in the CI web job.
+- 1.5 turns a minute is above any real pace, so only a runaway session reaches the ceiling.
+- Echo threshold of 40 characters, so "I don't know" twice is still accepted.
+- Free tier stays "3 free interviews", each a whole interview at any length (owner chose this).
+- Custom topic is 30 minutes only (owner chose this). Default length is 45 (closest to the old 40).
+- Rounds already stored at other lengths keep running. Only new starts are restricted.
 
 ## What I could NOT verify
-- **A real deploy.** There is no Netlify token or site id here. The first run after you add them is
-  the test. Watch the `deploy web (Netlify)` job log.
-- That the free plan accepts CLI deploys from this repository. The block is on Netlify's Git
-  integration, and CLI deploys do not use it, but I have not seen Netlify state this for this case.
-- That the CLI picks up the base directory and build command from the Netlify dashboard in this
-  monorepo. If it does not, the job log will say so, and a `netlify.toml` is the fix.
+- Live behaviour of the re-ask prompt in a real round: no live interviews without your go-ahead.
+- Whether Gemini's echo has another cause (e.g. near-silent audio). The fix catches the
+  symptom, not the cause.
+- The credit-ledger DB integration test runs only in CI's database job.
 
 ## Verification status
-- The workflow parses. CI on this branch: see the run; `deploy-web` is expected to be skipped.
+- Branch 1: web typecheck/lint/test (4069)/build and API ktlint/test/build pass locally;
+  CI green on all jobs (run 41831996656).
+- Branch 2: web (4070 tests) and API pass locally; CI result is on PR #142.
 
 ## Merge status
-- See the commit and CI run for this branch. Merged into `develop` once CI is green.
+- `fix/turn-ceiling-and-echoed-answers` merged into `develop` at `e8ef1ca`. No migration.
+- `feat/round-durations-and-half-credits` → PR #142, unmerged: it touches payments.
+  **Apply the migration and deploy the API together.** The column rename breaks the running
+  API until the new build is live. That is deliberate: it fails closed rather than misreading
+  balances.
 
 ## Suggested next task
-- Once the first deploy works, remove the Vercel sections from `deploy/README.md`.
+- Decide whether the 4 November candidate (session `63d9d088-c666-423c-887c-edc06d9cfb08`)
+  gets their round back. It was cut short by our bug.
 
 ## Open questions for you
-- Set in GitHub (Settings → Secrets and variables → Actions): secrets `NETLIFY_AUTH_TOKEN` and
-  `NETLIFY_SITE_ID`, and the variable `NETLIFY_PRODUCTION_BRANCH` (`develop` or `main`).
-- In Netlify, stop builds or unlink the repository, so the failing Git builds stop.
+- Refund terms for a half-used credit (`refund-terms.tsx` still says "a pack you have not used").

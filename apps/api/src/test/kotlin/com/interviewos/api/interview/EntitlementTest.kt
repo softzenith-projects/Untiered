@@ -16,7 +16,7 @@ class EntitlementTest {
         val tenRoundsIn =
             Entitlement.evaluate(
                 freeRoundsUsed = 10,
-                creditBalance = 0,
+                halfCreditBalance = 0,
                 sessionInProgress = false,
                 freeRounds = null,
             )
@@ -36,7 +36,7 @@ class EntitlementTest {
         val decision =
             Entitlement.evaluate(
                 freeRoundsUsed = 3,
-                creditBalance = 0,
+                halfCreditBalance = 0,
                 sessionInProgress = true,
                 freeRounds = null,
             )
@@ -97,7 +97,11 @@ class EntitlementTest {
 
         assertTrue(decision.allowed)
         assertEquals(Entitlement.Funding.CREDIT, decision.funding)
-        assertEquals("Your free practice is used, so this interview uses 1 of your 1 credit.", decision.message)
+        assertEquals(
+            "Your free practice is used, so interviews now use your credits: half a credit for 30 minutes, " +
+                "one for 45 or 60. You have 1 credit.",
+            decision.message,
+        )
     }
 
     @Test
@@ -136,7 +140,7 @@ class EntitlementTest {
         val decision = evaluate(freeRoundsUsed = 3, creditBalance = -2)
 
         assertFalse(decision.allowed)
-        assertEquals(0, decision.creditBalance)
+        assertEquals(0.0, decision.creditBalance)
     }
 
     @Test
@@ -160,6 +164,79 @@ class EntitlementTest {
         assertEquals(0, evaluate(freeRoundsUsed = 9).remainingFree)
     }
 
+    /** 4 November 2026: a 30-minute round costs half a credit, a longer one a whole credit. */
+    @Test
+    fun `a thirty-minute round is paid with half a credit`() {
+        val decision = evaluateHalves(halfCredits = 3, requestedMinutes = 30)
+
+        assertTrue(decision.allowed)
+        assertEquals(Entitlement.Funding.CREDIT, decision.funding)
+        assertEquals(1, decision.halfCreditCost)
+        assertEquals(1.5, decision.creditBalance)
+        assertEquals("Your free practice is used, so this interview uses half a credit. You have 1.5 credits.", decision.message)
+    }
+
+    @Test
+    fun `a longer round is paid with a whole credit`() {
+        for (minutes in listOf(45, 60)) {
+            val decision = evaluateHalves(halfCredits = 4, requestedMinutes = minutes)
+
+            assertTrue(decision.allowed, "$minutes minutes")
+            assertEquals(2, decision.halfCreditCost)
+            assertEquals("Your free practice is used, so this interview uses 1 of your 2 credits.", decision.message)
+        }
+    }
+
+    @Test
+    fun `half a credit cannot pay for a longer round, and says a thirty-minute one would fit`() {
+        val decision = evaluateHalves(halfCredits = 1, requestedMinutes = 45, purchasable = true)
+
+        assertFalse(decision.allowed)
+        assertEquals(Entitlement.Reason.CREDIT_SHORT, decision.reason)
+        assertTrue(decision.message.contains("Choose a 30-minute round, or buy credits"))
+    }
+
+    @Test
+    fun `half a credit still lets the dashboard offer a round`() {
+        // With no round chosen yet, the question is whether any round could be paid for.
+        val decision = evaluateHalves(halfCredits = 1, requestedMinutes = null)
+
+        assertTrue(decision.allowed)
+        assertEquals(Entitlement.Funding.CREDIT, decision.funding)
+    }
+
+    @Test
+    fun `a free round is a whole free round whatever its length`() {
+        val decision = evaluateHalves(halfCredits = 0, requestedMinutes = 30, freeRoundsUsed = 2)
+
+        assertTrue(decision.allowed)
+        assertEquals(Entitlement.Funding.FREE, decision.funding)
+        assertEquals(1, decision.remainingFree)
+        assertNull(decision.halfCreditCost)
+    }
+
+    @Test
+    fun `credits read naturally in halves`() {
+        assertEquals("half a credit", formatCredits(1))
+        assertEquals("1 credit", formatCredits(2))
+        assertEquals("1.5 credits", formatCredits(3))
+        assertEquals("5 credits", formatCredits(10))
+    }
+
+    private fun evaluateHalves(
+        halfCredits: Int,
+        requestedMinutes: Int?,
+        freeRoundsUsed: Int = 3,
+        purchasable: Boolean = false,
+    ) = Entitlement.evaluate(
+        freeRoundsUsed = freeRoundsUsed,
+        halfCreditBalance = halfCredits,
+        sessionInProgress = false,
+        freeRounds = 3,
+        requestedMinutes = requestedMinutes,
+        purchasable = purchasable,
+    )
+
     /** The shipped allowance: three free rounds for life (owner, 29 October 2026). */
     private fun evaluate(
         freeRoundsUsed: Int,
@@ -168,7 +245,7 @@ class EntitlementTest {
         purchasable: Boolean = false,
     ) = Entitlement.evaluate(
         freeRoundsUsed = freeRoundsUsed,
-        creditBalance = creditBalance,
+        halfCreditBalance = creditBalance * RoundLength.HALF_CREDITS_PER_CREDIT,
         sessionInProgress = sessionInProgress,
         freeRounds = 3,
         purchasable = purchasable,

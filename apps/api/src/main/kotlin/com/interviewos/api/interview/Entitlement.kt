@@ -18,14 +18,15 @@ package com.interviewos.api.interview
  *    side is handed back, as a credit is.
  * 3. **The daily allowance**, when configured (off by default): rounds started today, then
  *    planned minutes used today, then whether the requested round fits in what is left.
- * 4. **A paid credit**, only once the free allowance says no. Free practice is always
+ * 4. **Paid credit**, only once the free allowance says no. Free practice is always
  *    spent first, so a candidate who bought a pack never pays for a round the product
- *    would have given them anyway.
+ *    would have given them anyway. A 30-minute round costs half a credit and a longer one
+ *    a whole credit ([RoundLength]); the balance must cover the round being started.
  */
 object Entitlement {
     /**
      * @param freeRoundsUsed free rounds started and not handed back after a failure.
-     * @param creditBalance paid interview credits not yet spent.
+     * @param halfCreditBalance paid credit not yet spent, in half-credits ([RoundLength]).
      * @param purchasable whether credits can be bought here, which decides what a refusal
      *   tells the candidate to do next.
      * @param freeRounds how many rounds a candidate gets free for life, or null for no
@@ -35,7 +36,7 @@ object Entitlement {
      */
     fun evaluate(
         freeRoundsUsed: Int,
-        creditBalance: Int,
+        halfCreditBalance: Int,
         sessionInProgress: Boolean,
         freeRounds: Int?,
         daily: DailyUsage = DailyUsage.UNLIMITED,
@@ -43,7 +44,9 @@ object Entitlement {
         purchasable: Boolean = false,
     ): EntitlementDecision {
         val remaining = remainingFree(freeRounds, freeRoundsUsed)
-        val balance = creditBalance.coerceAtLeast(0)
+        val balance = halfCreditBalance.coerceAtLeast(0)
+        // With no round named yet (the dashboard), the question is whether any round could be paid for.
+        val cost = requestedMinutes?.let(RoundLength::halfCreditsFor) ?: RoundLength.CHEAPEST_HALF_CREDITS
 
         fun decision(
             reason: Reason,
@@ -54,14 +57,18 @@ object Entitlement {
             remainingFree = if (reason == Reason.FREE_TIER_EXHAUSTED) 0 else remaining,
             daily = daily,
             funding = funding,
-            creditBalance = balance,
+            halfCreditBalance = balance,
+            // Only a named round has a price; the dashboard asks before one is chosen.
+            halfCreditCost = if (funding == Funding.CREDIT) requestedMinutes?.let { cost } else null,
             purchasable = purchasable,
         )
 
         if (sessionInProgress) return decision(Reason.SESSION_IN_PROGRESS)
         val freeRefusal = freeRefusal(freeRoundsUsed, freeRounds, daily, requestedMinutes)
         if (freeRefusal == null) return decision(Reason.ALLOWED, Funding.FREE)
-        if (balance > 0) return decision(Reason.ALLOWED, Funding.CREDIT)
+        if (balance >= cost) return decision(Reason.ALLOWED, Funding.CREDIT)
+        // Half a credit left, and a round that costs one: a 30-minute round would still fit.
+        if (balance > 0 && freeRefusal == Reason.FREE_TIER_EXHAUSTED) return decision(Reason.CREDIT_SHORT)
         // With nothing to pay for it, the candidate is told why the free allowance said no —
         // including the minutes left when a shorter round would still fit, the cheapest way on.
         return decision(freeRefusal)
@@ -95,7 +102,7 @@ object Entitlement {
         /** The free allowance; recorded in `practice_usage`. */
         FREE,
 
-        /** One paid credit, spent when the round starts; recorded in `interview_credits`. */
+        /** Paid credit — half or one, by length — spent when the round starts; recorded in `interview_credits`. */
         CREDIT,
     }
 
@@ -115,6 +122,9 @@ object Entitlement {
 
         /** Some minutes are left today, but fewer than the round asked for. */
         DAILY_MINUTES_SHORT,
+
+        /** Half a credit is left, and this round costs a whole one. A 30-minute round fits. */
+        CREDIT_SHORT,
     }
 }
 
@@ -144,16 +154,31 @@ data class EntitlementDecision(
     val daily: DailyUsage = DailyUsage.UNLIMITED,
     /** What pays for the round when it is allowed; null when it is refused. */
     val funding: Entitlement.Funding? = null,
-    val creditBalance: Int = 0,
+    /** Paid credit held, in half-credits. */
+    val halfCreditBalance: Int = 0,
+    /** What this round will be charged, in half-credits, when credit pays for it. */
+    val halfCreditCost: Int? = null,
     val purchasable: Boolean = false,
 ) {
+    /** Paid credit held, in credits — 2.5 for five half-credits. */
+    val creditBalance: Double get() = RoundLength.toCredits(halfCreditBalance)
+
     val message: String
         get() =
             when (reason) {
                 Entitlement.Reason.ALLOWED -> {
                     when {
+                        funding == Entitlement.Funding.CREDIT && halfCreditCost != null && halfCreditCost < 2 -> {
+                            "Your free practice is used, so this interview uses half a credit. You have ${paid()}."
+                        }
+
+                        funding == Entitlement.Funding.CREDIT && halfCreditCost == null -> {
+                            "Your free practice is used, so interviews now use your credits: half a credit for " +
+                                "30 minutes, one for 45 or 60. You have ${paid()}."
+                        }
+
                         funding == Entitlement.Funding.CREDIT -> {
-                            "Your free practice is used, so this interview uses 1 of your ${paid(creditBalance)}."
+                            "Your free practice is used, so this interview uses 1 of your ${paid()}."
                         }
 
                         daily.roundLimit != null || daily.minuteLimit != null -> {
@@ -192,6 +217,11 @@ data class EntitlementDecision(
                         }
                 }
 
+                Entitlement.Reason.CREDIT_SHORT -> {
+                    "You have half a credit, and rounds over 30 minutes take a whole one. " +
+                        "Choose a 30-minute round" + if (purchasable) ", or buy credits for a longer one." else "."
+                }
+
                 Entitlement.Reason.DAILY_MINUTES_SHORT -> {
                     "You have ${daily.remainingMinutes} minutes of free practice left today. " +
                         "Choose a round of ${daily.remainingMinutes} minutes or less" +
@@ -199,9 +229,9 @@ data class EntitlementDecision(
                 }
             }
 
-    private fun paidHeld(): String = if (creditBalance > 0) " You also have ${paid(creditBalance)}." else ""
+    private fun paidHeld(): String = if (halfCreditBalance > 0) " You also have ${paid()}." else ""
 
-    private fun paid(count: Int): String = "$count ${if (count == 1) "credit" else "credits"}"
+    private fun paid(): String = formatCredits(halfCreditBalance)
 
     private fun allowanceLeft(): String =
         listOfNotNull(
@@ -215,3 +245,12 @@ data class EntitlementDecision(
             daily.minuteLimit?.let { "$it minutes" },
         ).joinToString(" or ") + " a day"
 }
+
+/** "half a credit", "1 credit", "2.5 credits". */
+fun formatCredits(halfCredits: Int): String =
+    when {
+        halfCredits == 1 -> "half a credit"
+        halfCredits == RoundLength.HALF_CREDITS_PER_CREDIT -> "1 credit"
+        halfCredits % RoundLength.HALF_CREDITS_PER_CREDIT == 0 -> "${halfCredits / RoundLength.HALF_CREDITS_PER_CREDIT} credits"
+        else -> "${RoundLength.toCredits(halfCredits)} credits"
+    }

@@ -1,5 +1,6 @@
 package com.interviewos.api.billing
 
+import com.interviewos.api.interview.RoundLength
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import java.util.UUID
@@ -108,8 +109,10 @@ class BillingRepository(
                          and credits is not null $scope
                       returning id, user_id, credits
                     ), granted as (
-                      insert into public.interview_credits (user_id, delta, reason, payment_id)
-                      select user_id, credits, 'purchase', id from paid where user_id is not null
+                      -- Packs are sold in whole credits; the ledger counts halves (RoundLength).
+                      insert into public.interview_credits (user_id, half_credits, reason, payment_id)
+                      select user_id, credits * ${RoundLength.HALF_CREDITS_PER_CREDIT}, 'purchase', id
+                        from paid where user_id is not null
                       on conflict do nothing
                       returning id
                     )

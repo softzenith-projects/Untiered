@@ -332,6 +332,10 @@ interviewbit.com: a bright, confident, polished learning-platform look.
   1 for ₹199, 5 for ₹899, 10 for ₹1,499, tax-inclusive (`BillingProperties.DEFAULT_PACKS`).
   Every interview, free or paid, includes the full report, because the report is what
   sells the product. `apps/web/src/lib/legal.ts` states the free number; change both.
+  - **Rounds are 30, 45 or 60 minutes; a custom-topic round is 30 only** (owner,
+    4 November 2026, `RoundLength`). A paid 30-minute round costs **half a credit**, a 45-
+    or 60-minute one a whole credit. A free round is one whole free round at any length.
+    The ledger counts half-credits (`interview_credits.half_credits`) so it stays integer.
   - A credit is spent **when the round starts**, only after the free allowance says no
     (`Entitlement.Funding`), and handed back automatically if the round ends `failed`
     (our fault). Leaving a round does not hand it back.

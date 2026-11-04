@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 
 import { fetchEntitlement } from "@/lib/api";
 import { useAccessToken } from "@/lib/use-access-token";
+import { formatCreditNumber } from "@/lib/credits";
 
 /**
  * The last allowance this tab read, so the bar does not blink back to nothing on every
@@ -75,9 +76,9 @@ export function CreditBalance() {
       {left !== null && (
         <span
           className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-surface-sunken px-3 py-2 text-caption font-semibold text-ink"
-          title="Free interviews left plus credits you bought. Each interview uses one."
+          title="Free interviews left plus credits you bought. A free interview is one whole interview; a paid 30-minute one uses half a credit."
         >
-          <span className="tabular-nums">{left}</span>
+          <span className="tabular-nums">{formatCreditNumber(left)}</span>
           <span className="text-ink-muted">{left === 1 ? "credit" : "credits"}</span>
         </span>
       )}

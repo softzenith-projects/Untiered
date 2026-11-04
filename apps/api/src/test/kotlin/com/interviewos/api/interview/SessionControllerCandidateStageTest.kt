@@ -86,7 +86,7 @@ class SessionControllerCandidateStageTest {
         val body =
             """
             {"companyName":"Google","roleTitle":"Software Engineer","roundType":"system_design",
-             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":40,
+             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":45,
              "candidateStage":"student"}
             """.trimIndent()
 
@@ -120,7 +120,7 @@ class SessionControllerCandidateStageTest {
                 "english",
                 true,
                 false,
-                40,
+                45,
                 DeclaredStage.PROFESSIONAL,
             ),
         ).willReturn(sessionId)
@@ -153,7 +153,7 @@ class SessionControllerCandidateStageTest {
         val body =
             """
             {"companyName":"Infosys","roleTitle":"Graduate Engineer Trainee","roundType":"system_design",
-             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":40,
+             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":45,
              "candidateStage":"professional"}
             """.trimIndent()
 
@@ -178,7 +178,7 @@ class SessionControllerCandidateStageTest {
         val body =
             """
             {"companyName":"Google","roleTitle":"Software Engineer","roundType":"coding_practical",
-             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":40,
+             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":45,
              "candidateStage":"sophomore"}
             """.trimIndent()
 
@@ -199,7 +199,7 @@ class SessionControllerCandidateStageTest {
         val body =
             """
             {"companyName":"Google","roleTitle":"Software Engineer","roundType":"coding_practical",
-             "language":"french","consentAudio":true,"consentVideo":false,"durationMinutes":40}
+             "language":"french","consentAudio":true,"consentVideo":false,"durationMinutes":45}
             """.trimIndent()
 
         mockMvc
@@ -227,7 +227,7 @@ class SessionControllerCandidateStageTest {
                 "english",
                 true,
                 false,
-                20,
+                30,
                 null,
             ),
         ).willReturn(sessionId)
@@ -244,7 +244,7 @@ class SessionControllerCandidateStageTest {
                 startedAt = null,
                 endedAt = null,
                 consentVideo = false,
-                durationMinutes = 20,
+                durationMinutes = 30,
             ),
         )
         harness.case =
@@ -259,7 +259,7 @@ class SessionControllerCandidateStageTest {
         val body =
             """
             {"companyName":"","roleTitle":"","roundType":"system_design",
-             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":20}
+             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":30}
             """.trimIndent()
 
         mockMvc
@@ -271,6 +271,27 @@ class SessionControllerCandidateStageTest {
             ).andExpect(status().isCreated)
             .andExpect(jsonPath("$.companyName").value("General practice"))
             .andExpect(jsonPath("$.roleTitle").value("Role not specified"))
+    }
+
+    /** 4 November 2026: rounds are 30, 45 or 60 minutes, and nothing in between. */
+    @Test
+    fun `rejects a length that is not one of the three before anything is written`() {
+        val body =
+            """
+            {"companyName":"","roleTitle":"","roundType":"technical_fundamentals",
+             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":40}
+            """.trimIndent()
+
+        mockMvc
+            .perform(
+                post("/api/v1/sessions")
+                    .with(tokenFor(candidate))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body),
+            ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("duration_invalid"))
+
+        verifyNoInteractions(harness.repository)
     }
 
     @Test
@@ -297,7 +318,7 @@ class SessionControllerCandidateStageTest {
         val body =
             """
             {"companyName":"Google","roleTitle":"Software Engineer","roundType":"coding_practical",
-             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":40,
+             "language":"english","consentAudio":true,"consentVideo":false,"durationMinutes":45,
              "candidateStage":"student"}
             """.trimIndent()
 

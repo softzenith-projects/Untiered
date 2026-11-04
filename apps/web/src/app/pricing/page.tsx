@@ -24,7 +24,7 @@ export default function PricingPage() {
     <LegalPage
       eyebrow="Untiered · Pricing"
       title="Pricing"
-      intro={`Start with ${FREE_ROUNDS_LIFETIME_TEXT}. After that, buy interview credits: one credit is one spoken mock interview with its full evidence-backed report.`}
+      intro={`Start with ${FREE_ROUNDS_LIFETIME_TEXT}. After that, buy interview credits: one credit is one 45 or 60-minute spoken mock interview, or two 30-minute ones, each with its full evidence-backed report.`}
       showUpdated={false}
     >
       <LegalSection id="free" title="Free">
@@ -49,7 +49,7 @@ export default function PricingPage() {
                 </div>
                 <p className="text-title text-ink">{formatRupees(pack.pricePaise)}</p>
                 <p className="text-caption text-ink-muted">
-                  {pack.credits === 1 ? "1 mock interview with its full report" : `${formatRupees(perCredit)} per credit`}
+                  {pack.credits === 1 ? "1 interview of 45 or 60 minutes, or 2 of 30 minutes" : `${formatRupees(perCredit)} per credit`}
                 </p>
               </li>
             );
@@ -58,7 +58,8 @@ export default function PricingPage() {
         <ul className="list-disc space-y-2 pl-5">
           <li>Prices are in Indian rupees and include all taxes.</li>
           <li>Each purchase is a one-off payment. There is no subscription and nothing renews.</li>
-          <li>Your free interviews are always used first. A credit is used when an interview starts, and is returned automatically if the interview fails because of a fault on our side.</li>
+          <li>Rounds are 30, 45 or 60 minutes. A 30-minute interview uses half a credit; a 45 or 60-minute one uses a whole credit.</li>
+          <li>Your free interviews are always used first, and each is one whole interview of any length. Credit is used when an interview starts, and is returned automatically if the interview fails because of a fault on our side.</li>
           <li>Credits do not expire while your account exists.</li>
           <li>Payments are processed securely by Razorpay: UPI, cards and net banking.</li>
         </ul>
