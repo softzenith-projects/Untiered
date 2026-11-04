@@ -34,6 +34,15 @@ describe("InterviewerPresence", () => {
   /** It has no name, and never acquires one — the same rule the opening prompt follows. */
   // The owner named the interviewer Krivih on 4 November 2026; it used to be nameless.
   // It is still labelled as an AI, so nobody takes it for a person.
+  it("takes the stage in a spoken round: name, an AI badge, its seat and what it is doing", () => {
+    render(<InterviewerPresence state="listening" stage={{ designation: "Hiring manager · Amazon" }} />);
+
+    expect(screen.getByText("Krivih")).toBeInTheDocument();
+    expect(screen.getByText("AI")).toBeInTheDocument();
+    expect(screen.getByText("Hiring manager · Amazon")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Listening to your answer");
+  });
+
   it("is Krivih, and says plainly that it is an AI", () => {
     render(<InterviewerPresence state="waiting" />);
 

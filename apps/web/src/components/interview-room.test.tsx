@@ -3,7 +3,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InterviewRoom } from "./interview-room";
+import { InterviewRoom, interviewerDesignation } from "./interview-room";
 import { ApiRequestError } from "@/lib/api";
 
 const fetchSession = vi.hoisted(() => vi.fn());
@@ -632,5 +632,32 @@ describe("InterviewRoom operational telemetry", () => {
     expect(second[2]).toBe(first[2]);
     // A new take is a new request, not a replay of the one the server refused.
     expect(second[4]).not.toBe(first[4]);
+  });
+});
+
+describe("interviewerDesignation", () => {
+  it("seats Krivih as an engineer in engineering rounds and a hiring manager in managerial ones", () => {
+    expect(interviewerDesignation({ roundType: "system_design", roundLabel: "System design", companyName: "Amazon" })).toBe(
+      "Engineer · Amazon",
+    );
+    expect(
+      interviewerDesignation({ roundType: "techno_managerial", roundLabel: "Techno-managerial", companyName: "Infosys" }),
+    ).toBe("Hiring manager · Infosys");
+    expect(
+      interviewerDesignation({ roundType: "behavioural_competency", roundLabel: "Behavioural", companyName: "Google" }),
+    ).toBe("Hiring manager · Google");
+    expect(interviewerDesignation({ roundType: "hr_fit_closing", roundLabel: "HR and fit", companyName: "TCS" })).toBe(
+      "HR manager · TCS",
+    );
+  });
+
+  it("names the round instead of an employer in general practice", () => {
+    expect(
+      interviewerDesignation({
+        roundType: "technical_fundamentals",
+        roundLabel: "Technical fundamentals",
+        companyName: "General practice",
+      }),
+    ).toBe("Engineer · Technical fundamentals");
   });
 });
