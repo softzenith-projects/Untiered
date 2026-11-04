@@ -141,7 +141,7 @@ function HalfCoin() {
       <path d="M28 4a24 24 0 0 0 0 48z" className="fill-highlight" />
       <circle cx="28" cy="28" r="24" className="fill-none stroke-highlight" strokeWidth={2} />
       <path d="M28 4v48" className="stroke-navy" strokeWidth={2} strokeDasharray="3 3" />
-      <text x="16" y="33" textAnchor="middle" className="fill-navy text-[13px] font-extrabold">½</text>
+      <text x="16" y="33" textAnchor="middle" fontSize={13} fontWeight={800} className="fill-navy">½</text>
     </svg>
   );
 }
