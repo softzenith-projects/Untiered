@@ -35,6 +35,23 @@ ssh ubuntu@<vm-ip> 'docker load -i ~/untiered/untiered-api.tar'
 
 Set `RELEASE_TAG=<sha>` in the VM's `deploy/.env` (Compose also passes it to the API as `SENTRY_RELEASE`, so Sentry tags events with the image that is running; remove any `SENTRY_RELEASE` line from `api.env`), then from that directory run `docker compose config -q` and `docker compose up -d`. Check `https://api.untiered.tech/actuator/health/readiness` and `docker compose logs --tail=100 api proxy`. The proxy is the only published service. Observe VM memory and restarts under actual traffic. For rollback, set `RELEASE_TAG` to the previous loaded green image and run `docker compose up -d` again; database migration compatibility must be checked separately.
 
+## Java code runner: Piston on its own ARM VM (current)
+
+Java's Run button sends the candidate's source to a self-hosted [Piston](https://github.com/engineer-man/piston). Piston runs `--privileged`, so it never shares a host with the API. The current runner is `untiered-piston-arm`: an OCI `VM.Standard.A1.Flex` with 2 OCPU and 8 GB, in the API's subnet. The `untiered-piston-runner` NSG admits TCP 2000 only from the API VM's private IP. With the API VM's 2 OCPU and 12 GB, that is the whole A1 Always Free allowance of 4 OCPU and 24 GB. The tenancy is pay-as-you-go, so a third A1 VM, or a larger shape, is billed.
+
+It replaced an `E2.1.Micro` runner on 5 November 2026. On the micro, a hello world took about 3 s of the 5 s run limit, and a 200,000-element sort took 4.2 to 5 s. On A1 they take 0.7 s and 1 s.
+
+Upstream publishes Piston and its packages for x86 only, so this runner is built from source:
+
+1. **Image.** Clone `engineer-man/piston`; the runner was built from commit `de2b365`. `api/Dockerfile` is based on Debian buster, which is archived. After each `FROM` line, add a `RUN` that rewrites `/etc/apt/sources.list` to `archive.debian.org`, deletes the `buster-updates` line, and sets `Acquire::Check-Valid-Until false`. Then build natively on the ARM VM: `docker build -t untiered-piston:arm64-<commit> api`.
+2. **Java package.** Copy `packages/java/15.0.2` and delete `build.sh`. In its place, unpack Oracle's `openjdk-15.0.2_linux-aarch64_bin.tar.gz` with `--strip-components=1`, after checking the published `.sha256`. Write `pkg-info.json` from `metadata.json` with a `build_platform` field, then run `tar czf java-15.0.2.pkg.tar.gz -C <dir> .`.
+3. **Install.** Serve that tarball, and an `index` line `java,15.0.2,<sha256>,http://pkgrepo:8000/java-15.0.2.pkg.tar.gz`, from a throwaway `python -m http.server` container named `pkgrepo`. Put it on a Docker network shared with Piston; the host's iptables rejects traffic to the host itself. Start Piston on that network:
+   `docker run -d --name piston --network pistonnet --privileged -v piston_packages:/piston -e PISTON_RUN_TIMEOUT=5000 -e PISTON_RUN_CPU_TIME=10000 -e PISTON_MAX_CONCURRENT_JOBS=2 -e PISTON_REPO_URL=http://pkgrepo:8000/index -p 2000:2000 --restart unless-stopped untiered-piston:arm64-<commit>`
+   Then `POST /api/v2/packages {"language":"java","version":"15.0.2"}`, and remove `pkgrepo`. The package lives in the `piston_packages` volume and survives restarts.
+4. **Check before pointing the API at it.** Run these from the API VM against the runner's private IP: an infinite loop must end `TO`/`SIGKILL` at 5 s, a socket to `1.1.1.1` must fail with `Network is unreachable`, and stdin and compile errors must come back. Then set `CODE_RUNNER_ENABLED=true` and `CODE_RUNNER_BASE_URL=http://<runner-private-ip>:2000/api/v2` in `api.env`, and run `docker compose up -d api`.
+
+`PISTON_RUN_TIMEOUT=5000` must not drop below the API's `run-timeout-millis`; Piston's default of 3000 ms refuses the API's requests. The API looks the Java version up from `/runtimes`, so a newer JDK package needs no API change.
+
 ## Web on Netlify (current)
 
 The site is served by Netlify, not the Vercel plan below. Netlify's free plan refuses to build
