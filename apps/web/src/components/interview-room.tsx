@@ -67,6 +67,8 @@ const VOICE_GRACE_MS = 25_000;
 /** Save while drawing at a measured cadence, and flush on window blur. */
 const BOARD_SAVE_MS = 5_000;
 const MAX_BOARD_BYTES = 5 * 1024 * 1024;
+/** The server heard a copy of the previous answer and kept nothing (`EchoedAnswer.ERROR_CODE`). */
+const ANSWER_NOT_HEARD = "answer_not_heard";
 
 /** How often the design rail re-checks which phase the round is in. */
 const ROUND_CLOCK_TICK_MS = 10_000;
@@ -379,6 +381,12 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
     [browserVoice, capture, speaksLocally],
   );
 
+  // Opens the microphone on the same question again. Set alongside `handOver`, below.
+  const answerAgain = useRef<() => Promise<void>>(async () => {});
+  // Counts microphone openings, so a second take on the same question restarts the silence
+  // detector even when the phase went answering → submitting → answering in one render.
+  const [answerTake, setAnswerTake] = useState(0);
+
   const finishAnswer = useCallback(async (endRound = false) => {
     if (!accessToken || !turn) return;
     const priorPhase = phase;
@@ -443,6 +451,19 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
       );
       setPhase("asking");
     } catch (cause) {
+      /*
+       * The answer came back transcribed as a copy of the one before, so the server kept
+       * nothing. The question still stands: say so and open the microphone again, the way
+       * an interviewer who missed an answer asks for it again. A fresh request id, because
+       * this take is a new answer and not a retry of the old one.
+       */
+      if (cause instanceof ApiRequestError && cause.code === ANSWER_NOT_HEARD) {
+        answerRequestIds.current.delete(turn.turnIndex);
+        reportRoomEvent("answer_submission_failed", "answering", turn.turnIndex, requestId);
+        setError(cause.message);
+        void answerAgain.current();
+        return;
+      }
       reportRoomEvent("answer_submission_failed", "error", turn.turnIndex, requestId);
       setPhase("error");
       setError(
@@ -486,12 +507,13 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
     }, TICK_MS);
 
     return () => clearInterval(id);
-  }, [phase, hasWorkspace]);
+  }, [phase, hasWorkspace, answerTake]);
 
   const beginAnswering = useCallback(async () => {
     const started = await capture.start();
     if (started) {
       setElapsed(0);
+      setAnswerTake((take) => take + 1);
       lastWorkspaceChange.current = null;
       // Workspace rounds use the microphone meter for feedback and do not display a
       // running transcript. In spoken-only rounds, clear the previous answer first.
@@ -517,6 +539,7 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
   const handOver = useRef(beginAnswering);
   useEffect(() => {
     handOver.current = beginAnswering;
+    answerAgain.current = beginAnswering;
   });
 
   /*
@@ -564,7 +587,7 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
           element.pause();
           reportSpeechEvent(failure, turnIndex, Date.now() - startedAt);
         }
-        void handOver.current();
+        void answerAgain.current();
       };
       const armStall = () => {
         clearStall();
@@ -1020,23 +1043,51 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
             : "mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-10 px-6 py-16 sm:px-10"
         }
       >
-        <div className={`flex flex-col ${workspace ? "gap-3" : "gap-5 rounded-surface border border-line bg-surface-raised p-7 shadow-[var(--shadow-md)] sm:p-10"}`}>
-          <div className="flex items-center justify-between gap-4">
-            <InterviewerPresence state={presenceState} level={capture.level} compact={!!workspace} />
-            {phase === "answering" ? (
-              <span className="flex items-center gap-2 font-mono text-caption text-ink-subtle">
-                <SpeakingDot active level={capture.level} />
-                {formatDuration(elapsed)}
-              </span>
-            ) : null}
-          </div>
+        {/*
+          * Spoken-only rounds put Krivih centre stage, above the question, the way a
+          * video interview frames the interviewer (owner, 4 November 2026). Workspace
+          * rounds keep the compact row: the editor or board needs the room.
+          */}
+        {!workspace ? (
+          <InterviewerPresence
+            state={presenceState}
+            level={capture.level}
+            stage={{ designation: interviewerDesignation(session) }}
+          />
+        ) : null}
+
+        <div className={`flex flex-col ${workspace ? "gap-3" : "gap-4 rounded-surface border border-line bg-surface-raised p-7 shadow-[var(--shadow-md)] sm:p-10"}`}>
+          {workspace ? (
+            <div className="flex items-center justify-between gap-4">
+              <InterviewerPresence state={presenceState} level={capture.level} compact />
+              {phase === "answering" ? (
+                <span className="flex items-center gap-2 font-mono text-caption text-ink-subtle">
+                  <SpeakingDot active level={capture.level} />
+                  {formatDuration(elapsed)}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           {/*
             * In a workspace the prompt is compact and available at once beside its
             * details. Spoken-only rounds still reveal it with the voice. `aria-live`
             * stays absent so a screen reader never announces every partial reveal.
             */}
-          <p className={`eyebrow text-accent ${workspace ? "mt-2" : "mt-4"}`}>Current question</p>
+          <div className={`flex items-center justify-between gap-4 ${workspace ? "mt-2" : ""}`}>
+            <p className="eyebrow text-accent">Current question</p>
+            {!workspace ? (
+              phase === "answering" ? (
+                <span className="flex items-center gap-2 font-mono text-caption text-ink-subtle">
+                  <SpeakingDot active level={capture.level} />
+                  {formatDuration(elapsed)}
+                </span>
+              ) : turn ? (
+                // A number, not "3 / 5": the clock ends a round, so there is no fixed total.
+                <span className="font-mono text-caption text-ink-subtle">Question {turn.turnIndex + 1}</span>
+              ) : null
+            ) : null}
+          </div>
           <h1 className={workspace ? "text-heading font-semibold text-ink" : "text-display text-balance text-ink"}>
             {workspace ? (
               questionText
@@ -1056,6 +1107,11 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
           </h1>
           {/* Spoken-only rounds also expose the complete question to assistive technology. */}
           {!workspace ? <p className="sr-only">{questionText}</p> : null}
+          {!workspace && !awaitingVoice ? (
+            <p className="text-caption text-ink-muted">
+              Take your time. Think out loud, use a specific example, and make your own part clear.
+            </p>
+          ) : null}
 
           {questionAudio.url ? (
             <div className="flex flex-col gap-2">
@@ -1178,6 +1234,33 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
       ) : null}
     </div>
   );
+}
+
+/**
+ * The seat Krivih is sitting in for this round (owner, 4 November 2026): an engineer for
+ * engineering rounds, a hiring manager for managerial ones. The "AI" badge beside the
+ * name keeps it honest that no person is in that seat.
+ */
+const INTERVIEWER_TITLE: Record<SessionView["roundType"], string> = {
+  technical_fundamentals: "Engineer",
+  project_deep_dive: "Engineer",
+  coding_practical: "Engineer",
+  system_design: "Engineer",
+  custom_topic: "Engineer",
+  techno_managerial: "Hiring manager",
+  behavioural_competency: "Hiring manager",
+  case_client_scenario: "Hiring manager",
+  hr_fit_closing: "HR manager",
+  aptitude: "Interviewer",
+};
+
+/** "Hiring manager · Amazon", or "Engineer · Technical fundamentals" when no employer is named. */
+export function interviewerDesignation(session: Pick<SessionView, "roundType" | "roundLabel" | "companyName"> | null): string {
+  if (!session) return "Interviewer";
+  const title = INTERVIEWER_TITLE[session.roundType] ?? "Interviewer";
+  const company = session.companyName?.trim();
+  const generic = !company || company === "General practice";
+  return `${title} · ${generic ? session.roundLabel : company}`;
 }
 
 function TerminalSession({ session }: { session: SessionView }) {

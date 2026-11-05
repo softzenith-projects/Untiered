@@ -51,7 +51,7 @@ export default function TermsPage() {
 
       <LegalSection id="free" title="Free practice and limits">
         <p>
-          Each account gets {FREE_ROUNDS_LIFETIME_TEXT}, each with its full report. This is a
+          {FREE_ROUNDS_LIFETIME_TEXT} Each comes with its full report. This is a
           one-time allowance for the life of the account: it does not reset each day, month or
           year, and it does not come back once used. A free interview is used when it starts, as
           a paid one is, and is returned if it fails because of a fault on our side. Leaving an

@@ -3,7 +3,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InterviewRoom } from "./interview-room";
+import { InterviewRoom, interviewerDesignation } from "./interview-room";
 import { ApiRequestError } from "@/lib/api";
 
 const fetchSession = vi.hoisted(() => vi.fn());
@@ -590,5 +590,74 @@ describe("InterviewRoom operational telemetry", () => {
       expect.any(String),
       "submitting",
     );
+  });
+
+  it("asks for the answer again, on the same question, when the server did not hear it", async () => {
+    submitAnswer.mockRejectedValueOnce(
+      new ApiRequestError(422, "answer_not_heard", "We didn't catch that answer clearly. Please give it again."),
+    );
+    fetchSession.mockResolvedValue({ ...baseSession, workspace: { kind: "dsa" } });
+    beginSession.mockResolvedValue({
+      startedAt: new Date().toISOString(),
+      scheduledEndAt: new Date(Date.now() + 30 * 60_000).toISOString(),
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { rerender } = render(<InterviewRoom sessionId={baseSession.id} />);
+
+    await user.click(await screen.findByRole("button", { name: "Enter the room" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+    expect(captureStart).toHaveBeenCalledTimes(1);
+    captureLevel.current = 0.4;
+    rerender(<InterviewRoom sessionId={baseSession.id} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    captureLevel.current = 0;
+    rerender(<InterviewRoom sessionId={baseSession.id} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(8_400); });
+
+    expect(submitAnswer).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Please give it again.");
+    // The microphone reopens on the same question; the room does not stall on an error.
+    expect(captureStart).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    captureLevel.current = 0.4;
+    rerender(<InterviewRoom sessionId={baseSession.id} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    captureLevel.current = 0;
+    rerender(<InterviewRoom sessionId={baseSession.id} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+
+    expect(submitAnswer).toHaveBeenCalledTimes(2);
+    const [first, second] = submitAnswer.mock.calls as [unknown[], unknown[]];
+    expect(second[2]).toBe(first[2]);
+    // A new take is a new request, not a replay of the one the server refused.
+    expect(second[4]).not.toBe(first[4]);
+  });
+});
+
+describe("interviewerDesignation", () => {
+  it("seats Krivih as an engineer in engineering rounds and a hiring manager in managerial ones", () => {
+    expect(interviewerDesignation({ roundType: "system_design", roundLabel: "System design", companyName: "Amazon" })).toBe(
+      "Engineer · Amazon",
+    );
+    expect(
+      interviewerDesignation({ roundType: "techno_managerial", roundLabel: "Techno-managerial", companyName: "Infosys" }),
+    ).toBe("Hiring manager · Infosys");
+    expect(
+      interviewerDesignation({ roundType: "behavioural_competency", roundLabel: "Behavioural", companyName: "Google" }),
+    ).toBe("Hiring manager · Google");
+    expect(interviewerDesignation({ roundType: "hr_fit_closing", roundLabel: "HR and fit", companyName: "TCS" })).toBe(
+      "HR manager · TCS",
+    );
+  });
+
+  it("names the round instead of an employer in general practice", () => {
+    expect(
+      interviewerDesignation({
+        roundType: "technical_fundamentals",
+        roundLabel: "Technical fundamentals",
+        companyName: "General practice",
+      }),
+    ).toBe("Engineer · Technical fundamentals");
   });
 });

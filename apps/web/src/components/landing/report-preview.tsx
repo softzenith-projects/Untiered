@@ -2,90 +2,145 @@
 
 import { useState } from "react";
 
+import { bandFor, CompetencyBars, overallScore, scoreToneForPercent } from "@/components/report-charts";
+import { PaceGauge, RingMeter, SkillRadar } from "@/components/report-visuals";
+import { SAMPLE_REPORT } from "@/content/sample-report";
+
 /**
- * Sample scores, shaped like the real report: every score carries the sentence it was
- * scored on. The operational-depth row is the real one from the session the hero demo
- * replays; the rest illustrate the format and the card says so.
+ * The report, drawn live from its own components (owner, 4 November 2026).
+ *
+ * Not screenshots: a screenshot scaled into this card blurs, and drifts from the real page
+ * the moment the report changes. These are the same chart components the report renders,
+ * fed a demo round, so they stay sharp at any size and always match the product. The
+ * round is invented and the card says so.
  */
-export const COMPETENCIES = [
-  {
-    name: "Operational depth",
-    score: 2,
-    quote: "If it failed we just retried it. It was mostly fine.",
-    note: "No idempotency, no backoff, no mention of what “failed” meant.",
-  },
-  {
-    name: "Problem framing",
-    score: 4,
-    quote: "First I'd want to know how many writes per second the ledger takes at peak.",
-    note: "Asked for the number that decides the design before proposing one.",
-  },
-  {
-    name: "Trade-offs",
-    score: 3,
-    quote: "A queue would be cleaner, but we didn't have time to set one up.",
-    note: "Named the alternative; did not say what it would have cost or saved.",
-  },
-  {
-    name: "Communication",
-    score: 3,
-    quote: "So basically, yeah, it was a worker, and it kind of just ran.",
-    note: "Filler-heavy opening; the structure arrived on the second attempt.",
-  },
+export const GLIMPSES = [
+  { id: "summary", label: "Summary" },
+  { id: "glance", label: "At a glance" },
+  { id: "evidence", label: "Evidence" },
 ] as const;
 
+type GlimpseId = (typeof GLIMPSES)[number]["id"];
+
 export function ReportPreview() {
-  const [selected, setSelected] = useState(0);
-  const active = COMPETENCIES[selected] ?? COMPETENCIES[0];
+  const [selected, setSelected] = useState<GlimpseId>("summary");
 
   return (
     <div className="card overflow-hidden shadow-[var(--shadow-md)]">
-      <div className="flex items-center justify-between border-b border-line px-5 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
         <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Sample report</span>
-        <span className="text-micro text-ink-subtle">Click a score</span>
-      </div>
-
-      <div className="grid md:grid-cols-[1fr_1fr]">
-        <ul className="flex flex-col gap-1 p-3">
-          {COMPETENCIES.map((c, index) => {
-            const on = index === selected;
-            return (
-              <li key={c.name}>
-                <button
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setSelected(index)}
-                  className={`flex w-full flex-col gap-2 rounded-xl px-3 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${on ? "bg-accent-wash" : "hover:bg-surface-sunken"}`}
-                >
-                  <span className="flex items-center justify-between gap-3">
-                    <span className="text-caption font-semibold text-ink">{c.name}</span>
-                    <span className="font-mono text-caption font-bold text-ink">
-                      {c.score}<span className="text-ink-subtle">/5</span>
-                    </span>
-                  </span>
-                  <span aria-hidden="true" className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <span key={n} className={`h-1.5 flex-1 rounded-full ${n <= c.score ? (c.score <= 2 ? "bg-highlight" : "bg-accent") : "bg-line"}`} />
-                    ))}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div aria-live="polite" className="flex flex-col justify-center gap-4 border-t border-line bg-surface p-6 md:border-t-0 md:border-l">
-          <span className="font-mono text-micro tracking-widest text-ink-subtle uppercase">Scored on what you said</span>
-          <blockquote key={active.name} className="rise-in border-l-4 border-accent pl-4 text-heading font-semibold text-ink">
-            &ldquo;{active.quote}&rdquo;
-          </blockquote>
-          <p className="text-caption text-ink-muted">{active.note}</p>
+        <div role="group" aria-label="Report section" className="flex gap-1 rounded-full bg-surface-sunken p-1">
+          {GLIMPSES.map((glimpse) => (
+            <button
+              key={glimpse.id}
+              type="button"
+              aria-pressed={glimpse.id === selected}
+              onClick={() => setSelected(glimpse.id)}
+              className={`min-h-9 rounded-full px-3 text-micro font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                glimpse.id === selected ? "bg-surface-raised text-ink shadow-[var(--shadow-sm)]" : "text-ink-muted hover:text-ink"
+              }`}
+            >
+              {glimpse.label}
+            </button>
+          ))}
         </div>
       </div>
 
+      {/*
+        * One fixed height for every tab, so switching does not make the page jump. What
+        * runs past the bottom fades out, the way the real page would scroll on.
+        */}
+      <div className="relative h-[32rem] overflow-hidden bg-surface-sunken p-4 sm:p-5">
+        <div key={selected} className="rise-in flex flex-col gap-4">
+          {selected === "summary" ? <SummaryGlimpse /> : selected === "glance" ? <GlanceGlimpse /> : <EvidenceGlimpse />}
+        </div>
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-surface-sunken to-transparent" />
+      </div>
+
       <p className="border-t border-line px-5 py-2.5 text-micro text-ink-subtle">
-        Operational depth is from a real session. The other rows show the format.
+        A demo round, drawn by the report itself. No real candidate&rsquo;s answers.
       </p>
     </div>
+  );
+}
+
+function SummaryGlimpse() {
+  const score = overallScore(SAMPLE_REPORT.competencies) ?? 0;
+  const band = bandFor(score);
+  const tone = scoreToneForPercent(score);
+  return (
+    <>
+      <header className="hero-band relative flex items-center justify-between gap-5 overflow-hidden p-5">
+        <div className="flex min-w-0 flex-col gap-2">
+          <p className="eyebrow text-accent-on-navy">{SAMPLE_REPORT.roundLabel} · Sample</p>
+          <p className="text-heading font-bold text-balance text-on-navy">{SAMPLE_REPORT.headline}</p>
+          <p className="text-caption text-on-navy-muted">{SAMPLE_REPORT.context}</p>
+        </div>
+        <div
+          role="img"
+          aria-label={`Overall score ${score} percent, ${band.name}`}
+          className="grid size-24 shrink-0 place-items-center rounded-full p-1.5"
+          style={{ background: `conic-gradient(var(--${tone}) ${score}%, rgba(255,255,255,0.16) 0)` }}
+        >
+          <div className="grid size-full place-items-center rounded-full bg-navy-raised text-center">
+            <span>
+              <strong className="block text-heading text-on-navy">{score}%</strong>
+              <span className="block text-micro text-accent-on-navy">{band.name}</span>
+            </span>
+          </div>
+        </div>
+      </header>
+      <section className="flex flex-col gap-4 rounded-xl border border-line bg-surface-raised p-5">
+        <p className="eyebrow text-accent">How you did</p>
+        <CompetencyBars competencies={SAMPLE_REPORT.competencies} />
+      </section>
+      <section className="flex flex-col gap-1.5 rounded-xl border border-line bg-surface-raised p-5">
+        <p className="eyebrow text-accent">Next best action</p>
+        <p className="text-body font-semibold text-ink">{SAMPLE_REPORT.nextAction.focus}</p>
+        <p className="text-caption text-ink-muted">{SAMPLE_REPORT.nextAction.drill}</p>
+      </section>
+    </>
+  );
+}
+
+function GlanceGlimpse() {
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <SkillRadar competencies={SAMPLE_REPORT.competencies} />
+        <div className="flex flex-col gap-4">
+          <RingMeter
+            title="Answered without help"
+            value={SAMPLE_REPORT.unaidedAnswers}
+            total={SAMPLE_REPORT.answers}
+            caption={`${SAMPLE_REPORT.unaidedAnswers} of ${SAMPLE_REPORT.answers} answers needed no nudge`}
+          />
+          <PaceGauge wordsPerMinute={SAMPLE_REPORT.wordsPerMinute} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** The point of the section: each score, and the sentence it was scored on. */
+function EvidenceGlimpse() {
+  return (
+    <>
+      {SAMPLE_REPORT.competencies.slice(0, 3).map((item) => (
+        <article key={item.competency} className="flex flex-col gap-3 rounded-xl border border-line bg-surface-raised p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-body font-semibold text-ink">{item.competency}</h3>
+            <span className="font-mono text-caption font-bold text-ink">
+              {item.score}
+              <span className="text-ink-subtle">/{item.maxScore}</span>
+            </span>
+          </div>
+          <blockquote className="rounded-lg border-l-4 border-accent bg-accent-wash px-4 py-2.5 text-body text-ink italic">
+            &ldquo;{item.evidenceQuote}&rdquo;
+          </blockquote>
+          <p className="text-caption text-ink-muted">{item.rationale}</p>
+        </article>
+      ))}
+    </>
   );
 }

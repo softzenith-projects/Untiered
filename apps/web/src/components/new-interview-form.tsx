@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { BrandMark } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Checkbox, CONTROL_CLASS, Input, Radio } from "@/components/ui/field";
 import { DailyLimitNotice, isDailyLimitReached } from "@/components/daily-limit-notice";
@@ -14,6 +15,7 @@ import { ApiRequestError, composeRound, fetchEntitlement, startSession } from "@
 import { loadVoices, pickVoice } from "@/lib/browser-speech";
 import { ROUND_CATALOGUE } from "@/lib/rounds";
 import { useAccessToken } from "@/lib/use-access-token";
+import { creditCostFor, formatCredits } from "@/lib/credits";
 
 
 /**
@@ -336,8 +338,8 @@ export function NewInterviewForm({
         </div>
 
         <aside aria-live="polite" className="hero-band flex flex-col p-6 sm:p-8">
-          <span aria-hidden className="grid size-14 place-items-center rounded-2xl bg-highlight text-title font-bold text-navy">
-            {(structuredCompany.trim()[0] ?? structuredRole.trim()[0] ?? "U").toUpperCase()}
+          <span aria-hidden className="grid size-14 place-items-center rounded-2xl bg-on-navy shadow-[var(--shadow-md)]">
+            <BrandMark />
           </span>
           <p className="mt-7 eyebrow text-accent-on-navy">Your practice session</p>
           <h2 className="mt-3 text-title text-on-navy">{structuredRole.trim() || (campus ? "Campus placement" : "Choose your target role")}</h2>
@@ -543,7 +545,8 @@ function RoundSetup({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lengthOptions = (roundType === "custom_topic" ? CUSTOM_LENGTHS : ROUND_LENGTHS).filter(
-    (option) => minutesLeftToday === null || creditBalance > 0 || option.minutes <= minutesLeftToday,
+    (option) =>
+      minutesLeftToday === null || creditBalance >= creditCostFor(option.minutes) || option.minutes <= minutesLeftToday,
   );
   // The chosen length, kept inside what is left today: one that cannot start would only be
   // refused by the server after the candidate had filled everything in.
@@ -552,8 +555,12 @@ function RoundSetup({
     : (lengthOptions.at(-1)?.minutes ?? durationMinutes);
   // Mirrors the server, which spends free practice first: a credit pays only when the free
   // allowance is gone or this round is longer than the free minutes left.
+  const creditCost = creditCostFor(effectiveMinutes);
   const usesCredit =
-    creditBalance > 0 && (fundedByCredit || (minutesLeftToday !== null && effectiveMinutes > minutesLeftToday));
+    creditBalance >= creditCost &&
+    (fundedByCredit || (minutesLeftToday !== null && effectiveMinutes > minutesLeftToday));
+  // Free practice is gone and the balance holds half a credit: a longer round cannot start.
+  const creditShort = fundedByCredit && creditBalance < creditCost;
   const selectedRound = ROUND_CATALOGUE.find((item) => item.value === roundType);
   // The server keeps a focus topic only for a custom-topic round and drops it for every
   // other one, so asking for it anywhere else would collect words that go nowhere.
@@ -569,15 +576,15 @@ function RoundSetup({
   const ready =
     (!topicRequired || focusTopic.trim() !== "") &&
     lengthOptions.length > 0 &&
+    !creditShort &&
     consentAudio &&
     !!accessToken;
 
   function selectRound(value: RoundType) {
     setRoundType(value);
-    if (value === "custom_topic" && ![10, 20, 30].includes(durationMinutes)) {
-      setDurationMinutes(20);
-    } else if (value !== "custom_topic" && durationMinutes === 10) {
-      setDurationMinutes(40);
+    const allowed = (value === "custom_topic" ? CUSTOM_LENGTHS : ROUND_LENGTHS).map((option) => option.minutes);
+    if (!allowed.includes(durationMinutes)) {
+      setDurationMinutes(value === "custom_topic" ? DEFAULT_CUSTOM_MINUTES : DEFAULT_ROUND_MINUTES);
     }
   }
 
@@ -813,11 +820,14 @@ function RoundSetup({
           hint={
             lengthOptions.length === 0
               ? `Only ${minutesLeftToday} free minutes are left today, which is shorter than this round can run. Choose a different round, or come back tomorrow.`
-              : minutesLeftToday === null
-                ? "Real rounds are time-boxed. The clock ends this one."
-                : `Real rounds are time-boxed. ${minutesLeftToday} free minutes left today${
-                    creditBalance > 0 ? "; a longer round uses a credit." : "."
-                  }`
+              : (minutesLeftToday === null
+                  ? "Real rounds are time-boxed. The clock ends this one."
+                  : `Real rounds are time-boxed. ${minutesLeftToday} free minutes left today${
+                      creditBalance > 0 ? "; a longer round uses a credit." : "."
+                    }`) +
+                (fundedByCredit || creditBalance > 0
+                  ? " A paid 30-minute round uses half a credit; 45 and 60 minutes use one."
+                  : "")
           }
         >
           <select
@@ -883,9 +893,13 @@ function RoundSetup({
         </Button>
         {!consentAudio ? (
           <p className="text-caption text-ink-subtle">Voice recording is required to continue.</p>
+        ) : creditShort ? (
+          <p className="text-caption text-ink-muted">
+            You have half a credit, and this round needs a whole one. Choose 30 minutes, or buy credits.
+          </p>
         ) : usesCredit ? (
           <p className="text-caption text-ink-muted">
-            Uses 1 of your {creditBalance} {creditBalance === 1 ? "credit" : "credits"} when it begins.
+            Uses {formatCredits(creditCost)} of your {formatCredits(creditBalance)} when it begins.
           </p>
         ) : null}
       </div>
@@ -893,11 +907,9 @@ function RoundSetup({
   );
 }
 
-const CUSTOM_LENGTHS = [
-  { minutes: 10, label: "10 minutes — a quick topic check" },
-  { minutes: 20, label: "20 minutes — focused practice" },
-  { minutes: 30, label: "30 minutes — a thorough topic round" },
-];
+/** Custom-topic rounds are 30 minutes only (owner, 4 November 2026). Mirrors `RoundLength`. */
+const CUSTOM_LENGTHS = [{ minutes: 30, label: "30 minutes — a thorough topic round" }];
+const DEFAULT_CUSTOM_MINUTES = 30;
 
 const STRUCTURED_ROUNDS: RoundType[] = [
   "coding_practical",
@@ -915,13 +927,13 @@ const SHORT_ROUND_LABELS: Partial<Record<RoundType, string>> = {
 const CUSTOM_TOPIC_COMPANY = "General practice";
 const CUSTOM_TOPIC_ROLE = "Topic practice";
 
+/** 30, 45 or 60 minutes (owner, 4 November 2026). Mirrors `RoundLength` on the server. */
 const ROUND_LENGTHS = [
-  { minutes: 10, label: "10 minutes — a focused check-in" },
-  { minutes: 20, label: "20 minutes — a short round" },
-  { minutes: 30, label: "30 minutes" },
-  { minutes: 40, label: "40 minutes — a typical round" },
+  { minutes: 30, label: "30 minutes — a short round" },
+  { minutes: 45, label: "45 minutes — a typical round" },
   { minutes: 60, label: "60 minutes — a full panel" },
 ];
+const DEFAULT_ROUND_MINUTES = 45;
 
 /** The manual path: the same setup with nothing filled in and nothing assumed. */
 function blankDraft(focusTopic = "", initialRoundType?: RoundType): RoundDraft {
@@ -935,7 +947,7 @@ function blankDraft(focusTopic = "", initialRoundType?: RoundType): RoundDraft {
     level: "",
     roundType,
     roundLabel,
-    durationMinutes: roundType === "custom_topic" ? 20 : 40,
+    durationMinutes: roundType === "custom_topic" ? DEFAULT_CUSTOM_MINUTES : DEFAULT_ROUND_MINUTES,
     language: "english",
     understood:
       customTopic !== ""

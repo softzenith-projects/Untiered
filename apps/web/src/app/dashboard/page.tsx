@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { ContinueLearning } from "@/components/continue-learning";
 import { DashboardPanel } from "@/components/dashboard-panel";
 import { DashboardQuestionOfDay } from "@/components/dashboard-question-of-day";
+import { HalfCreditAnnouncement } from "@/components/half-credit-announcement";
 import { dailyQuestionsByDate } from "@/lib/arena/daily-question";
 import { getCourseOutlines } from "@/lib/course-outline";
 import { featureEnabled } from "@/lib/flags";
@@ -22,11 +23,13 @@ export const dynamic = "force-dynamic";
  */
 export default function DashboardPage() {
   const arenaEnabled = featureEnabled("arena");
+  const mockInterviewsEnabled = featureEnabled("mockInterviews");
   const questionsByDate = arenaEnabled ? dailyQuestionsByDate() : {};
 
   return (
     <AppShell>
       <div className="flex flex-col gap-10">
+        {mockInterviewsEnabled ? <HalfCreditAnnouncement variant="card" /> : null}
         <DashboardPanel />
         <ContinueLearning outlines={getCourseOutlines()} />
         {arenaEnabled ? <DashboardQuestionOfDay questionsByDate={questionsByDate} /> : null}

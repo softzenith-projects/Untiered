@@ -109,14 +109,40 @@ class InterviewPlanTest {
     fun `the turn ceiling ends a round the clock somehow did not`() {
         val plan =
             InterviewPlan.forTurn(
-                turnIndex = InterviewPlan.MAX_TURNS,
-                answeredTurns = InterviewPlan.MAX_TURNS,
+                turnIndex = InterviewPlan.maxTurnsFor(400),
+                answeredTurns = InterviewPlan.maxTurnsFor(400),
                 startedAt = startedAt,
                 durationMinutes = 400,
                 now = startedAt.plus(Duration.ofMinutes(5)),
             )
 
         assertTrue(plan.mustConclude, "the ceiling bounds model spend on a pathological session")
+    }
+
+    /**
+     * 4 November 2026: a candidate answering in about a minute a turn reached the old flat
+     * ceiling of 16 eighteen minutes into a 40-minute round, and the round ended there.
+     */
+    @Test
+    fun `a brisk candidate is not cut off by the turn ceiling halfway through a round`() {
+        val plan =
+            InterviewPlan.forTurn(
+                turnIndex = 16,
+                answeredTurns = 16,
+                startedAt = startedAt,
+                durationMinutes = 40,
+                now = startedAt.plus(Duration.ofMinutes(18)),
+            )
+
+        assertFalse(plan.mustConclude, "the clock, not a turn count, should end a 40-minute round")
+    }
+
+    @Test
+    fun `the turn ceiling scales with the round and keeps its floor for short ones`() {
+        assertEquals(InterviewPlan.MIN_TURN_CEILING, InterviewPlan.maxTurnsFor(10))
+        assertEquals(45, InterviewPlan.maxTurnsFor(30))
+        assertEquals(60, InterviewPlan.maxTurnsFor(40))
+        assertEquals(90, InterviewPlan.maxTurnsFor(60))
     }
 
     @Test
@@ -199,8 +225,8 @@ class InterviewPlanTest {
     fun `the turn ceiling ends a round without claiming the clock did`() {
         val plan =
             InterviewPlan.forTurn(
-                turnIndex = InterviewPlan.MAX_TURNS,
-                answeredTurns = InterviewPlan.MAX_TURNS,
+                turnIndex = InterviewPlan.maxTurnsFor(400),
+                answeredTurns = InterviewPlan.maxTurnsFor(400),
                 startedAt = startedAt,
                 durationMinutes = 400,
                 now = startedAt.plus(Duration.ofMinutes(5)),

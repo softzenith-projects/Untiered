@@ -31,7 +31,7 @@ describe("the free allowance, as the product states it", () => {
   it("is three mock interviews for life", () => {
     expect(LEGAL.freeRounds).toBe(3);
     expect(FREE_ROUNDS_TEXT).toBe("3 mock interviews");
-    expect(FREE_ROUNDS_LIFETIME_TEXT).toBe("3 free mock interviews for life");
+    expect(FREE_ROUNDS_LIFETIME_TEXT).toBe("Your first 3 mock interviews are on us. Forever.");
   });
 
   // Every page that states the allowance says "for life", so "your first 3" cannot be read

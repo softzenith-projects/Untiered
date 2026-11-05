@@ -42,7 +42,7 @@ export default function AboutPage() {
 
       <LegalSection id="pricing" title="What it costs">
         <p>
-          Every account gets {FREE_ROUNDS_LIFETIME_TEXT}. After that, interviews are bought as
+          {FREE_ROUNDS_LIFETIME_TEXT} After that, interviews are bought as
           credits. See{" "}
           <Link href={"/pricing" as Route} className="font-medium text-accent hover:underline">pricing</Link>.
         </p>

@@ -68,10 +68,10 @@ class SessionRepository(
             .query(Int::class.java)
             .single()
 
-    /** Paid interviews not yet spent: the sum of the credit ledger. */
-    fun creditBalance(userId: UUID): Int =
+    /** Paid credit not yet spent, in half-credits: the sum of the ledger. See [RoundLength]. */
+    fun halfCreditBalance(userId: UUID): Int =
         jdbcClient
-            .sql("select coalesce(sum(delta), 0) from public.interview_credits where user_id = :u")
+            .sql("select coalesce(sum(half_credits), 0) from public.interview_credits where user_id = :u")
             .param("u", userId)
             .query(Int::class.java)
             .single()
@@ -91,18 +91,24 @@ class SessionRepository(
             .optional()
     }
 
-    /** Spends one credit on [sessionId]. Charged once per session by a unique index. */
+    /**
+     * Spends [halfCredits] on [sessionId] — the round's price, from [RoundLength.halfCreditsFor].
+     * Charged once per session by a unique index.
+     */
     fun spendCredit(
         userId: UUID,
         sessionId: UUID,
+        halfCredits: Int,
     ) {
+        require(halfCredits > 0) { "A charge is a positive number of half-credits" }
         jdbcClient
             .sql(
                 """
-                insert into public.interview_credits (user_id, delta, reason, session_id)
-                values (:u, -1, 'consume', :s)
+                insert into public.interview_credits (user_id, half_credits, reason, session_id)
+                values (:u, :cost, 'consume', :s)
                 """.trimIndent(),
             ).param("u", userId)
+            .param("cost", -halfCredits)
             .param("s", sessionId)
             .update()
     }
@@ -342,12 +348,12 @@ class SessionRepository(
                    where p.session_id = f.id and p.user_id = :u
                   returning p.id
                 ), credit_returned as (
-                  insert into public.interview_credits (user_id, delta, reason, session_id)
-                  select :u, 1, 'refund', f.id from failed f
-                   where exists (
-                     select 1 from public.interview_credits c
-                      where c.session_id = f.id and c.user_id = :u and c.reason = 'consume'
-                   )
+                  -- Hands back exactly what the round was charged: half a credit or one.
+                  insert into public.interview_credits (user_id, half_credits, reason, session_id)
+                  select :u, -c.half_credits, 'refund', f.id
+                    from failed f
+                    join public.interview_credits c
+                      on c.session_id = f.id and c.user_id = :u and c.reason = 'consume'
                   on conflict do nothing
                   returning id
                 )

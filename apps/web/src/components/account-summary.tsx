@@ -4,14 +4,16 @@ import type { MeResponse } from "@untiered/shared";
 import type { Route } from "next";
 import { useEffect, useId, useRef, useState } from "react";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { forgetDashboard } from "@/components/dashboard-panel";
-import { fetchMe, updateEmailPreferences } from "@/lib/api";
+import { fetchAvatar, fetchMe, updateEmailPreferences } from "@/lib/api";
 import { forgetReports } from "@/lib/report-cache";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAccessToken } from "@/lib/use-access-token";
+import { displayNameFor } from "@/lib/display-name";
 
 type State =
   | { status: "loading" }
@@ -165,14 +167,58 @@ const MENU_ITEM =
  * a plain list keeps ordinary Tab navigation instead of asking for arrow-key handling.
  * It expands in place, which works the same in the desktop rail and the stacked mobile header.
  */
+const AVATAR_CHANGED = "untiered:avatar-changed";
+
+/** Tells the account menu a new photo was saved, so it shows it without a reload. */
+export function announceAvatarChanged(avatarUrl: string | null) {
+  window.dispatchEvent(new CustomEvent<string | null>(AVATAR_CHANGED, { detail: avatarUrl }));
+}
+
+/**
+ * The candidate's photo, when they have set one. A failure to fetch it, or a signed URL that
+ * has lapsed, leaves the initials showing rather than a broken image.
+ */
+function useAvatar(): [string | null, () => void] {
+  const accessToken = useAccessToken();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // A photo announced by an upload is newer than whatever a fetch still in flight will say,
+  // so a late fetch must not put the old photo (or none) back.
+  const announced = useRef(false);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    const controller = new AbortController();
+    fetchAvatar({ accessToken, signal: controller.signal })
+      .then((view) => {
+        if (!announced.current) setAvatarUrl(view.avatarUrl);
+      })
+      .catch(() => {
+        // The initials are a complete answer; a missing photo is not worth an error.
+      });
+    return () => controller.abort();
+  }, [accessToken]);
+
+  useEffect(() => {
+    const onChange = (event: Event) => {
+      announced.current = true;
+      setAvatarUrl((event as CustomEvent<string | null>).detail);
+    };
+    window.addEventListener(AVATAR_CHANGED, onChange);
+    return () => window.removeEventListener(AVATAR_CHANGED, onChange);
+  }, []);
+
+  return [avatarUrl, () => setAvatarUrl(null)];
+}
+
 function AccountMenu({ me }: { me: MeResponse }) {
   const router = useRouter();
+  const [avatarUrl, forgetAvatar] = useAvatar();
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  const name = me.displayName ?? me.email;
+  const name = displayNameFor(me);
 
   // Closes on Escape (handing focus back to the name) and on a press anywhere else.
   useEffect(() => {
@@ -213,12 +259,26 @@ function AccountMenu({ me }: { me: MeResponse }) {
         onClick={() => setOpen((value) => !value)}
         className="flex items-center gap-2.5 rounded-xl px-1 py-2 text-left transition-colors hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <span
-          aria-hidden
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-avatar-fill text-caption font-bold text-avatar-ink ring-1 ring-line"
-        >
-          {initialsOf(name)}
-        </span>
+        {avatarUrl ? (
+          // Unoptimised: a signed, short-lived storage URL must not be cached past its expiry.
+          <Image
+            src={avatarUrl}
+            alt=""
+            width={44}
+            height={44}
+            unoptimized
+            referrerPolicy="no-referrer"
+            onError={forgetAvatar}
+            className="size-11 shrink-0 rounded-full object-cover ring-1 ring-line"
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-avatar-fill text-caption font-bold text-avatar-ink ring-1 ring-line"
+          >
+            {initialsOf(name)}
+          </span>
+        )}
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="hidden max-w-28 truncate text-caption font-semibold text-ink lg:block">{name}</span>
           <span className="hidden truncate text-micro text-ink-subtle lg:block">

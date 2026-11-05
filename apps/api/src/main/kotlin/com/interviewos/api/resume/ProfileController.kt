@@ -73,13 +73,13 @@ class ProfileController(
                 peopleManagementScope = request.peopleManagementScope.cleaned(),
             ),
         )
-        return details(identity.id)
+        return details(identity)
     }
 
     @GetMapping("/profile")
     fun profile(
         @AuthenticationPrincipal jwt: Jwt,
-    ): ProfileDetails = details(SupabaseIdentity.from(jwt).id)
+    ): ProfileDetails = details(SupabaseIdentity.from(jwt))
 
     // -- resume ----------------------------------------------------------------
 
@@ -141,7 +141,7 @@ class ProfileController(
             runCatching { storage.deleteByPrefix(storageProperties.resumeBucket, path) }
             throw e
         }
-        return details(identity.id)
+        return details(identity)
     }
 
     // -- skills ----------------------------------------------------------------
@@ -169,21 +169,37 @@ class ProfileController(
         @PathVariable name: String,
     ) = repository.deleteSkill(SupabaseIdentity.from(jwt).id, name)
 
-    private fun details(userId: UUID): ProfileDetails {
+    /**
+     * Just the photo, for the account menu on every page. `/profile` also reads the resume
+     * and skills, which is far too much to load for a 44-pixel circle.
+     */
+    @GetMapping("/avatar")
+    fun avatar(
+        @AuthenticationPrincipal jwt: Jwt,
+    ): AvatarView = AvatarView(photoUrlFor(SupabaseIdentity.from(jwt)))
+
+    /** The photo they uploaded, or else the one on their Google account. */
+    private fun photoUrlFor(identity: SupabaseIdentity): String? = signedAvatarUrl(identity.id) ?: identity.providerPhotoUrl
+
+    /** A short-lived URL for the candidate's own photo, or null when they have none. */
+    private fun signedAvatarUrl(userId: UUID): String? {
         val avatarPath =
             repository.avatarPath(userId)?.takeIf { path ->
                 StorageKeys.isDirectChildOf(path, userId.toString()) &&
                     path.substringAfterLast('/').startsWith("avatar-")
             }
-        val avatar =
-            avatarPath?.let {
-                runCatching { storage.createSignedUrl(storageProperties.resumeBucket, it, AVATAR_URL_SECONDS) }.getOrNull()
-            }
+        return avatarPath?.let {
+            runCatching { storage.createSignedUrl(storageProperties.resumeBucket, it, AVATAR_URL_SECONDS) }.getOrNull()
+        }
+    }
+
+    private fun details(identity: SupabaseIdentity): ProfileDetails {
+        val userId = identity.id
         val profile = repository.findProfile(userId)
         return ProfileDetails(
             resume = resumeService.current(userId),
             skills = repository.listSkills(userId),
-            avatarUrl = avatar,
+            avatarUrl = photoUrlFor(identity),
             // Returned so the form can show what was saved. Without these the profile was
             // write-only: everything the candidate entered persisted and none of it ever
             // came back, which reads as the save having silently failed.
@@ -248,4 +264,9 @@ data class ProfileDetails(
     val currentLevel: String?,
     val targetLevel: String?,
     val linkedinUrl: String?,
+)
+
+/** The caller's profile photo as a signed URL, or null when they have not set one. */
+data class AvatarView(
+    val avatarUrl: String?,
 )

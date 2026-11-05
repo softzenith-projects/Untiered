@@ -152,7 +152,7 @@ class InterviewStateTransitionTest {
                 "english",
                 true,
                 false,
-                40,
+                45,
                 null,
             )
 

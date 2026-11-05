@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { announceAvatarChanged } from "@/components/account-summary";
 import { Avatar } from "@/components/ui/avatar";
 import { Tabs } from "@/components/ui/tabs";
 import { CONTROL_CLASS } from "@/components/ui/field";
@@ -25,6 +26,7 @@ import { summarizeChapters } from "@/lib/course-progress";
 import { featureEnabled } from "@/lib/flags";
 import { useAccessToken } from "@/lib/use-access-token";
 import { useAllCourseProgress } from "@/lib/use-course-progress";
+import { displayNameFor } from "@/lib/display-name";
 
 /**
  * The candidate's profile.
@@ -65,6 +67,9 @@ export function ProfilePanel({ outlines = [] }: { outlines?: CourseOutline[] }) 
    * having it fail silently, and a candidate who cannot tell will fill the form in twice.
    */
   const [saved, setSaved] = useState<string | null>(null);
+  // Which action the current message is about. A photo's result is shown beside the photo,
+  // not at the foot of a long page where nobody looking at the photo would see it.
+  const [lastAction, setLastAction] = useState<NonNullable<typeof busy> | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
 
   // A message, spinner or "Saved" belongs to the account that caused it. Reset while
@@ -125,6 +130,7 @@ export function ProfilePanel({ outlines = [] }: { outlines?: CourseOutline[] }) 
       if (!accessToken) return;
       const operationToken = accessToken;
       setBusy(kind);
+      setLastAction(kind);
       setError(null);
       setSaved(null);
       try {
@@ -150,6 +156,16 @@ export function ProfilePanel({ outlines = [] }: { outlines?: CourseOutline[] }) 
     const timer = setTimeout(() => setSaved(null), 4_000);
     return () => clearTimeout(timer);
   }, [saved]);
+
+  // A photo error is a toast too, so it goes away once read; the photo is still there to retry.
+  useEffect(() => {
+    if (!error || lastAction !== "avatar") return;
+    const timer = setTimeout(() => setError(null), 6_000);
+    return () => clearTimeout(timer);
+  }, [error, lastAction]);
+
+  const photoNotice =
+    lastAction === "avatar" && (error || saved) ? { tone: error ? ("danger" as const) : ("positive" as const), text: (error ?? saved)! } : null;
 
   const onResume = (file: File) =>
     run("resume", async (operationToken) => {
@@ -191,6 +207,7 @@ export function ProfilePanel({ outlines = [] }: { outlines?: CourseOutline[] }) 
         me={visible.me}
         avatarInput={avatarInput}
         avatarBusy={busy === "avatar"}
+        photoNotice={photoNotice}
         disabled={busy !== null}
         onEdit={() => {
           setActiveTab("overview");
@@ -199,6 +216,7 @@ export function ProfilePanel({ outlines = [] }: { outlines?: CourseOutline[] }) 
         onAvatar={(file) =>
           run("avatar", async (operationToken) => {
             const details = await uploadAvatar(operationToken, file);
+            announceAvatarChanged(details.avatarUrl);
             setProfile((current) =>
               current.ownerToken === operationToken ? { ...current, details } : current,
             );
@@ -349,13 +367,13 @@ export function ProfilePanel({ outlines = [] }: { outlines?: CourseOutline[] }) 
         * Both live at the bottom, both announced. `role="status"` rather than `alert`
         * for the success case: a screen reader should mention it, not interrupt for it.
         */}
-      {error ? (
+      {error && lastAction !== "avatar" ? (
         <p role="alert" className="rounded-xl border border-danger/25 bg-danger/5 px-4 py-3 text-body text-danger">
           {error}
         </p>
       ) : null}
 
-      {saved && !error ? (
+      {saved && !error && lastAction !== "avatar" ? (
         <p role="status" className="rounded-xl border border-positive/25 bg-positive/5 px-4 py-3 text-body text-positive">
           {saved}
         </p>
@@ -407,6 +425,7 @@ function ProfileHeader({
   me,
   avatarInput,
   avatarBusy,
+  photoNotice,
   disabled,
   onAvatar,
   onEdit,
@@ -415,11 +434,13 @@ function ProfileHeader({
   me: MeResponse | null;
   avatarInput: React.RefObject<HTMLInputElement | null>;
   avatarBusy: boolean;
+  /** The photo upload's result, shown as a small toast under the photo. */
+  photoNotice: { tone: "danger" | "positive"; text: string } | null;
   disabled: boolean;
   onAvatar: (file: File) => void;
   onEdit: () => void;
 }) {
-  const name = me?.displayName ?? me?.email ?? "Your profile";
+  const name = me ? displayNameFor(me) : "Your profile";
   const role = currentRoleFrom(details) ?? details?.currentLevel;
   const location = me?.profile.location;
   const resume = details?.resume ?? null;
@@ -451,6 +472,16 @@ function ProfileHeader({
                 if (file) onAvatar(file);
                 event.target.value = "";
               }} />
+              {photoNotice ? (
+                <p
+                  role={photoNotice.tone === "danger" ? "alert" : "status"}
+                  className={`rise-in absolute top-full left-0 z-toast mt-4 w-max max-w-64 rounded-lg px-3 py-2 text-caption font-semibold shadow-[var(--shadow-lg)] ${
+                    photoNotice.tone === "danger" ? "bg-danger text-danger-contrast" : "bg-positive text-positive-contrast"
+                  }`}
+                >
+                  {photoNotice.text}
+                </p>
+              ) : null}
             </div>
             <div className="min-w-0">
               <p className="text-micro font-bold tracking-widest text-accent-on-navy uppercase">Your practice profile</p>

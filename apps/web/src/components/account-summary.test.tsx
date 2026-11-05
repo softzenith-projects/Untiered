@@ -1,17 +1,19 @@
 import type { MeResponse } from "@untiered/shared";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AccountSummary, forgetAccount } from "./account-summary";
+import { AccountSummary, announceAvatarChanged, forgetAccount } from "./account-summary";
 
 const fetchMe = vi.hoisted(() => vi.fn());
+const fetchAvatar = vi.hoisted(() => vi.fn());
 const updateEmailPreferences = vi.hoisted(() => vi.fn());
 const signOut = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(() => ({ token: "token-abc" as string | null | undefined }));
 
 vi.mock("@/lib/api", () => ({
   fetchMe,
+  fetchAvatar,
   updateEmailPreferences,
   ApiRequestError: class extends Error {},
 }));
@@ -54,6 +56,44 @@ describe("AccountSummary", () => {
     window.sessionStorage.clear();
     auth.token = "token-abc";
     route.pathname = "/dashboard";
+    fetchAvatar.mockResolvedValue({ avatarUrl: null });
+  });
+
+  it("shows the candidate's photo in place of their initials when they have one", async () => {
+    fetchMe.mockResolvedValue(me);
+    fetchAvatar.mockResolvedValue({ avatarUrl: "https://signed.example/avatar.png" });
+
+    const { container } = render(<AccountSummary />);
+
+    await waitFor(() =>
+      expect(container.querySelector('img[src="https://signed.example/avatar.png"]')).toBeInTheDocument(),
+    );
+    expect(screen.queryByText("TC")).not.toBeInTheDocument();
+  });
+
+  it("does not let a slow first photo lookup undo a photo uploaded meanwhile", async () => {
+    fetchMe.mockResolvedValue(me);
+    let answer!: (view: { avatarUrl: string | null }) => void;
+    fetchAvatar.mockReturnValue(new Promise((resolve) => { answer = resolve; }));
+
+    const { container } = render(<AccountSummary />);
+
+    expect(await screen.findByText("TC")).toBeInTheDocument();
+    act(() => announceAvatarChanged("https://signed.example/new.png"));
+    await act(async () => answer({ avatarUrl: null }));
+
+    expect(container.querySelector('img[src="https://signed.example/new.png"]')).toBeInTheDocument();
+  });
+
+  it("keeps the initials when there is no photo, and swaps in a newly uploaded one", async () => {
+    fetchMe.mockResolvedValue(me);
+
+    const { container } = render(<AccountSummary />);
+
+    expect(await screen.findByText("TC")).toBeInTheDocument();
+    act(() => announceAvatarChanged("https://signed.example/new.png"));
+    expect(container.querySelector('img[src="https://signed.example/new.png"]')).toBeInTheDocument();
+    expect(screen.queryByText("TC")).not.toBeInTheDocument();
   });
 
   it("applies a Google signup email choice after authentication", async () => {
@@ -176,12 +216,20 @@ describe("AccountSummary", () => {
     expect(fetchMe).toHaveBeenCalledWith(expect.objectContaining({ accessToken: "token-abc" }));
   });
 
-  it("falls back to the email address when no display name was supplied", async () => {
-    fetchMe.mockResolvedValue({ ...me, displayName: null });
+  it("reads a name from the email address when no display name was supplied", async () => {
+    fetchMe.mockResolvedValue({ ...me, displayName: null, email: "naman.kaushik06@gmail.com" });
 
     render(<AccountSummary />);
 
-    expect(await screen.findByText("candidate@example.com")).toBeInTheDocument();
+    expect(await screen.findByText("Naman Kaushik")).toBeInTheDocument();
+  });
+
+  it("shows the email address itself when no name can be read from it", async () => {
+    fetchMe.mockResolvedValue({ ...me, displayName: null, email: "12345@example.com" });
+
+    render(<AccountSummary />);
+
+    expect(await screen.findByText("12345@example.com")).toBeInTheDocument();
   });
 
   it("reports a failed profile load as an alert rather than an empty panel", async () => {

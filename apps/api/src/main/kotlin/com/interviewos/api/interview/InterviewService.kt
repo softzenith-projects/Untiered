@@ -99,7 +99,7 @@ class InterviewService(
         val (roundsToday, minutesToday) = repository.practiceUsageSince(userId, startOfToday())
         return Entitlement.evaluate(
             freeRoundsUsed = repository.countFreeRoundsStarted(userId),
-            creditBalance = repository.creditBalance(userId),
+            halfCreditBalance = repository.halfCreditBalance(userId),
             sessionInProgress = openSessionId != null,
             freeRounds = entitlementProperties.freeRounds,
             daily =
@@ -176,9 +176,9 @@ class InterviewService(
             }
         val duration =
             if (roundType == RoundType.CUSTOM_TOPIC) {
-                composed.durationMinutes?.takeIf { it in CUSTOM_ROUND_MINUTES } ?: DEFAULT_CUSTOM_ROUND_MINUTES
+                RoundLength.DEFAULT_CUSTOM_TOPIC_MINUTES
             } else {
-                composed.durationMinutes?.coerceIn(MIN_ROUND_MINUTES, MAX_ROUND_MINUTES) ?: DEFAULT_ROUND_MINUTES
+                composed.durationMinutes?.let { RoundLength.nearest(roundType, it) } ?: RoundLength.DEFAULT_MINUTES
             }
 
         return RoundDraft(
@@ -259,10 +259,16 @@ class InterviewService(
                 code = "custom_topic_required",
             )
         }
-        if (roundType == RoundType.CUSTOM_TOPIC && request.durationMinutes !in CUSTOM_ROUND_MINUTES) {
+        if (roundType == RoundType.CUSTOM_TOPIC && request.durationMinutes !in RoundLength.CUSTOM_TOPIC_MINUTES) {
             throw ApiException.badRequest(
-                "Custom rounds can be 10, 20, or 30 minutes.",
+                "Custom rounds are 30 minutes.",
                 code = "custom_duration_invalid",
+            )
+        }
+        if (request.durationMinutes !in RoundLength.allowedFor(roundType)) {
+            throw ApiException.badRequest(
+                "Rounds are 30, 45 or 60 minutes.",
+                code = "duration_invalid",
             )
         }
         val normalisedRequest =
@@ -421,7 +427,7 @@ class InterviewService(
         // round and so the plan is what it can cost. A paid round is charged a credit at
         // start instead, and leaves the free allowance untouched.
         if (decision.funding == Entitlement.Funding.CREDIT) {
-            repository.spendCredit(userId, sessionId)
+            repository.spendCredit(userId, sessionId, RoundLength.halfCreditsFor(request.durationMinutes))
         } else {
             repository.recordPracticeUsage(userId, sessionId, request.durationMinutes)
         }
@@ -752,6 +758,28 @@ class InterviewService(
                 outcome = "succeeded",
                 durationMs = elapsedMillis(assessmentStartedAt),
             )
+
+            // A transcript identical to the previous answer is a failed transcription. Nothing is
+            // recorded, the claim is released in `finally`, and the room asks for the answer
+            // again. Not when the round is ending anyway: the clock and the End button both
+            // mean there is no "again" to ask for.
+            if (!endRound && !plan.outOfTime &&
+                EchoedAnswer.isEcho(assessment.value.transcript, priorTurns.lastOrNull()?.answerTranscript)
+            ) {
+                recordEvent(
+                    userId,
+                    sessionId,
+                    "answer_rejected",
+                    turnIndex,
+                    requestId,
+                    outcome = "failed",
+                    errorType = "echoed_transcript",
+                )
+                throw ApiException.unprocessable(
+                    "We didn't catch that answer clearly. Please give it again.",
+                    code = EchoedAnswer.ERROR_CODE,
+                )
+            }
 
             val suggestedAction = normaliseAction(assessment.value.suggestedNextAction)
             // The model advises how to continue; it does not own the clock. It sometimes
@@ -1301,7 +1329,7 @@ class InterviewService(
             // sleeps cannot buy the candidate extra time.
             scheduledEndAt = session.enteredAt?.plus(Duration.ofMinutes(session.durationMinutes.toLong())),
             turnsCompleted = repository.countAnsweredTurns(sessionId, userId),
-            maxTurns = InterviewPlan.MAX_TURNS,
+            maxTurns = InterviewPlan.maxTurnsFor(session.durationMinutes),
             workspace = workspace,
             board = session.board?.let(objectMapper::readTree),
             currentTurn =
@@ -1629,17 +1657,12 @@ class InterviewService(
     private companion object {
         const val MAX_SESSION_PAGE = 50
         const val SIGNED_URL_SECONDS = 3600
-        const val DEFAULT_ROUND_MINUTES = 40
-        const val MIN_ROUND_MINUTES = 10
-        const val MAX_ROUND_MINUTES = 120
-        const val DEFAULT_CUSTOM_ROUND_MINUTES = 20
         const val GENERAL_PRACTICE_COMPANY = "General practice"
         const val GENERAL_PRACTICE_ROLE = "Role not specified"
         const val CUSTOM_TOPIC_COMPANY = "General practice"
         const val CUSTOM_TOPIC_ROLE = "Topic practice"
 
         val DRAFT_CONFIDENCES = setOf("high", "medium", "low")
-        val CUSTOM_ROUND_MINUTES = setOf(10, 20, 30)
         val FOLLOW_UP_ACTIONS = setOf("follow_up", "probe", "challenge")
 
         /**
