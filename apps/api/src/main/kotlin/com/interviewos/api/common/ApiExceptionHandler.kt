@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.validation.FieldError
+import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -48,6 +49,18 @@ class ApiExceptionHandler {
     @ExceptionHandler(NoResourceFoundException::class)
     fun handleNotFound(ex: NoResourceFoundException): ResponseEntity<ApiError> =
         ResponseEntity.status(404).body(ApiError("not_found", "There is nothing at this address."))
+
+    /**
+     * A known path called with a method it does not serve. That is the caller's mistake,
+     * not ours — usually a client built against a newer API than the one deployed — so it
+     * is a 405 with the methods that do work, not a 500 that pages someone.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
+    fun handleMethodNotAllowed(ex: HttpRequestMethodNotSupportedException): ResponseEntity<ApiError> {
+        val response = ResponseEntity.status(405)
+        ex.supportedHttpMethods?.takeIf { it.isNotEmpty() }?.let { response.allow(*it.toTypedArray()) }
+        return response.body(ApiError("method_not_allowed", "${ex.method} is not supported at this address."))
+    }
 
     /**
      * Anything that reaches here is a defect. The client still gets the same envelope

@@ -4,6 +4,11 @@ services:
   api:
     image: untiered-api:${RELEASE_TAG:?Set RELEASE_TAG in deploy/.env}
     env_file: ./api.env
+    environment:
+      # Sentry tags every event with the image actually running. Set by hand in api.env it
+      # went stale: ten days of deploys all reported release 4197206, so Sentry could not
+      # say whether a deploy had fixed anything. `environment` overrides `env_file`.
+      SENTRY_RELEASE: ${RELEASE_TAG}
     restart: unless-stopped
     stop_grace_period: 120s
     mem_limit: 1400m

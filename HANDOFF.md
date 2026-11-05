@@ -1,61 +1,76 @@
-# Handoff — 4 November 2026
+# Handoff — 5 November 2026
 
 ## Task
-A candidate's 40-minute round ended at 18 minutes. Find out why, fix it, then (owner's follow-up
-in the same session) offer only 30/45/60-minute rounds, with a 30-minute round costing half a
-credit. No task file; owner requests in session.
+Check every unresolved Sentry issue (13, across `untiered-api` and `untiered-web`) against the
+code as it stands after today's API deploy (`8e7937c`). Fix only what is still broken, one
+branch per fix. Owner request in session; no task file.
+
+## Triage: which issues still need fixing
+
+| Issue | Events | Verdict | Evidence |
+|---|---|---|---|
+| API-7 `column "delta" does not exist` on `/entitlement` | 120 | **Fixed by today's deploy** | The old API queried `sum(delta)`; migration `20261104120000_half_credit_ledger` had already changed the ledger to `half_credits`. Current code uses `half_credits` (`SessionRepository.kt:74`). No events since 07:08 UTC, against about 7 an hour before that. |
+| WEB-4, WEB-6 "Something went wrong" on `/dashboard` | 115 | **Fixed by today's deploy** | Tagged `api_path`: 96 from `/entitlement` (API-7), 15 from `/me` (API-5), 4 from `/me/avatar` (API-8). They are the browser side of those API issues. |
+| WEB-5 "Something went wrong" on `/interview/new` | 30 | **Fixed by today's deploy** (most likely) | All from `POST /sessions`, which runs the same entitlement check as API-7, and API-6. Nothing since 04:40 UTC. |
+| API-8 `GET /me/avatar` not supported | 4 | **Fixed by the deploy; one defect left** | The old API had no `GET /avatar` route (`git show 4197206`); the new web app calls it. The defect left: a wrong HTTP method came back as **500** and paged Sentry. → branch 1 |
+| API-5, API-6 `users_id_fkey` violation on `/me`, `/sessions` | 23 | **Still broken** | Not a race. `public.users.id` references `auth.users`, and this user had no `auth.users` row while their token still verified. The likely cause is an open tab after account deletion, since access tokens last up to an hour. The current code still answers with a 500. → branch 2 |
+| (found during triage) Sentry release tag stuck on `4197206` | — | **Still broken** | `4197206` is from 26 October, yet events from three different containers (`73da726f`, `628e7209`, `400fdf56`) all carry it. `SENTRY_RELEASE` is set by hand in the VM's `api.env`. This is why Sentry couldn't tell whether a deploy fixed anything. → branch 3 |
+| API-9 SES delivery failed, not retryable | 3 | Owner says sorted | From the new container. No code change made. |
+| API-3 `interview_events` purge: can't bind `Instant` | 4 | **Already fixed** | `69da849` (27 October) binds `Timestamp.from(cutoff)`. The purge runs twice a day and has not failed since 29 October. |
+| API-2 `OPTIONS /` no static resource | 1 | **Already fixed** | The same commit maps `NoResourceFoundException` to a quiet 404. |
+| API-4 AI fallback rate over 5% (1 of 19 calls) | 2 | **Working as designed** | The hourly alert in `DailyAiSpendGuard` fired correctly on one fallback. Not a defect. See the open questions. |
+| WEB-2, WEB-3 call stack overflow on `/about` | 6 | **No fix: not our code, as far as I can tell** | One iPhone (Chrome iOS) on 31 October, within 7 seconds. The recursion is in an inline script in the HTML document (`app:///:230`). `/about` is a static server component with no scripts. Has not recurred through several web deploys. |
 
 ## What I built
-**1. Turn ceiling and echoed answers** — merged into `develop` (PRD §06)
-- Cause: a flat `MAX_TURNS = 16` ended the round. The candidate answered in about a minute a
-  turn and reached 16 answers at 18 minutes. Two of those 16 were transcribed by Gemini as exact
-  copies of the previous answer.
-- `InterviewPlan.maxTurnsFor(duration)`: 1.5 turns a minute, floor 16 (30 → 45, 45 → 67, 60 → 90).
-- `EchoedAnswer.kt`: a transcript of 40+ characters identical to the previous answer is refused
-  with `answer_not_heard`. Nothing is recorded and the claim is released. Exempt when End is
-  pressed or time is up.
-- `interview-room.tsx`: on `answer_not_heard`, shows "We didn't catch that answer clearly"
-  and reopens the mic on the same question with a fresh request id. The silence detector is
-  now keyed per take (`answerTake`): otherwise a fast failure left it stopped.
-
-**2. Round lengths and half-credit pricing** — PR #142 (payments, so not merged by me)
-- `RoundLength.kt`: lengths 30/45/60 (default 45); custom topic 30 only; price 1 half-credit
-  for 30 minutes, 2 for longer.
-- Migration `20261104120000_half_credit_ledger.sql`: `interview_credits.delta` →
-  `half_credits`, existing rows doubled.
-- Entitlement, charge, refund and grant SQL use half-credits. New refusal `CREDIT_SHORT`.
-  `creditBalance` in the API is now a number that can be a half.
-- Web: length picker, credit copy (`lib/credits.ts`), pricing/upgrade/pack text.
-- CLAUDE.md product decisions record the new pricing.
+1. **`fix/api-method-not-allowed`** (UNTIERED-API-8). `ApiExceptionHandler` maps
+   `HttpRequestMethodNotSupportedException` to 405 `method_not_allowed`, with an `Allow` header,
+   in the shared `ApiError` envelope. Previously it fell through to the catch-all, which logged
+   an error and returned a 500. Test: `common/ApiExceptionHandlerTest.kt`.
+2. **`fix/deleted-account-token`** (UNTIERED-API-5, API-6), **PR #147**.
+   `UserRepository.provision` recognises exactly `users_id_fkey` / SQLSTATE 23503 and returns
+   the same 401 `unauthorized` a missing token gets. Every other integrity failure is still
+   rethrown. Tests: `user/MissingAuthUserTest.kt` (unit) and
+   `user/UserProvisioningDatabaseIntegrationTest.kt`, run against migrated Postgres both locally
+   and in CI.
+3. **`fix/sentry-release-from-image-tag`**. `deploy/compose.yaml` passes `RELEASE_TAG` to the API
+   as `SENTRY_RELEASE`. Compose `environment` overrides `env_file`, so a stale value left in
+   `api.env` can no longer win. `docker compose config` was checked with a stale value in place.
+   README and `api.env.example` updated.
 
 ## Assumptions I made
-- 1.5 turns a minute is above any real pace, so only a runaway session reaches the ceiling.
-- Echo threshold of 40 characters, so "I don't know" twice is still accepted.
-- Free tier stays "3 free interviews", each a whole interview at any length (owner chose this).
-- Custom topic is 30 minutes only (owner chose this). Default length is 45 (closest to the old 40).
-- Rounds already stored at other lengths keep running. Only new starts are restricted.
+- I took the account-deletion explanation for API-5/6 from the code path. I could not confirm in
+  the database that user `1d080836-…` is gone: the production Supabase project
+  (`moeronogmgtmbdnzfzgu`) is not in the org the Supabase connector can reach.
+- I chose 401 rather than 410 for the deleted account, so the web app needs no new handling.
+- API-9 is left alone because the owner said the SES problem is sorted.
 
 ## What I could NOT verify
-- Live behaviour of the re-ask prompt in a real round: no live interviews without your go-ahead.
-- Whether Gemini's echo has another cause (e.g. near-silent audio). The fix catches the
-  symptom, not the cause.
-- The credit-ledger DB integration test runs only in CI's database job.
+- Whether API-7, API-8, WEB-4/5/6 stay quiet under real traffic. Recheck Sentry in a day; after
+  branch 3 is deployed, filter by `release:<sha>` to be sure.
+- How the web app presents the new 401 to a tab whose account was deleted.
+- The cause of WEB-2/3. The Sentry web project has no readable source maps for inline scripts.
 
 ## Verification status
-- Branch 1: web typecheck/lint/test (4069)/build and API ktlint/test/build pass locally;
-  CI green on all jobs (run 41831996656).
-- Branch 2: web (4070 tests) and API pass locally; CI result is on PR #142.
+- Backend `ktlintCheck test build`: passed locally on branches 1 and 2.
+- The new database test passed locally against Supabase's local Postgres, and in CI.
+- CI is green on all four branches. Branch 1's first run failed on a flaky web test, which branch 4
+  fixes; its re-run was green.
+- **Flaky test found and fixed (branch 4, `fix/flaky-avatar-race-test`).** Two avatar tests in
+  `account-summary.test.tsx` failed about one run in three, locally and on CI, on unchanged code.
+  They announced a new photo before the menu's effects had registered the listener. Each now
+  waits until the lookup has started. Assertions are unchanged; 12 of 12 local runs passed.
 
 ## Merge status
-- `fix/turn-ceiling-and-echoed-answers` merged into `develop` at `e8ef1ca`. No migration.
-- `feat/round-durations-and-half-credits` → PR #142, unmerged: it touches payments.
-  **Apply the migration and deploy the API together.** The column rename breaks the running
-  API until the new build is live. That is deliberate: it fails closed rather than misreading
-  balances.
+- Merged into `develop`: branches 4, 1 and 3, in that order. See `git log develop` for the merge
+  commits. No migrations involved.
+- Branch 2 is **PR #147**, not merged, because it touches the sign-in and account-deletion path.
+  Its push run was green. The PR run hit the flaky test; that will pass on a re-run now that
+  branch 4 is in `develop`.
 
 ## Suggested next task
-- Decide whether the 4 November candidate (session `63d9d088-c666-423c-887c-edc06d9cfb08`)
-  gets their round back. It was cut short by our bug.
+- Redeploy the API with the merged `develop`, and remove `SENTRY_RELEASE` from the VM's `api.env`.
 
 ## Open questions for you
-- Refund terms for a half-used credit (`refund-terms.tsx` still says "a pack you have not used").
+- API-4: should the fallback alert need a minimum sample (say 50 calls an hour)? At current
+  traffic, one fallback in 19 calls is enough to fire it.
+- Resolve the "already fixed" Sentry issues now, or after a day of quiet? I left them open.

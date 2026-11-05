@@ -79,6 +79,10 @@ describe("AccountSummary", () => {
     const { container } = render(<AccountSummary />);
 
     expect(await screen.findByText("TC")).toBeInTheDocument();
+    // The initials are in the DOM a moment before the menu's effects run. Announce only once
+    // the lookup is in flight, which is also when the photo listener is registered; earlier,
+    // the announcement went unheard and this test failed about one run in three.
+    await waitFor(() => expect(fetchAvatar).toHaveBeenCalled());
     act(() => announceAvatarChanged("https://signed.example/new.png"));
     await act(async () => answer({ avatarUrl: null }));
 
@@ -91,6 +95,7 @@ describe("AccountSummary", () => {
     const { container } = render(<AccountSummary />);
 
     expect(await screen.findByText("TC")).toBeInTheDocument();
+    await waitFor(() => expect(fetchAvatar).toHaveBeenCalled());
     act(() => announceAvatarChanged("https://signed.example/new.png"));
     expect(container.querySelector('img[src="https://signed.example/new.png"]')).toBeInTheDocument();
     expect(screen.queryByText("TC")).not.toBeInTheDocument();

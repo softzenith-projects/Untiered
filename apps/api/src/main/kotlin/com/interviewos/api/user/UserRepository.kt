@@ -1,5 +1,8 @@
 package com.interviewos.api.user
 
+import com.interviewos.api.common.ApiException
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
@@ -22,17 +25,22 @@ class UserRepository(
         // that any foreign key to this user needs, so an ordinary profile read could stall
         // an unrelated write. An UPDATE whose WHERE matches nothing locks nothing.
         val created =
-            jdbcClient
-                .sql(
-                    """
-                    insert into public.users (id, email, display_name)
-                    values (:id, :email, :displayName)
-                    on conflict (id) do nothing
-                    """.trimIndent(),
-                ).param("id", identity.id)
-                .param("email", identity.email)
-                .param("displayName", identity.displayName)
-                .update() == 1
+            try {
+                jdbcClient
+                    .sql(
+                        """
+                        insert into public.users (id, email, display_name)
+                        values (:id, :email, :displayName)
+                        on conflict (id) do nothing
+                        """.trimIndent(),
+                    ).param("id", identity.id)
+                    .param("email", identity.email)
+                    .param("displayName", identity.displayName)
+                    .update() == 1
+            } catch (ex: DataIntegrityViolationException) {
+                if (isMissingAuthUser(ex)) throw accountNoLongerExists()
+                throw ex
+            }
 
         jdbcClient
             .sql(
@@ -153,3 +161,27 @@ class UserRepository(
     /** `getInt` reports 0 for SQL NULL, which is a meaningful value for these columns. */
     private fun ResultSet.getIntOrNull(column: String): Int? = getInt(column).takeUnless { wasNull() }
 }
+
+/**
+ * The token verified, but Supabase no longer has the account behind it. An access token
+ * outlives the account it was issued for by up to an hour, so a tab left open on another
+ * device after the candidate deleted their account keeps calling us with it.
+ *
+ * That is a sign-in problem, not a defect: it is answered with the same 401 a missing
+ * token gets, so the client treats both alike, and it stays out of the error tracker.
+ */
+internal fun accountNoLongerExists() =
+    ApiException(HttpStatus.UNAUTHORIZED, "unauthorized", "This account no longer exists. Sign in again.")
+
+/**
+ * True when [ex] is `public.users.id` failing its foreign key to `auth.users`. Matching
+ * on the constraint name keeps every other integrity failure (a duplicate email, say)
+ * reported as the defect it is.
+ */
+internal fun isMissingAuthUser(ex: Throwable): Boolean =
+    generateSequence(ex) { it.cause }
+        .filterIsInstance<java.sql.SQLException>()
+        .any { it.sqlState == FOREIGN_KEY_VIOLATION && it.message?.contains(USERS_AUTH_FOREIGN_KEY) == true }
+
+private const val FOREIGN_KEY_VIOLATION = "23503"
+private const val USERS_AUTH_FOREIGN_KEY = "users_id_fkey"
