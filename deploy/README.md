@@ -33,7 +33,7 @@ scp untiered-api.tar ubuntu@<vm-ip>:~/untiered/
 ssh ubuntu@<vm-ip> 'docker load -i ~/untiered/untiered-api.tar'
 ```
 
-Set `RELEASE_TAG=<sha>` in the VM's `deploy/.env`, then from that directory run `docker compose config -q` and `docker compose up -d`. Check `https://api.untiered.tech/actuator/health/readiness` and `docker compose logs --tail=100 api proxy`. The proxy is the only published service. Observe VM memory and restarts under actual traffic. For rollback, set `RELEASE_TAG` to the previous loaded green image and run `docker compose up -d` again; database migration compatibility must be checked separately.
+Set `RELEASE_TAG=<sha>` in the VM's `deploy/.env` (Compose also passes it to the API as `SENTRY_RELEASE`, so Sentry tags events with the image that is running; remove any `SENTRY_RELEASE` line from `api.env`), then from that directory run `docker compose config -q` and `docker compose up -d`. Check `https://api.untiered.tech/actuator/health/readiness` and `docker compose logs --tail=100 api proxy`. The proxy is the only published service. Observe VM memory and restarts under actual traffic. For rollback, set `RELEASE_TAG` to the previous loaded green image and run `docker compose up -d` again; database migration compatibility must be checked separately.
 
 ## Web on Netlify (current)
 
