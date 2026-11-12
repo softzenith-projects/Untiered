@@ -22,7 +22,7 @@ Refresh the welcome email sent on Google sign-up/sign-in; owner request in sessi
 - typecheck / tests / build: not run.
 
 ## Merge status
-- Branch `feat/welcome-email-refresh`; not merged. CI status is unknown. The Supabase migration has not been applied.
+- Branch `feat/welcome-email-refresh` pushed at `58b9b42`; not merged. This touches the signup trigger, so a PR is required. PR creation returned 404 from the GitHub connector, and local `gh` credentials are expired. CI status is unknown. The Supabase migration has not been applied.
 
 ## Suggested next task
 - Run the backend verification loop, apply the migration as part of the gated merge, and inspect a received email in Gmail.
