@@ -59,8 +59,8 @@ class UserRepository(
                 .sql(
                     """
                     insert into public.email_deliveries (user_id, dedupe_key, category, subject, body)
-                    values (:id, 'welcome', 'welcome', 'Welcome to Untiered',
-                      'Your account is ready. Choose a company and role, then practise a spoken interview or explore the courses and Arena. Visit your account to get started.')
+                    values (:id, 'welcome', 'welcome', 'Your seat is saved. No velvet rope required.',
+                      E'Hey there, welcome to Untiered!\n\nNobody asks which college stamped your degree or which tier someone assigned you. Your skills do the talking. We just hand you the mic.\n\nPick a company and role for a spoken mock interview, or warm up with a course or a round in Arena.\n\nThen the fun begins: learn, practise, build, level up. No tiers attached.')
                     on conflict (user_id, dedupe_key) do nothing
                     """.trimIndent(),
                 ).param("id", identity.id)
