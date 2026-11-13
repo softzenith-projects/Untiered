@@ -4,15 +4,13 @@ import com.interviewos.api.common.ApiException
 import com.interviewos.api.interview.AnswerTiming
 import java.util.Locale
 
-/**
- * Interview integrity signals (campus spec §5, contract "Module 5"): the wire shapes and the
- * rules, with no I/O, so every number and every sentence a college reads about a student can
- * be checked by a unit test.
- *
- * A signal is a count. Nothing here decides what a count means: a tab hidden three times may
- * be a phone call, a paste may be the student's own notes, a fast answer may be a well-prepared
- * one. The notes say what was counted, in plain sentences, and stop there.
- */
+// Interview integrity signals (campus spec §5, contract "Module 5"): the wire shapes and the
+// rules, with no I/O, so every number and every sentence a college reads about a student can
+// be checked by a unit test.
+//
+// A signal is a count. Nothing here decides what a count means: a tab hidden three times may
+// be a phone call, a paste may be the student's own notes, a fast answer may be a well-prepared
+// one. The notes say what was counted, in plain sentences, and stop there.
 
 /** One event the browser saw in an assigned round. Only the type and the paste length are kept. */
 data class IntegrityEventInput(
@@ -127,9 +125,13 @@ object IntegrityRules {
             if (event.turnIndex != null && event.turnIndex < 0) throw invalid("turnIndex must not be negative.")
             if (event.chars != null && event.chars < 0) throw invalid("chars must not be negative.")
             when (event.type) {
-                "tab_hidden" -> tabHidden++
+                "tab_hidden" -> {
+                    tabHidden++
+                }
 
-                "window_blur" -> windowBlur++
+                "window_blur" -> {
+                    windowBlur++
+                }
 
                 "paste" -> {
                     pastes++
