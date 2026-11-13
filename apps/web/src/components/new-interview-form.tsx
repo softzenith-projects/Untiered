@@ -1032,6 +1032,13 @@ function Consent({
 }
 
 /** What to tell a student when the server refuses to start an assigned round. */
+/**
+ * What a college sees about an assigned round beyond its report (campus module 5). Shown on the
+ * assigned start screen only, before the consent step; a personal round counts none of it.
+ */
+export const ASSIGNED_INTEGRITY_NOTICE =
+  "Because your college assigned this interview, it will see how many times you switched tabs or pasted text, and how your answer timing looked. Nothing else about your screen is recorded.";
+
 export function assignmentStartError(cause: unknown): string {
   if (!(cause instanceof ApiRequestError)) return "The interview could not be started. Please try again.";
   switch (cause.code) {
@@ -1183,6 +1190,8 @@ function AssignedInterviewForm({ assignmentId }: { assignmentId: string }) {
         <p className="pt-3 text-caption text-ink-subtle">
           These cannot be changed. Your college pays for this interview, so it does not use your free rounds or credits.
         </p>
+        {/* Campus module 5: said before consent, in the words the counts are shown in. */}
+        <p className="pt-2 text-caption text-ink-muted">{ASSIGNED_INTEGRITY_NOTICE}</p>
       </section>
 
       {blocked ? (

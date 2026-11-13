@@ -117,6 +117,12 @@ export interface SessionView {
   workspace: RoundWorkspace | null;
   /** What the candidate has drawn or written so far, so a reload does not lose it. */
   board: BoardState | null;
+  /**
+   * Whether a college assigned this round (campus module 4). Only then does the room send
+   * integrity counts (module 5), which the student was told about before consenting.
+   * Optional so an older API without the field reads as a personal round.
+   */
+  assigned?: boolean;
 }
 
 /** The material a round runs on. Discriminated on `kind`; more rounds may grow one. */
