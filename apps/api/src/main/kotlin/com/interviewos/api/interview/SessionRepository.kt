@@ -312,6 +312,14 @@ class SessionRepository(
                       from transitioned
                      where t.session_id = transitioned.id and t.user_id = transitioned.user_id
                     returning t.session_id
+                ), attempt as (
+                    -- A round a college assigned ends its attempt with it (campus spec §4). An
+                    -- abandoned attempt still counts against the caps; only 'failed' hands back.
+                    update public.assignment_attempts a
+                       set status = :status, ended_at = now()
+                      from transitioned
+                     where a.session_id = transitioned.id and a.status = 'in_progress'
+                    returning a.id
                 )
                 select count(*) as changed from queued
                 """.trimIndent(),
@@ -356,6 +364,14 @@ class SessionRepository(
                       on c.session_id = f.id and c.user_id = :u and c.reason = 'consume'
                   on conflict do nothing
                   returning id
+                ), attempt_handed_back as (
+                  -- A college-assigned round that failed on our side gives the college its
+                  -- interview back, as a credit is given back above (campus spec §4).
+                  update public.assignment_attempts a
+                     set status = 'failed', ended_at = now()
+                    from failed f
+                   where a.session_id = f.id and a.status = 'in_progress'
+                  returning a.id
                 )
                 select exists(select 1 from failed) as changed,
                        (select count(*) from refunded) as refunded_count,
