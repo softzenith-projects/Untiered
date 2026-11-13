@@ -100,6 +100,60 @@ class SesEmailSender(
             mime.setHeader("List-Unsubscribe", "<${properties.apiBaseUrl.trimEnd('/')}/api/v1/email/unsubscribe/$unsubscribeToken>")
             mime.setHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
         }
+        deliver(mime, address)
+    }
+
+    /**
+     * A one-off transactional email to someone who may have no account yet � a college
+     * invite. No account link and no unsubscribe footer: there is no account or preference to
+     * point at, and the message is the invitation itself. [body] is plain text; [actionUrl] is
+     * the single button.
+     */
+    fun sendTransactional(
+        address: String,
+        subject: String,
+        body: String,
+        actionLabel: String,
+        actionUrl: String,
+    ) {
+        val mime = MimeMessage(Session.getInstance(Properties()))
+        val helper = MimeMessageHelper(mime, true, "UTF-8")
+        helper.setFrom(properties.from)
+        helper.setReplyTo(properties.replyTo)
+        helper.setTo(address)
+        helper.setSubject(subject)
+        val text =
+            buildString {
+                appendLine(body)
+                appendLine()
+                appendLine("$actionLabel: $actionUrl")
+            }
+        val html =
+            """
+            <!doctype html>
+            <html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+            <body style="margin:0;background:#f3f7ff;padding:20px 8px">
+              <main style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px 24px;background:#fff;border:1px solid #d8e3f2;border-radius:16px;color:#17315a;line-height:1.6">
+                <p style="font-size:14px;font-weight:800;letter-spacing:.12em;color:#1865db">UNTIERED</p>
+                <h1 style="font-size:28px;line-height:1.2">${escapeHtml(subject)}</h1>
+                <p style="font-size:16px;white-space:pre-wrap">${escapeHtml(body)}</p>
+                <p><a href="${escapeHtml(
+                actionUrl,
+            )}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#1865db;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(
+                actionLabel,
+            )}</a></p>
+                <p style="font-size:13px;color:#5b6d89;word-break:break-all">${escapeHtml(actionUrl)}</p>
+              </main>
+            </body></html>
+            """.trimIndent()
+        helper.setText(text, html)
+        deliver(mime, address)
+    }
+
+    private fun deliver(
+        mime: MimeMessage,
+        address: String,
+    ) {
         mime.saveChanges()
         val bytes = ByteArrayOutputStream().also(mime::writeTo).toByteArray()
         client.sendEmail(

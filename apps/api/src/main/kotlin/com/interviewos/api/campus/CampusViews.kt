@@ -174,3 +174,97 @@ data class UpdateMemberRequest(
 data class ChangeRoleRequest(
     val role: String? = null,
 )
+
+// -- module 3: onboarding ----------------------------------------------------
+
+data class ImportRowView(
+    val rowNumber: Int,
+    val fullName: String?,
+    val email: String?,
+    val rollNumber: String?,
+    val departmentCode: String?,
+    val batchName: String?,
+    val graduationYear: Int?,
+    val problems: List<String>,
+)
+
+data class ImportSummary(
+    val total: Int,
+    val valid: Int,
+    val withProblems: Int,
+)
+
+data class ImportPreview(
+    val id: UUID,
+    val status: String,
+    val createdAt: String,
+    val expiresAt: String,
+    val rows: List<ImportRowView>,
+    val summary: ImportSummary,
+)
+
+data class ImportCommitResult(
+    val invited: Int,
+    val skipped: Int,
+)
+
+data class InviteView(
+    val id: UUID,
+    val email: String,
+    val fullName: String,
+    val role: String,
+    val batchId: UUID?,
+    val batchName: String?,
+    val rollNumber: String?,
+    /** `expired` when [expiresAt] has passed and the invite was not joined. */
+    val status: String,
+    val sendStatus: String,
+    val sendCount: Int,
+    val lastSentAt: String?,
+    val createdAt: String,
+    val expiresAt: String,
+    val joinedAt: String?,
+)
+
+data class InvitePreview(
+    val orgName: String,
+    val logoUrl: String?,
+    val role: String,
+    val batchName: String?,
+    val invitedEmailMasked: String,
+    val signedInEmail: String,
+    val emailMatches: Boolean,
+    val expiresAt: String,
+    val consentVersion: String,
+    val shared: List<String>,
+    val notShared: List<String>,
+    val aiNotice: String,
+)
+
+/** `MeCampusView & { joinedOrgId }`: the caller's campus context after joining. */
+data class AcceptInviteResult(
+    val student: MeCampusStudent?,
+    val staff: List<MeCampusStaff>,
+    val joinedOrgId: UUID,
+)
+
+data class CreateInviteRequest(
+    val email: String? = null,
+    val fullName: String? = null,
+    val role: String? = null,
+    val batchId: UUID? = null,
+    val rollNumber: String? = null,
+)
+
+data class AdminCreateInviteRequest(
+    val email: String? = null,
+    val fullName: String? = null,
+    val role: String? = null,
+)
+
+data class AcceptInviteRequest(
+    val consentVersion: String? = null,
+    val agreeDataSharing: Boolean? = null,
+    val agreeAiEvaluation: Boolean? = null,
+    val confirmDifferentEmail: Boolean? = null,
+)

@@ -231,7 +231,16 @@ class MeCampusController(
  * rather than the 500 the global handler would give it. Ordered ahead of that handler, and
  * limited to the campus controllers.
  */
-@RestControllerAdvice(assignableTypes = [CampusAdminController::class, CampusController::class, MeCampusController::class])
+@RestControllerAdvice(
+    assignableTypes = [
+        CampusAdminController::class,
+        CampusController::class,
+        MeCampusController::class,
+        CampusOnboardingController::class,
+        CampusAdminInviteController::class,
+        CampusJoinController::class,
+    ],
+)
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class CampusExceptionHandler {
     private val log = LoggerFactory.getLogger(javaClass)

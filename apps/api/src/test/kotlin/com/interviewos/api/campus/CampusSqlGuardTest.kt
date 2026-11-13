@@ -31,6 +31,9 @@ class CampusSqlGuardTest {
             "assignments",
             "assignment_targets",
             "assignment_attempts",
+            "campus_imports",
+            "campus_import_rows",
+            "campus_invites",
         )
 
     /** reason to (file it may appear in to how many statements there) */
@@ -43,7 +46,16 @@ class CampusSqlGuardTest {
             // The caller's own memberships, by the verified user id and nothing from the request:
             // GET /me/campus (student and staff), and the student's own membership that
             // POST /me/campus/leave resolves into a scope.
-            "own-membership" to mapOf("MemberRepository.kt" to 2, "CampusAccess.kt" to 1),
+            // ...and, when accepting an invite, whether the caller is a joined student anywhere.
+            "own-membership" to mapOf("MemberRepository.kt" to 2, "CampusAccess.kt" to 1, "InviteRepository.kt" to 1),
+            // An invite found by the SHA-256 of its token. The token is the capability: 256 random
+            // bits sent only to the invited mailbox. Everything after binds the invite's own org_id.
+            "invite-token" to mapOf("InviteRepository.kt" to 1),
+            // The invite email job: failing stale sends and claiming due ones across colleges. Each
+            // claimed row's own org_id is then bound for every further statement on it.
+            "invite-sender" to mapOf("InviteRepository.kt" to 2),
+            // Deleting import previews past their one-day expiry, in every college.
+            "import-purge" to mapOf("InviteRepository.kt" to 1),
         )
 
     /**
@@ -51,7 +63,11 @@ class CampusSqlGuardTest {
      * fragment: each use of it must itself bind the college (and does, as a separate string).
      */
     private val fragments =
-        mapOf("MemberRepository.kt" to listOf("MEMBER_SELECT"), "AssignmentRepository.kt" to listOf("ASSIGNMENT_SELECT"))
+        mapOf(
+            "MemberRepository.kt" to listOf("MEMBER_SELECT"),
+            "AssignmentRepository.kt" to listOf("ASSIGNMENT_SELECT"),
+            "InviteRepository.kt" to listOf("INVITE_SELECT"),
+        )
 
     private val source = File("src/main/kotlin/com/interviewos/api/campus")
 
@@ -153,8 +169,10 @@ class CampusSqlGuardTest {
         val MARKER = Regex("/\\*\\s*unscoped:\\s*([a-z-]+)\\s*\\*/")
         val UNQUALIFIED =
             Regex(
-                "\\b(from|join|into|update)\\s+(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log|" +
-                    "assignments|assignment_targets|assignment_attempts)\\b",
+                "\\b(from|join|into|update)\\s+" +
+                    "(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log" +
+                    "|campus_imports|campus_import_rows|campus_invites" +
+                    "|assignments|assignment_targets|assignment_attempts)\\b",
             )
     }
 }

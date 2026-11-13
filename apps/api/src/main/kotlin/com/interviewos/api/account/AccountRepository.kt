@@ -38,6 +38,23 @@ class AccountRepository(
             .update()
     }
 
+    /**
+     * College invites are addressed to an email, not to an account, so nothing cascades to them
+     * from `public.users`. Deletes those sent to this account's email and those it accepted
+     * (through its memberships, which would otherwise only lose their link). Run before
+     * [deleteUser], while the email and the memberships can still be read.
+     */
+    fun deleteCampusInvites(userId: UUID): Int =
+        jdbcClient
+            .sql(
+                """
+                delete from public.campus_invites i
+                 where i.email = (select lower(btrim(u.email)) from public.users u where u.id = :u)
+                    or (i.org_id, i.member_id) in (select m.org_id, m.id from public.org_members m where m.user_id = :u)
+                """.trimIndent(),
+            ).param("u", userId)
+            .update()
+
     /** Removes the account row; every user-owned table cascades from it. */
     fun deleteUser(userId: UUID): Boolean =
         jdbcClient
