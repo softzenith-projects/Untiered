@@ -8,6 +8,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { DailyLimitNotice, isDailyLimitReached } from "@/components/daily-limit-notice";
 import { deleteSession, fetchEntitlement, fetchMe, fetchProfile, fetchReadiness, fetchSessions, SESSION_PAGE_SIZE } from "@/lib/api";
 import { AssignedToYou } from "@/components/campus/assigned-to-you";
+import { StaffPortalCard } from "@/components/campus/staff-portal-card";
 import { campusEnabled, featureEnabled } from "@/lib/flags";
 import { useAccessToken } from "@/lib/use-access-token";
 import { displayNameFor } from "@/lib/display-name";
@@ -434,6 +435,7 @@ export function DashboardView({
         </header>
       )}
 
+      {campusEnabled() ? <StaffPortalCard /> : null}
       {campusEnabled() ? <AssignedToYou /> : null}
 
       {visibleSessions.length > 0 || visibleReadiness.length > 0 ? (

@@ -894,3 +894,20 @@ interface DashboardView {
 **Change chips:** the UI shows a change only when both periods have a value. It shows a
 count's change as `+n` / `−n`, and a score's change as points. It never shows a percentage
 of a small number.
+
+How each figure is read (`TpoOverview`, pinned by `TpoOverviewTest`):
+
+- `invited` counts people, not rows: distinct emails among student invites that are open,
+  joined or lapsed. A revoked invite is not counted. Students can join without an invite, so
+  `invited` may be smaller than `joined`; the UI then leaves out the Invited → Joined row.
+- `assigned` counts a published assignment once its `opensAt` has passed, or once the
+  student has begun it anyway. `attempted` is an attempt that was not handed back (`failed`)
+  or an answered step. `completed`, `attempted` and `assigned` are each inside the next.
+- A completion is dated as module 10 dates it: an interview at its first completed attempt's
+  end, a scenario set at its last answer. Published and archived assignments both count,
+  because the work was done. A period is `(start, end]`, and nothing after now is counted.
+- Every average is an integer, rounded half up, like the rest of readiness. A topic's average
+  uses each student's latest item for it, as a heatmap cell does. Ties keep the
+  `CampusTopic` order.
+- `batches` lists every batch in scope, empty ones included, ordered by department code and
+  then name.

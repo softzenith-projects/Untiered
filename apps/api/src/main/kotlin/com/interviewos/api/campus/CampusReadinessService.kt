@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional
 import tools.jackson.databind.ObjectMapper
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import kotlin.math.roundToInt
 
@@ -26,6 +27,12 @@ internal data class StudentReadinessFacts(
     val dueNow: Int,
     /** Some published assignment is completed or under way. */
     val started: Boolean,
+    /** Published assignments that have opened for the student, or that they have begun anyway. */
+    val openAssigned: Int = 0,
+    /** Some such assignment has an attempt (not handed back) or an answered step. */
+    val attempted: Boolean = false,
+    /** When each of the student's assignments, published or archived, was completed. */
+    val completionTimes: List<Instant> = emptyList(),
 )
 
 /**
@@ -177,8 +184,6 @@ class CampusReadinessService internal constructor(
         val joined = students.size
         val enrolled = readiness.openStudentInvites(scope, filter) + joined
         val active = students.count { it.student.lastActiveAt?.isAfter(activeSince) == true }
-        val completed = students.sumOf { it.completed }
-        val denominator = completed + students.sumOf { it.overdue } + students.sumOf { it.dueNow }
         val bands = ReadinessBand.entries.associate { band -> band.wireValue to students.count { it.result.band == band } }
 
         audit.recordPlatformAdminRead(scope, "dashboard.viewed", CampusOrgService.TARGET_ORG, orgId)
@@ -187,9 +192,14 @@ class CampusReadinessService internal constructor(
             enrolled = enrolled,
             joined = joined,
             active = active,
-            completionRate = if (denominator == 0) null else completed.toDouble() / denominator,
+            completionRate = TpoOverview.completionRate(students),
             bands = bands,
             heatmap = heatmap(students),
+            pipeline = TpoOverview.pipeline(students, readiness.invitedStudents(scope, filter), activeSince),
+            componentAverages = TpoOverview.componentAverages(students),
+            topGaps = TpoOverview.topGaps(students),
+            trend = TpoOverview.trend(students, now),
+            batches = TpoOverview.batches(students, readiness.batches(scope, filter)),
         )
     }
 
@@ -304,17 +314,27 @@ class CampusReadinessService internal constructor(
         }
 
         val published = facts.filter { rows[it.assignmentId]?.status == STATUS_PUBLISHED }.groupBy { it.memberId }
+        val completionTimes =
+            facts
+                .mapNotNull { fact -> rows[fact.assignmentId]?.let { fact.completedAt(it.kind) }?.let { fact.memberId to it } }
+                .groupBy({ it.first }, { it.second })
         return students.map { student ->
             val mine = published[student.memberId].orEmpty()
             var completed = 0
             var overdue = 0
             var dueNow = 0
             var started = false
+            var openAssigned = 0
+            var attempted = false
             for (fact in mine) {
                 val assignment = rows.getValue(fact.assignmentId)
                 val done = fact.completed(assignment.kind)
                 val underway = fact.inProgress(assignment.kind)
                 if (done || underway) started = true
+                if (done || underway || assignment.opensAt == null || !now.isBefore(assignment.opensAt)) {
+                    openAssigned++
+                    if (done || fact.attemptsUsed > 0 || fact.stepsAnswered > 0) attempted = true
+                }
                 when (AssignmentRules.completion(done, underway, assignment.dueAt, assignment.allowLate, now)) {
                     CompletionStatus.COMPLETED -> completed++
                     CompletionStatus.OVERDUE -> overdue++
@@ -329,6 +349,9 @@ class CampusReadinessService internal constructor(
                 overdue = overdue,
                 dueNow = dueNow,
                 started = started,
+                openAssigned = openAssigned,
+                attempted = attempted,
+                completionTimes = completionTimes[student.memberId].orEmpty(),
             )
         }
     }

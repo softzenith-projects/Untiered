@@ -2,8 +2,8 @@ package com.interviewos.api.campus
 
 import java.util.UUID
 
-// Wire shapes for campus modules 6 and 7. Field names and types are the contract's
-// (docs/campus-api-contract.md "Module 6" and "Module 7"); change both together.
+// Wire shapes for campus modules 6, 7 and 7b. Field names and types are the contract's
+// (docs/campus-api-contract.md "Module 6", "Module 7" and "Module 7b"); change both together.
 
 data class ReadinessWeights(
     val coding: Int,
@@ -101,6 +101,70 @@ data class DashboardView(
     /** Every `ReadinessBand` value, zero included. */
     val bands: Map<String, Int>,
     val heatmap: Heatmap,
+    // Module 7b, the TPO overview.
+    val pipeline: DashboardPipeline,
+    val componentAverages: ComponentAverages,
+    val topGaps: List<TopGap>,
+    val trend: DashboardTrend,
+    val batches: List<BatchOverviewRow>,
+)
+
+/** Students at each stage of practice (contract "Module 7b"). */
+data class DashboardPipeline(
+    val invited: Int,
+    val joined: Int,
+    val active: Int,
+    val assigned: Int,
+    val attempted: Int,
+    val completed: Int,
+    val interviewReady: Int,
+)
+
+data class ComponentAverage(
+    /** Null when fewer than three students have a score for the component. */
+    val average: Int?,
+    val students: Int,
+)
+
+data class ComponentAverages(
+    val coding: ComponentAverage,
+    val coreCs: ComponentAverage,
+    val technicalInterview: ComponentAverage,
+    val communication: ComponentAverage,
+    val aptitude: ComponentAverage,
+)
+
+data class TopGap(
+    val topic: String,
+    val average: Int,
+    val students: Int,
+)
+
+data class WeeklyCompletions(
+    /** A Monday in India time, `YYYY-MM-DD`. */
+    val weekStart: String,
+    val completed: Int,
+)
+
+data class DashboardTrend(
+    val completedLast30: Int,
+    val completedPrev30: Int,
+    /** Null when fewer than three evidence items were completed in the period. */
+    val averageScoreLast30: Int?,
+    val averageScorePrev30: Int?,
+    /** The last eight weeks, oldest first. */
+    val weekly: List<WeeklyCompletions>,
+)
+
+data class BatchOverviewRow(
+    val batchId: UUID,
+    val name: String,
+    val departmentCode: String,
+    val joined: Int,
+    val completionRate: Double?,
+    /** Null when fewer than three of the batch's students have an overall score. */
+    val averageOverall: Int?,
+    val interviewReady: Int,
 )
 
 data class StudentReadinessRow(

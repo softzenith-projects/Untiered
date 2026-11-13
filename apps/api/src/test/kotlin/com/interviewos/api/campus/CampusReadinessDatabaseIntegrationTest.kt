@@ -286,6 +286,69 @@ class CampusReadinessDatabaseIntegrationTest {
     }
 
     @Test
+    fun `the TPO overview never shows College B, and a faculty member's overview is narrowed to their batches`() {
+        completedAttempt(orgA, interviewA, cse1Member, cse1, score = 5)
+        completedAttempt(orgA, interviewA, member(cse2), cse2, score = 4)
+        completedAttempt(orgA, interviewA, member(cse3), cse3, score = 3)
+        completedAttempt(orgA, interviewA, ece1Member, ece1, score = 1)
+        // College B's student is strong: if any of it leaked into A, every average below would move.
+        completedAttempt(orgB, interviewB, memberB, studentB, score = 5)
+        completedAttempt(orgB, interviewB, memberB, studentB, score = 5)
+        invite(orgA, cseBatch.id, "invited")
+        invite(orgA, cseBatch.id, "expired")
+        invite(orgA, cseBatch.id, "revoked")
+        invite(orgA, eceBatch.id, "invited")
+        invite(orgB, batchB.id, "invited")
+        invite(orgB, batchB.id, "joined")
+
+        val tpo = readiness.dashboard(adminA, orgA, null, null)
+        assertEquals(
+            DashboardPipeline(invited = 3, joined = 4, active = 4, assigned = 4, attempted = 4, completed = 4, interviewReady = 0),
+            tpo.pipeline,
+        )
+        assertEquals(ComponentAverage(average = 65, students = 4), tpo.componentAverages.technicalInterview, "(100 + 80 + 60 + 20) / 4")
+        assertEquals(ComponentAverage(average = null, students = 0), tpo.componentAverages.coding)
+        assertEquals(listOf(TopGap("dbms", 65, 4)), tpo.topGaps)
+        assertEquals(4, tpo.trend.completedLast30)
+        assertEquals(0, tpo.trend.completedPrev30)
+        assertEquals(65, tpo.trend.averageScoreLast30)
+        assertNull(tpo.trend.averageScorePrev30)
+        assertEquals(8, tpo.trend.weekly.size)
+        assertEquals(4, tpo.trend.weekly.sumOf { it.completed })
+        assertEquals(listOf(cseBatch.id, eceBatch.id), tpo.batches.map { it.batchId }, "A's batches only, by department code")
+        val cseRow = tpo.batches.first()
+        assertEquals(3, cseRow.joined)
+        assertEquals(1.0, cseRow.completionRate)
+        assertNull(cseRow.averageOverall, "one item each is not enough for an overall")
+        assertEquals(1, tpo.batches.last().joined)
+
+        // The batch filter narrows every new field too.
+        val ece = readiness.dashboard(adminA, orgA, eceBatch.id, null)
+        assertEquals(1, ece.pipeline.invited)
+        assertEquals(1, ece.pipeline.joined)
+        assertNull(ece.componentAverages.technicalInterview.average, "one student is not an average")
+        assertEquals(emptyList(), ece.topGaps)
+        assertEquals(listOf(eceBatch.id), ece.batches.map { it.batchId })
+
+        val faculty = readiness.dashboard(facultyA, orgA, null, null)
+        assertEquals(2, faculty.pipeline.invited, "CSE's open and lapsed invites, not ECE's")
+        assertEquals(3, faculty.pipeline.joined)
+        assertEquals(3, faculty.pipeline.completed)
+        assertEquals(ComponentAverage(average = 80, students = 3), faculty.componentAverages.technicalInterview)
+        assertEquals(emptyList(), faculty.topGaps, "CSE alone averages 80 on DBMS")
+        assertEquals(3, faculty.trend.completedLast30)
+        assertEquals(80, faculty.trend.averageScoreLast30)
+        assertEquals(listOf(cseBatch.id), faculty.batches.map { it.batchId })
+
+        // B's own staff see only B.
+        val inB = readiness.dashboard(adminB, orgB, null, null)
+        assertEquals(2, inB.pipeline.invited)
+        assertEquals(1, inB.pipeline.joined)
+        assertEquals(1, inB.trend.completedLast30, "a second attempt at one assignment is not a second completion")
+        assertEquals(listOf(batchB.id), inB.batches.map { it.batchId })
+    }
+
+    @Test
     fun `a completed scenario set is evidence scored correct over answered, and readiness views are audited`() {
         val scenario =
             jdbc
@@ -441,6 +504,25 @@ class CampusReadinessDatabaseIntegrationTest {
             .param("at", attemptClock.toString())
             .update()
         return sessionId
+    }
+
+    private fun invite(
+        org: UUID,
+        batch: UUID,
+        status: String,
+    ) {
+        jdbc
+            .sql(
+                """
+                insert into public.campus_invites (org_id, role, batch_id, email, full_name, expires_at, status, joined_at)
+                values (:org, 'student', :batch, :email, 'Invited Student', now() + interval '7 days', :status,
+                        case when cast(:status as text) = 'joined' then now() end)
+                """.trimIndent(),
+            ).param("org", org)
+            .param("batch", batch)
+            .param("email", "invite-${UUID.randomUUID()}@example.invalid")
+            .param("status", status)
+            .update()
     }
 
     private fun member(who: SupabaseIdentity): UUID =

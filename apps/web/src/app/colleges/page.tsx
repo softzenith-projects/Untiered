@@ -6,7 +6,7 @@ import { SessionLink } from "@/components/session-link";
 import { SiteFooter } from "@/components/site-footer";
 import { buttonStyles } from "@/components/ui/button";
 import { CAMPUS_CONTACT_HREF, CAMPUS_PRODUCT_NAME } from "@/lib/campus";
-import { featureEnabled } from "@/lib/flags";
+import { campusEnabled, featureEnabled } from "@/lib/flags";
 import { LEGAL } from "@/lib/legal";
 import { publicPageMetadata } from "@/lib/seo";
 
@@ -96,6 +96,14 @@ export default function CollegesPage() {
                 </Link>
               ) : null}
             </div>
+            {campusEnabled() ? (
+              <Link
+                href={"/login?next=/campus" as Route}
+                className="w-fit text-caption font-semibold text-accent-on-navy underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-navy"
+              >
+                College staff? Sign in to your portal
+              </Link>
+            ) : null}
           </div>
         </section>
 

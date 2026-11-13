@@ -55,6 +55,16 @@ data class ReadinessAssignmentRow(
     val status: String,
     val dueAt: Instant,
     val allowLate: Boolean,
+    /** Null is read as already open. */
+    val opensAt: Instant? = null,
+)
+
+/** A batch in scope, as the overview's per-batch rows name it. */
+data class ReadinessBatchRow(
+    val id: UUID,
+    val name: String,
+    val departmentId: UUID,
+    val departmentCode: String,
 )
 
 /**
@@ -195,12 +205,6 @@ class ReadinessRepository(
     ): Int {
         val visible = scope.visibleBatchIds
         if (visible != null && visible.isEmpty()) return 0
-        val filters =
-            buildString {
-                if (visible != null) append(" and i.batch_id in (:visible)")
-                if (filter.batchId != null) append(" and i.batch_id = :batchId")
-                if (filter.departmentId != null) append(" and b.department_id = :departmentId")
-            }
         val statement =
             jdbc
                 .sql(
@@ -208,13 +212,75 @@ class ReadinessRepository(
                     select count(*)
                       from public.campus_invites i
                       join public.org_batches b on b.org_id = i.org_id and b.id = i.batch_id
-                     where i.org_id = :orgId and i.role = 'student' and i.status = 'invited' and i.expires_at > now()$filters
+                     where i.org_id = :orgId and i.role = 'student' and i.status = 'invited'
+                       and i.expires_at > now()${inviteFilters(visible, filter)}
+                    """.trimIndent(),
+                ).param("orgId", scope.orgId)
+        bindInviteFilters(statement, visible, filter)
+        return statement.query(Int::class.java).single()
+    }
+
+    /**
+     * People ever invited as students to batches in scope — open, joined or lapsed, not revoked —
+     * counted once per email address, so an invite that was renewed is still one person.
+     */
+    fun invitedStudents(
+        scope: OrgScope,
+        filter: ReadinessFilter,
+    ): Int {
+        val visible = scope.visibleBatchIds
+        if (visible != null && visible.isEmpty()) return 0
+        val statement =
+            jdbc
+                .sql(
+                    """
+                    select count(distinct i.email)
+                      from public.campus_invites i
+                      join public.org_batches b on b.org_id = i.org_id and b.id = i.batch_id
+                     where i.org_id = :orgId and i.role = 'student'
+                       and i.status in ('invited', 'joined', 'expired')${inviteFilters(visible, filter)}
+                    """.trimIndent(),
+                ).param("orgId", scope.orgId)
+        bindInviteFilters(statement, visible, filter)
+        return statement.query(Int::class.java).single()
+    }
+
+    /** Every batch in scope, empty ones included, by department code then name. */
+    fun batches(
+        scope: OrgScope,
+        filter: ReadinessFilter,
+    ): List<ReadinessBatchRow> {
+        val visible = scope.visibleBatchIds
+        if (visible != null && visible.isEmpty()) return emptyList()
+        val filters =
+            buildString {
+                if (visible != null) append(" and b.id in (:visible)")
+                if (filter.batchId != null) append(" and b.id = :batchId")
+                if (filter.departmentId != null) append(" and b.department_id = :departmentId")
+            }
+        val statement =
+            jdbc
+                .sql(
+                    """
+                    select b.id, b.name, d.id as department_id, d.code as department_code
+                      from public.org_batches b
+                      join public.org_departments d on d.org_id = b.org_id and d.id = b.department_id
+                     where b.org_id = :orgId$filters
+                     order by d.code, b.name, b.id
                     """.trimIndent(),
                 ).param("orgId", scope.orgId)
         if (visible != null) statement.param("visible", visible.toList())
         filter.batchId?.let { statement.param("batchId", it) }
         filter.departmentId?.let { statement.param("departmentId", it) }
-        return statement.query(Int::class.java).single()
+        return statement
+            .query { rs, _ ->
+                ReadinessBatchRow(
+                    id = UUID.fromString(rs.getString("id")),
+                    name = rs.getString("name"),
+                    departmentId = UUID.fromString(rs.getString("department_id")),
+                    departmentCode = rs.getString("department_code"),
+                )
+            }.list()
     }
 
     // -- assignments and evidence --------------------------------------------------------
@@ -228,7 +294,7 @@ class ReadinessRepository(
         jdbc
             .sql(
                 """
-                select x.id, x.kind, x.title, x.readiness_component, x.topic, x.status, x.due_at, x.allow_late
+                select x.id, x.kind, x.title, x.readiness_component, x.topic, x.status, x.due_at, x.allow_late, x.opens_at
                   from public.assignments x
                  where x.org_id = :orgId and x.status in ('published', 'archived')
                  order by x.due_at, x.id
@@ -244,6 +310,7 @@ class ReadinessRepository(
                     status = rs.getString("status"),
                     dueAt = rs.getTimestamp("due_at").toInstant(),
                     allowLate = rs.getBoolean("allow_late"),
+                    opensAt = rs.getTimestamp("opens_at")?.toInstant(),
                 )
             }.list()
 
@@ -331,6 +398,26 @@ class ReadinessRepository(
             if (filter.departmentId != null) append(" and b.department_id = :departmentId")
             if (filter.memberId != null) append(" and m.id = :memberId")
         }
+
+    private fun inviteFilters(
+        visible: Set<UUID>?,
+        filter: ReadinessFilter,
+    ): String =
+        buildString {
+            if (visible != null) append(" and i.batch_id in (:visible)")
+            if (filter.batchId != null) append(" and i.batch_id = :batchId")
+            if (filter.departmentId != null) append(" and b.department_id = :departmentId")
+        }
+
+    private fun bindInviteFilters(
+        statement: JdbcClient.StatementSpec,
+        visible: Set<UUID>?,
+        filter: ReadinessFilter,
+    ) {
+        if (visible != null) statement.param("visible", visible.toList())
+        filter.batchId?.let { statement.param("batchId", it) }
+        filter.departmentId?.let { statement.param("departmentId", it) }
+    }
 
     private fun bindFilters(
         statement: JdbcClient.StatementSpec,

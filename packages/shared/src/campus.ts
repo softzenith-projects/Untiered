@@ -399,6 +399,58 @@ export interface DashboardView {
   completionRate: number | null;
   bands: Record<ReadinessBand, number>;
   heatmap: { columns: CampusTopic[]; rows: HeatmapRow[] };
+  // Module 7b, the TPO overview. Optional on the wire so an older server still renders.
+  pipeline?: DashboardPipeline;
+  componentAverages?: Record<keyof ComponentScores, ComponentAverage>;
+  topGaps?: TopGap[];
+  trend?: DashboardTrend;
+  batches?: BatchOverviewRow[];
+}
+
+// ---- Module 7b: the TPO overview (docs/campus-api-contract.md) ----
+
+/** Students at each stage of practice, in the dashboard's scope. */
+export interface DashboardPipeline {
+  invited: number;
+  joined: number;
+  active: number;
+  assigned: number;
+  attempted: number;
+  completed: number;
+  interviewReady: number;
+}
+
+/** `average` is null when fewer than 3 students have a score; it is never shown as 0. */
+export interface ComponentAverage {
+  average: number | null;
+  students: number;
+}
+
+export interface TopGap {
+  topic: CampusTopic;
+  average: number;
+  students: number;
+}
+
+export interface DashboardTrend {
+  completedLast30: number;
+  completedPrev30: number;
+  /** Null when fewer than 3 items were completed in the period. */
+  averageScoreLast30: number | null;
+  averageScorePrev30: number | null;
+  /** The last 8 weeks (Monday, India time), oldest first. */
+  weekly: { weekStart: string; completed: number }[];
+}
+
+export interface BatchOverviewRow {
+  batchId: string;
+  name: string;
+  departmentCode: string;
+  joined: number;
+  completionRate: number | null;
+  /** Null when fewer than 3 students in the batch have an overall score. */
+  averageOverall: number | null;
+  interviewReady: number;
 }
 
 export type ReadinessSort = "name" | "overall" | "last_active" | "overdue";

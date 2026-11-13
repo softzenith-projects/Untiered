@@ -313,6 +313,13 @@ class CampusReadinessControllerTest {
         given(access.resolve(identity, orgId)).willReturn(scope)
         stubOneStudent(scope, ReadinessFilter(), interviewScores = listOf(4, 5))
         given(readiness.openStudentInvites(scope, ReadinessFilter())).willReturn(2)
+        given(readiness.invitedStudents(scope, ReadinessFilter())).willReturn(3)
+        given(readiness.batches(scope, ReadinessFilter())).willReturn(
+            listOf(
+                ReadinessBatchRow(batchId, "CSE 2027", departmentId, "CSE"),
+                ReadinessBatchRow(UUID.randomUUID(), "ECE 2027", departmentId, "ECE"),
+            ),
+        )
 
         mockMvc
             .perform(get("$base/dashboard").with(signedIn()))
@@ -326,6 +333,42 @@ class CampusReadinessControllerTest {
             .andExpect(jsonPath("$.heatmap.columns[0]").value("dbms"))
             .andExpect(jsonPath("$.heatmap.rows[0].cells[0].students").value(1))
             .andExpect(jsonPath("$.heatmap.rows[0].cells[0].average").value(null as Any?))
+            // Module 7b: the overview.
+            .andExpect(jsonPath("$.pipeline.invited").value(3))
+            .andExpect(jsonPath("$.pipeline.joined").value(1))
+            .andExpect(jsonPath("$.pipeline.assigned").value(1))
+            .andExpect(jsonPath("$.pipeline.attempted").value(1))
+            .andExpect(jsonPath("$.pipeline.completed").value(1))
+            .andExpect(jsonPath("$.pipeline.interviewReady").value(1))
+            .andExpect(jsonPath("$.componentAverages.technicalInterview.students").value(1))
+            .andExpect(content().string(containsString("\"technicalInterview\":{\"average\":null,\"students\":1}")))
+            .andExpect(jsonPath("$.topGaps.length()").value(0))
+            .andExpect(jsonPath("$.trend.completedLast30").value(1))
+            .andExpect(jsonPath("$.trend.completedPrev30").value(0))
+            .andExpect(jsonPath("$.trend.averageScoreLast30").value(null as Any?))
+            .andExpect(jsonPath("$.trend.weekly.length()").value(8))
+            .andExpect(jsonPath("$.batches[0].name").value("CSE 2027"))
+            .andExpect(jsonPath("$.batches[0].joined").value(1))
+            .andExpect(jsonPath("$.batches[0].averageOverall").value(null as Any?))
+            .andExpect(jsonPath("$.batches[1].joined").value(0))
+            .andExpect(jsonPath("$.batches[1].completionRate").value(null as Any?))
+    }
+
+    @Test
+    fun `an assignment that has not opened and has not been begun does not make a student assigned`() {
+        val scope = scope(CampusRole.TPO)
+        given(access.resolve(identity, orgId)).willReturn(scope)
+        val later = Instant.now().plus(3, ChronoUnit.DAYS)
+        stubOneStudent(scope, ReadinessFilter(), interviewScores = emptyList(), opensAt = later, completed = false)
+
+        mockMvc
+            .perform(get("$base/dashboard").with(signedIn()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.pipeline.joined").value(1))
+            .andExpect(jsonPath("$.pipeline.assigned").value(0))
+            .andExpect(jsonPath("$.pipeline.attempted").value(0))
+            .andExpect(jsonPath("$.pipeline.completed").value(0))
+            .andExpect(jsonPath("$.trend.completedLast30").value(0))
     }
 
     @Test
@@ -380,6 +423,8 @@ class CampusReadinessControllerTest {
         filter: ReadinessFilter,
         interviewScores: List<Int>,
         name: String = "Asha Rao",
+        opensAt: Instant? = null,
+        completed: Boolean = true,
     ) {
         val now = Instant.now().truncatedTo(ChronoUnit.SECONDS)
         given(readiness.weights(scope)).willReturn(ReadinessWeightSet.DEFAULT)
@@ -409,6 +454,7 @@ class CampusReadinessControllerTest {
                     "published",
                     now.minus(1, ChronoUnit.DAYS),
                     false,
+                    opensAt,
                 ),
             ),
         )
@@ -425,7 +471,7 @@ class CampusReadinessControllerTest {
                     batchName = "CSE 2027",
                     attemptsUsed = interviewScores.size,
                     orgFundedUsed = interviewScores.size,
-                    attemptCompleted = true,
+                    attemptCompleted = completed,
                     attemptInProgress = false,
                     sessionIds = listOf(sessionId),
                     completedSessionIds = listOf(sessionId),
@@ -433,6 +479,7 @@ class CampusReadinessControllerTest {
                     stepsCorrect = 0,
                     stepsTotal = 0,
                     lastActivityAt = now,
+                    firstCompletedAt = if (completed) now.minus(1, ChronoUnit.HOURS) else null,
                 ),
             ),
         )
