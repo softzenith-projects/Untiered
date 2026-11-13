@@ -303,7 +303,18 @@ type AssignableRoundType =
   | "coding_practical"         // "Coding round"
   | "aptitude"                 // "Aptitude"
   | "hr_fit_closing"           // "HR interview"
-  | "behavioural_competency";  // "Behavioural"
+  | "behavioural_competency"   // "Behavioural"
+  | "custom_topic";            // "Topic round": 30 minutes only, needs focusTopic
+
+// Which readiness score (module 6) this assignment feeds. Set explicitly by staff and
+// defaulted from the round type, never inferred from what the AI wrote:
+// coding_practical → coding, aptitude → aptitude, hr_fit_closing and behavioural_competency
+// → communication, technical_fundamentals and project_deep_dive → technical_interview,
+// custom_topic → core_cs, arena_scenarios → core_cs (or coding when every scenario is DSA).
+type ReadinessComponent = "coding" | "core_cs" | "technical_interview" | "communication" | "aptitude";
+
+// An optional topic label for the skill-gap heatmap (module 7). Staff choose it.
+type CampusTopic = "dsa" | "dbms" | "os" | "oops" | "cn" | "system_design" | "communication" | "aptitude";
 
 interface AssignmentInput {
   kind: AssignmentKind;
@@ -315,6 +326,7 @@ interface AssignmentInput {
   companyName?: string | null;         // empty = general practice
   roleTitle?: string | null;
   candidateStage?: "student" | "recent_graduate";  // default "student"
+  focusTopic?: string | null;          // required for custom_topic, ≤ 120 characters, e.g. "DBMS normalisation"
   language?: "english" | "hindi_english";          // default "english"
   // arena_scenarios
   scenarioIds?: string[];              // 1–20 live scenario ids
@@ -324,6 +336,8 @@ interface AssignmentInput {
   attemptLimit: number;                // 1–10, interviews only
   interviewCap?: number | null;        // 1..attemptLimit; null = attemptLimit
   targets: { batchIds: string[]; memberIds: string[] };  // at least one
+  component?: ReadinessComponent;      // default derived as above
+  topic?: CampusTopic | null;
 }
 
 interface AssignmentView extends AssignmentInput {
@@ -409,7 +423,7 @@ assignment.
 | Method · path | Body → response |
 |---|---|
 | `GET /me/assignments` | → `AssignedItem[]` for published assignments, ordered by `dueAt`. A caller with no joined student membership gets `[]`. This route is **not** behind the `campus` switch's 404, so the dashboard can call it unconditionally; with the switch off it answers `[]`. |
-| `POST /sessions` (existing) | gains the optional field `assignmentId`. When it is present, the server takes `roundType`, `durationMinutes`, `companyName`, `roleTitle`, `candidateStage` and `language` from the assignment and ignores the client's values. Audio consent is still required. On success the response is unchanged, and the student's free rounds and credits are not touched. New errors: `404 assignment_not_found`; `409 assignment_not_open`; `409 assignment_past_due`; `409 assignment_attempt_limit`; `409 assignment_student_cap`; `402 college_allowance_exhausted`; and the existing `409 session_in_progress`. |
+| `POST /sessions` (existing) | gains the optional field `assignmentId`. When it is present, the server takes `roundType`, `durationMinutes`, `companyName`, `roleTitle`, `candidateStage`, `language` and `focusTopic` from the assignment and ignores the client's values. Audio consent is still required. On success the response is unchanged, and the student's free rounds and credits are not touched. New errors: `404 assignment_not_found`; `409 assignment_not_open`; `409 assignment_past_due`; `409 assignment_attempt_limit`; `409 assignment_student_cap`; `402 college_allowance_exhausted`; and the existing `409 session_in_progress`. |
 
 A scenario assignment needs no new student route. The student plays the scenarios through
 the existing Arena (`/arena`), and completion is derived as described above.
