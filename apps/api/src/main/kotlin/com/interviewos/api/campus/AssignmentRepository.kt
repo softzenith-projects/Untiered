@@ -209,9 +209,25 @@ class AssignmentRepository(
             .optional()
             .isPresent
 
+    /** A draft set by hand. */
     fun create(
         scope: OrgScope,
         fields: AssignmentFields,
+    ): UUID = insert(scope, fields, programmeId = null, programmeWeek = null)
+
+    /** A draft that belongs to week [programmeWeek] of a programme (module 10); published by the caller. */
+    fun createForProgramme(
+        scope: OrgScope,
+        fields: AssignmentFields,
+        programmeId: UUID,
+        programmeWeek: Int,
+    ): UUID = insert(scope, fields, programmeId, programmeWeek)
+
+    private fun insert(
+        scope: OrgScope,
+        fields: AssignmentFields,
+        programmeId: UUID?,
+        programmeWeek: Int?,
     ): UUID {
         val statement =
             jdbc
@@ -220,16 +236,20 @@ class AssignmentRepository(
                     insert into public.assignments (
                         org_id, created_by_member_id, kind, title, instructions, round_type, duration_minutes,
                         company_name, role_title, candidate_stage, language, focus_topic, scenario_ids,
-                        opens_at, due_at, allow_late, attempt_limit, interview_cap, readiness_component, topic
+                        opens_at, due_at, allow_late, attempt_limit, interview_cap, readiness_component, topic,
+                        programme_id, programme_week
                     ) values (
                         :orgId, :createdBy, :kind, :title, :instructions, :roundType, :duration,
                         :company, :role, :stage, :language, :focusTopic, ${scenarioArray(fields.scenarioIds)},
-                        :opensAt, :dueAt, :allowLate, :attemptLimit, :interviewCap, :component, :topic
+                        :opensAt, :dueAt, :allowLate, :attemptLimit, :interviewCap, :component, :topic,
+                        :programmeId, :programmeWeek
                     )
                     returning id
                     """.trimIndent(),
                 ).param("orgId", scope.orgId)
                 .param("createdBy", scope.memberId)
+                .param("programmeId", programmeId)
+                .param("programmeWeek", programmeWeek)
         bindFields(statement, fields)
         return statement.query(UUID::class.java).single()
     }
@@ -285,6 +305,29 @@ class AssignmentRepository(
             ).param("orgId", scope.orgId)
             .param("id", id)
             .update() == 1
+
+    /**
+     * Archives a programme's assignments that have not opened yet (module 10, archiving the
+     * programme) and returns their ids. Ones already open stay, so work under way is kept.
+     */
+    fun archiveUnopenedOfProgramme(
+        scope: OrgScope,
+        programmeId: UUID,
+        now: Instant,
+    ): List<UUID> =
+        jdbc
+            .sql(
+                """
+                update public.assignments set status = 'archived', archived_at = now()
+                 where org_id = :orgId and programme_id = :programmeId and status <> 'archived' and opens_at > :now
+                returning id
+                """.trimIndent(),
+            ).param("orgId", scope.orgId)
+            .param("programmeId", programmeId)
+            .param("now", OffsetDateTime.ofInstant(now, ZoneOffset.UTC))
+            .query(UUID::class.java)
+            .list()
+            .filterNotNull()
 
     // -- targets -----------------------------------------------------------------
 
