@@ -51,6 +51,8 @@ class CampusJoinControllerTest {
 
     @MockitoBean private lateinit var invites: InviteRepository
 
+    @MockitoBean private lateinit var notifications: CampusNotifications
+
     @MockitoBean private lateinit var access: CampusAccess
 
     @MockitoBean private lateinit var audit: CampusAudit
