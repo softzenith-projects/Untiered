@@ -42,6 +42,15 @@ import type {
 
 import type {
   AcceptInviteRequest,
+  AcceptInviteResponse,
+  AssignedItem,
+  AssignmentInput,
+  AssignmentPublishedPatch,
+  AssignmentStatus,
+  AssignmentView,
+  CompletionStatus,
+  RecipientProgress,
+  CampusScenarioOption,
   AdminCreateInviteRequest,
   AdminOrgSummary,
   AdminUpdateOrgRequest,
@@ -869,10 +878,59 @@ export function fetchInvitePreview(token: string, options: ApiGetOptions): Promi
   return apiGet<InvitePreview>(inviteToken(token), options);
 }
 
-export function acceptInvite(accessToken: string, token: string, body: AcceptInviteRequest): Promise<MeCampusView> {
-  return apiSend<MeCampusView>(`${inviteToken(token)}/accept`, "POST", accessToken, body);
+export function acceptInvite(accessToken: string, token: string, body: AcceptInviteRequest): Promise<AcceptInviteResponse> {
+  return apiSend<AcceptInviteResponse>(`${inviteToken(token)}/accept`, "POST", accessToken, body);
 }
 
 export async function leaveCollege(accessToken: string): Promise<void> {
   await apiSend<void>("/api/v1/me/campus/leave", "POST", accessToken);
+}
+
+// ---- Untiered Campus, module 4: assignments ----
+
+export function fetchArenaScenarios(orgId: string, options: ApiGetOptions): Promise<CampusScenarioOption[]> {
+  return apiGet<CampusScenarioOption[]>(`${campusOrg(orgId)}/arena-scenarios`, options);
+}
+
+export function fetchAssignments(orgId: string, options: ApiGetOptions, status?: AssignmentStatus): Promise<AssignmentView[]> {
+  return apiGet<AssignmentView[]>(`${campusOrg(orgId)}/assignments${query({ status })}`, options);
+}
+
+export function createAssignment(accessToken: string, orgId: string, body: AssignmentInput): Promise<AssignmentView> {
+  return apiSend<AssignmentView>(`${campusOrg(orgId)}/assignments`, "POST", accessToken, body);
+}
+
+export function fetchAssignment(orgId: string, id: string, options: ApiGetOptions): Promise<AssignmentView> {
+  return apiGet<AssignmentView>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}`, options);
+}
+
+export function updateAssignment(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  body: Partial<AssignmentInput> | AssignmentPublishedPatch,
+): Promise<AssignmentView> {
+  return apiSend<AssignmentView>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export function publishAssignment(accessToken: string, orgId: string, id: string): Promise<AssignmentView> {
+  return apiSend<AssignmentView>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}/publish`, "POST", accessToken);
+}
+
+export function archiveAssignment(accessToken: string, orgId: string, id: string): Promise<AssignmentView> {
+  return apiSend<AssignmentView>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}/archive`, "POST", accessToken);
+}
+
+export function fetchAssignmentProgress(
+  orgId: string,
+  id: string,
+  options: ApiGetOptions,
+  filter: { batchId?: string; status?: CompletionStatus } = {},
+): Promise<RecipientProgress[]> {
+  return apiGet<RecipientProgress[]>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}/progress${query({ ...filter })}`, options);
+}
+
+/** What the signed-in student has been assigned. Not behind the campus switch: answers `[]` when off. */
+export function fetchMyAssignments(options: ApiGetOptions): Promise<AssignedItem[]> {
+  return apiGet<AssignedItem[]>("/api/v1/me/assignments", options);
 }

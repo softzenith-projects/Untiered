@@ -327,6 +327,21 @@ describe("JoinCollege", () => {
     await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/campus?org=o9"));
   });
 
+  it("lands in the college named by joinedOrgId, not the one matching by name", async () => {
+    api.fetchInvitePreview.mockResolvedValue({ ...studentPreview, role: "tpo", batchName: null, shared: [], notShared: [] });
+    api.acceptInvite.mockResolvedValue({
+      student: null,
+      staff: [
+        { orgId: "o2", orgName: "Alpha College", logoUrl: null, role: "tpo" },
+        { orgId: "o3", orgName: "Beta College", logoUrl: null, role: "tpo" },
+      ],
+      joinedOrgId: "o2",
+    });
+    render(<JoinCollege />);
+    await userEvent.click(await screen.findByRole("button", { name: "Join Alpha College" }));
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/campus?org=o2"));
+  });
+
   it.each([
     ["invite_not_found", 404, /no longer valid|not valid any more/],
     ["already_in_college", 409, /already a student at another college/],

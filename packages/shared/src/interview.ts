@@ -284,6 +284,11 @@ export interface StartSessionRequest {
    * Optional: omitted, the guess stands exactly as it did before this field existed.
    */
   candidateStage?: CandidateStage;
+  /**
+   * A college assignment this round fulfils (Campus module 4). The server then takes the
+   * round's shape from the assignment and ignores the values above.
+   */
+  assignmentId?: string;
 }
 
 /**
