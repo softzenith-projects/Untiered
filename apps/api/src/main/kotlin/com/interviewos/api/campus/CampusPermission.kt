@@ -68,6 +68,15 @@ enum class CampusPermission(
     /** View a student's assignment report (module 6). Faculty: scoped. Platform admin: audited. */
     STUDENT_REPORT_VIEW(CampusRole.STAFF, platformAdmin = true),
 
+    /**
+     * See students' readiness, the placement dashboard and the readiness weights (modules 6–7).
+     * Faculty: scoped. Platform admin: audited.
+     */
+    READINESS_VIEW(CampusRole.STAFF, platformAdmin = true),
+
+    /** Change the college's readiness weights (module 6). A college decision, not an operator's. */
+    READINESS_WEIGHTS_EDIT(setOf(CampusRole.COLLEGE_ADMIN), platformAdmin = false),
+
     /** Export CSV / PDF (module 7). Faculty: scoped. */
     EXPORT(CampusRole.STAFF, platformAdmin = false),
 

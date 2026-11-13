@@ -27,6 +27,8 @@ class CampusPermissionTest {
             CampusPermission.ASSIGNMENTS_MANAGE to (setOf(admin, tpo, faculty) to false),
             CampusPermission.ASSIGNMENT_PROGRESS_VIEW to (setOf(admin, tpo, faculty) to true),
             CampusPermission.STUDENT_REPORT_VIEW to (setOf(admin, tpo, faculty) to true),
+            CampusPermission.READINESS_VIEW to (setOf(admin, tpo, faculty) to true),
+            CampusPermission.READINESS_WEIGHTS_EDIT to (setOf(admin) to false),
             CampusPermission.EXPORT to (setOf(admin, tpo, faculty) to false),
             CampusPermission.AUDIT_LOG_VIEW to (setOf(admin) to true),
             CampusPermission.OWN_MEMBERSHIP to (setOf(student) to false),
