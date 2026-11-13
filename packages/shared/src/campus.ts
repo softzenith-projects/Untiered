@@ -417,3 +417,32 @@ export interface StudentReadinessRow {
   assignmentsOverdue: number;
   lastActiveAt: string | null;
 }
+
+// ---- Module 8: faculty view (docs/campus-api-contract.md) ----
+
+export type AttentionReason = "low_score" | "inactive" | "overdue";
+
+export interface AttentionRow {
+  memberId: string;
+  name: string | null;
+  rollNumber: string | null;
+  batchName: string;
+  /** In the order low_score, inactive, overdue. */
+  reasons: AttentionReason[];
+  overall: number | null;
+  band: ReadinessBand;
+  overdue: number;
+  lastActiveAt: string | null;
+}
+
+/** A private staff note about a student. Never returned on a student route. */
+export interface StaffComment {
+  id: string;
+  memberId: string;
+  sessionId: string | null;
+  authorName: string | null;
+  isMine: boolean;
+  body: string;
+  createdAt: string;
+  editedAt: string | null;
+}

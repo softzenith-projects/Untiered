@@ -52,8 +52,11 @@ import type {
   RecipientProgress,
   CampusScenarioOption,
   DashboardView,
+  AttentionReason,
+  AttentionRow,
   ReadinessCompletionFilter,
   ReadinessSort,
+  StaffComment,
   ReadinessWeights,
   StudentReadiness,
   StudentReadinessRow,
@@ -1022,4 +1025,32 @@ export async function downloadStudentsCsv(orgId: string, accessToken: string, fi
     );
   }
   return response.blob();
+}
+
+// ---- Untiered Campus, module 8: the faculty view ----
+
+export function fetchAttention(orgId: string, options: ApiGetOptions, reason?: AttentionReason): Promise<AttentionRow[]> {
+  return apiGet<AttentionRow[]>(`${campusOrg(orgId)}/attention${query({ reason })}`, options);
+}
+
+/** Private staff notes on one student, newest first. Staff only; a student never sees them. */
+export function fetchStaffComments(orgId: string, memberId: string, options: ApiGetOptions): Promise<StaffComment[]> {
+  return apiGet<StaffComment[]>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/comments`, options);
+}
+
+export function createStaffComment(
+  accessToken: string,
+  orgId: string,
+  memberId: string,
+  body: { body: string; sessionId?: string | null },
+): Promise<StaffComment> {
+  return apiSend<StaffComment>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/comments`, "POST", accessToken, body);
+}
+
+export function updateStaffComment(accessToken: string, orgId: string, id: string, body: string): Promise<StaffComment> {
+  return apiSend<StaffComment>(`${campusOrg(orgId)}/comments/${encodeURIComponent(id)}`, "PATCH", accessToken, { body });
+}
+
+export async function deleteStaffComment(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/comments/${encodeURIComponent(id)}`, "DELETE", accessToken);
 }
