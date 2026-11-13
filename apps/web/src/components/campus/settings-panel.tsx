@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState, type FormEvent } from "react";
+import { useCallback, useId, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Alert, EmptyState, Skeleton } from "@/components/ui/feedback";
@@ -112,32 +112,30 @@ const ACTOR_KIND: Record<AuditEntryView["actorKind"], string> = {
 
 function AuditLog() {
   const { orgId, accessToken } = useCampusOrg();
-  const [items, setItems] = useState<AuditEntryView[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const loadFirst = useCallback((signal: AbortSignal) => fetchAuditLog(orgId, { accessToken, signal }), [orgId, accessToken]);
+  const first = useLoad(loadFirst);
+  const [more, setMore] = useState<{ items: AuditEntryView[]; cursor: string | null } | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
 
-  const loadPage = useCallback(
-    async (next?: string) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const page = await fetchAuditLog(orgId, { accessToken }, next);
-        setItems((current) => (next ? [...current, ...page.items] : page.items));
-        setCursor(page.nextCursor);
-      } catch (cause) {
-        setError(errorText(cause, "The audit log could not be loaded just now."));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [orgId, accessToken],
-  );
+  const items = [...(first.data?.items ?? []), ...(more?.items ?? [])];
+  const cursor = more ? more.cursor : (first.data?.nextCursor ?? null);
+  const error = first.error?.message ?? moreError;
 
-  useEffect(() => {
-    void loadPage();
-  }, [loadPage]);
-
+  async function loadMore() {
+    if (!cursor) return;
+    setLoadingMore(true);
+    setMoreError(null);
+    try {
+      const page = await fetchAuditLog(orgId, { accessToken }, cursor);
+      setMore((current) => ({ items: [...(current?.items ?? []), ...page.items], cursor: page.nextCursor }));
+    } catch (cause) {
+      setMoreError(errorText(cause, "More entries could not be loaded just now."));
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+  const loading = first.loading || loadingMore;
   return (
     <section aria-labelledby="audit-heading" className="flex flex-col gap-3">
       <h2 id="audit-heading" className="text-heading text-ink">
@@ -180,7 +178,7 @@ function AuditLog() {
       {loading ? <Skeleton className="h-10 w-full" /> : null}
       {cursor && !loading ? (
         <div>
-          <Button variant="secondary" onClick={() => void loadPage(cursor)}>
+          <Button variant="secondary" onClick={() => void loadMore()}>
             Load more
           </Button>
         </div>

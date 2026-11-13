@@ -44,3 +44,14 @@ describe("product feature flags", () => {
     expect(courseEnabled("new-unreviewed-course")).toBe(false);
   });
 });
+
+describe("campus flag", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is off unless explicitly true", async () => {
+    const { campusEnabled } = await import("@/lib/flags");
+    expect(campusEnabled()).toBe(false);
+    vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS", "true");
+    expect(campusEnabled()).toBe(true);
+  });
+});

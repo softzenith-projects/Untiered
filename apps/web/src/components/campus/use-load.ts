@@ -31,7 +31,6 @@ export function useLoad<T>(load: (signal: AbortSignal) => Promise<T>): Loaded<T>
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
     load(controller.signal)
       .then((value) => {
         if (controller.signal.aborted) return;
@@ -50,6 +49,9 @@ export function useLoad<T>(load: (signal: AbortSignal) => Promise<T>): Loaded<T>
     return () => controller.abort();
   }, [load, tick]);
 
-  const reload = useCallback(() => setTick((value) => value + 1), []);
+  const reload = useCallback(() => {
+    setLoading(true);
+    setTick((value) => value + 1);
+  }, []);
   return { data, error, loading, reload, setData };
 }
