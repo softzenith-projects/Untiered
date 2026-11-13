@@ -97,6 +97,10 @@ data class RecipientFacts(
     val stepsCorrect: Int,
     val stepsTotal: Int,
     val lastActivityAt: Instant?,
+    /** The end of the first completed attempt: when an interview assignment was completed. */
+    val firstCompletedAt: Instant? = null,
+    /** The latest answer to one of the assignment's steps: when a scenario set was completed, once it is. */
+    val lastAnswerAt: Instant? = null,
 ) {
     fun completed(kind: AssignmentKind): Boolean =
         when (kind) {
@@ -108,6 +112,21 @@ data class RecipientFacts(
         when (kind) {
             AssignmentKind.INTERVIEW -> attemptInProgress
             AssignmentKind.ARENA_SCENARIOS -> stepsAnswered > 0
+        }
+
+    /**
+     * When the assignment was completed, or null while it is not: an interview at its first
+     * completed attempt's end, a scenario set at its last answer (as a programme certificate
+     * dates it), so the moment does not move once it is done.
+     */
+    fun completedAt(kind: AssignmentKind): Instant? =
+        if (!completed(kind)) {
+            null
+        } else {
+            when (kind) {
+                AssignmentKind.INTERVIEW -> firstCompletedAt
+                AssignmentKind.ARENA_SCENARIOS -> lastAnswerAt
+            }
         }
 
     /** Correct over answered, 0–1; null when nothing is answered or this is an interview. */
@@ -490,6 +509,7 @@ class AssignmentRepository(
                                coalesce(bool_or(a.status = 'completed'), false) as completed,
                                coalesce(bool_or(a.status = 'in_progress' and a.session_id is not null), false) as in_progress,
                                max(coalesce(a.ended_at, a.started_at)) as last_at,
+                               min(a.ended_at) filter (where a.status = 'completed') as first_completed_at,
                                array_remove(array_agg(a.session_id order by a.started_at, a.id), null) as session_ids,
                                array_remove(array_agg(case when a.status = 'completed' then a.session_id end
                                                       order by a.started_at, a.id), null) as completed_session_ids
@@ -523,7 +543,8 @@ class AssignmentRepository(
                            coalesce(an.answered, 0) as steps_answered,
                            coalesce(an.correct, 0) as steps_correct,
                            coalesce(tt.total, 0) as steps_total,
-                           greatest(at.last_at, an.last_at) as last_activity_at
+                           greatest(at.last_at, an.last_at) as last_activity_at,
+                           at.first_completed_at, an.last_at as last_answer_at
                       from recipients r
                       join public.org_members m on m.org_id = :orgId and m.id = r.member_id
                       join public.users u on u.id = m.user_id
@@ -834,6 +855,8 @@ class AssignmentRepository(
             stepsCorrect = getInt("steps_correct"),
             stepsTotal = getInt("steps_total"),
             lastActivityAt = getTimestamp("last_activity_at")?.toInstant(),
+            firstCompletedAt = getTimestamp("first_completed_at")?.toInstant(),
+            lastAnswerAt = getTimestamp("last_answer_at")?.toInstant(),
         )
 
     private fun ResultSet.uuids(column: String): List<UUID> =
