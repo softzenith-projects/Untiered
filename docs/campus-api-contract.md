@@ -11,7 +11,7 @@ Design reasoning lives in [campus-v1-plan.md](campus-v1-plan.md); this file is o
   (`NEXT_PUBLIC_FEATURE_CAMPUS`, default `false`). While it is off, every route below
   answers `404`, and the web app hides every campus page.
 - JSON uses camelCase. Timestamps are ISO-8601 strings. Ids are UUID strings.
-- Errors use the existing shape, `{ "code": string, "message": string }`.
+- Errors use the existing envelope `{ "error": string, "message": string }` (`common/ApiError.kt`); every error code named below goes in `error`.
 - **Unauthorised access answers `404`, not `403`.** That covers a caller with no
   membership in the org, a platform-admin route called by a non-admin, and a resource id
   that belongs to another org. This matches `AdminAccess`: the response never confirms
