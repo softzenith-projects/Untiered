@@ -60,6 +60,10 @@ class CampusSqlGuardTest {
             // came from, and colleges with students, each across colleges. Every email written from
             // what they find binds that one college org_id.
             "notification-discovery" to mapOf("CampusNotificationRepository.kt" to 3),
+            // Integrity signals (module 5): whether the caller's own session, bound by the verified
+            // user id, was started from an assignment. Reads the attempt by session id only; no
+            // college's data is returned.
+            "own-session" to mapOf("IntegrityRepository.kt" to 2),
         )
 
     /**

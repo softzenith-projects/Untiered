@@ -32,6 +32,7 @@ import { useLiveTranscript } from "@/lib/use-live-transcript";
 import { useAccessToken } from "@/lib/use-access-token";
 import { InterviewerPresence, type PresenceState } from "@/components/interviewer-presence";
 import { useInterviewCapture } from "@/lib/use-interview-capture";
+import { useIntegritySignals } from "@/lib/use-integrity-signals";
 import { useQuestionAudio } from "@/lib/use-question-audio";
 
 // The editor and its language grammars are needed only in coding rounds. Keep them
@@ -72,6 +73,9 @@ const ANSWER_NOT_HEARD = "answer_not_heard";
 
 /** How often the design rail re-checks which phase the round is in. */
 const ROUND_CLOCK_TICK_MS = 10_000;
+
+/** The phases of a round under way, in which an assigned round's integrity signals are counted. */
+const INTEGRITY_PHASES: ReadonlySet<Phase> = new Set<Phase>(["asking", "answering", "submitting", "closing", "error"]);
 
 /** A missing next heartbeat bounds when a room stopped making progress. */
 const OBSERVABILITY_HEARTBEAT_MS = 30_000;
@@ -222,6 +226,18 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     reportRoomEvent("client_phase_changed", phase, turnIndex ?? undefined);
   }, [phase, reportRoomEvent, turnIndex]);
+
+  /*
+   * Integrity counts (campus module 5), only for a round a college assigned and only once it
+   * is under way: tab switches, focus changes and paste lengths, as the start screen told the
+   * student. A personal round is never watched. This adds nothing to the screen.
+   */
+  useIntegritySignals({
+    sessionId,
+    accessToken,
+    enabled: session?.assigned === true && INTEGRITY_PHASES.has(phase),
+    turnIndex,
+  });
 
   useEffect(() => {
     if (phase === "complete" || phase === "terminal") return;

@@ -4,9 +4,10 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useCallback } from "react";
 
+import { IntegritySection } from "@/components/integrity-summary";
 import { ReportView } from "@/components/report-view";
 import { Alert, Skeleton } from "@/components/ui/feedback";
-import { fetchStaffStudentReport, fetchStudentReadiness } from "@/lib/api";
+import { fetchStaffStudentIntegrity, fetchStaffStudentReport, fetchStudentReadiness } from "@/lib/api";
 
 import { campusHref, useCampusOrg } from "./campus-context";
 import { StudentReadinessView } from "./student-readiness-view";
@@ -56,11 +57,17 @@ export function StaffStudentReport({ memberId, sessionId }: { memberId: string; 
       fetchStaffStudentReport(orgId, memberId, sessionId, { accessToken, signal }),
     [orgId, memberId, sessionId],
   );
+  const loadIntegrity = useCallback(
+    ({ accessToken, signal }: { accessToken: string; signal: AbortSignal }) =>
+      fetchStaffStudentIntegrity(orgId, memberId, sessionId, { accessToken, signal }),
+    [orgId, memberId, sessionId],
+  );
   return (
     <div className="flex flex-col gap-4">
       <BackLink href={campusHref(`/campus/readiness/${memberId}`, orgId)}>Back to the student</BackLink>
       <Alert tone="info">Viewed as {orgName} staff. This report is read-only.</Alert>
       <ReportView sessionId={sessionId} detailed loadReport={loadReport} />
+      <IntegritySection load={loadIntegrity} />
     </div>
   );
 }

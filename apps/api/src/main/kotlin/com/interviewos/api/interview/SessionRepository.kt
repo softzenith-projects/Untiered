@@ -217,7 +217,8 @@ class SessionRepository(
                        status::text as status, started_at, entered_at, ended_at, report_expired_at,
                        (consent_video_at is not null) as consent_video, duration_minutes,
                        coalesce(archetype_confidence, 'inferred') as archetype_confidence,
-                       workspace::text as workspace, board::text as board, stated_level, focus_topic
+                       workspace::text as workspace, board::text as board, stated_level, focus_topic,
+                       exists (select 1 from public.assignment_attempts a where a.session_id = sessions.id) as assigned
                   from public.sessions
                  where id = :id and user_id = :u
                 """.trimIndent(),
@@ -1346,6 +1347,7 @@ class SessionRepository(
             board = rs.getString("board"),
             declaredStage = DeclaredStage.parseOrNull(rs.getString("stated_level")),
             focusTopic = rs.getString("focus_topic"),
+            assigned = rs.getBoolean("assigned"),
         )
 
     private fun mapTurn(rs: ResultSet) =
@@ -1428,6 +1430,8 @@ data class SessionRow(
     val focusTopic: String? = null,
     /** The first time the candidate entered the room; the round clock starts here. */
     val enteredAt: Instant? = startedAt,
+    /** Started from a college's assignment (campus spec §4), so integrity signals are recorded (§5). */
+    val assigned: Boolean = false,
 )
 
 /**
