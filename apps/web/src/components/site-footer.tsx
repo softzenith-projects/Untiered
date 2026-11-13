@@ -20,6 +20,7 @@ export function SiteFooter() {
     featureEnabled("arena") ? { href: "/arena" as Route, label: "Arena" } : null,
     featureEnabled("mockInterviews") ? { href: "/interview/new" as Route, label: "Mock interviews" } : null,
     { href: "/pricing" as Route, label: "Pricing" },
+    { href: "/colleges" as Route, label: "For colleges" },
   ].filter((link): link is { href: Route; label: string } => link !== null);
 
   return (

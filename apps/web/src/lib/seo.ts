@@ -19,7 +19,7 @@ export const SITE_URL = "https://untiered.tech";
  * crawler has no session, so listing them would submit redirects. `seo.test.ts` fails when a
  * page is added without being classified.
  */
-export const INDEXABLE_ROUTES = ["/", "/pricing", "/about", "/contact", "/privacy", "/terms", "/refund-policy"] as const;
+export const INDEXABLE_ROUTES = ["/", "/pricing", "/colleges", "/about", "/contact", "/privacy", "/terms", "/refund-policy"] as const;
 
 /** Public and indexable since 30 October 2026 (owner): the catalogue and each course's overview. */
 export const PUBLIC_COURSE_ROUTES = ["/courses", "/courses/[course]"] as const;
