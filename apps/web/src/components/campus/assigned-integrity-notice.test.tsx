@@ -60,7 +60,7 @@ describe("what an assigned round counts, said before consent", () => {
 
     const notice = await screen.findByText(ASSIGNED_INTEGRITY_NOTICE);
     expect(notice).toHaveTextContent(
-      "Because your college assigned this interview, it will see how many times you switched tabs or pasted text, and how your answer timing looked. Nothing else about your screen is recorded.",
+      "Because your college assigned this interview, it will see how many times you switched tabs or windows or pasted text, and how your answer timing looked. Nothing else about your screen is recorded.",
     );
     const consent = screen.getByRole("checkbox", { name: /Record my voice/ });
     // Earlier in the document than the consent it qualifies.
@@ -74,7 +74,7 @@ describe("what an assigned round counts, said before consent", () => {
     await userEvent.click(screen.getByRole("button", { name: /continue to interview setup/i }));
 
     expect(await screen.findByRole("checkbox", { name: /record my voice/i })).toBeInTheDocument();
-    expect(screen.queryByText(/switched tabs or pasted text/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/switched tabs or windows or pasted text/)).not.toBeInTheDocument();
     expect(api.fetchMyAssignments).not.toHaveBeenCalled();
   });
 });
