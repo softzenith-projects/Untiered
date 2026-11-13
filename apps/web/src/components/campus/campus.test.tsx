@@ -26,6 +26,10 @@ const api = vi.hoisted(() => ({
   removeMember: vi.fn(),
   fetchFacultyScopes: vi.fn(),
   saveFacultyScopes: vi.fn(),
+  fetchInvites: vi.fn(),
+  createInvite: vi.fn(),
+  resendInvite: vi.fn(),
+  revokeInvite: vi.fn(),
 }));
 const nav = vi.hoisted(() => ({ search: "", push: vi.fn() }));
 
@@ -86,6 +90,7 @@ function me(staff: MeCampusView["staff"]): MeCampusView {
 beforeEach(() => {
   vi.clearAllMocks();
   nav.search = "";
+  api.fetchInvites.mockResolvedValue({ items: [], nextCursor: null });
 });
 
 describe("slugify", () => {

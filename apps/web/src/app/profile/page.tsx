@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { AppShell } from "@/components/app-shell";
 import { DeleteAccountSection } from "@/components/delete-account-section";
+import { LeaveCollegeSection } from "@/components/campus/leave-college-section";
 import { EmailPreferencesSection } from "@/components/email-preferences-section";
 import { ProfilePanel } from "@/components/profile-panel";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -22,6 +23,7 @@ export default function ProfilePage() {
     <AppShell>
       <div className="flex w-full flex-col gap-8">
         <ProfilePanel outlines={courseOutlines} />
+        <LeaveCollegeSection />
 
         {/*
           * Signing out and deleting the account share one place: both are about the

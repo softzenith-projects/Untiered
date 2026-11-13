@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useState, type FormEvent } from "react";
+import { useCallback, useId, useMemo, useState, type FormEvent } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles, Button } from "@/components/ui/button";
@@ -145,48 +145,26 @@ function JoinedStudents({ structure, canManage }: { structure: Structure; canMan
   const [batchId, setBatchId] = useState("");
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
-  const [rows, setRows] = useState<MemberView[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [editing, setEditing] = useState<MemberView | null>(null);
   const [removing, setRemoving] = useState<MemberView | null>(null);
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    fetchMembers(
-      orgId,
-      { accessToken, signal: controller.signal },
-      { role: "student", ...(departmentId ? { departmentId } : {}), ...(batchId ? { batchId } : {}), ...(q ? { q } : {}) },
-    )
-      .then((page) => {
-        if (controller.signal.aborted) return;
-        setRows(page.items);
-        setCursor(page.nextCursor);
-        setLoadError(null);
-        setLoading(false);
-      })
-      .catch((cause: unknown) => {
-        if (controller.signal.aborted) return;
-        setLoadError(errorText(cause, "Students could not be loaded just now."));
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [orgId, accessToken, departmentId, batchId, q, tick]);
+  const filter = useMemo(
+    () => ({ role: "student" as const, ...(departmentId ? { departmentId } : {}), ...(batchId ? { batchId } : {}), ...(q ? { q } : {}) }),
+    [departmentId, batchId, q],
+  );
+  const load = useCallback((signal: AbortSignal) => fetchMembers(orgId, { accessToken, signal }, filter), [orgId, accessToken, filter]);
+  const { data, error: loadErrorState, loading, setData, reload } = useLoad(load);
+  const rows = data?.items ?? [];
+  const cursor = data?.nextCursor ?? null;
+  const loadError = loadErrorState?.message ?? null;
+  const setRows = (update: (current: MemberView[]) => MemberView[]) =>
+    setData((current) => (current ? { ...current, items: update(current.items) } : current));
 
   async function loadMore() {
     if (!cursor) return;
     try {
-      const page = await fetchMembers(
-        orgId,
-        { accessToken },
-        { role: "student", cursor, ...(departmentId ? { departmentId } : {}), ...(batchId ? { batchId } : {}), ...(q ? { q } : {}) },
-      );
-      setRows((current) => [...current, ...page.items]);
-      setCursor(page.nextCursor);
+      const page = await fetchMembers(orgId, { accessToken }, { ...filter, cursor });
+      setData((current) => ({ items: [...(current?.items ?? []), ...page.items], nextCursor: page.nextCursor }));
     } catch (cause) {
       setMessage({ tone: "error", text: errorText(cause) });
     }
@@ -256,7 +234,7 @@ function JoinedStudents({ structure, canManage }: { structure: Structure; canMan
 
       {loadError ? (
         <Alert tone="error">{loadError}</Alert>
-      ) : loading ? (
+      ) : loading && !data ? (
         <Skeleton className="h-40 w-full" />
       ) : rows.length === 0 ? (
         <EmptyState
@@ -324,7 +302,7 @@ function JoinedStudents({ structure, canManage }: { structure: Structure; canMan
             setRows((current) => current.map((row) => (row.id === updated.id ? updated : row)));
             setMessage({ tone: "success", text: `Saved ${who(updated)}.` });
             setEditing(null);
-            setTick((value) => value + 1);
+            reload();
           }}
         />
       ) : null}
