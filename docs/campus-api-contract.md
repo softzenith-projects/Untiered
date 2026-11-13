@@ -17,7 +17,7 @@ Design reasoning lives in [campus-v1-plan.md](campus-v1-plan.md); this file is o
   that belongs to another org. This matches `AdminAccess`: the response never confirms
   that a college exists.
 - A caller who is a member but whose role lacks the permission gets `403` with
-  `code: "campus_forbidden"`. Their membership already tells them the college exists.
+  `error: "campus_forbidden"`. Their membership already tells them the college exists.
 - Lists that can grow use `{ "items": [...], "nextCursor": string | null }`, with
   `?cursor=` for the next page and at most 100 items per page.
 - `{org}` in a path is the organisation id.
