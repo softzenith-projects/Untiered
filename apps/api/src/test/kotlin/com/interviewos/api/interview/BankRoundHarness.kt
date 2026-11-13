@@ -13,6 +13,7 @@ import com.interviewos.api.bank.BankQuestion
 import com.interviewos.api.bank.CompanyDirectory
 import com.interviewos.api.bank.QuestionBankRepository
 import com.interviewos.api.billing.BillingProperties
+import com.interviewos.api.campus.AssignedRoundAdmission
 import com.interviewos.api.pool.PoolQuestion
 import com.interviewos.api.pool.QuestionPoolRepository
 import com.interviewos.api.pool.RoleFamily
@@ -68,6 +69,9 @@ class BankRoundHarness(
             }
         }
     val activeLeases = ActiveLeaseRenewal(repository)
+
+    /** College-assigned rounds (campus spec §4); a personal round never reaches it. */
+    val assignedRounds: AssignedRoundAdmission = mock(AssignedRoundAdmission::class.java)
     val directory: CompanyDirectory = mock(CompanyDirectory::class.java)
     val bank: QuestionBankRepository = mock(QuestionBankRepository::class.java)
     val pool: QuestionPoolRepository = mock(QuestionPoolRepository::class.java)
@@ -133,6 +137,7 @@ class BankRoundHarness(
             codeRunner = mock(CodeRunner::class.java),
             interviewEvents = InterviewEventRecorder.NONE,
             activeLeases = activeLeases,
+            assignedRounds = assignedRounds,
             transactionManager = transactionManager,
         )
 

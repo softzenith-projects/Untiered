@@ -21,7 +21,17 @@ import kotlin.test.fail
  */
 class CampusSqlGuardTest {
     private val campusTables =
-        listOf("organisations", "org_departments", "org_batches", "org_members", "org_faculty_scopes", "org_audit_log")
+        listOf(
+            "organisations",
+            "org_departments",
+            "org_batches",
+            "org_members",
+            "org_faculty_scopes",
+            "org_audit_log",
+            "assignments",
+            "assignment_targets",
+            "assignment_attempts",
+        )
 
     /** reason to (file it may appear in to how many statements there) */
     private val allowList: Map<String, Map<String, Int>> =
@@ -40,7 +50,8 @@ class CampusSqlGuardTest {
      * A shared select list, completed by every caller with `m.org_id = :orgId`. Checked as a
      * fragment: each use of it must itself bind the college (and does, as a separate string).
      */
-    private val fragments = mapOf("MemberRepository.kt" to listOf("MEMBER_SELECT"))
+    private val fragments =
+        mapOf("MemberRepository.kt" to listOf("MEMBER_SELECT"), "AssignmentRepository.kt" to listOf("ASSIGNMENT_SELECT"))
 
     private val source = File("src/main/kotlin/com/interviewos/api/campus")
 
@@ -142,7 +153,8 @@ class CampusSqlGuardTest {
         val MARKER = Regex("/\\*\\s*unscoped:\\s*([a-z-]+)\\s*\\*/")
         val UNQUALIFIED =
             Regex(
-                "\\b(from|join|into|update)\\s+(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log)\\b",
+                "\\b(from|join|into|update)\\s+(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log|" +
+                    "assignments|assignment_targets|assignment_attempts)\\b",
             )
     }
 }

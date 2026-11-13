@@ -21,6 +21,8 @@ data class OrgRow(
     val createdAt: java.time.Instant,
     val staffCount: Int,
     val studentCount: Int,
+    /** Org-funded assignment interviews not handed back after a failure (module 4). */
+    val interviewsUsed: Int = 0,
 )
 
 /** The editable columns, written together after the service has applied a patch. */
@@ -52,7 +54,10 @@ class OrganisationRepository(
                        (select count(*) from public.org_members m
                          where m.org_id = o.id and m.status = 'joined' and m.role <> 'student') as staff_count,
                        (select count(*) from public.org_members m
-                         where m.org_id = o.id and m.status = 'joined' and m.role = 'student') as student_count
+                         where m.org_id = o.id and m.status = 'joined' and m.role = 'student') as student_count,
+                       -- Org-funded interviews not handed back: what the allowance has spent (module 4).
+                       (select count(*) from public.assignment_attempts aa
+                         where aa.org_id = o.id and aa.org_funded and aa.status <> 'failed') as interviews_used
                   from public.organisations o
                  order by o.name, o.id
                 """.trimIndent(),
@@ -100,7 +105,10 @@ class OrganisationRepository(
                        (select count(*) from public.org_members m
                          where m.org_id = o.id and m.status = 'joined' and m.role <> 'student') as staff_count,
                        (select count(*) from public.org_members m
-                         where m.org_id = o.id and m.status = 'joined' and m.role = 'student') as student_count
+                         where m.org_id = o.id and m.status = 'joined' and m.role = 'student') as student_count,
+                       -- Org-funded interviews not handed back: what the allowance has spent (module 4).
+                       (select count(*) from public.assignment_attempts aa
+                         where aa.org_id = o.id and aa.org_funded and aa.status <> 'failed') as interviews_used
                   from public.organisations o
                  where o.id = :orgId
                 """.trimIndent(),
@@ -182,5 +190,6 @@ class OrganisationRepository(
             createdAt = getTimestamp("created_at").toInstant(),
             staffCount = getInt("staff_count"),
             studentCount = getInt("student_count"),
+            interviewsUsed = getInt("interviews_used"),
         )
 }

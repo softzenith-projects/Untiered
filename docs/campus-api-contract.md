@@ -53,7 +53,7 @@ interface OrgView {
   contactPhone: string | null;
   status: OrgStatus;
   interviewAllowance: number;   // org-funded interviews contracted (module 4 spends it)
-  interviewsUsed: number;       // 0 until module 4
+  interviewsUsed: number;       // org-funded assignment interviews not handed back after a failure
   createdAt: string;
 }
 

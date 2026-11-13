@@ -63,6 +63,12 @@ data class StartSessionRequest(
     val candidateStage: String? = null,
     @field:Size(max = 160)
     val focusTopic: String? = null,
+    /**
+     * A round a college assigned (campus spec §4). When present, the round's configuration is
+     * taken from the assignment and the client's values for it are ignored, and the college
+     * pays for it rather than the candidate's free rounds or credits.
+     */
+    val assignmentId: UUID? = null,
 )
 
 /** One exchange as the client needs to render it. */
