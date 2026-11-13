@@ -255,7 +255,7 @@ either, the upload is refused with `400 csv_invalid`.
 | Method · path | Body → response |
 |---|---|
 | `GET /campus/invites/{token}` | → `InvitePreview`. `404 invite_not_found` when the token is unknown, expired, revoked or already used. |
-| `POST /campus/invites/{token}/accept` | `AcceptInviteRequest` → `MeCampusView`. Errors: `404 invite_not_found`; `400 consent_required`; `409 consent_version_stale`; `409 email_mismatch_unconfirmed`; `409 already_in_college`, when the caller is a joined student in another college; `409 already_member`, when the caller already has a joined membership in this college. |
+| `POST /campus/invites/{token}/accept` | `AcceptInviteRequest` → `MeCampusView & { joinedOrgId: string }`. Errors: `404 invite_not_found`; `400 consent_required`; `409 consent_version_stale`; `409 email_mismatch_unconfirmed`; `409 already_in_college`, when the caller is a joined student in another college; `409 already_member`, when the caller already has a joined membership in this college. |
 
 The two `agree*` fields apply only to student invites. A staff invite accepts with any
 values.
