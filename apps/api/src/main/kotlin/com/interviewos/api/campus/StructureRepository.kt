@@ -223,15 +223,20 @@ class StructureRepository(
 
     /**
      * Any membership row — joined, left or removed — still names its batch, and the foreign
-     * key keeps it, so a batch that ever had a student cannot be deleted.
+     * key keeps it, so a batch that ever had a student cannot be deleted. Nor can one with an
+     * open invite, which would otherwise vanish with it; closed invites are deleted along.
      */
     fun batchHasMembers(
         scope: OrgScope,
         id: UUID,
     ): Boolean =
         jdbc
-            .sql("select count(*) from public.org_members where org_id = :orgId and batch_id = :id")
-            .param("orgId", scope.orgId)
+            .sql(
+                """
+                select (select count(*) from public.org_members where org_id = :orgId and batch_id = :id)
+                     + (select count(*) from public.campus_invites where org_id = :orgId and batch_id = :id and status = 'invited')
+                """.trimIndent(),
+            ).param("orgId", scope.orgId)
             .param("id", id)
             .query(Long::class.java)
             .single() > 0

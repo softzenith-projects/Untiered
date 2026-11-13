@@ -31,6 +31,14 @@ object CampusCursor {
         }
     }
 
+    /** Invites page on (created_at, id), newest first: the same shape as the member cursor. */
+    fun encodeInvite(
+        createdAt: Instant,
+        id: UUID,
+    ): String = encodeMember(MemberCursor(createdAt, id))
+
+    fun decodeInvite(value: String?): MemberCursor? = decodeMember(value)
+
     fun encodeAudit(id: Long): String = id.toString()
 
     fun decodeAudit(value: String?): Long? {

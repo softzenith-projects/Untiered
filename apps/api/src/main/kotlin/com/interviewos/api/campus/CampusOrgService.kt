@@ -204,7 +204,7 @@ class CampusOrgService(
         structure.findBatch(scope, batchId) ?: throw ApiException.notFound()
         if (structure.batchHasMembers(scope, batchId)) {
             throw ApiException.conflict(
-                "This batch has, or has had, students, so it cannot be deleted.",
+                "This batch has, or has had, students, or has open invites, so it cannot be deleted.",
                 code = "batch_has_members",
             )
         }
