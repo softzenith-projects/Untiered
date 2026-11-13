@@ -40,9 +40,9 @@ export function joinErrorText(cause: unknown): string {
 const NEVER = new Promise<never>(() => {});
 
 /** Where a person lands after joining: students on their dashboard, staff in the portal. */
-export function destinationAfterJoin(preview: InvitePreview, me: MeCampusView): string {
+export function destinationAfterJoin(preview: InvitePreview, me: MeCampusView & { joinedOrgId?: string }): string {
   if (preview.role === "student") return "/dashboard";
-  const entry = me.staff.find((staff) => staff.orgName === preview.orgName) ?? me.staff[me.staff.length - 1];
+  const entry = me.staff.find((staff) => staff.orgId === me.joinedOrgId) ?? me.staff[me.staff.length - 1];
   return entry ? `/campus?org=${encodeURIComponent(entry.orgId)}` : "/campus";
 }
 

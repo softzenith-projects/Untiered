@@ -119,6 +119,11 @@ export interface MeCampusView {
   staff: { orgId: string; orgName: string; logoUrl: string | null; role: StaffRole }[];
 }
 
+/** `POST /campus/invites/{token}/accept` also says which college was joined. */
+export interface AcceptInviteResponse extends MeCampusView {
+  joinedOrgId: string;
+}
+
 // ---- Module 3: student onboarding (docs/campus-api-contract.md) ----
 
 export type InviteStatus = "invited" | "joined" | "revoked" | "expired";
@@ -213,4 +218,111 @@ export interface AdminCreateInviteRequest {
   email: string;
   fullName: string;
   role: "college_admin" | "tpo";
+}
+
+// ---- Module 4: assignments (docs/campus-api-contract.md) ----
+
+export type AssignmentKind = "interview" | "arena_scenarios";
+export type AssignmentStatus = "draft" | "published" | "archived";
+export type CompletionStatus = "not_started" | "in_progress" | "completed" | "overdue";
+
+export type AssignableRoundType =
+  | "technical_fundamentals"
+  | "project_deep_dive"
+  | "coding_practical"
+  | "aptitude"
+  | "hr_fit_closing"
+  | "behavioural_competency"
+  | "custom_topic";
+
+export type ReadinessComponent = "coding" | "core_cs" | "technical_interview" | "communication" | "aptitude";
+export type CampusTopic = "dsa" | "dbms" | "os" | "oops" | "cn" | "system_design" | "communication" | "aptitude";
+
+export interface AssignmentInput {
+  kind: AssignmentKind;
+  title: string;
+  instructions?: string | null;
+  roundType?: AssignableRoundType;
+  durationMinutes?: 30 | 45 | 60;
+  companyName?: string | null;
+  roleTitle?: string | null;
+  candidateStage?: "student" | "recent_graduate";
+  focusTopic?: string | null;
+  language?: "english" | "hindi_english";
+  scenarioIds?: string[];
+  opensAt?: string | null;
+  dueAt: string;
+  allowLate: boolean;
+  attemptLimit: number;
+  interviewCap?: number | null;
+  targets: { batchIds: string[]; memberIds: string[] };
+  component?: ReadinessComponent;
+  topic?: CampusTopic | null;
+}
+
+export interface AssignmentCounts {
+  recipients: number;
+  notStarted: number;
+  inProgress: number;
+  completed: number;
+  overdue: number;
+}
+
+export interface AssignmentView extends AssignmentInput {
+  id: string;
+  status: AssignmentStatus;
+  createdAt: string;
+  publishedAt: string | null;
+  createdByName: string | null;
+  targetBatches: { id: string; name: string }[];
+  targetStudents: { id: string; name: string | null; rollNumber: string | null }[];
+  counts: AssignmentCounts;
+}
+
+/** Published assignments accept only these edits. */
+export type AssignmentPublishedPatch = Partial<Pick<AssignmentInput, "dueAt" | "allowLate" | "instructions">>;
+
+export interface RecipientProgress {
+  memberId: string;
+  name: string | null;
+  email: string;
+  rollNumber: string | null;
+  batchName: string;
+  status: CompletionStatus;
+  attemptsUsed: number;
+  lastActivityAt: string | null;
+  sessionIds: string[];
+  scenarioScore: number | null;
+}
+
+export interface ScenarioOption {
+  id: string;
+  courseTitle: string;
+  title: string;
+  tier: string;
+  estimatedMinutes: number;
+}
+
+export type AssignmentBlockedReason = "not_open" | "past_due" | "attempt_limit" | "student_cap" | "college_allowance";
+
+export interface AssignedItem {
+  id: string;
+  orgName: string;
+  title: string;
+  instructions: string | null;
+  kind: AssignmentKind;
+  roundType: AssignableRoundType | null;
+  durationMinutes: number | null;
+  companyName: string | null;
+  roleTitle: string | null;
+  scenarios: { id: string; title: string; courseSlug: string; completed: boolean }[];
+  opensAt: string;
+  dueAt: string;
+  allowLate: boolean;
+  status: CompletionStatus;
+  attemptsUsed: number;
+  attemptLimit: number;
+  canStart: boolean;
+  blockedReason: AssignmentBlockedReason | null;
+  sessionIds: string[];
 }

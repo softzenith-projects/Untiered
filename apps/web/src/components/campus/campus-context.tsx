@@ -47,6 +47,7 @@ const PORTAL_LINKS: PortalLink[] = [
   { href: "/campus", label: "Overview", roles: ["college_admin", "tpo", "faculty"] },
   { href: "/campus/structure", label: "Departments and batches", roles: ["college_admin", "tpo"] },
   { href: "/campus/students", label: "Students", roles: ["college_admin", "tpo", "faculty"] },
+  { href: "/campus/assignments", label: "Assignments", roles: ["college_admin", "tpo", "faculty"] },
   { href: "/campus/staff", label: "Staff", roles: ["college_admin"] },
   { href: "/campus/settings", label: "Settings", roles: ["college_admin"] },
 ];
@@ -176,7 +177,7 @@ export function CampusGate({
         <nav aria-label="College portal">
           <ul className="flex flex-wrap gap-1">
             {PORTAL_LINKS.filter((link) => link.roles.includes(org.role)).map((link) => {
-              const active = pathname === link.href;
+              const active = pathname === link.href || (link.href !== "/campus" && pathname.startsWith(`${link.href}/`));
               return (
                 <li key={link.href}>
                   <Link
