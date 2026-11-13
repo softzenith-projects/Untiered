@@ -293,8 +293,12 @@ values.
 | `POST /campus/orgs/{org}/imports/{id}/commit` | college_admin, tpo | → `ImportCommitResult`. Rows with problems are skipped. `409 import_not_open` when the import is already committed, discarded or expired. |
 | `GET /campus/orgs/{org}/invites?status=&role=&batchId=&q=&cursor=` | college_admin, tpo | → `{ items: InviteView[], nextCursor }` |
 | `POST /campus/orgs/{org}/invites` | college_admin (any role); tpo (students only) | `{ email, fullName, role, batchId?, rollNumber? }` → `201 InviteView`. Errors: `409 already_invited`, `409 already_member`, `400 batch_required`. |
-| `POST /campus/orgs/{org}/invites/{id}/resend` | college_admin, tpo | → `InviteView`. Rotates the token and resets the expiry to 14 days. `409 invite_not_open`; `429 resend_limit` after 10 sends. |
-| `POST /campus/orgs/{org}/invites/{id}/revoke` | college_admin, tpo | → `InviteView` |
+| `POST /campus/orgs/{org}/invites/{id}/resend` | college_admin, tpo (a staff invite: college_admin, or a platform admin) | → `InviteView`. Rotates the token and resets the expiry to 14 days. `409 invite_not_open`; `429 resend_limit` after 10 sends. |
+| `POST /campus/orgs/{org}/invites/{id}/revoke` | as resend | → `InviteView`. `409 invite_not_open` |
+
+Body errors on the invite routes: `400 invalid_email`, `400 invalid_full_name`, `400 invalid_role`;
+on the list, `400 invalid_status` and `400 invalid_role`. A `batchId` of another college is `404`.
+Deleting a batch that has an open invite is `409 batch_has_members`, as for a batch with students.
 
 **Invite email.** A background job sends it through the existing SES sender with the
 link `{EMAIL_PUBLIC_BASE_URL}/campus/join?token=<token>`. The token is 32 random bytes,
