@@ -63,7 +63,14 @@ class CampusIntegrityDatabaseIntegrationTest {
         CampusOrgService(access, OrganisationRepository(jdbc), StructureRepository(jdbc), MemberRepository(jdbc), audit, logos)
     private val platform =
         CampusAdminService(access, OrganisationRepository(jdbc), audit, logos, NoStorage, DataSourceTransactionManager(dataSource))
-    private val assignments = CampusAssignmentService(access, AssignmentRepository(jdbc), audit, features)
+    private val assignments =
+        CampusAssignmentService(
+            access,
+            AssignmentRepository(jdbc),
+            audit,
+            features,
+            CampusNotifications(CampusNotificationRepository(jdbc), features),
+        )
     private val integrityRepository = IntegrityRepository(jdbc)
     private val integrity =
         IntegrityService(
