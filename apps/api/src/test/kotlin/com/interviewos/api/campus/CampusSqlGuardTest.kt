@@ -28,6 +28,9 @@ class CampusSqlGuardTest {
             "org_members",
             "org_faculty_scopes",
             "org_audit_log",
+            "assignments",
+            "assignment_targets",
+            "assignment_attempts",
             "campus_imports",
             "campus_import_rows",
             "campus_invites",
@@ -60,7 +63,11 @@ class CampusSqlGuardTest {
      * fragment: each use of it must itself bind the college (and does, as a separate string).
      */
     private val fragments =
-        mapOf("MemberRepository.kt" to listOf("MEMBER_SELECT"), "InviteRepository.kt" to listOf("INVITE_SELECT"))
+        mapOf(
+            "MemberRepository.kt" to listOf("MEMBER_SELECT"),
+            "AssignmentRepository.kt" to listOf("ASSIGNMENT_SELECT"),
+            "InviteRepository.kt" to listOf("INVITE_SELECT"),
+        )
 
     private val source = File("src/main/kotlin/com/interviewos/api/campus")
 
@@ -164,7 +171,8 @@ class CampusSqlGuardTest {
             Regex(
                 "\\b(from|join|into|update)\\s+" +
                     "(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log" +
-                    "|campus_imports|campus_import_rows|campus_invites)\\b",
+                    "|campus_imports|campus_import_rows|campus_invites" +
+                    "|assignments|assignment_targets|assignment_attempts)\\b",
             )
     }
 }

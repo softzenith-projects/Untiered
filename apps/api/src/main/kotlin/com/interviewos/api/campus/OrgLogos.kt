@@ -42,7 +42,7 @@ class OrgLogos(
             contactPhone = row.contactPhone,
             status = row.status,
             interviewAllowance = row.interviewAllowance,
-            interviewsUsed = 0,
+            interviewsUsed = row.interviewsUsed,
             createdAt = row.createdAt.toString(),
             staffCount = row.staffCount,
             studentCount = row.studentCount,
@@ -61,8 +61,7 @@ class OrgLogos(
             contactPhone = contactPhone,
             status = status,
             interviewAllowance = interviewAllowance,
-            // Org-funded interviews are spent from module 4 on; until then, none have been.
-            interviewsUsed = 0,
+            interviewsUsed = interviewsUsed,
             createdAt = createdAt.toString(),
         )
 
