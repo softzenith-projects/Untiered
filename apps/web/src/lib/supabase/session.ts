@@ -18,6 +18,8 @@ const PROTECTED_PREFIXES = [
   "/profile",
   "/history",
   "/report",
+  "/campus",
+  "/admin",
 ];
 
 /**

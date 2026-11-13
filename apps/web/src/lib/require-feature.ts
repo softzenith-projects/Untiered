@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { courseEnabled, featureEnabled, type ProductFeature } from "@/lib/flags";
+import { campusEnabled, courseEnabled, featureEnabled, type ProductFeature } from "@/lib/flags";
 
 export function requireFeature(feature: ProductFeature): void {
   if (!featureEnabled(feature)) notFound();
@@ -14,4 +14,9 @@ export function requireCourse(courseSlug: string): void {
 export function requireArenaCourse(courseSlug: string): void {
   requireFeature("arena");
   if (!courseEnabled(courseSlug)) notFound();
+}
+
+/** Every `/campus` and `/admin/campus` page starts with this. */
+export function requireCampus(): void {
+  if (!campusEnabled()) notFound();
 }
