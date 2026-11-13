@@ -536,7 +536,7 @@ dark). Errors use the existing `{ code, message }` shape. `{org}` = org id.
 |---|---|
 | `GET /me/assignments` | → `[AssignedItem { id, title, kind, roundType?, durationMinutes?, dueAt, status: "not_started"\|"in_progress"\|"completed"\|"overdue", attemptsUsed, attemptLimit, canStart, blockedReason? }]` · `[]` for anyone not in a college |
 | `POST /sessions` (existing) | gains optional `assignmentId`. When present the server **takes the round configuration from the assignment** (round type, length, company, role, stage, language) and ignores the client's; consent is still required per round. Response unchanged. |
-| `POST /me/assignments/{id}/scenario-attempts` | arena kind → `{ attemptId, scenarioIds }`; answers go through the existing scenario endpoint with `attemptId` |
+| ~~`POST /me/assignments/{id}/scenario-attempts`~~ | **Superseded** (see `campus-api-contract.md`, Module 4): scenario completion is derived from the existing server-graded `user_step_answers`, so no attempt endpoint is needed |
 
 ### Cap enforcement (server-side, in `InterviewService` admission)
 

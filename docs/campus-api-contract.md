@@ -160,4 +160,269 @@ student membership is not enough.
 A suspended org answers `404` to every college route and to `/me/campus`. Platform-admin
 routes still answer.
 
-Modules 3 and 4 add their sections below when they are built.
+---
+
+## Module 3: student onboarding
+
+There are no accounts at import. An invite is an email address plus a single-use token.
+Accepting the invite links whichever account is signed in. See plan §5.
+
+### Shapes
+
+```ts
+type InviteStatus = "invited" | "joined" | "revoked" | "expired";
+type InviteSendStatus = "pending" | "sending" | "sent" | "failed";
+
+type ImportProblem =
+  | "missing_name" | "bad_email" | "duplicate_email_in_file" | "duplicate_roll_in_file"
+  | "unknown_department" | "unknown_batch" | "batch_department_mismatch" | "graduation_year_mismatch"
+  | "already_member"        // a joined member of THIS college has this email
+  | "already_invited"       // an open invite in THIS college has this email
+  | "roll_number_taken";    // a joined member of THIS college has this roll number
+// Never a problem code that reveals whether an email has an Untiered account.
+
+interface ImportRowView {
+  rowNumber: number;            // 1-based, the header row excluded
+  fullName: string | null;
+  email: string | null;         // lower-cased and trimmed
+  rollNumber: string | null;
+  departmentCode: string | null;
+  batchName: string | null;
+  graduationYear: number | null;
+  problems: ImportProblem[];    // empty = will be invited
+}
+
+interface ImportPreview {
+  id: string;
+  status: "previewed" | "committed" | "discarded";
+  createdAt: string;
+  expiresAt: string;            // 24 hours after creation
+  rows: ImportRowView[];
+  summary: { total: number; valid: number; withProblems: number };
+}
+
+interface ImportCommitResult { invited: number; skipped: number }
+
+interface InviteView {
+  id: string;
+  email: string;
+  fullName: string;
+  role: CampusRole;
+  batchId: string | null;
+  batchName: string | null;
+  rollNumber: string | null;
+  status: InviteStatus;         // "expired" when expiresAt has passed and the invite was not joined
+  sendStatus: InviteSendStatus;
+  sendCount: number;
+  lastSentAt: string | null;
+  createdAt: string;
+  expiresAt: string;
+  joinedAt: string | null;
+}
+
+interface InvitePreview {
+  orgName: string;
+  logoUrl: string | null;
+  role: CampusRole;
+  batchName: string | null;
+  invitedEmailMasked: string;   // "r***@college.edu"
+  signedInEmail: string;
+  emailMatches: boolean;
+  expiresAt: string;
+  consentVersion: string;       // "campus-2026-11-13"
+  shared: string[];             // what the college will see, in plain sentences (server-owned copy)
+  notShared: string[];          // what stays private
+  aiNotice: string;
+}
+
+interface AcceptInviteRequest {
+  consentVersion: string;
+  agreeDataSharing: boolean;    // must be true for a student invite
+  agreeAiEvaluation: boolean;   // must be true for a student invite
+  confirmDifferentEmail?: boolean; // required when emailMatches is false
+}
+```
+
+**CSV format.** UTF-8, with or without a BOM. Comma-separated, or semicolon-separated as
+Excel writes it in some locales. RFC 4180 quoting. The first row is the header and
+matching is case-insensitive:
+`name, email, roll_number, department, batch, graduation_year`. `department` is a
+department code and `batch` is a batch name. Limits: 1 MB and 5,000 data rows; above
+either, the upload is refused with `400 csv_invalid`.
+
+### Joining (any signed-in user)
+
+| Method · path | Body → response |
+|---|---|
+| `GET /campus/invites/{token}` | → `InvitePreview`. `404 invite_not_found` when the token is unknown, expired, revoked or already used. |
+| `POST /campus/invites/{token}/accept` | `AcceptInviteRequest` → `MeCampusView`. Errors: `404 invite_not_found`; `400 consent_required`; `409 consent_version_stale`; `409 email_mismatch_unconfirmed`; `409 already_in_college`, when the caller is a joined student in another college; `409 already_member`, when the caller already has a joined membership in this college. |
+
+The two `agree*` fields apply only to student invites. A staff invite accepts with any
+values.
+
+### Platform admin
+
+| Method · path | Body → response |
+|---|---|
+| `POST /admin/campus/orgs/{org}/invites` | `{ email, fullName, role: "college_admin" \| "tpo" }` → `201 InviteView` |
+| `GET /admin/campus/orgs/{org}/invites` | → `{ items: InviteView[], nextCursor }` (staff invites) |
+
+### College
+
+| Method · path | Permission | Body → response |
+|---|---|---|
+| `POST /campus/orgs/{org}/imports` | college_admin, tpo | multipart `file` → `201 ImportPreview`; `400 csv_invalid` |
+| `GET /campus/orgs/{org}/imports/{id}` | college_admin, tpo | → `ImportPreview` |
+| `DELETE /campus/orgs/{org}/imports/{id}` | college_admin, tpo | → `204` |
+| `POST /campus/orgs/{org}/imports/{id}/commit` | college_admin, tpo | → `ImportCommitResult`. Rows with problems are skipped. `409 import_not_open` when the import is already committed, discarded or expired. |
+| `GET /campus/orgs/{org}/invites?status=&role=&batchId=&q=&cursor=` | college_admin, tpo | → `{ items: InviteView[], nextCursor }` |
+| `POST /campus/orgs/{org}/invites` | college_admin (any role); tpo (students only) | `{ email, fullName, role, batchId?, rollNumber? }` → `201 InviteView`. Errors: `409 already_invited`, `409 already_member`, `400 batch_required`. |
+| `POST /campus/orgs/{org}/invites/{id}/resend` | college_admin, tpo | → `InviteView`. Rotates the token and resets the expiry to 14 days. `409 invite_not_open`; `429 resend_limit` after 10 sends. |
+| `POST /campus/orgs/{org}/invites/{id}/revoke` | college_admin, tpo | → `InviteView` |
+
+**Invite email.** A background job sends it through the existing SES sender with the
+link `{EMAIL_PUBLIC_BASE_URL}/campus/join?token=<token>`. The token is 32 random bytes,
+base64url-encoded, and only its SHA-256 is stored. Invites expire after 14 days. When SES
+is not configured, invites stay `pending`.
+
+---
+
+## Module 4: assignments
+
+### Shapes
+
+```ts
+type AssignmentKind = "interview" | "arena_scenarios";
+type AssignmentStatus = "draft" | "published" | "archived";
+type CompletionStatus = "not_started" | "in_progress" | "completed" | "overdue";
+
+// Round types a college may assign. Values are RoundType.dbValue.
+type AssignableRoundType =
+  | "technical_fundamentals"   // "Technical interview"
+  | "project_deep_dive"        // "Resume and projects"
+  | "coding_practical"         // "Coding round"
+  | "aptitude"                 // "Aptitude"
+  | "hr_fit_closing"           // "HR interview"
+  | "behavioural_competency";  // "Behavioural"
+
+interface AssignmentInput {
+  kind: AssignmentKind;
+  title: string;                       // 1–140 characters
+  instructions?: string | null;        // ≤ 2000 characters
+  // interview
+  roundType?: AssignableRoundType;
+  durationMinutes?: 30 | 45 | 60;
+  companyName?: string | null;         // empty = general practice
+  roleTitle?: string | null;
+  candidateStage?: "student" | "recent_graduate";  // default "student"
+  language?: "english" | "hindi_english";          // default "english"
+  // arena_scenarios
+  scenarioIds?: string[];              // 1–20 live scenario ids
+  opensAt?: string | null;             // default now
+  dueAt: string;
+  allowLate: boolean;
+  attemptLimit: number;                // 1–10, interviews only
+  interviewCap?: number | null;        // 1..attemptLimit; null = attemptLimit
+  targets: { batchIds: string[]; memberIds: string[] };  // at least one
+}
+
+interface AssignmentView extends AssignmentInput {
+  id: string;
+  status: AssignmentStatus;
+  createdAt: string;
+  publishedAt: string | null;
+  createdByName: string | null;
+  targetBatches: { id: string; name: string }[];
+  targetStudents: { id: string; name: string | null; rollNumber: string | null }[];
+  counts: { recipients: number; notStarted: number; inProgress: number; completed: number; overdue: number };
+}
+
+interface RecipientProgress {
+  memberId: string;
+  name: string | null;
+  email: string;
+  rollNumber: string | null;
+  batchName: string;
+  status: CompletionStatus;
+  attemptsUsed: number;                // interviews: attempts not handed back; scenarios: 0
+  lastActivityAt: string | null;
+  sessionIds: string[];                // interview kind: sessions started from this assignment
+  scenarioScore: number | null;        // scenario kind: correct / total steps answered, 0–1
+}
+
+interface ScenarioOption { id: string; courseTitle: string; title: string; tier: string; estimatedMinutes: number }
+
+interface AssignedItem {
+  id: string;
+  orgName: string;
+  title: string;
+  instructions: string | null;
+  kind: AssignmentKind;
+  roundType: AssignableRoundType | null;
+  durationMinutes: number | null;
+  companyName: string | null;
+  roleTitle: string | null;
+  scenarios: { id: string; title: string; courseSlug: string; completed: boolean }[];
+  opensAt: string;
+  dueAt: string;
+  allowLate: boolean;
+  status: CompletionStatus;
+  attemptsUsed: number;
+  attemptLimit: number;
+  canStart: boolean;
+  blockedReason: null | "not_open" | "past_due" | "attempt_limit" | "student_cap" | "college_allowance";
+  sessionIds: string[];
+}
+```
+
+**How completion is derived.** Nothing is stored as "completed"; it is worked out on read.
+
+- `interview`: the assignment is completed once any attempt's session is `completed`, and
+  in progress while an attempt is under way.
+- `arena_scenarios`: the assignment is completed once every step of every scenario in the
+  set has an answer in `user_step_answers`, and in progress when some do. The answer is
+  graded on the server.
+- Either kind is overdue when it is not completed, `dueAt` has passed, and `allowLate` is
+  false. Otherwise it is not started.
+- A scenario the student finished before the assignment counts, because each step can
+  only be answered once.
+
+**Recipients** are also derived: every joined student in a targeted batch, plus every
+targeted student. A student who joins a targeted batch later receives the open
+assignment.
+
+### College
+
+| Method · path | Permission | Body → response |
+|---|---|---|
+| `GET /campus/orgs/{org}/arena-scenarios` | any staff | → `ScenarioOption[]` (live scenarios only) |
+| `GET /campus/orgs/{org}/assignments?status=` | any staff (faculty: only assignments that target their scope) | → `AssignmentView[]` |
+| `POST /campus/orgs/{org}/assignments` | college_admin, tpo, faculty (targets must sit inside their scope) | `AssignmentInput` → `201 AssignmentView` (draft). `400 assignment_invalid` carries a message naming the field. |
+| `GET /campus/orgs/{org}/assignments/{id}` | any staff (faculty: scoped) | → `AssignmentView` |
+| `PATCH /campus/orgs/{org}/assignments/{id}` | creator, college_admin, tpo | draft: any `AssignmentInput` field; published: only `dueAt`, `allowLate`, `instructions` → `AssignmentView` |
+| `POST /campus/orgs/{org}/assignments/{id}/publish` | creator, college_admin, tpo | → `AssignmentView` |
+| `POST /campus/orgs/{org}/assignments/{id}/archive` | creator, college_admin, tpo | → `AssignmentView` |
+| `GET /campus/orgs/{org}/assignments/{id}/progress?batchId=&status=` | any staff (faculty: scoped students only) | → `RecipientProgress[]` |
+
+### Student
+
+| Method · path | Body → response |
+|---|---|
+| `GET /me/assignments` | → `AssignedItem[]` for published assignments, ordered by `dueAt`. A caller with no joined student membership gets `[]`. This route is **not** behind the `campus` switch's 404, so the dashboard can call it unconditionally; with the switch off it answers `[]`. |
+| `POST /sessions` (existing) | gains the optional field `assignmentId`. When it is present, the server takes `roundType`, `durationMinutes`, `companyName`, `roleTitle`, `candidateStage` and `language` from the assignment and ignores the client's values. Audio consent is still required. On success the response is unchanged, and the student's free rounds and credits are not touched. New errors: `404 assignment_not_found`; `409 assignment_not_open`; `409 assignment_past_due`; `409 assignment_attempt_limit`; `409 assignment_student_cap`; `402 college_allowance_exhausted`; and the existing `409 session_in_progress`. |
+
+A scenario assignment needs no new student route. The student plays the scenarios through
+the existing Arena (`/arena`), and completion is derived as described above.
+
+### Admission (server-side, in the existing admission transaction)
+
+1. Load the assignment and its joined student membership, scoped to the student's org. If
+   either is missing → `404`.
+2. Lock the organisation row with `select … for update`.
+3. Check, in this order: `opensAt`; `dueAt` / `allowLate`; the student's attempts against
+   `attemptLimit`; the student's org-funded attempts against `interviewCap`; the college's
+   org-funded attempts that are not `failed` against `interview_allowance`.
+4. Insert the session, then `assignment_attempts` with `org_funded = true`. Write no
+   `practice_usage` row and make no credit charge.
+5. A session that ends `failed` marks its attempt `failed`, which hands back the
+   allowance. An `abandoned` session still counts.
