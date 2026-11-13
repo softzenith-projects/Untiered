@@ -603,3 +603,174 @@ saves as a PDF from the browser's print dialog. It is assembled from `DashboardV
 the student rows, and needs no PDF library and no new dependency. Opening it is audited by
 calling `POST /campus/orgs/{org}/exports/batch-report-viewed` with
 `{ batchId?, departmentId? }`, which answers `204`.
+
+---
+
+## Module 5: interview integrity
+
+Integrity signals are recorded only for **rounds started from an assignment**. A student's
+personal practice is never watched. A signal is a count that staff read. It never fails
+a student and never changes a readiness score. The live interview screen shows nothing
+extra. The assigned-interview start screen tells the student, before consent, what is
+counted.
+
+```ts
+type IntegrityEventType = "tab_hidden" | "window_blur" | "paste";
+
+interface IntegrityEventBatch {
+  events: { type: IntegrityEventType; at: string; turnIndex?: number; surface?: "code" | "text"; chars?: number }[];  // ≤ 50 per request
+}
+
+interface IntegritySummary {
+  recorded: boolean;              // false for a round that was not assigned
+  tabHidden: number;
+  windowBlur: number;
+  pastes: number;
+  pastedChars: number;
+  fastAnswers: number;            // turns where speech began within 1 s of recording and lasted ≥ 20 s
+  longPauses: number;             // turns whose longest pause in answer_timing is ≥ 20 s
+  notes: string[];                // plain sentences built from the counts; no verdicts
+}
+```
+
+| Method · path | Who | Body → response |
+|---|---|---|
+| `POST /sessions/{id}/integrity-events` | the session's owner | `IntegrityEventBatch` → `204`. Ignored, but still `204`, for a round that was not assigned. `pastedChars` is capped at 100,000 per session and each counter at 10,000. |
+| `GET /sessions/{id}/integrity` | the session's owner | `IntegritySummary`; a student sees exactly what their college sees |
+| `GET /campus/orgs/{org}/students/{memberId}/reports/{sessionId}/integrity` | staff (scoped) | `IntegritySummary`; same rules as the staff report view |
+
+The thresholds for `fastAnswers` and `longPauses` are server constants, documented next to
+their code.
+
+---
+
+## Module 8: faculty view
+
+```ts
+type AttentionReason = "low_score" | "inactive" | "overdue";
+
+interface AttentionRow {
+  memberId: string; name: string | null; rollNumber: string | null; batchName: string;
+  reasons: AttentionReason[];    // low_score: band is needs_structured_prep; inactive: no activity in 14 days; overdue: ≥ 1 overdue assignment
+  overall: number | null; band: ReadinessBand; overdue: number; lastActiveAt: string | null;
+}
+
+interface StaffComment {
+  id: string; memberId: string; sessionId: string | null;
+  authorName: string | null; isMine: boolean; body: string;   // 1–2000 characters
+  createdAt: string; editedAt: string | null;
+}
+```
+
+| Method · path | Permission | Body → response |
+|---|---|---|
+| `GET /campus/orgs/{org}/attention?reason=` | any staff (faculty: scoped) | → `AttentionRow[]`, ordered by number of reasons, then by overall score ascending |
+| `GET /campus/orgs/{org}/students/{memberId}/comments` | any staff (faculty: scoped) | → `StaffComment[]` |
+| `POST /campus/orgs/{org}/students/{memberId}/comments` | any staff (faculty: scoped) | `{ body, sessionId? }` → `201 StaffComment`. A `sessionId` must be one of this member's assigned sessions. |
+| `PATCH` / `DELETE /campus/orgs/{org}/comments/{id}` | the author; college_admin may delete any | `{ body }` → `StaffComment` / `204` |
+
+Comments are private to staff and never returned to the student. The join consent copy
+says that staff can keep private notes; adding that line bumps `CONSENT_VERSION`. Comments
+are deleted with the membership. All writes are audited.
+
+---
+
+## Module 9: notifications
+
+Every email goes through the existing `email_deliveries` outbox and SES sender, one row
+per recipient, with dedupe keys. Students have an existing email-preferences row, and a
+new field `campusReminders` (default true) turns off the non-essential emails.
+
+| Email | To | When | Turned off by |
+|---|---|---|---|
+| Invite | invitee | Module 3 (already built) | — |
+| New assignment | each recipient | on publish, and when a student joins a batch that has open assignments | — (essential) |
+| Deadline reminder | recipients who have not completed | 48 h before `dueAt`, once | `campusReminders` |
+| Report ready | the student | when an assigned round completes | `campusReminders` |
+| Weekly summary | college_admin and tpo | Monday 09:00 IST: joined, active, completion and overdue counts for the past week | staff `campusReminders` |
+
+Preferences: the existing `GET`/`PUT /me/email-preferences` gain `campusReminders: boolean`.
+Email copy names the college and the assignment. It never includes a score.
+
+---
+
+## Module 10: programmes
+
+A programme is a reusable template of weekly modules. A college clones it into dated
+assignments.
+
+```ts
+interface ProgrammeModule {   // an AssignmentInput without dates and targets
+  week: number;               // 1..12
+  assignment: Omit<AssignmentInput, "opensAt" | "dueAt" | "targets">;
+}
+interface ProgrammeTemplate { id: string; title: string; description: string; weeks: number; modules: ProgrammeModule[]; createdAt: string }
+interface ProgrammeView {
+  id: string; templateId: string | null; title: string; startsOn: string;  // a date, YYYY-MM-DD
+  weeks: number; targetBatches: { id: string; name: string }[];
+  assignmentIds: string[]; status: "active" | "archived";
+}
+interface ProgrammeProgress { memberId: string; name: string | null; completedModules: number; totalModules: number; certificateIssued: boolean }
+interface CertificateView {
+  programmeTitle: string; studentName: string; orgName: string; orgLogoUrl: string | null;
+  completedAt: string; certificateId: string;
+}
+```
+
+**Weekly unlock.** Week *n*'s assignment opens at `startsOn + 7(n−1)` days, 09:00 IST, and
+is due 7 days later. Cloning creates published assignments that belong to the programme.
+A student earns the certificate once every module is completed. The certificate is a
+print page, like the batch report, with no PDF dependency. It carries the Untiered and
+college names and the college logo, never a score.
+
+| Method · path | Permission | Body → response |
+|---|---|---|
+| `GET` / `POST /admin/campus/programme-templates`, `PATCH` / `DELETE …/{id}` | platform admin | `ProgrammeTemplate` |
+| `GET /campus/orgs/{org}/programme-templates` | any staff | → `ProgrammeTemplate[]` |
+| `POST /campus/orgs/{org}/programmes` | college_admin, tpo | `{ templateId, title?, startsOn, batchIds }` → `201 ProgrammeView` |
+| `GET /campus/orgs/{org}/programmes` and `/{id}` | any staff (faculty: scoped) | → `ProgrammeView[]` / `ProgrammeView` |
+| `GET /campus/orgs/{org}/programmes/{id}/progress` | any staff (faculty: scoped) | → `ProgrammeProgress[]` |
+| `POST /campus/orgs/{org}/programmes/{id}/archive` | college_admin, tpo | → `ProgrammeView`; also archives its assignments that have not opened yet |
+| `GET /me/programmes` | student | → `(ProgrammeView & { completedModules: number; totalModules: number; certificateId: string \| null })[]` |
+| `GET /me/programmes/{id}/certificate` | student | → `CertificateView`; `404` until every module is completed |
+
+---
+
+## Module 11: usage and cost (internal)
+
+```ts
+interface OrgUsageRow {
+  orgId: string; orgName: string;
+  interviewAllowance: number; interviewsUsed: number;   // org-funded attempts that did not fail
+  interviewsThisMonth: number;
+  aiCostUsd: number;                // sum of ai_calls.micro_usd for sessions of this org's attempts ÷ 1e6
+  aiCostPerInterviewUsd: number | null;  // null when there are no interviews
+}
+```
+
+| Method · path | Permission | Response |
+|---|---|---|
+| `GET /admin/campus/usage?from=&to=` | platform admin | `OrgUsageRow[]`. The date range filters `ai_calls.occurred_at`; the default is the current calendar month. |
+
+The cost is an estimate from the existing `ai_calls` ledger. The page says so and shows
+USD, the currency the ledger records.
+
+---
+
+## Module 12: campus leaderboard
+
+The leaderboard ranks joined students by readiness `overall` (module 6). Only
+assignment-linked work counts, and a student whose band is `not_enough_evidence` is
+unranked. **Anonymous by default.** A student appears by name only after opting in.
+
+```ts
+interface LeaderboardRow { rank: number; displayName: string; overall: number; isMe: boolean }   // displayName "Anonymous student" unless opted in
+interface LeaderboardView { scope: "batch" | "college"; optedIn: boolean; myRank: number | null; rows: LeaderboardRow[] }  // top 50, plus the caller's own row
+```
+
+| Method · path | Who | Body → response |
+|---|---|---|
+| `GET /me/campus/leaderboard?scope=batch\|college` | student | → `LeaderboardView` |
+| `PUT /me/campus/leaderboard-preference` | student | `{ optIn: boolean }` → `{ optIn }` |
+
+Staff get no leaderboard route; they already have the readiness table.
