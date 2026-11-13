@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import CollegesPage from "./page";
 import { CollegesBand } from "@/components/landing/colleges-band";
@@ -10,6 +10,8 @@ vi.mock("@/lib/use-access-token", () => ({ useAccessToken: vi.fn(() => null) }))
 function contactLinks() {
   return screen.getAllByRole("link", { name: "Talk to us about a pilot" });
 }
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("colleges page", () => {
   it("sends a college to write to us, with the details we need already asked for", () => {
@@ -31,6 +33,21 @@ describe("colleges page", () => {
 
     const today = screen.getByRole("region", { name: "What your students can use today" });
     expect(within(today).queryByRole("heading", { name: "Readiness view" })).not.toBeInTheDocument();
+  });
+
+  it("offers college staff a way into their portal when the campus switch is on", () => {
+    vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS", "true");
+    render(<CollegesPage />);
+    expect(screen.getByRole("link", { name: "College staff? Sign in to your portal" })).toHaveAttribute(
+      "href",
+      "/login?next=/campus",
+    );
+  });
+
+  it("does not link to a portal that is switched off", () => {
+    vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS", "false");
+    render(<CollegesPage />);
+    expect(screen.queryByRole("link", { name: /college staff/i })).not.toBeInTheDocument();
   });
 
   it("does not claim the camera is recorded", () => {

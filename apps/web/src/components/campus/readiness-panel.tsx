@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useId, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -31,8 +32,9 @@ const SORTABLE: { sort: ReadinessSort; label: string; firstOrder: "asc" | "desc"
   { sort: "overdue", label: "Overdue", firstOrder: "desc" },
 ];
 
-export function useReadinessFilter() {
-  const [scope, setScope] = useState<Scope>({ departmentId: "", batchId: "" });
+/** `initial` comes from the link that opened the page, such as a batch row on the overview. */
+export function useReadinessFilter(initial: Scope = { departmentId: "", batchId: "" }) {
+  const [scope, setScope] = useState<Scope>(initial);
   const [band, setBand] = useState("");
   const [completion, setCompletion] = useState<ReadinessCompletionFilter | "">("");
   return { scope, setScope, band, setBand, completion, setCompletion };
@@ -43,7 +45,11 @@ export function ReadinessPanel() {
   const { orgId, accessToken } = useCampusOrg();
   const id = useId();
   const { data: structure } = useStructure();
-  const { scope, setScope, band, setBand, completion, setCompletion } = useReadinessFilter();
+  const params = useSearchParams();
+  const { scope, setScope, band, setBand, completion, setCompletion } = useReadinessFilter({
+    departmentId: params.get("departmentId") ?? "",
+    batchId: params.get("batchId") ?? "",
+  });
   const [sort, setSort] = useState<ReadinessSort>("name");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [more, setMore] = useState<{ key: string; items: StudentReadinessRow[]; cursor: string | null } | null>(null);

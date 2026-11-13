@@ -11,6 +11,8 @@ const api = vi.hoisted(() => ({
   fetchMyAssignments: vi.fn(),
   // "Assigned to you" also reads the student's programmes (module 10); none here.
   fetchMyProgrammes: vi.fn(() => Promise.resolve([])),
+  // The staff portal card reads the caller's memberships; a student-only account here.
+  fetchMeCampus: vi.fn(() => Promise.resolve({ student: null, staff: [] })),
   startSession: vi.fn(),
   fetchEntitlement: vi.fn(),
   composeRound: vi.fn(),

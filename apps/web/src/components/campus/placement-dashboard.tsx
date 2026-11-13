@@ -11,6 +11,7 @@ import { fetchDashboard } from "@/lib/api";
 import { campusHref, useCampusOrg } from "./campus-context";
 import { BandChart, SkillHeatmap, StatTiles } from "./dashboard-widgets";
 import { ScopeFilters, useStructure, type Scope } from "./scope-filters";
+import { BatchesCard, KpiRow, PipelineCard, SkillReadinessCard } from "./tpo-overview";
 import { useLoad } from "./use-load";
 
 export function batchReportHref(orgId: string, scope: Scope) {
@@ -20,7 +21,11 @@ export function batchReportHref(orgId: string, scope: Scope) {
   return `/campus/reports/batch?${params.toString()}` as Route;
 }
 
-/** The placement dashboard: how ready the college's students are, for the staff in scope. */
+/**
+ * The college overview: the TPO's dashboard of how the students in scope are practising and
+ * how ready they are (contract "Module 7" and "Module 7b"). Every figure is the server's; one
+ * it cannot compute is left out or says "Not enough data", never 0.
+ */
 export function PlacementDashboard() {
   const { orgId, accessToken } = useCampusOrg();
   const [scope, setScope] = useState<Scope>({ departmentId: "", batchId: "" });
@@ -39,15 +44,19 @@ export function PlacementDashboard() {
   return (
     <section aria-labelledby="placement-heading" className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h2 id="placement-heading" className="text-heading text-ink">
-          Placement readiness
-        </h2>
+        <div>
+          <h2 id="placement-heading" className="text-heading text-ink">
+            College overview
+          </h2>
+          <p className="text-caption text-ink-muted">Trends cover the last 30 days, compared with the 30 before.</p>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
+          <span className="pill pill-info normal-case">Last 30 days</span>
           <Link href={campusHref("/campus/readiness", orgId)} className={buttonStyles({ variant: "secondary" })}>
             Student readiness
           </Link>
-          <Link href={batchReportHref(orgId, scope)} className={buttonStyles({ variant: "secondary" })}>
-            Printable batch report
+          <Link href={batchReportHref(orgId, scope)} className={buttonStyles({ variant: "primary" })}>
+            Export report
           </Link>
         </div>
       </div>
@@ -60,7 +69,14 @@ export function PlacementDashboard() {
       {loading && !data ? <Skeleton className="h-40 w-full" /> : null}
       {data ? (
         <div className="flex flex-col gap-5" aria-busy={loading}>
-          <StatTiles view={data} />
+          {data.pipeline ? <KpiRow view={data} /> : <StatTiles view={data} />}
+          {data.pipeline ? (
+            <div className="grid gap-5 lg:grid-cols-2">
+              <PipelineCard pipeline={data.pipeline} />
+              <SkillReadinessCard view={data} />
+            </div>
+          ) : null}
+          {data.batches ? <BatchesCard batches={data.batches} orgId={orgId} /> : null}
           <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
             <BandChart bands={data.bands} />
             <SkillHeatmap heatmap={data.heatmap} />
