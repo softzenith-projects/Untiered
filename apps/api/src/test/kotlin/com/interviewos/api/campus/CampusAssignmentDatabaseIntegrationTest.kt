@@ -69,8 +69,9 @@ class CampusAssignmentDatabaseIntegrationTest {
     private val logos = OrgLogos(StorageProperties())
     private val college = CampusOrgService(access, orgs, structure, members, audit, logos)
     private val platform = CampusAdminService(access, orgs, audit, logos, NoStorage, DataSourceTransactionManager(dataSource))
-    private val assignments = CampusAssignmentService(access, assignmentRepository, audit, features)
-    private val admission = AssignedRoundAdmission(access, assignmentRepository, features)
+    private val notifications = CampusNotifications(CampusNotificationRepository(jdbc), features)
+    private val assignments = CampusAssignmentService(access, assignmentRepository, audit, features, notifications)
+    private val admission = AssignedRoundAdmission(access, assignmentRepository, features, notifications)
 
     private lateinit var orgA: UUID
     private lateinit var orgB: UUID

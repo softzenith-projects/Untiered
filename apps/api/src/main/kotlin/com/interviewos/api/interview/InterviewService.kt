@@ -934,6 +934,7 @@ class InterviewService(
                         val shouldConclude = endRound || plan.mustConclude
                         if (shouldConclude) {
                             if (!repository.markSessionStatus(sessionId, userId, "completed")) throw sessionStateChanged()
+                            assignedRounds.roundCompleted(sessionId)
                             return@inTransaction persistAnswerResponse(
                                 sessionId,
                                 userId,
@@ -1298,6 +1299,7 @@ class InterviewService(
                     now = Instant.now(),
                 ).outOfTime
         if (!repository.markSessionStatus(sessionId, userId, "completed")) throw sessionStateChanged()
+        assignedRounds.roundCompleted(sessionId)
         recordEvent(userId, sessionId, "session_completed", outcome = "succeeded")
         return SubmitAnswerResponse(
             sessionComplete = true,

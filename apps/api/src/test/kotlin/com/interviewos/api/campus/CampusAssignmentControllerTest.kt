@@ -51,6 +51,8 @@ import kotlin.test.assertEquals
 class CampusAssignmentControllerTest {
     @Autowired private lateinit var mockMvc: MockMvc
 
+    @MockitoBean private lateinit var notifications: CampusNotifications
+
     @MockitoBean private lateinit var access: CampusAccess
 
     @MockitoBean private lateinit var assignments: AssignmentRepository

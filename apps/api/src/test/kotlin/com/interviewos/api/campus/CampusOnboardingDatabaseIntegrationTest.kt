@@ -2,6 +2,7 @@ package com.interviewos.api.campus
 
 import com.interviewos.api.account.AccountRepository
 import com.interviewos.api.common.ApiException
+import com.interviewos.api.config.ProductFeatureProperties
 import com.interviewos.api.email.EmailProperties
 import com.interviewos.api.email.SesEmailSender
 import com.interviewos.api.sources.AdminAccess
@@ -73,7 +74,9 @@ class CampusOnboardingDatabaseIntegrationTest {
     private val college = CampusOrgService(access, orgs, structure, members, audit, logos)
     private val platform = CampusAdminService(access, orgs, audit, logos, NoStorage, DataSourceTransactionManager(dataSource))
     private val onboarding = CampusOnboardingService(access, invites, structure, audit)
-    private val join = CampusJoinService(invites, access, audit, users, MeCampusService(access, members, audit, logos), logos)
+    private val notifications = CampusNotifications(CampusNotificationRepository(jdbc), ProductFeatureProperties(campus = true))
+    private val join =
+        CampusJoinService(invites, access, audit, users, MeCampusService(access, members, audit, logos), logos, notifications)
 
     private lateinit var orgA: UUID
     private lateinit var orgB: UUID

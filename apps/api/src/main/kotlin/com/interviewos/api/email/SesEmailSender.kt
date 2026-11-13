@@ -59,8 +59,10 @@ class SesEmailSender(
         helper.setReplyTo(properties.replyTo)
         helper.setTo(address)
         helper.setSubject(subject)
-        val accountLink =
-            "${properties.publicBaseUrl.trimEnd('/')}/${if (category == "daily_question") "daily-challenge" else "dashboard"}"
+        val accountLink = "${properties.publicBaseUrl.trimEnd('/')}/${accountPath(category)}"
+        // A new-assignment email is an instruction from the student's college, not a
+        // subscription: it has no unsubscribe, only a link to the preferences that govern the rest.
+        val transactional = category == "welcome" || category == "campus_assignment"
         val safeAccountLink = escapeHtml(accountLink)
         val preferencesLink = "${properties.publicBaseUrl.trimEnd('/')}/profile#account"
         val unsubscribePage = "${properties.publicBaseUrl.trimEnd('/')}/unsubscribe?token=$unsubscribeToken"
@@ -69,14 +71,14 @@ class SesEmailSender(
                 appendLine(body)
                 appendLine()
                 appendLine("Your account: $accountLink")
-                if (category != "welcome") {
-                    appendLine("Manage emails: $preferencesLink")
-                    appendLine("Unsubscribe: $unsubscribePage")
-                }
+                if (category != "welcome") appendLine("Manage emails: $preferencesLink")
+                if (!transactional) appendLine("Unsubscribe: $unsubscribePage")
             }
         val footer =
             if (category == "welcome") {
                 "Welcome aboard."
+            } else if (category == "campus_assignment") {
+                "<a href=\"${escapeHtml(preferencesLink)}\">Manage email preferences</a>"
             } else {
                 "<a href=\"${escapeHtml(preferencesLink)}\">Manage email preferences</a> · " +
                     "<a href=\"${escapeHtml(unsubscribePage)}\">Unsubscribe</a>"
@@ -90,13 +92,15 @@ class SesEmailSender(
                 <p style="font-size:14px;font-weight:800;letter-spacing:.12em;color:#1865db">UNTIERED</p>
                 <h1 style="font-size:28px;line-height:1.2">${escapeHtml(subject)}</h1>
                 <p style="font-size:16px;white-space:pre-wrap">${escapeHtml(body)}</p>
-                <p><a href="$safeAccountLink" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#1865db;color:#fff;text-decoration:none;font-weight:700">Visit your account</a></p>
+                <p><a href="$safeAccountLink" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#1865db;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(
+                accountLabel(category),
+            )}</a></p>
                 <p style="margin-top:32px;border-top:1px solid #d8e3f2;padding-top:16px;font-size:13px;color:#5b6d89">$footer</p>
               </main>
             </body></html>
             """.trimIndent()
         helper.setText(text, html)
-        if (category != "welcome") {
+        if (!transactional) {
             mime.setHeader("List-Unsubscribe", "<${properties.apiBaseUrl.trimEnd('/')}/api/v1/email/unsubscribe/$unsubscribeToken>")
             mime.setHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
         }
@@ -149,6 +153,15 @@ class SesEmailSender(
         helper.setText(text, html)
         deliver(mime, address)
     }
+
+    private fun accountPath(category: String): String =
+        when (category) {
+            "daily_question" -> "daily-challenge"
+            "campus_weekly" -> "campus"
+            else -> "dashboard"
+        }
+
+    private fun accountLabel(category: String): String = if (category == "campus_weekly") "Open Untiered Campus" else "Visit your account"
 
     private fun deliver(
         mime: MimeMessage,

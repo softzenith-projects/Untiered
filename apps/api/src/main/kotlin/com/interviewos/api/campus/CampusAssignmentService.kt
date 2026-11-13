@@ -31,6 +31,7 @@ class CampusAssignmentService internal constructor(
     private val assignments: AssignmentRepository,
     private val audit: CampusAudit,
     private val features: ProductFeatureProperties,
+    private val notifications: CampusNotifications,
     private val clock: Clock,
 ) {
     @Autowired
@@ -39,7 +40,8 @@ class CampusAssignmentService internal constructor(
         assignments: AssignmentRepository,
         audit: CampusAudit,
         features: ProductFeatureProperties,
-    ) : this(access, assignments, audit, features, Clock.systemUTC())
+        notifications: CampusNotifications,
+    ) : this(access, assignments, audit, features, notifications, Clock.systemUTC())
 
     // -- the scenario catalogue ------------------------------------------------------
 
@@ -160,6 +162,8 @@ class CampusAssignmentService internal constructor(
         }
         if (!assignments.publish(scope, id)) throw ApiException.conflict("Only a draft can be published.", code = "assignment_not_draft")
         audit.record(scope, "assignment.published", TARGET_ASSIGNMENT, id)
+        // Same transaction as the publish: the students are told exactly when it is true.
+        notifications.assignmentPublished(scope.orgId, id)
         return views(scope, listOf(assignments.find(scope, id) ?: throw ApiException.notFound())).single()
     }
 

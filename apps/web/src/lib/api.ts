@@ -230,9 +230,14 @@ export interface EmailPreferences {
   announcements: boolean;
   reengagement: boolean;
   consentedAt: string | null;
+  /** Campus reminders, report-ready emails and weekly summaries (campus spec §9). */
+  campusReminders?: boolean;
 }
 
-export type EmailPreferenceChoices = Pick<EmailPreferences, "dailyQuestion" | "announcements" | "reengagement">;
+export type EmailPreferenceChoices = Pick<EmailPreferences, "dailyQuestion" | "announcements" | "reengagement"> & {
+  /** Left out, the setting is unchanged. */
+  campusReminders?: boolean;
+};
 
 export function fetchEmailPreferences(options: ApiGetOptions): Promise<EmailPreferences> {
   return apiGet<EmailPreferences>("/api/v1/me/email-preferences", options);
