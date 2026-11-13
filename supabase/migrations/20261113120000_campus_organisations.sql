@@ -59,7 +59,10 @@ create table public.org_batches (
   unique (org_id, name),
   unique (org_id, id),
   foreign key (org_id) references public.organisations (id) on delete cascade,
-  foreign key (org_id, department_id) references public.org_departments (org_id, id) on delete restrict
+  -- no action, not restrict: a department with batches cannot be deleted on its own, but
+  -- deleting the whole organisation cascades to both in one statement, and a restrict check
+  -- would fire before the cascade had reached the batches.
+  foreign key (org_id, department_id) references public.org_departments (org_id, id) on delete no action
 );
 create index org_batches_department_idx on public.org_batches (org_id, department_id);
 
@@ -81,7 +84,7 @@ create table public.org_members (
   joined_at timestamptz not null default now(),
   ended_at timestamptz,
   unique (org_id, id),
-  foreign key (org_id, batch_id) references public.org_batches (org_id, id) on delete restrict,
+  foreign key (org_id, batch_id) references public.org_batches (org_id, id) on delete no action,  -- as above
   constraint org_members_student_has_batch check ((role = 'student') = (batch_id is not null)),
   constraint org_members_student_consented check (role <> 'student' or consented_at is not null),
   constraint org_members_ended check ((status = 'joined') = (ended_at is null))
