@@ -1,4 +1,4 @@
-# Handoff — 14 November 2026 (campus run, in progress)
+# Handoff — 14 November 2026 (campus run, complete)
 
 ## Task
 Build Untiered Campus, the B2B college partnership, from the owner's spec "Untiered
@@ -14,31 +14,31 @@ Campus: College Partnership Features (v1)". The spec as adapted to this codebase
   is behind the `campus` feature switch, which is off by default, and it touches
   permissions, so it reaches `develop` only through a PR the owner reviews.
 
-| Module | State on `feat/campus-v1` |
-|---|---|
-| 1–2 Organisations, roles | done (API + web) |
-| 3 Onboarding (CSV, invites, join and consent) | done |
-| 4 Assignments, college-funded admission with caps | done |
-| 6 Readiness | done |
-| 7 Placement dashboard, CSV export, printable batch report | done |
-| 5 Integrity signals | done |
-| 9 Notifications | done |
-| 8 Faculty attention list and private staff notes | in progress: API committed on `feat/campus-m8-m10` (`ba6e878`); web not yet |
-| 10 Programmes and certificates | not started (same branch as 8) |
-| 11 Usage and cost, 12 Leaderboard | not started (contract written) |
+All 12 modules are built (API and web) and merged on `feat/campus-v1`:
+- 1–2: organisations, roles
+- 3: onboarding (CSV, invites, join and consent)
+- 4: assignments with college-funded, capped admission
+- 5: integrity signals
+- 6: readiness
+- 7: the placement dashboard, CSV export and printable batch report
+- 8: the faculty "needs attention" list and private staff notes
+- 9: notifications
+- 10: programmes with weekly unlock and printable certificates
+- 11: usage and AI cost per college (internal)
+- 12: the opt-in anonymous leaderboard
+
+MCQ tests (spec 4b) are deferred; see assumption 6.
 
 ## Blockers for the owner
 1. **GitHub Actions is not running any job.** Every run since about 09:39 on 13 November
    fails before it starts: "recent account payments have failed or your spending limit
    needs to be increased". Fix this under Billing & plans. Until then nothing can pass
    the CI gate into `develop`.
-2. **The plan's usage limit was reached.** It resets at 23:50 IST. The run resumes then
-   from `runs/2026-11-13-progress.md`, but only while this editor session stays open.
 
 ## How it was verified, since CI could not run
 - The campus work has been verified locally only, on the merged `feat/campus-v1`. CI
   has seen nothing after `2210ef2`.
-- Backend: `./gradlew ktlintCheck test build` gives 1,156 tests and 0 failures, with
+- Backend: `./gradlew ktlintCheck test build` gives 1,220 tests and 0 failures, with
   every `*DatabaseIntegrationTest` running against a local Supabase Postgres that has all
   campus migrations applied.
 - The campus database suites ran with nothing skipped:
@@ -48,7 +48,9 @@ Campus: College Partnership Features (v1)". The spec as adapted to this codebase
   - readiness: 7
   - notifications: 11
   - integrity
-- Web: typecheck, lint, build, and 4,226 tests in 121 files.
+  - faculty and programmes: 7 each
+  - usage and leaderboard
+- Web: typecheck, lint, build, and 4,251 tests in 124 files.
 - Two web tests that cold-import whole modules got longer timeouts, each with a comment.
   No assertion was changed.
 
@@ -96,10 +98,16 @@ Campus: College Partnership Features (v1)". The spec as adapted to this codebase
 2. **Legal / data protection:** update the privacy policy and terms to cover colleges as
    recipients of student data (India's DPDP Act) before the first real invite. The
    `campus` switch must stay off until then.
-3. Apply the six campus migrations (`20261113120000` to `20261113170000`, plus more as
-   modules 8–12 land) with `npm run db:push` as part of the merge.
-4. The size is far over the 800-line guideline: about 25,000 lines including tests. The
+3. Apply the nine campus migrations (`20261113120000` to `20261113200000`) with
+   `npm run db:push` as part of the merge.
+4. The size is far over the 800-line guideline: about 37,400 added lines across 224 files,
+   roughly 40% of them tests. The
    history merges module by module, so it can be reviewed per module branch.
+
+## Known issue to fix before any real programme runs
+- Starting a programme queues every module's new-assignment email at once, so a 12-week
+  programme sends 12 emails on day one. Each email states its own dates, but the email for
+  each module should be sent on the day that module opens.
 
 ## Open questions
 - Should "last active" exclude personal practice entirely? (Assumption 2.)
