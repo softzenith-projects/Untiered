@@ -56,6 +56,10 @@ class CampusSqlGuardTest {
             "invite-sender" to mapOf("InviteRepository.kt" to 2),
             // Deleting import previews past their one-day expiry, in every college.
             "import-purge" to mapOf("InviteRepository.kt" to 1),
+            // Integrity signals (module 5): whether the caller's own session, bound by the verified
+            // user id, was started from an assignment. Reads the attempt by session id only; no
+            // college's data is returned.
+            "own-session" to mapOf("IntegrityRepository.kt" to 2),
         )
 
     /**

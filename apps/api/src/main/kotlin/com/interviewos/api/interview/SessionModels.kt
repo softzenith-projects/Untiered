@@ -136,6 +136,11 @@ data class SessionView(
     val board: JsonNode? = null,
     /** Candidate-selected syllabus for a custom topic round. */
     val focusTopic: String? = null,
+    /**
+     * Whether a college assigned this round (campus spec §4). Only then does the room send
+     * integrity events (§5); the student was told so on the start screen, before consent.
+     */
+    val assigned: Boolean = false,
 )
 
 /**
