@@ -245,7 +245,7 @@ interface InvitePreview {
   signedInEmail: string;
   emailMatches: boolean;
   expiresAt: string;
-  consentVersion: string;       // "campus-2026-11-13"
+  consentVersion: string;       // "campus-2026-11-14"
   shared: string[];             // what the college will see, in plain sentences (server-owned copy)
   notShared: string[];          // what stays private
   aiNotice: string;
@@ -696,8 +696,21 @@ interface StaffComment {
 | `PATCH` / `DELETE /campus/orgs/{org}/comments/{id}` | the author; college_admin may delete any | `{ body }` → `StaffComment` / `204` |
 
 Comments are private to staff and never returned to the student. The join consent copy
-says that staff can keep private notes; adding that line bumps `CONSENT_VERSION`. Comments
-are deleted with the membership. All writes are audited.
+says that staff can keep private notes; adding that line bumps `CONSENT_VERSION` (now
+`campus-2026-11-14`). Comments are deleted with the membership. All writes are audited, with
+ids only — never the text.
+
+- `?reason=` takes one `AttentionReason`; anything else is `400 invalid_reason`. A row's
+  `reasons` are listed in the order `low_score`, `inactive`, `overdue`. "Inactive" uses module
+  3's activity signals, so a student with no activity at all is inactive. An `overall` of
+  `null` sorts after every score; ties break by name, then member id.
+- Comments are listed newest first. A body is trimmed and must then be 1–2000 characters,
+  otherwise `400 invalid_comment`. A `sessionId` that is not one of this member's assigned
+  sessions (a personal round, another student's) is `404`, as is a student outside the
+  college or a faculty member's scope. Editing someone else's comment, or deleting it without
+  being a college admin, is `403 campus_forbidden`.
+- Comments are the college's own working notes: a platform admin gets `403` on these routes
+  (the attention list, a readiness read, stays open to them and is audited).
 
 ---
 

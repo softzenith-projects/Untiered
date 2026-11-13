@@ -34,6 +34,7 @@ class CampusSqlGuardTest {
             "campus_imports",
             "campus_import_rows",
             "campus_invites",
+            "campus_staff_comments",
         )
 
     /** reason to (file it may appear in to how many statements there) */
@@ -175,7 +176,7 @@ class CampusSqlGuardTest {
             Regex(
                 "\\b(from|join|into|update)\\s+" +
                     "(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log" +
-                    "|campus_imports|campus_import_rows|campus_invites" +
+                    "|campus_imports|campus_import_rows|campus_invites|campus_staff_comments" +
                     "|assignments|assignment_targets|assignment_attempts)\\b",
             )
     }
