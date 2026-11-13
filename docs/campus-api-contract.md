@@ -666,7 +666,16 @@ interface IntegritySummary {
 | `GET /campus/orgs/{org}/students/{memberId}/reports/{sessionId}/integrity` | staff (scoped) | `IntegritySummary`; same rules as the staff report view |
 
 The thresholds for `fastAnswers` and `longPauses` are server constants, documented next to
-their code.
+their code (`IntegrityRules`).
+
+- `GET /sessions/{id}` (existing `SessionView`) gains `assigned: boolean`, true when the round
+  was started from an assignment. The room sends events only when it is true.
+- A batch with more than 50 events, an unknown `type` or `surface`, or a negative `turnIndex`
+  or `chars` is `400 invalid_integrity_events`. Someone else's session is `404`.
+- While the campus switch is off, `POST …/integrity-events` answers `204` and stores nothing,
+  `GET /sessions/{id}/integrity` answers `recorded: false`, and the staff route is `404`.
+- The staff route is audited as `integrity.viewed`. A summary with every count at zero carries
+  the note that nothing was recorded; `recorded: false` carries no notes.
 
 ---
 

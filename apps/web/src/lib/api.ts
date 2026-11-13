@@ -45,6 +45,8 @@ import type {
   AcceptInviteResponse,
   AssignedItem,
   AssignmentInput,
+  IntegrityEventBatch,
+  IntegritySummary,
   AssignmentPublishedPatch,
   AssignmentStatus,
   AssignmentView,
@@ -439,6 +441,40 @@ export function reportInterviewClientEvent(
     ...(requestId === undefined ? {} : { requestId }),
     ...(phase === undefined ? {} : { phase }),
   });
+}
+
+/**
+ * Sends a batch of integrity counts for an assigned round (campus module 5). Only the event
+ * type and, for a paste, its length — never what was pasted or where the student went.
+ *
+ * `keepalive` lets the request outlive the page, for the flush on `pagehide`. It is a fetch
+ * rather than `navigator.sendBeacon` because a beacon cannot carry the bearer token.
+ */
+export async function sendIntegrityEvents(
+  accessToken: string,
+  sessionId: string,
+  batch: IntegrityEventBatch,
+  options: { keepalive?: boolean } = {},
+): Promise<void> {
+  const path = `/api/v1/sessions/${encodeURIComponent(sessionId)}/integrity-events`;
+  const response = await fetch(`${env.apiBaseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(batch),
+    ...(options.keepalive ? { keepalive: true } : {}),
+  });
+  if (!response.ok) {
+    throw new ApiRequestError(response.status, "integrity_events_failed", `Request to ${path} failed with status ${response.status}.`);
+  }
+}
+
+/** The student's own integrity summary for one round; `recorded` is false unless it was assigned. */
+export function fetchIntegrity(sessionId: string, options: ApiGetOptions): Promise<IntegritySummary> {
+  return apiGet<IntegritySummary>(`/api/v1/sessions/${encodeURIComponent(sessionId)}/integrity`, options);
 }
 
 export function fetchReport(id: string, options: ApiGetOptions): Promise<SessionReport> {
@@ -977,6 +1013,19 @@ export function fetchStudentReadiness(orgId: string, memberId: string, options: 
 export function fetchStaffStudentReport(orgId: string, memberId: string, sessionId: string, options: ApiGetOptions): Promise<SessionReport> {
   return apiGet<SessionReport>(
     `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/reports/${encodeURIComponent(sessionId)}`,
+    options,
+  );
+}
+
+/** The integrity summary of one of the student's assigned rounds, as college staff read it. */
+export function fetchStaffStudentIntegrity(
+  orgId: string,
+  memberId: string,
+  sessionId: string,
+  options: ApiGetOptions,
+): Promise<IntegritySummary> {
+  return apiGet<IntegritySummary>(
+    `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/reports/${encodeURIComponent(sessionId)}/integrity`,
     options,
   );
 }

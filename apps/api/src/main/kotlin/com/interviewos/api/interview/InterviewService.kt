@@ -1432,6 +1432,7 @@ class InterviewService(
                     ?.takeIf { it.answeredAt == null }
                     ?.let { turnViewOf(it, userId, sessionId) },
             focusTopic = session.focusTopic,
+            assigned = session.assigned,
         )
     }
 

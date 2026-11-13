@@ -446,3 +446,37 @@ export interface StaffComment {
   createdAt: string;
   editedAt: string | null;
 }
+
+// ---- Module 5: interview integrity (docs/campus-api-contract.md) ----
+
+export type IntegrityEventType = "tab_hidden" | "window_blur" | "paste";
+
+export interface IntegrityEvent {
+  type: IntegrityEventType;
+  at: string;
+  turnIndex?: number;
+  /** Where a paste landed. Only the length is sent, never the text. */
+  surface?: "code" | "text";
+  chars?: number;
+}
+
+/** At most 50 events per request. */
+export interface IntegrityEventBatch {
+  events: IntegrityEvent[];
+}
+
+/** Counts, not conclusions. The student reads exactly what their college reads. */
+export interface IntegritySummary {
+  /** False for a round that was not assigned: nothing was watched. */
+  recorded: boolean;
+  tabHidden: number;
+  windowBlur: number;
+  pastes: number;
+  pastedChars: number;
+  /** Turns where speech began within 1 s of recording and lasted at least 20 s. */
+  fastAnswers: number;
+  /** Turns whose longest pause was at least 20 s. */
+  longPauses: number;
+  /** Plain sentences built from the counts; never a verdict. */
+  notes: string[];
+}
