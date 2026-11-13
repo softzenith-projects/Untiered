@@ -52,6 +52,8 @@ class AccountDeletionTest {
         val order = inOrder(repository, authAdmin)
         order.verify(repository).enqueueAccountPurge(userId, "interview-media", userId.toString())
         order.verify(repository).enqueueAccountPurge(userId, "resumes", userId.toString())
+        // Invites are found by the account's email and memberships, so before the row goes.
+        order.verify(repository).deleteCampusInvites(userId)
         order.verify(repository).deleteUser(userId)
         order.verify(authAdmin).deleteUser(userId)
     }
