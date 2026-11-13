@@ -40,6 +40,22 @@ import type {
   UsageCounts,
 } from "@untiered/shared";
 
+import type {
+  AdminOrgSummary,
+  AdminUpdateOrgRequest,
+  AuditEntryView,
+  BatchView,
+  CampusPage,
+  CampusRole,
+  CollegeUpdateOrgRequest,
+  CreateOrgRequest,
+  DepartmentView,
+  FacultyScopesView,
+  MeCampusView,
+  MemberView,
+  OrgView,
+} from "@untiered/shared";
+
 import { env } from "@/lib/env";
 import type { AnswerTiming } from "@/lib/speech-timing";
 
@@ -132,12 +148,12 @@ async function apiGet<T>(path: string, { accessToken, signal }: ApiGetOptions): 
   );
 
   if (!response.ok) {
-    const envelope = (await response.json().catch(() => null)) as ApiError | null;
+    const envelope = (await response.json().catch(() => null)) as (ApiError & { code?: string }) | null;
     throw reportIfServerFault(
       path,
       new ApiRequestError(
         response.status,
-        envelope?.error ?? "unknown_error",
+        envelope?.error ?? envelope?.code ?? "unknown_error",
         envelope?.message ?? `Request to ${path} failed with status ${response.status}.`,
       ),
     );
@@ -165,12 +181,12 @@ async function apiSend<T>(
   });
 
   if (!response.ok) {
-    const envelope = (await response.json().catch(() => null)) as ApiError | null;
+    const envelope = (await response.json().catch(() => null)) as (ApiError & { code?: string }) | null;
     throw reportIfServerFault(
       path,
       new ApiRequestError(
         response.status,
-        envelope?.error ?? "unknown_error",
+        envelope?.error ?? envelope?.code ?? "unknown_error",
         envelope?.message ?? `Request to ${path} failed with status ${response.status}.`,
       ),
     );
@@ -637,4 +653,156 @@ export function importArenaProgress(
   body: ImportArenaProgressRequest,
 ): Promise<ArenaProgressView> {
   return apiSend<ArenaProgressView>("/api/v1/me/arena/import", "POST", accessToken, body);
+}
+
+// ---- Untiered Campus, modules 1-2 (docs/campus-api-contract.md) ----
+
+function query(params: Record<string, string | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) if (value) search.set(key, value);
+  const text = search.toString();
+  return text ? `?${text}` : "";
+}
+
+const campusOrg = (orgId: string) => `/api/v1/campus/orgs/${encodeURIComponent(orgId)}`;
+const adminOrg = (orgId: string) => `/api/v1/admin/campus/orgs/${encodeURIComponent(orgId)}`;
+
+export function fetchAdminOrgs(options: ApiGetOptions): Promise<AdminOrgSummary[]> {
+  return apiGet<AdminOrgSummary[]>("/api/v1/admin/campus/orgs", options);
+}
+
+export function createAdminOrg(accessToken: string, body: CreateOrgRequest): Promise<OrgView> {
+  return apiSend<OrgView>("/api/v1/admin/campus/orgs", "POST", accessToken, body);
+}
+
+export function fetchAdminOrg(orgId: string, options: ApiGetOptions): Promise<AdminOrgSummary> {
+  return apiGet<AdminOrgSummary>(adminOrg(orgId), options);
+}
+
+export function updateAdminOrg(accessToken: string, orgId: string, body: AdminUpdateOrgRequest): Promise<OrgView> {
+  return apiSend<OrgView>(adminOrg(orgId), "PATCH", accessToken, body);
+}
+
+export function uploadOrgLogo(accessToken: string, orgId: string, file: File): Promise<OrgView> {
+  const form = new FormData();
+  form.set("file", file);
+  return apiSend<OrgView>(`${adminOrg(orgId)}/logo`, "PUT", accessToken, form);
+}
+
+export function fetchMeCampus(options: ApiGetOptions): Promise<MeCampusView> {
+  return apiGet<MeCampusView>("/api/v1/me/campus", options);
+}
+
+export function fetchCampusOrg(orgId: string, options: ApiGetOptions): Promise<OrgView> {
+  return apiGet<OrgView>(campusOrg(orgId), options);
+}
+
+export function updateCampusOrg(accessToken: string, orgId: string, body: CollegeUpdateOrgRequest): Promise<OrgView> {
+  return apiSend<OrgView>(campusOrg(orgId), "PATCH", accessToken, body);
+}
+
+export function fetchDepartments(orgId: string, options: ApiGetOptions): Promise<DepartmentView[]> {
+  return apiGet<DepartmentView[]>(`${campusOrg(orgId)}/departments`, options);
+}
+
+export function createDepartment(
+  accessToken: string,
+  orgId: string,
+  body: { code: string; name: string },
+): Promise<DepartmentView> {
+  return apiSend<DepartmentView>(`${campusOrg(orgId)}/departments`, "POST", accessToken, body);
+}
+
+export function updateDepartment(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  body: { code?: string; name?: string },
+): Promise<DepartmentView> {
+  return apiSend<DepartmentView>(`${campusOrg(orgId)}/departments/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export async function deleteDepartment(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/departments/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export function fetchBatches(orgId: string, options: ApiGetOptions, departmentId?: string): Promise<BatchView[]> {
+  return apiGet<BatchView[]>(`${campusOrg(orgId)}/batches${query({ departmentId })}`, options);
+}
+
+export function createBatch(
+  accessToken: string,
+  orgId: string,
+  body: { departmentId: string; graduationYear: number; name: string },
+): Promise<BatchView> {
+  return apiSend<BatchView>(`${campusOrg(orgId)}/batches`, "POST", accessToken, body);
+}
+
+export function updateBatch(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  body: { graduationYear?: number; name?: string },
+): Promise<BatchView> {
+  return apiSend<BatchView>(`${campusOrg(orgId)}/batches/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export async function deleteBatch(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/batches/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export interface MemberFilter {
+  role?: CampusRole;
+  batchId?: string;
+  departmentId?: string;
+  q?: string;
+  cursor?: string;
+}
+
+export function fetchMembers(orgId: string, options: ApiGetOptions, filter: MemberFilter = {}): Promise<CampusPage<MemberView>> {
+  return apiGet<CampusPage<MemberView>>(`${campusOrg(orgId)}/members${query({ ...filter })}`, options);
+}
+
+export function updateMember(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  body: { batchId?: string; rollNumber?: string },
+): Promise<MemberView> {
+  return apiSend<MemberView>(`${campusOrg(orgId)}/members/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export async function removeMember(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/members/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export function changeMemberRole(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  role: Exclude<CampusRole, "student">,
+): Promise<MemberView> {
+  return apiSend<MemberView>(`${campusOrg(orgId)}/members/${encodeURIComponent(id)}/role`, "PATCH", accessToken, { role });
+}
+
+export function fetchFacultyScopes(orgId: string, id: string, options: ApiGetOptions): Promise<FacultyScopesView> {
+  return apiGet<FacultyScopesView>(`${campusOrg(orgId)}/members/${encodeURIComponent(id)}/faculty-scopes`, options);
+}
+
+export function saveFacultyScopes(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  scopes: FacultyScopesView,
+): Promise<FacultyScopesView> {
+  return apiSend<FacultyScopesView>(
+    `${campusOrg(orgId)}/members/${encodeURIComponent(id)}/faculty-scopes`,
+    "PUT",
+    accessToken,
+    scopes,
+  );
+}
+
+export function fetchAuditLog(orgId: string, options: ApiGetOptions, cursor?: string): Promise<CampusPage<AuditEntryView>> {
+  return apiGet<CampusPage<AuditEntryView>>(`${campusOrg(orgId)}/audit-log${query({ cursor })}`, options);
 }

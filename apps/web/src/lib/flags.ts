@@ -56,3 +56,11 @@ export function courseEnabled(courseSlug: string): boolean {
 export function questionBankBrowsable(): boolean {
   return featureEnabled("questions");
 }
+
+/**
+ * Untiered Campus (docs/campus-v1-plan.md). Off by default: with it off every campus
+ * page is a 404 and nothing in the student experience mentions it.
+ */
+export function campusEnabled(): boolean {
+  return configured(process.env.NEXT_PUBLIC_FEATURE_CAMPUS, false);
+}
