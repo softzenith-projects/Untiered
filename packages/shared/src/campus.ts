@@ -295,7 +295,7 @@ export interface RecipientProgress {
   scenarioScore: number | null;
 }
 
-export interface ScenarioOption {
+export interface CampusScenarioOption {
   id: string;
   courseTitle: string;
   title: string;

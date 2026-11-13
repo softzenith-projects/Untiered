@@ -50,7 +50,7 @@ import type {
   AssignmentView,
   CompletionStatus,
   RecipientProgress,
-  ScenarioOption,
+  CampusScenarioOption,
   AdminCreateInviteRequest,
   AdminOrgSummary,
   AdminUpdateOrgRequest,
@@ -888,8 +888,8 @@ export async function leaveCollege(accessToken: string): Promise<void> {
 
 // ---- Untiered Campus, module 4: assignments ----
 
-export function fetchArenaScenarios(orgId: string, options: ApiGetOptions): Promise<ScenarioOption[]> {
-  return apiGet<ScenarioOption[]>(`${campusOrg(orgId)}/arena-scenarios`, options);
+export function fetchArenaScenarios(orgId: string, options: ApiGetOptions): Promise<CampusScenarioOption[]> {
+  return apiGet<CampusScenarioOption[]>(`${campusOrg(orgId)}/arena-scenarios`, options);
 }
 
 export function fetchAssignments(orgId: string, options: ApiGetOptions, status?: AssignmentStatus): Promise<AssignmentView[]> {
