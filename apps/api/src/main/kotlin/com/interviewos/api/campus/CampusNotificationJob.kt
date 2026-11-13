@@ -23,6 +23,8 @@ class CampusNotificationJob(
     @Scheduled(initialDelay = 120_000, fixedDelay = 900_000)
     fun queueScheduled() {
         if (!properties.enabled) return
+        runCatching { notifications.queueOpenedAssignments() }
+            .onFailure { log.warn("Could not queue campus emails for newly opened assignments ({})", it.javaClass.simpleName) }
         runCatching { notifications.queueDeadlineReminders() }
             .onFailure { log.warn("Could not queue campus deadline reminders ({})", it.javaClass.simpleName) }
         runCatching { notifications.queueWeeklySummaries() }

@@ -36,11 +36,26 @@ data class FinishedAssignedRound(
 class CampusNotificationRepository(
     private val jdbc: JdbcClient,
 ) {
-    /** A new assignment, to every joined student it targets, by batch or by name. Returns rows queued. */
+    /**
+     * A new assignment, to every joined student it targets, by batch or by name. Returns rows
+     * queued. Nothing is sent before the assignment opens: a programme publishes all its weeks
+     * on the day it starts, and each week's email goes out when that week unlocks
+     * ([openedSince] finds them).
+     */
     fun enqueueNewAssignment(
         orgId: UUID,
         assignmentId: UUID,
+        now: Instant,
     ): Int {
+        val opensAt =
+            jdbc
+                .sql("select opens_at from public.assignments where org_id = :orgId and id = :id")
+                .param("orgId", orgId)
+                .param("id", assignmentId)
+                .query { rs, _ -> rs.getTimestamp("opens_at").toInstant() }
+                .optional()
+                .orElse(null) ?: return 0
+        if (opensAt.isAfter(now)) return 0
         val head = head(orgId, assignmentId) ?: return 0
         val email = CampusEmailCopy.newAssignment(assignmentId, head.college, head.title, head.dueAt)
         return insertForRecipients(orgId, assignmentId, email, onlyUndone = false)
@@ -61,6 +76,7 @@ class CampusNotificationRepository(
                       join public.org_members m on m.org_id = :orgId and m.id = :memberId
                            and m.role = 'student' and m.status = 'joined'
                      where c.org_id = :orgId and c.status = 'published' and c.due_at > :now
+                       and c.opens_at <= :now
                        and exists (
                          select 1 from public.assignment_targets t
                           where t.org_id = :orgId and t.assignment_id = c.id
@@ -95,6 +111,30 @@ class CampusNotificationRepository(
         }
         return queued
     }
+
+    /**
+     * Published assignments that opened after they were published (a programme's later weeks,
+     * or any assignment scheduled ahead), across colleges, within the last two days and not yet
+     * due. Their new-assignment email was held back at publish; the dedupe key makes sending it
+     * again on a later tick a no-op.
+     */
+    fun openedSince(now: Instant): List<ReminderCandidate> =
+        jdbc
+            .sql(
+                """
+                /* unscoped: notification-discovery */
+                select c.org_id, c.id
+                  from public.assignments c
+                  join public.organisations o on o.id = c.org_id and o.status = 'active'
+                 where c.status = 'published'
+                   and c.opens_at > c.published_at
+                   and c.opens_at <= :now
+                   and c.opens_at > cast(:now as timestamptz) - interval '2 days'
+                   and c.due_at > :now
+                """.trimIndent(),
+            ).param("now", Timestamp.from(now))
+            .query { rs, _ -> ReminderCandidate(UUID.fromString(rs.getString("org_id")), UUID.fromString(rs.getString("id"))) }
+            .list()
 
     /**
      * Published assignments whose reminder window has opened, across colleges. The window is

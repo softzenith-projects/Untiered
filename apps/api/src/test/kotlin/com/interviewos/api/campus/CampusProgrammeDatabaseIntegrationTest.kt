@@ -190,9 +190,10 @@ class CampusProgrammeDatabaseIntegrationTest {
                 .query(Long::class.java)
                 .single(),
         )
-        // Module 9: each published module tells its recipients, through the outbox.
+        // Module 9: no module has opened yet (the programme starts in 3 days), so nobody is
+        // emailed now; each week is announced when it unlocks (CampusNotifications.queueOpenedAssignments).
         assertEquals(
-            3L,
+            0L,
             jdbc
                 .sql("select count(*) from public.email_deliveries where user_id = :u and category = 'campus_assignment'")
                 .param("u", cse1.id)
