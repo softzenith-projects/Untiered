@@ -493,6 +493,14 @@ student's own practice never enters it.
   `"not_enough_evidence"`. `strong` is ≥ 85, `interview_ready` is 70–84,
   `needs_improvement` is 50–69, and `needs_structured_prep` is < 50, on the overall score
   rounded to an integer.
+- **Overall is `null` whenever the band is `not_enough_evidence`**: below 2 items, and also
+  when the only scored components carry weight 0. Components are still shown.
+- **Integers all the way up.** An item's score is rounded half up; a component is the mean of
+  its items' integer scores, rounded; the overall is computed from the integer components. Every
+  number can be reproduced from the numbers shown beneath it.
+- Interview evidence is read from the attempts themselves (published or archived assignments),
+  so a student moved to another batch keeps it. A scenario set counts while the student is one
+  of its recipients. Drafts are never evidence.
 
 ### Shapes
 
@@ -533,7 +541,8 @@ interface StudentReadiness {
 ```
 
 `suggestedTopics` is derived without AI: one entry for each component scoring below 70,
-and one for each topic whose items average below 70. Each `reason` is a plain sentence
+and one for each topic whose latest 3 items average below 70 (listed under the component of
+that topic's latest item), each group lowest first. Each `reason` is a plain sentence
 built from the numbers, e.g. "Average 58 across 2 DBMS assignments." The web maps
 components and topics to existing course and Arena links. Topics with no course get no
 link.
@@ -589,6 +598,23 @@ interface StudentReadinessRow {
 A heatmap cell averages the latest item per student for that topic, among the students in
 that department. Its `average` is `null` when fewer than 3 students have evidence, so a
 cell never stands for one identifiable student.
+
+- `enrolled` is open student invites (not accepted, revoked or past `expiresAt`) plus joined
+  students; a student who has left is in neither.
+- `active` and `lastActiveAt` use module 3's signals: a round created, a scenario step
+  answered or an Arena card reviewed (active: in the last 14 days).
+- Completion counts (`completionRate`, `assignmentsCompleted`, `assignmentsOverdue`) cover
+  **published** assignments. "Due now" is not completed, past `dueAt`, with `allowLate`.
+- Student table: default `sort=name`, `order=asc`. A missing value (`overall` or
+  `lastActiveAt` null) sorts last in either order; ties break by name, then member id.
+  `completion=all_done`: set at least one assignment and completed every one;
+  `has_overdue`: at least one overdue; `not_started`: set at least one and none completed or
+  begun. Bad values are `400 invalid_band`, `invalid_completion`, `invalid_sort`,
+  `invalid_order`; a cursor from another sort or order is `400 invalid_cursor`. A `batchId`
+  or `departmentId` of another college, or outside a faculty member's scope, is `404`.
+- CSV cells: band as its label ("Interview-ready"), a component with no evidence as
+  "Not attempted", overall empty when null, last active as ISO-8601. A cell starting with
+  `=`, `+`, `-`, `@`, tab or CR is prefixed with `'`.
 
 ### Routes
 
