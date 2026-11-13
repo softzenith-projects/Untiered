@@ -852,3 +852,45 @@ interface LeaderboardView { scope: "batch" | "college"; optedIn: boolean; myRank
 | `PUT /me/campus/leaderboard-preference` | student | `{ optIn: boolean }` → `{ optIn }` |
 
 Staff get no leaderboard route; they already have the readiness table.
+
+---
+
+## Module 7b: the TPO overview
+
+These are additions to `DashboardView`. They're optional on the wire, so older clients
+keep working. Every number is derived on read, from the same scope and filters as the
+rest of the dashboard; faculty see only their batches. A figure that can't be computed is
+`null`, which the UI omits. It is never shown as 0.
+
+```ts
+interface DashboardView {
+  // ...module 7 fields...
+  pipeline: {
+    invited: number;          // student invites ever sent in scope (open, joined or expired)
+    joined: number;           // joined students
+    active: number;           // joined students active in the last 14 days
+    assigned: number;         // joined students with ≥ 1 published assignment open to them
+    attempted: number;        // of those, students with ≥ 1 attempt or scenario answer on an assignment
+    completed: number;        // students with ≥ 1 completed assignment
+    interviewReady: number;   // students whose band is strong or interview_ready
+  };
+  componentAverages: Record<"coding" | "coreCs" | "technicalInterview" | "communication" | "aptitude",
+    { average: number | null; students: number }>;   // the mean of student component scores; null when fewer than 3 students have one
+  topGaps: { topic: CampusTopic; average: number; students: number }[];  // up to 3 weakest topics with ≥ 3 students and an average < 70, weakest first
+  trend: {
+    completedLast30: number;          // assignment completions in the last 30 days
+    completedPrev30: number;          // the 30 days before that
+    averageScoreLast30: number | null;  // the mean evidence score of items completed in the last 30 days; null when there are fewer than 3 items
+    averageScorePrev30: number | null;
+    weekly: { weekStart: string; completed: number }[];  // the last 8 weeks (Monday, IST), oldest first, for a sparkline
+  };
+  batches: {
+    batchId: string; name: string; departmentCode: string;
+    joined: number; completionRate: number | null; averageOverall: number | null; interviewReady: number;
+  }[];   // one row per batch in scope; averageOverall is null when fewer than 3 students have an overall
+}
+```
+
+**Change chips:** the UI shows a change only when both periods have a value. It shows a
+count's change as `+n` / `−n`, and a score's change as points. It never shows a percentage
+of a small number.
