@@ -51,18 +51,27 @@ Source: owner's PDF "Untiered Campus: College Partnership Features (v1)" (13 Nov
   migration or endpoint is written.
 
 ## Verification status
-- Web: typecheck, lint, tests (109 files, 4,103 tests) and build all pass locally.
-- Backend: not touched, so not run.
+- Web: typecheck, lint, tests (109 files, 4,103 tests) and build all pass locally, with
+  `node_modules` matching the lockfile.
+- Backend: not touched. It passed in CI anyway.
 - CI: see merge status.
 
 ## Merge status
-- Branch `feat/campus-colleges-cta`, from `origin/develop` at `c984459`. It merges into
-  `develop` only if CI is green; the result is recorded below.
-- No migrations in this change.
+- **Campus branch:** `feat/campus-colleges-cta` merges into `develop` only after its CI
+  run is green. No migrations in this change.
+- **Also fixed and merged today, because it blocked the gate:** `develop` was already red
+  at `c984459` on four Shiki tests in `highlight-code.test.ts`. The cause had two parts:
+  - Under jsdom, Shiki 4.6's WASM loader calls `Blob.stream()`, which jsdom does not provide.
+  - Yesterday's `fix/highlighter-vitest-node-env` moved that test file to Vitest's Node
+    environment, which was right. But `vitest.setup.ts` patched `Range` unconditionally,
+    Node has no `Range`, so the setup crashed and CI stayed red.
 
-## Not from this run, still open
-- `fix/highlighter-vitest-node-env` (Shiki test in the Node environment, for PR #154) is
-  still unmerged. Its CI status was unknown in the last handoff.
+  I added a guard in `vitest.setup.ts`. CI was green on every job (run 43385303787), and
+  the branch merged into `develop` at `cfedb51`.
+- Production is not affected: a Next build runs in Node, and in plain Node 24 Shiki 4.6.0
+  highlights correctly.
+- Local tests passed at first only because local `node_modules` had Shiki 4.5.0. I ran
+  `npm ci` to match the lockfile.
 
 ## Suggested next task
 - After you review the plan: modules 1 and 2 (Migration A, the `campus` package, the
