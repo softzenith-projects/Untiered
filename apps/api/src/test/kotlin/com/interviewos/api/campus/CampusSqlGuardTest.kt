@@ -21,7 +21,17 @@ import kotlin.test.fail
  */
 class CampusSqlGuardTest {
     private val campusTables =
-        listOf("organisations", "org_departments", "org_batches", "org_members", "org_faculty_scopes", "org_audit_log")
+        listOf(
+            "organisations",
+            "org_departments",
+            "org_batches",
+            "org_members",
+            "org_faculty_scopes",
+            "org_audit_log",
+            "campus_imports",
+            "campus_import_rows",
+            "campus_invites",
+        )
 
     /** reason to (file it may appear in to how many statements there) */
     private val allowList: Map<String, Map<String, Int>> =
@@ -142,7 +152,9 @@ class CampusSqlGuardTest {
         val MARKER = Regex("/\\*\\s*unscoped:\\s*([a-z-]+)\\s*\\*/")
         val UNQUALIFIED =
             Regex(
-                "\\b(from|join|into|update)\\s+(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log)\\b",
+                "\\b(from|join|into|update)\\s+" +
+                    "(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log" +
+                    "|campus_imports|campus_import_rows|campus_invites)\\b",
             )
     }
 }
