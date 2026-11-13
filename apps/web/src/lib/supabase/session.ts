@@ -101,7 +101,8 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   if (!user && isProtected(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    redirectUrl.search = `?next=${encodeURIComponent(pathname)}`;
+    // The query string rides along: /campus/join?token=... must survive sign-in.
+    redirectUrl.search = `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`;
     return NextResponse.redirect(redirectUrl);
   }
 

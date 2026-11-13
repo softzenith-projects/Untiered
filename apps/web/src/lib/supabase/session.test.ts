@@ -76,6 +76,17 @@ describe("updateSession", () => {
     expect(location.searchParams.get("next")).toBe(path);
   });
 
+  it("keeps the query string, so an invite link survives sign-in", async () => {
+    signedOut();
+
+    const response = await updateSession(requestFor("/campus/join?token=abc-_123"));
+
+    expect(response.status).toBe(307);
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.pathname).toBe("/login");
+    expect(location.searchParams.get("next")).toBe("/campus/join?token=abc-_123");
+  });
+
   it.each(["/courses", "/courses/dsa/11-backtracking", "/arena", "/interview/new", "/report/3f2a"])(
     "lets a signed-in candidate through to %s",
     async (path) => {

@@ -118,3 +118,99 @@ export interface MeCampusView {
   } | null;
   staff: { orgId: string; orgName: string; logoUrl: string | null; role: StaffRole }[];
 }
+
+// ---- Module 3: student onboarding (docs/campus-api-contract.md) ----
+
+export type InviteStatus = "invited" | "joined" | "revoked" | "expired";
+export type InviteSendStatus = "pending" | "sending" | "sent" | "failed";
+
+export type ImportProblem =
+  | "missing_name"
+  | "bad_email"
+  | "duplicate_email_in_file"
+  | "duplicate_roll_in_file"
+  | "unknown_department"
+  | "unknown_batch"
+  | "batch_department_mismatch"
+  | "graduation_year_mismatch"
+  | "already_member"
+  | "already_invited"
+  | "roll_number_taken";
+
+export interface ImportRowView {
+  rowNumber: number;
+  fullName: string | null;
+  email: string | null;
+  rollNumber: string | null;
+  departmentCode: string | null;
+  batchName: string | null;
+  graduationYear: number | null;
+  problems: ImportProblem[];
+}
+
+export interface ImportPreview {
+  id: string;
+  status: "previewed" | "committed" | "discarded";
+  createdAt: string;
+  expiresAt: string;
+  rows: ImportRowView[];
+  summary: { total: number; valid: number; withProblems: number };
+}
+
+export interface ImportCommitResult {
+  invited: number;
+  skipped: number;
+}
+
+export interface InviteView {
+  id: string;
+  email: string;
+  fullName: string;
+  role: CampusRole;
+  batchId: string | null;
+  batchName: string | null;
+  rollNumber: string | null;
+  status: InviteStatus;
+  sendStatus: InviteSendStatus;
+  sendCount: number;
+  lastSentAt: string | null;
+  createdAt: string;
+  expiresAt: string;
+  joinedAt: string | null;
+}
+
+export interface InvitePreview {
+  orgName: string;
+  logoUrl: string | null;
+  role: CampusRole;
+  batchName: string | null;
+  invitedEmailMasked: string;
+  signedInEmail: string;
+  emailMatches: boolean;
+  expiresAt: string;
+  consentVersion: string;
+  shared: string[];
+  notShared: string[];
+  aiNotice: string;
+}
+
+export interface AcceptInviteRequest {
+  consentVersion: string;
+  agreeDataSharing: boolean;
+  agreeAiEvaluation: boolean;
+  confirmDifferentEmail?: boolean;
+}
+
+export interface CreateInviteRequest {
+  email: string;
+  fullName: string;
+  role: CampusRole;
+  batchId?: string;
+  rollNumber?: string;
+}
+
+export interface AdminCreateInviteRequest {
+  email: string;
+  fullName: string;
+  role: "college_admin" | "tpo";
+}
