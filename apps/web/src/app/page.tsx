@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { BrandMark, BrandWordmark } from "@/components/brand-logo";
 import { HalfCreditAnnouncement } from "@/components/half-credit-announcement";
 import { CourseArtwork } from "@/components/courses/course-visuals";
+import { CollegesBand } from "@/components/landing/colleges-band";
 import { HeaderActions } from "@/components/landing/header-actions";
 import { LoopPicker } from "@/components/landing/loop-picker";
 import { ReportPreview } from "@/components/landing/report-preview";
@@ -68,6 +69,7 @@ export default function LandingPage() {
         {coursesEnabled && visibleCourses.length > 0 ? (
           <Courses visibleCourses={visibleCourses} arenaEnabled={arenaEnabled} />
         ) : null}
+        <CollegesBand />
         <Testimonials testimonials={LANDING_TESTIMONIALS} />
         <CtaBand mockInterviewsEnabled={mockInterviewsEnabled} coursesEnabled={coursesEnabled} arenaEnabled={arenaEnabled} />
       </main>
@@ -92,6 +94,7 @@ function SiteHeader({ mockInterviewsEnabled, coursesEnabled }: { mockInterviewsE
             <Link href={"/courses" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">Courses</Link>
           ) : null}
           <Link href={"/pricing" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">Pricing</Link>
+          <Link href={"/colleges" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">For colleges</Link>
         </nav>
         <HeaderActions
           cta={{
