@@ -41,6 +41,8 @@ import type {
 } from "@untiered/shared";
 
 import type {
+  AcceptInviteRequest,
+  AdminCreateInviteRequest,
   AdminOrgSummary,
   AdminUpdateOrgRequest,
   AuditEntryView,
@@ -48,9 +50,14 @@ import type {
   CampusPage,
   CampusRole,
   CollegeUpdateOrgRequest,
+  CreateInviteRequest,
   CreateOrgRequest,
   DepartmentView,
   FacultyScopesView,
+  ImportCommitResult,
+  ImportPreview,
+  InvitePreview,
+  InviteView,
   MeCampusView,
   MemberView,
   OrgView,
@@ -805,4 +812,67 @@ export function saveFacultyScopes(
 
 export function fetchAuditLog(orgId: string, options: ApiGetOptions, cursor?: string): Promise<CampusPage<AuditEntryView>> {
   return apiGet<CampusPage<AuditEntryView>>(`${campusOrg(orgId)}/audit-log${query({ cursor })}`, options);
+}
+
+// ---- Untiered Campus, module 3: student onboarding ----
+
+export interface InviteFilter {
+  status?: string;
+  role?: CampusRole;
+  batchId?: string;
+  q?: string;
+  cursor?: string;
+}
+
+export function fetchInvites(orgId: string, options: ApiGetOptions, filter: InviteFilter = {}): Promise<CampusPage<InviteView>> {
+  return apiGet<CampusPage<InviteView>>(`${campusOrg(orgId)}/invites${query({ ...filter })}`, options);
+}
+
+export function createInvite(accessToken: string, orgId: string, body: CreateInviteRequest): Promise<InviteView> {
+  return apiSend<InviteView>(`${campusOrg(orgId)}/invites`, "POST", accessToken, body);
+}
+
+export function resendInvite(accessToken: string, orgId: string, id: string): Promise<InviteView> {
+  return apiSend<InviteView>(`${campusOrg(orgId)}/invites/${encodeURIComponent(id)}/resend`, "POST", accessToken);
+}
+
+export function revokeInvite(accessToken: string, orgId: string, id: string): Promise<InviteView> {
+  return apiSend<InviteView>(`${campusOrg(orgId)}/invites/${encodeURIComponent(id)}/revoke`, "POST", accessToken);
+}
+
+/** Uploads a student CSV; nothing is invited until `commitImport`. */
+export function uploadImport(accessToken: string, orgId: string, file: File): Promise<ImportPreview> {
+  const form = new FormData();
+  form.set("file", file);
+  return apiSend<ImportPreview>(`${campusOrg(orgId)}/imports`, "POST", accessToken, form);
+}
+
+export function commitImport(accessToken: string, orgId: string, id: string): Promise<ImportCommitResult> {
+  return apiSend<ImportCommitResult>(`${campusOrg(orgId)}/imports/${encodeURIComponent(id)}/commit`, "POST", accessToken);
+}
+
+export async function discardImport(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/imports/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export function fetchAdminInvites(orgId: string, options: ApiGetOptions, cursor?: string): Promise<CampusPage<InviteView>> {
+  return apiGet<CampusPage<InviteView>>(`${adminOrg(orgId)}/invites${query({ cursor })}`, options);
+}
+
+export function createAdminInvite(accessToken: string, orgId: string, body: AdminCreateInviteRequest): Promise<InviteView> {
+  return apiSend<InviteView>(`${adminOrg(orgId)}/invites`, "POST", accessToken, body);
+}
+
+const inviteToken = (token: string) => `/api/v1/campus/invites/${encodeURIComponent(token)}`;
+
+export function fetchInvitePreview(token: string, options: ApiGetOptions): Promise<InvitePreview> {
+  return apiGet<InvitePreview>(inviteToken(token), options);
+}
+
+export function acceptInvite(accessToken: string, token: string, body: AcceptInviteRequest): Promise<MeCampusView> {
+  return apiSend<MeCampusView>(`${inviteToken(token)}/accept`, "POST", accessToken, body);
+}
+
+export async function leaveCollege(accessToken: string): Promise<void> {
+  await apiSend<void>("/api/v1/me/campus/leave", "POST", accessToken);
 }
