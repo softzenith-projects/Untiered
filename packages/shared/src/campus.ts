@@ -480,3 +480,74 @@ export interface IntegritySummary {
   /** Plain sentences built from the counts; never a verdict. */
   notes: string[];
 }
+
+// ---- Module 10: programmes (docs/campus-api-contract.md) ----
+
+/** An `AssignmentInput` without dates and targets. */
+export type ProgrammeAssignmentSpec = Omit<AssignmentInput, "opensAt" | "dueAt" | "targets">;
+
+export interface ProgrammeModule {
+  /** 1..weeks */
+  week: number;
+  assignment: ProgrammeAssignmentSpec;
+}
+
+export interface ProgrammeTemplate {
+  id: string;
+  title: string;
+  description: string;
+  weeks: number;
+  modules: ProgrammeModule[];
+  createdAt: string;
+}
+
+export interface ProgrammeTemplateInput {
+  title: string;
+  description: string;
+  weeks: number;
+  modules: ProgrammeModule[];
+}
+
+export interface StartProgrammeRequest {
+  templateId: string;
+  title?: string;
+  /** YYYY-MM-DD */
+  startsOn: string;
+  batchIds: string[];
+}
+
+export interface ProgrammeView {
+  id: string;
+  templateId: string | null;
+  title: string;
+  /** YYYY-MM-DD */
+  startsOn: string;
+  weeks: number;
+  targetBatches: { id: string; name: string }[];
+  assignmentIds: string[];
+  status: "active" | "archived";
+}
+
+export interface MyProgrammeView extends ProgrammeView {
+  completedModules: number;
+  totalModules: number;
+  certificateId: string | null;
+}
+
+export interface ProgrammeProgress {
+  memberId: string;
+  name: string | null;
+  completedModules: number;
+  totalModules: number;
+  certificateIssued: boolean;
+}
+
+/** Carries no score, by design. */
+export interface CertificateView {
+  programmeTitle: string;
+  studentName: string;
+  orgName: string;
+  orgLogoUrl: string | null;
+  completedAt: string;
+  certificateId: string;
+}

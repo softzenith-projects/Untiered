@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { fetchMyAssignments } from "@/lib/api";
+import { ProgressBar } from "@/components/ui/progress";
+import { fetchMyAssignments, fetchMyProgrammes } from "@/lib/api";
 import { useAccessToken } from "@/lib/use-access-token";
-import type { AssignedItem } from "@untiered/shared";
+import type { AssignedItem, MyProgrammeView } from "@untiered/shared";
 
 import { BLOCKED_REASON_TEXT, formatDue, relativeTime, ROUND_LABEL, STATUS_LABEL, STATUS_TONE } from "./assignment-model";
 
@@ -20,6 +21,7 @@ import { BLOCKED_REASON_TEXT, formatDue, relativeTime, ROUND_LABEL, STATUS_LABEL
 export function AssignedToYou() {
   const accessToken = useAccessToken();
   const [items, setItems] = useState<AssignedItem[]>([]);
+  const [programmes, setProgrammes] = useState<MyProgrammeView[]>([]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -29,10 +31,16 @@ export function AssignedToYou() {
         if (!controller.signal.aborted) setItems(list);
       })
       .catch(() => {});
+    // Independent of the assignments: a failure here leaves the rest of the section as it was.
+    fetchMyProgrammes({ accessToken, signal: controller.signal })
+      .then((list) => {
+        if (!controller.signal.aborted) setProgrammes(list);
+      })
+      .catch(() => {});
     return () => controller.abort();
   }, [accessToken]);
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && programmes.length === 0) return null;
 
   return (
     <section aria-labelledby="assigned-to-you" className="flex flex-col gap-4">
@@ -44,14 +52,55 @@ export function AssignedToYou() {
           See your readiness
         </Link>
       </div>
+      {programmes.length > 0 ? <ProgrammesBlock programmes={programmes} /> : null}
+      {items.length > 0 ? (
+        <ul className="grid gap-4 md:grid-cols-2">
+          {items.map((item) => (
+            <li key={item.id}>
+              <AssignedCard item={item} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+/** The student's programmes: how far through each they are, and the certificate once earned. */
+export function ProgrammesBlock({ programmes }: { programmes: MyProgrammeView[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-body font-semibold text-ink">Programmes</h3>
       <ul className="grid gap-4 md:grid-cols-2">
-        {items.map((item) => (
-          <li key={item.id}>
-            <AssignedCard item={item} />
+        {programmes.map((programme) => (
+          <li key={programme.id}>
+            <article className="card flex h-full flex-col gap-3 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <h4 className="text-body font-semibold text-ink">{programme.title}</h4>
+                {programme.certificateId ? <Badge tone="positive">Completed</Badge> : null}
+              </div>
+              <p className="text-caption text-ink-muted">
+                {programme.completedModules} of {programme.totalModules} modules completed · {programme.weeks}{" "}
+                {programme.weeks === 1 ? "week" : "weeks"}, one module unlocking each week
+              </p>
+              <ProgressBar
+                value={programme.completedModules}
+                max={programme.totalModules}
+                label={`${programme.title}: ${programme.completedModules} of ${programme.totalModules} modules completed`}
+              />
+              {programme.certificateId ? (
+                <Link
+                  href={`/campus/me/certificates/${encodeURIComponent(programme.id)}` as Route}
+                  className="action-secondary self-start"
+                >
+                  View certificate<span className="sr-only"> for {programme.title}</span>
+                </Link>
+              ) : null}
+            </article>
           </li>
         ))}
       </ul>
-    </section>
+    </div>
   );
 }
 

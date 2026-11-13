@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { AppShell } from "@/components/app-shell";
 import { AdminColleges } from "@/components/campus/admin-colleges";
@@ -14,6 +15,9 @@ export default function AdminCampusPage() {
     <AppShell>
       <div className="flex flex-col gap-8">
         <SurfaceHeader eyebrow="Platform admin" title="Untiered Campus colleges" description="Set up a college, its interview allowance and its status." />
+        <Link href="/admin/campus/programmes" className="w-fit text-caption font-semibold text-accent underline">
+          Programme templates
+        </Link>
         <AdminColleges />
       </div>
     </AppShell>

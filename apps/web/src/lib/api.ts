@@ -59,6 +59,13 @@ import type {
   ReadinessCompletionFilter,
   ReadinessSort,
   StaffComment,
+  CertificateView,
+  MyProgrammeView,
+  ProgrammeProgress,
+  ProgrammeTemplate,
+  ProgrammeTemplateInput,
+  ProgrammeView,
+  StartProgrammeRequest,
   ReadinessWeights,
   StudentReadiness,
   StudentReadinessRow,
@@ -1102,4 +1109,58 @@ export function updateStaffComment(accessToken: string, orgId: string, id: strin
 
 export async function deleteStaffComment(accessToken: string, orgId: string, id: string): Promise<void> {
   await apiSend<void>(`${campusOrg(orgId)}/comments/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+// ---- Untiered Campus, module 10: programmes ----
+
+const ADMIN_TEMPLATES = "/api/v1/admin/campus/programme-templates";
+
+export function fetchAdminProgrammeTemplates(options: ApiGetOptions): Promise<ProgrammeTemplate[]> {
+  return apiGet<ProgrammeTemplate[]>(ADMIN_TEMPLATES, options);
+}
+
+export function createProgrammeTemplate(accessToken: string, body: ProgrammeTemplateInput): Promise<ProgrammeTemplate> {
+  return apiSend<ProgrammeTemplate>(ADMIN_TEMPLATES, "POST", accessToken, body);
+}
+
+export function updateProgrammeTemplate(accessToken: string, id: string, body: Partial<ProgrammeTemplateInput>): Promise<ProgrammeTemplate> {
+  return apiSend<ProgrammeTemplate>(`${ADMIN_TEMPLATES}/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export async function deleteProgrammeTemplate(accessToken: string, id: string): Promise<void> {
+  await apiSend<void>(`${ADMIN_TEMPLATES}/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export function fetchProgrammeTemplates(orgId: string, options: ApiGetOptions): Promise<ProgrammeTemplate[]> {
+  return apiGet<ProgrammeTemplate[]>(`${campusOrg(orgId)}/programme-templates`, options);
+}
+
+export function fetchProgrammes(orgId: string, options: ApiGetOptions): Promise<ProgrammeView[]> {
+  return apiGet<ProgrammeView[]>(`${campusOrg(orgId)}/programmes`, options);
+}
+
+export function startProgramme(accessToken: string, orgId: string, body: StartProgrammeRequest): Promise<ProgrammeView> {
+  return apiSend<ProgrammeView>(`${campusOrg(orgId)}/programmes`, "POST", accessToken, body);
+}
+
+export function fetchProgramme(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeView> {
+  return apiGet<ProgrammeView>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}`, options);
+}
+
+export function fetchProgrammeProgress(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeProgress[]> {
+  return apiGet<ProgrammeProgress[]>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}/progress`, options);
+}
+
+export function archiveProgramme(accessToken: string, orgId: string, id: string): Promise<ProgrammeView> {
+  return apiSend<ProgrammeView>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}/archive`, "POST", accessToken);
+}
+
+/** The signed-in student's programmes. Not behind the campus switch: answers `[]` when off. */
+export function fetchMyProgrammes(options: ApiGetOptions): Promise<MyProgrammeView[]> {
+  return apiGet<MyProgrammeView[]>("/api/v1/me/programmes", options);
+}
+
+/** `404` until every module of the programme is completed. */
+export function fetchMyCertificate(programmeId: string, options: ApiGetOptions): Promise<CertificateView> {
+  return apiGet<CertificateView>(`/api/v1/me/programmes/${encodeURIComponent(programmeId)}/certificate`, options);
 }
