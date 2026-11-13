@@ -451,3 +451,35 @@ export interface IntegritySummary {
   /** Plain sentences built from the counts; never a verdict. */
   notes: string[];
 }
+
+/** Module 11 (platform admin): one college's usage and estimated AI cost over a date range. */
+export interface OrgUsageRow {
+  orgId: string;
+  orgName: string;
+  interviewAllowance: number;
+  /** Org-funded attempts that did not fail. */
+  interviewsUsed: number;
+  interviewsThisMonth: number;
+  /** Estimated from recorded model usage, in USD. */
+  aiCostUsd: number;
+  /** Null when no interview started in the range. */
+  aiCostPerInterviewUsd: number | null;
+}
+
+/** Module 12: the opt-in campus leaderboard. */
+export type LeaderboardScope = "batch" | "college";
+
+export interface LeaderboardRow {
+  rank: number;
+  /** "Anonymous student" unless that student opted in. */
+  displayName: string;
+  overall: number;
+  isMe: boolean;
+}
+
+export interface LeaderboardView {
+  scope: LeaderboardScope;
+  optedIn: boolean;
+  myRank: number | null;
+  rows: LeaderboardRow[];
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { AppShell } from "@/components/app-shell";
+import { MyLeaderboard } from "@/components/campus/my-leaderboard";
 import { MyReadiness } from "@/components/campus/my-readiness";
 import { requireCampus } from "@/lib/require-feature";
 
@@ -14,6 +15,7 @@ export default function CampusMePage() {
       <div className="flex flex-col gap-6">
         <h1 className="text-display text-ink">Your readiness</h1>
         <MyReadiness />
+        <MyLeaderboard />
       </div>
     </AppShell>
   );

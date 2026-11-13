@@ -75,8 +75,11 @@ import type {
   ImportPreview,
   InvitePreview,
   InviteView,
+  LeaderboardScope,
+  LeaderboardView,
   MeCampusView,
   MemberView,
+  OrgUsageRow,
   OrgView,
 } from "@untiered/shared";
 
@@ -995,6 +998,23 @@ export interface ReadinessFilter extends DashboardFilter {
   sort?: ReadinessSort;
   order?: "asc" | "desc";
   cursor?: string;
+}
+
+/** Platform admin: usage and estimated AI cost per college. Dates are YYYY-MM-DD, both inclusive. */
+export function fetchCampusUsage(params: { from?: string; to?: string }, options: ApiGetOptions): Promise<OrgUsageRow[]> {
+  const query = new URLSearchParams();
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  return apiGet<OrgUsageRow[]>(`/api/v1/admin/campus/usage${suffix}`, options);
+}
+
+export function fetchMyLeaderboard(scope: LeaderboardScope, options: ApiGetOptions): Promise<LeaderboardView> {
+  return apiGet<LeaderboardView>(`/api/v1/me/campus/leaderboard?scope=${scope}`, options);
+}
+
+export function setLeaderboardOptIn(accessToken: string, optIn: boolean): Promise<{ optIn: boolean }> {
+  return apiSend<{ optIn: boolean }>("/api/v1/me/campus/leaderboard-preference", "PUT", accessToken, { optIn });
 }
 
 /** The signed-in student's own readiness. `404` when they are not a joined student. */

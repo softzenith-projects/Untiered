@@ -64,6 +64,9 @@ class CampusSqlGuardTest {
             // user id, was started from an assignment. Reads the attempt by session id only; no
             // college's data is returned.
             "own-session" to mapOf("IntegrityRepository.kt" to 2),
+            // Usage and AI cost for every college, for the platform operator (module 11); the
+            // method requires a PlatformAdmin proof, and each college's figures join on its own org_id.
+            "platform-admin-usage" to mapOf("UsageRepository.kt" to 1),
         )
 
     /**
