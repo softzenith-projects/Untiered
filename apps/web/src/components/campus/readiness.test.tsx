@@ -229,7 +229,9 @@ describe("downloadStudentsCsv", () => {
     expect(url).toContain("/campus/orgs/o1/exports/students.csv?batchId=b1");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer tok");
     vi.unstubAllGlobals();
-  });
+    // importActual cold-loads the real API module and its Supabase client, which is slow under
+    // full-suite load; the time is the import, not the behaviour under test.
+  }, 20_000);
 });
 
 describe("weights editor", () => {

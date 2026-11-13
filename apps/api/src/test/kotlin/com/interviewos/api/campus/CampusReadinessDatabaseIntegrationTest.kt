@@ -73,7 +73,8 @@ class CampusReadinessDatabaseIntegrationTest {
     private val logos = OrgLogos(StorageProperties())
     private val college = CampusOrgService(access, orgs, structure, members, audit, logos)
     private val platform = CampusAdminService(access, orgs, audit, logos, NoStorage, DataSourceTransactionManager(dataSource))
-    private val assignments = CampusAssignmentService(access, assignmentRepository, audit, features)
+    private val notifications = CampusNotifications(CampusNotificationRepository(jdbc), features)
+    private val assignments = CampusAssignmentService(access, assignmentRepository, audit, features, notifications)
     private val reports: ReportService = mock(ReportService::class.java)
     private val readiness = CampusReadinessService(access, ReadinessRepository(jdbc), assignmentRepository, audit, reports, mapper)
 
