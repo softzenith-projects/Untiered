@@ -389,6 +389,33 @@ class CampusNotificationDatabaseIntegrationTest {
 
     // -- helpers ---------------------------------------------------------------
 
+    @Test
+    fun `an assignment that opens later is announced when it opens, once, and not at publish`() {
+        val opensAt = Instant.now().plus(3, ChronoUnit.DAYS)
+        val id =
+            assignments
+                .create(
+                    adminA,
+                    orgA,
+                    interviewRequest(batchIds = listOf(batchA.id), dueInHours = 10 * 24).copy(opensAt = opensAt.toString()),
+                ).id
+        assignments.publish(adminA, orgA, id)
+
+        // A programme publishes every week on day one; none of them is announced yet.
+        assertEquals(0, rows(studentA, "campus_assignment"))
+        assertEquals(0, notifications.queueOpenedAssignments())
+
+        // The 15-minute job, run just after it opens, sends it once.
+        val afterOpening =
+            CampusNotifications(notificationRepository, features, Clock.fixed(opensAt.plus(1, ChronoUnit.HOURS), ZoneOffset.UTC))
+        assertTrue(afterOpening.queueOpenedAssignments() >= 2)
+        assertEquals(1, rows(studentA, "campus_assignment"))
+        assertEquals(1, rows(studentA2, "campus_assignment"))
+        afterOpening.queueOpenedAssignments()
+        assertEquals(1, rows(studentA, "campus_assignment"))
+        assertEquals(0, rows(studentB, "campus_assignment"))
+    }
+
     private fun rows(
         who: SupabaseIdentity,
         category: String,

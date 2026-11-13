@@ -35,7 +35,22 @@ class CampusNotifications internal constructor(
         assignmentId: UUID,
     ) {
         if (!features.campus) return
-        repository.enqueueNewAssignment(orgId, assignmentId)
+        repository.enqueueNewAssignment(orgId, assignmentId, clock.instant())
+    }
+
+    /** New-assignment emails for assignments that have opened since they were published. */
+    fun queueOpenedAssignments(): Int {
+        if (!features.campus) return 0
+        val now = clock.instant()
+        var queued = 0
+        for (candidate in repository.openedSince(now)) {
+            try {
+                queued += repository.enqueueNewAssignment(candidate.orgId, candidate.assignmentId, now)
+            } catch (cause: RuntimeException) {
+                log.warn("Could not queue new-assignment emails for assignment {} ({})", candidate.assignmentId, cause.javaClass.simpleName)
+            }
+        }
+        return queued
     }
 
     fun studentJoined(
