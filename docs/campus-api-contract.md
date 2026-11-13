@@ -380,7 +380,7 @@ interface RecipientProgress {
   scenarioScore: number | null;        // scenario kind: correct / total steps answered, 0–1
 }
 
-interface ScenarioOption { id: string; courseTitle: string; title: string; tier: string; estimatedMinutes: number }
+interface CampusScenarioOption { id: string; courseTitle: string; title: string; tier: string; estimatedMinutes: number }
 
 interface AssignedItem {
   id: string;
@@ -392,6 +392,9 @@ interface AssignedItem {
   durationMinutes: number | null;
   companyName: string | null;
   roleTitle: string | null;
+  candidateStage: "student" | "recent_graduate" | null;
+  language: "english" | "hindi_english" | null;
+  focusTopic: string | null;
   scenarios: { id: string; title: string; courseSlug: string; completed: boolean }[];
   opensAt: string;
   dueAt: string;
@@ -425,7 +428,7 @@ assignment.
 
 | Method · path | Permission | Body → response |
 |---|---|---|
-| `GET /campus/orgs/{org}/arena-scenarios` | any staff | → `ScenarioOption[]` (live scenarios only) |
+| `GET /campus/orgs/{org}/arena-scenarios` | any staff | → `CampusScenarioOption[]` (live scenarios only) |
 | `GET /campus/orgs/{org}/assignments?status=` | any staff (faculty: only assignments that target their scope) | → `AssignmentView[]` |
 | `POST /campus/orgs/{org}/assignments` | college_admin, tpo, faculty (targets must sit inside their scope) | `AssignmentInput` → `201 AssignmentView` (draft). `400 assignment_invalid` carries a message naming the field. |
 | `GET /campus/orgs/{org}/assignments/{id}` | any staff (faculty: scoped) | → `AssignmentView` |
@@ -439,7 +442,7 @@ assignment.
 | Method · path | Body → response |
 |---|---|
 | `GET /me/assignments` | → `AssignedItem[]` for published assignments, ordered by `dueAt`. A caller with no joined student membership gets `[]`. This route is **not** behind the `campus` switch's 404, so the dashboard can call it unconditionally; with the switch off it answers `[]`. |
-| `POST /sessions` (existing) | gains the optional field `assignmentId`. When it is present, the server takes `roundType`, `durationMinutes`, `companyName`, `roleTitle`, `candidateStage`, `language` and `focusTopic` from the assignment and ignores the client's values. Audio consent is still required. On success the response is unchanged, and the student's free rounds and credits are not touched. New errors: `404 assignment_not_found`; `409 assignment_not_open`; `409 assignment_past_due`; `409 assignment_attempt_limit`; `409 assignment_student_cap`; `402 college_allowance_exhausted`; and the existing `409 session_in_progress`. |
+| `POST /sessions` (existing) | gains the optional field `assignmentId`. When it is present, the server takes `roundType`, `durationMinutes`, `companyName`, `roleTitle`, `candidateStage`, `language` and `focusTopic` from the assignment and ignores the client's values for those fields, including an empty `companyName` or `roleTitle`. Audio consent is still required. On success the response is unchanged, and the student's free rounds and credits are not touched. New errors: `404 assignment_not_found`; `409 assignment_not_open`; `409 assignment_past_due`; `409 assignment_attempt_limit`; `409 assignment_student_cap`; `402 college_allowance_exhausted`; and the existing `409 session_in_progress`. |
 
 A scenario assignment needs no new student route. The student plays the scenarios through
 the existing Arena (`/arena`), and completion is derived as described above.
