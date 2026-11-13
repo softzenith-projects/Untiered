@@ -20,6 +20,9 @@ export default function AdminCampusPage() {
             Usage and AI cost per college
           </Link>
         </p>
+        <Link href="/admin/campus/programmes" className="w-fit text-caption font-semibold text-accent underline">
+          Programme templates
+        </Link>
         <AdminColleges />
       </div>
     </AppShell>

@@ -70,7 +70,7 @@ class CampusJoinControllerTest {
     private val token = InviteTokens.generate()
     private val future: Instant = Instant.now().plus(10, ChronoUnit.DAYS)
 
-    private val agreed = """{"consentVersion":"campus-2026-11-13","agreeDataSharing":true,"agreeAiEvaluation":true}"""
+    private val agreed = """{"consentVersion":"campus-2026-11-14","agreeDataSharing":true,"agreeAiEvaluation":true}"""
 
     private fun invite(
         role: CampusRole = CampusRole.STUDENT,
@@ -126,7 +126,7 @@ class CampusJoinControllerTest {
             .andExpect(jsonPath("$.invitedEmailMasked").value("r***@college.edu"))
             .andExpect(jsonPath("$.signedInEmail").value("rao@college.edu"))
             .andExpect(jsonPath("$.emailMatches").value(true))
-            .andExpect(jsonPath("$.consentVersion").value("campus-2026-11-13"))
+            .andExpect(jsonPath("$.consentVersion").value("campus-2026-11-14"))
             .andExpect(jsonPath("$.shared.length()").value(CampusJoinService.SHARED.size))
             .andExpect(jsonPath("$.notShared[1]").value("Your resume file."))
             .andExpect(jsonPath("$.aiNotice").value(CampusJoinService.AI_NOTICE))
@@ -161,7 +161,7 @@ class CampusJoinControllerTest {
     fun `a student must agree to both statements, of the current version`() {
         stub(invite(), lock = true)
 
-        accept("""{"consentVersion":"campus-2026-11-13","agreeDataSharing":true,"agreeAiEvaluation":false}""")
+        accept("""{"consentVersion":"campus-2026-11-14","agreeDataSharing":true,"agreeAiEvaluation":false}""")
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error").value("consent_required"))
         accept("""{"agreeDataSharing":true,"agreeAiEvaluation":true}""")
@@ -185,7 +185,7 @@ class CampusJoinControllerTest {
         verify(invites, never()).insertMembership(anyArg(), anyArg(), anyArg(), anyArg())
 
         accept(agreed.dropLast(1) + ""","confirmDifferentEmail":true}""").andExpect(status().isOk)
-        verify(invites).insertMembership(invite(email = "21cs001@college.edu"), userId, "21CS001", "campus-2026-11-13")
+        verify(invites).insertMembership(invite(email = "21cs001@college.edu"), userId, "21CS001", "campus-2026-11-14")
     }
 
     @Test
@@ -219,7 +219,7 @@ class CampusJoinControllerTest {
             .andExpect(jsonPath("$.staff.length()").value(0))
 
         verify(users).provision(identity)
-        verify(invites).insertMembership(invite(), userId, "21CS001", "campus-2026-11-13")
+        verify(invites).insertMembership(invite(), userId, "21CS001", "campus-2026-11-14")
         verify(invites).markJoined(invite(), memberId)
         verify(audit).record(
             scope,
@@ -239,7 +239,7 @@ class CampusJoinControllerTest {
         given(access.resolveOwnStudentMembership(identity)).willReturn(studentScope())
 
         accept().andExpect(status().isOk)
-        verify(invites).insertMembership(invite(), userId, null, "campus-2026-11-13")
+        verify(invites).insertMembership(invite(), userId, null, "campus-2026-11-14")
     }
 
     @Test

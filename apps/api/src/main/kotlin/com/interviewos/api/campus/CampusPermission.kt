@@ -80,6 +80,18 @@ enum class CampusPermission(
     /** Export CSV / PDF (module 7). Faculty: scoped. */
     EXPORT(CampusRole.STAFF, platformAdmin = false),
 
+    /**
+     * Read and write private staff notes about a student (module 8). Faculty: scoped. Not a
+     * platform admin's: the notes are the college's own working record, not an operator's.
+     */
+    STAFF_NOTES(CampusRole.STAFF, platformAdmin = false),
+
+    /** Delete another staff member's note (module 8). The author may always delete their own. */
+    STAFF_NOTES_MODERATE(setOf(CampusRole.COLLEGE_ADMIN), platformAdmin = false),
+
+    /** Start a programme from a template and archive it (module 10). Reading one is ASSIGNMENT_PROGRESS_VIEW. */
+    PROGRAMMES_MANAGE(setOf(CampusRole.COLLEGE_ADMIN, CampusRole.TPO), platformAdmin = false),
+
     /** Read the college's audit log. */
     AUDIT_LOG_VIEW(setOf(CampusRole.COLLEGE_ADMIN), platformAdmin = true),
 

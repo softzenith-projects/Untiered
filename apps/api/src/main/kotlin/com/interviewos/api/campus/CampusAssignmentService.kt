@@ -302,6 +302,47 @@ class CampusAssignmentService internal constructor(
         }
     }
 
+    // -- programmes (module 10) -----------------------------------------------------------
+
+    /**
+     * One published assignment for week [week] of a programme, through exactly the validation
+     * and publish path of `POST …/assignments` followed by `…/publish`: the same fields, the
+     * same targets check, the same audit entries and the same new-assignment emails. Runs in
+     * the caller's transaction, so a programme is cloned whole or not at all.
+     */
+    internal fun createPublishedForProgramme(
+        scope: OrgScope,
+        request: AssignmentRequest,
+        programmeId: UUID,
+        week: Int,
+    ): UUID {
+        scope.require(CampusPermission.ASSIGNMENTS_MANAGE)
+        val fields = fieldsFrom(request, base = null)
+        val targets = targetsFrom(scope, request.targets, required = true) ?: error("targets are required on create")
+        if (!clock.instant().isBefore(fields.dueAt)) {
+            throw invalid("dueAt", "the deadline has already passed. Move it later before publishing.")
+        }
+        val id = assignments.createForProgramme(scope, fields, programmeId, week)
+        assignments.replaceTargets(scope, id, targets.first, targets.second)
+        audit.record(
+            scope,
+            "assignment.created",
+            TARGET_ASSIGNMENT,
+            id,
+            mapOf(
+                "kind" to fields.kind.dbValue,
+                "batches" to targets.first.size,
+                "students" to targets.second.size,
+                "programmeId" to programmeId.toString(),
+                "week" to week,
+            ),
+        )
+        if (!assignments.publish(scope, id)) throw ApiException.conflict("Only a draft can be published.", code = "assignment_not_draft")
+        audit.record(scope, "assignment.published", TARGET_ASSIGNMENT, id)
+        notifications.assignmentPublished(scope.orgId, id)
+        return id
+    }
+
     // -- writing ---------------------------------------------------------------------
 
     /**

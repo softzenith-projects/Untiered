@@ -30,6 +30,9 @@ class CampusPermissionTest {
             CampusPermission.READINESS_VIEW to (setOf(admin, tpo, faculty) to true),
             CampusPermission.READINESS_WEIGHTS_EDIT to (setOf(admin) to false),
             CampusPermission.EXPORT to (setOf(admin, tpo, faculty) to false),
+            CampusPermission.STAFF_NOTES to (setOf(admin, tpo, faculty) to false),
+            CampusPermission.STAFF_NOTES_MODERATE to (setOf(admin) to false),
+            CampusPermission.PROGRAMMES_MANAGE to (setOf(admin, tpo) to false),
             CampusPermission.AUDIT_LOG_VIEW to (setOf(admin) to true),
             CampusPermission.OWN_MEMBERSHIP to (setOf(student) to false),
         )

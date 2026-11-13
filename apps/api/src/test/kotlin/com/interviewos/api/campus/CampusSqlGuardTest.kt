@@ -34,6 +34,10 @@ class CampusSqlGuardTest {
             "campus_imports",
             "campus_import_rows",
             "campus_invites",
+            "campus_staff_comments",
+            "programme_templates",
+            "programmes",
+            "programme_targets",
         )
 
     /** reason to (file it may appear in to how many statements there) */
@@ -67,6 +71,9 @@ class CampusSqlGuardTest {
             // Usage and AI cost for every college, for the platform operator (module 11); the
             // method requires a PlatformAdmin proof, and each college's figures join on its own org_id.
             "platform-admin-usage" to mapOf("UsageRepository.kt" to 1),
+            // Programme templates (module 10) are a global catalogue that belongs to no college: every
+            // college reads the same list, and only a platform admin writes it (a PlatformAdmin proof).
+            "programme-templates" to mapOf("ProgrammeRepository.kt" to 5),
         )
 
     /**
@@ -182,7 +189,8 @@ class CampusSqlGuardTest {
             Regex(
                 "\\b(from|join|into|update)\\s+" +
                     "(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log" +
-                    "|campus_imports|campus_import_rows|campus_invites" +
+                    "|campus_imports|campus_import_rows|campus_invites|campus_staff_comments" +
+                    "|programme_templates|programmes|programme_targets" +
                     "|assignments|assignment_targets|assignment_attempts)\\b",
             )
     }

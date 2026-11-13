@@ -418,6 +418,35 @@ export interface StudentReadinessRow {
   lastActiveAt: string | null;
 }
 
+// ---- Module 8: faculty view (docs/campus-api-contract.md) ----
+
+export type AttentionReason = "low_score" | "inactive" | "overdue";
+
+export interface AttentionRow {
+  memberId: string;
+  name: string | null;
+  rollNumber: string | null;
+  batchName: string;
+  /** In the order low_score, inactive, overdue. */
+  reasons: AttentionReason[];
+  overall: number | null;
+  band: ReadinessBand;
+  overdue: number;
+  lastActiveAt: string | null;
+}
+
+/** A private staff note about a student. Never returned on a student route. */
+export interface StaffComment {
+  id: string;
+  memberId: string;
+  sessionId: string | null;
+  authorName: string | null;
+  isMine: boolean;
+  body: string;
+  createdAt: string;
+  editedAt: string | null;
+}
+
 // ---- Module 5: interview integrity (docs/campus-api-contract.md) ----
 
 export type IntegrityEventType = "tab_hidden" | "window_blur" | "paste";
@@ -482,4 +511,75 @@ export interface LeaderboardView {
   optedIn: boolean;
   myRank: number | null;
   rows: LeaderboardRow[];
+}
+
+// ---- Module 10: programmes (docs/campus-api-contract.md) ----
+
+/** An `AssignmentInput` without dates and targets. */
+export type ProgrammeAssignmentSpec = Omit<AssignmentInput, "opensAt" | "dueAt" | "targets">;
+
+export interface ProgrammeModule {
+  /** 1..weeks */
+  week: number;
+  assignment: ProgrammeAssignmentSpec;
+}
+
+export interface ProgrammeTemplate {
+  id: string;
+  title: string;
+  description: string;
+  weeks: number;
+  modules: ProgrammeModule[];
+  createdAt: string;
+}
+
+export interface ProgrammeTemplateInput {
+  title: string;
+  description: string;
+  weeks: number;
+  modules: ProgrammeModule[];
+}
+
+export interface StartProgrammeRequest {
+  templateId: string;
+  title?: string;
+  /** YYYY-MM-DD */
+  startsOn: string;
+  batchIds: string[];
+}
+
+export interface ProgrammeView {
+  id: string;
+  templateId: string | null;
+  title: string;
+  /** YYYY-MM-DD */
+  startsOn: string;
+  weeks: number;
+  targetBatches: { id: string; name: string }[];
+  assignmentIds: string[];
+  status: "active" | "archived";
+}
+
+export interface MyProgrammeView extends ProgrammeView {
+  completedModules: number;
+  totalModules: number;
+  certificateId: string | null;
+}
+
+export interface ProgrammeProgress {
+  memberId: string;
+  name: string | null;
+  completedModules: number;
+  totalModules: number;
+  certificateIssued: boolean;
+}
+
+/** Carries no score, by design. */
+export interface CertificateView {
+  programmeTitle: string;
+  studentName: string;
+  orgName: string;
+  orgLogoUrl: string | null;
+  completedAt: string;
+  certificateId: string;
 }

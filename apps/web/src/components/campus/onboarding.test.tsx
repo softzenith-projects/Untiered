@@ -250,7 +250,7 @@ describe("JoinCollege", () => {
     signedInEmail: "asha@college.edu",
     emailMatches: true,
     expiresAt: "2026-11-27T00:00:00Z",
-    consentVersion: "campus-2026-11-13",
+    consentVersion: "campus-2026-11-14",
     shared: ["Your practice scores and reports."],
     notShared: ["Your audio recordings."],
     aiNotice: "An AI interviewer evaluates your answers.",
@@ -281,7 +281,7 @@ describe("JoinCollege", () => {
     await userEvent.click(join);
     await waitFor(() =>
       expect(api.acceptInvite).toHaveBeenCalledWith("token", "tok123", {
-        consentVersion: "campus-2026-11-13",
+        consentVersion: "campus-2026-11-14",
         agreeDataSharing: true,
         agreeAiEvaluation: true,
       }),

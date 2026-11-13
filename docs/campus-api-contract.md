@@ -245,7 +245,7 @@ interface InvitePreview {
   signedInEmail: string;
   emailMatches: boolean;
   expiresAt: string;
-  consentVersion: string;       // "campus-2026-11-13"
+  consentVersion: string;       // "campus-2026-11-14"
   shared: string[];             // what the college will see, in plain sentences (server-owned copy)
   notShared: string[];          // what stays private
   aiNotice: string;
@@ -705,8 +705,21 @@ interface StaffComment {
 | `PATCH` / `DELETE /campus/orgs/{org}/comments/{id}` | the author; college_admin may delete any | `{ body }` → `StaffComment` / `204` |
 
 Comments are private to staff and never returned to the student. The join consent copy
-says that staff can keep private notes; adding that line bumps `CONSENT_VERSION`. Comments
-are deleted with the membership. All writes are audited.
+says that staff can keep private notes; adding that line bumps `CONSENT_VERSION` (now
+`campus-2026-11-14`). Comments are deleted with the membership. All writes are audited, with
+ids only — never the text.
+
+- `?reason=` takes one `AttentionReason`; anything else is `400 invalid_reason`. A row's
+  `reasons` are listed in the order `low_score`, `inactive`, `overdue`. "Inactive" uses module
+  3's activity signals, so a student with no activity at all is inactive. An `overall` of
+  `null` sorts after every score; ties break by name, then member id.
+- Comments are listed newest first. A body is trimmed and must then be 1–2000 characters,
+  otherwise `400 invalid_comment`. A `sessionId` that is not one of this member's assigned
+  sessions (a personal round, another student's) is `404`, as is a student outside the
+  college or a faculty member's scope. Editing someone else's comment, or deleting it without
+  being a college admin, is `403 campus_forbidden`.
+- Comments are the college's own working notes: a platform admin gets `403` on these routes
+  (the attention list, a readiness read, stays open to them and is audited).
 
 ---
 
@@ -768,6 +781,36 @@ college names and the college logo, never a score.
 | `POST /campus/orgs/{org}/programmes/{id}/archive` | college_admin, tpo | → `ProgrammeView`; also archives its assignments that have not opened yet |
 | `GET /me/programmes` | student | → `(ProgrammeView & { completedModules: number; totalModules: number; certificateId: string \| null })[]` |
 | `GET /me/programmes/{id}/certificate` | student | → `CertificateView`; `404` until every module is completed |
+
+- **Templates.** `weeks` is 1–12; `modules` holds at least one module, each with a `week`
+  inside 1..`weeks` and at most 3 modules a week. Each module's assignment goes through the
+  module 4 rules (with placeholder dates and no targets) and is stored in its normalised form,
+  defaults filled in. A bad template is `400 programme_template_invalid`, its message naming
+  the field or "Week n, module m: …". `PATCH` leaves an absent field unchanged. `DELETE`
+  answers `204`; programmes already started keep running with `templateId: null`. Templates
+  belong to no college, so their writes are not on any college's audit log.
+- **Starting.** `startsOn` is today or later in India time, and within the next year;
+  `batchIds` is 1–100 batches of this college (another college's batch is `404`). Bad input is
+  `400 programme_invalid` naming the field. Every module is re-checked against the module 4
+  rules at clone time; a module that no longer passes (a withdrawn scenario) is
+  `400 assignment_invalid` with a message starting "Week n:", and nothing is created. Each
+  published module queues module 9's new-assignment email then, one per module.
+- **Weekly unlock** applies to interviews through the existing admission gate (`not_open`).
+  Scenario modules are played in the Arena, so, as for any scenario assignment, steps answered
+  before the week opens still count.
+- **Progress.** `totalModules` counts every assignment of the programme, archived ones
+  included; `completedModules` uses module 4's derived completion. The certificate is earned
+  when they are equal. Archiving a programme archives its not-yet-open assignments, so a
+  student who has not finished by then cannot earn the certificate; one who has keeps it.
+- **`GET /me/programmes`** is, like `/me/assignments`, not behind the campus switch's 404:
+  with the switch off, or for a caller who is not a joined student, it answers `[]` (and the
+  certificate `404`). It lists active programmes for the student's batch, and archived ones
+  whose certificate they earned. `targetBatches` holds only the student's own batch.
+- **Certificate.** `completedAt` is the latest module completion (an interview at its first
+  completed attempt's end, a scenario set at its last answer), so it does not move once
+  earned. `certificateId` is `UT-XXXX-XXXX-XXXX-XXXX`, derived from the programme and the
+  membership (not stored, the same every time). `studentName` is the account's display name,
+  or the email's local part when there is none.
 
 ---
 

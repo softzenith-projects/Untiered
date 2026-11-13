@@ -130,7 +130,7 @@ class CampusJoinService(
 
     companion object {
         /** Bump when [SHARED], [NOT_SHARED] or [AI_NOTICE] change: a student agrees to a version. */
-        const val CONSENT_VERSION = "campus-2026-11-13"
+        const val CONSENT_VERSION = "campus-2026-11-14"
 
         /**
          * What the college sees, literally true for v1. Every item here is something a college
@@ -144,6 +144,7 @@ class CampusJoinService(
                 "Which of the college's assignments you have started and completed.",
                 "The scores and reports of the interviews your college assigns you.",
                 "Whether you have practised on Untiered in the last 14 days, but not what you practised.",
+                "Staff at your college may keep private notes about your progress, which you won't see.",
             )
 
         val NOT_SHARED: List<String> =

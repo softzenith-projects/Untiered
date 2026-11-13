@@ -10,6 +10,8 @@ import { Alert, Skeleton } from "@/components/ui/feedback";
 import { fetchStaffStudentIntegrity, fetchStaffStudentReport, fetchStudentReadiness } from "@/lib/api";
 
 import { campusHref, useCampusOrg } from "./campus-context";
+import { formatDate } from "./readiness-model";
+import { StaffNotesPanel } from "./staff-notes";
 import { StudentReadinessView } from "./student-readiness-view";
 import { useLoad } from "./use-load";
 
@@ -43,6 +45,14 @@ export function StaffStudentReadiness({ memberId }: { memberId: string }) {
           reportHref={(item) =>
             item.sessionId ? campusHref(`/campus/readiness/${memberId}/reports/${item.sessionId}`, orgId) : null
           }
+        />
+      ) : null}
+      {data ? (
+        <StaffNotesPanel
+          memberId={memberId}
+          sessions={data.evidence.flatMap((item) =>
+            item.sessionId ? [{ id: item.sessionId, label: `${item.assignmentTitle}, ${formatDate(item.completedAt)}` }] : [],
+          )}
         />
       ) : null}
     </div>

@@ -9,6 +9,8 @@ import { NewInterviewForm } from "@/components/new-interview-form";
 
 const api = vi.hoisted(() => ({
   fetchMyAssignments: vi.fn(),
+  // "Assigned to you" also reads the student's programmes (module 10); none here.
+  fetchMyProgrammes: vi.fn(() => Promise.resolve([])),
   startSession: vi.fn(),
   fetchEntitlement: vi.fn(),
   composeRound: vi.fn(),
