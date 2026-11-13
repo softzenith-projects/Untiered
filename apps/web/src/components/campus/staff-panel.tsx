@@ -19,6 +19,7 @@ import {
 import type { BatchView, CampusRole, DepartmentView, MemberView, StaffRole } from "@untiered/shared";
 
 import { ROLE_LABEL, useCampusOrg } from "./campus-context";
+import { CollegeStaffInvites } from "./staff-invites";
 import { errorText, useLoad } from "./use-load";
 
 const STAFF_ROLES: StaffRole[] = ["college_admin", "tpo", "faculty"];
@@ -160,6 +161,8 @@ export function StaffPanel() {
           </Table>
         </TableScroll>
       )}
+
+      <CollegeStaffInvites />
 
       {scopesFor ? (
         <ScopeEditor
