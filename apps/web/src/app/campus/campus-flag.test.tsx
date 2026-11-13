@@ -21,12 +21,23 @@ describe("campus pages while the flag is off", () => {
     ["/campus/students/import", () => import("./students/import/page")],
     ["/campus/join", () => import("./join/page")],
     ["/campus/settings", () => import("./settings/page")],
+    ["/campus/assignments", () => import("./assignments/page")],
+    ["/campus/assignments/new", () => import("./assignments/new/page")],
+    ["/campus/readiness", () => import("./readiness/page")],
+    ["/campus/me", () => import("./me/page")],
+    ["/campus/reports/batch", () => import("./reports/batch/page")],
     ["/admin/campus", () => import("../admin/campus/page")],
-  ])("%s is a 404", async (_route, load) => {
-    const page = (await load()).default as () => unknown;
-    expect(() => page()).toThrow("NEXT_NOT_FOUND");
-    expect(notFound).toHaveBeenCalled();
-  });
+  ])(
+    "%s is a 404",
+    async (_route, load) => {
+      const page = (await load()).default as () => unknown;
+      expect(() => page()).toThrow("NEXT_NOT_FOUND");
+      expect(notFound).toHaveBeenCalled();
+    },
+    // Each case cold-imports a whole page module graph, which is slow under full-suite load;
+    // the time is the import, not the behaviour under test.
+    20_000,
+  );
 
   it("the admin detail page is a 404 too", async () => {
     const page = (await import("../admin/campus/[orgId]/page")).default;
