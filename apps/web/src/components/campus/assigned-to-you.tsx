@@ -36,9 +36,14 @@ export function AssignedToYou() {
 
   return (
     <section aria-labelledby="assigned-to-you" className="flex flex-col gap-4">
-      <h2 id="assigned-to-you" className="text-heading text-ink">
-        Assigned to you
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="assigned-to-you" className="text-heading text-ink">
+          Assigned to you
+        </h2>
+        <Link href="/campus/me" className="text-caption font-semibold text-accent underline">
+          See your readiness
+        </Link>
+      </div>
       <ul className="grid gap-4 md:grid-cols-2">
         {items.map((item) => (
           <li key={item.id}>

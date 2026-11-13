@@ -1003,8 +1003,8 @@ export async function recordBatchReportViewed(accessToken: string, orgId: string
  * Blob and let the caller save it.
  */
 export async function downloadStudentsCsv(orgId: string, accessToken: string, filter: ReadinessFilter = {}): Promise<Blob> {
-  const { cursor: _cursor, ...rest } = filter;
-  const response = await fetch(`${env.apiBaseUrl}${campusOrg(orgId)}/exports/students.csv${query({ ...rest })}`, {
+  const { batchId, departmentId, band, completion } = filter;
+  const response = await fetch(`${env.apiBaseUrl}${campusOrg(orgId)}/exports/students.csv${query({ batchId, departmentId, band, completion })}`, {
     headers: { Accept: "text/csv", Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });

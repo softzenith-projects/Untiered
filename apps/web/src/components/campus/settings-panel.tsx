@@ -11,6 +11,7 @@ import type { AuditEntryView, OrgView } from "@untiered/shared";
 
 import { useCampusOrg } from "./campus-context";
 import { errorText, useLoad } from "./use-load";
+import { WeightsEditor } from "./weights-editor";
 
 export function SettingsPanel() {
   const { orgId, accessToken } = useCampusOrg();
@@ -22,6 +23,7 @@ export function SettingsPanel() {
       {error ? <Alert tone="error">{error.message}</Alert> : null}
       {loading && !data ? <Skeleton className="h-48 w-full" /> : null}
       {data ? <ContactForm org={data} /> : null}
+      <WeightsEditor />
       <AuditLog />
     </div>
   );
