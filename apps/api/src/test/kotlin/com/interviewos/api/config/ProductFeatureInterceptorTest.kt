@@ -23,6 +23,7 @@ class ProductFeatureInterceptorTest {
                     arena = false,
                     reports = false,
                     questions = false,
+                    campus = false,
                 ),
             )
 
@@ -37,7 +38,7 @@ class ProductFeatureInterceptorTest {
 
     @Test
     fun `enabled features and deletion routes remain available`() {
-        val enabled = ProductFeatureInterceptor(ProductFeatureProperties(questions = true))
+        val enabled = ProductFeatureInterceptor(ProductFeatureProperties(questions = true, campus = true))
         for ((method, path) in gatedPaths) {
             assertTrue(enabled.preHandle(request(method, path), MockHttpServletResponse(), handler))
         }
@@ -55,6 +56,18 @@ class ProductFeatureInterceptorTest {
         )
     }
 
+    @Test
+    fun `campus is off by default and closes only its own paths`() {
+        val defaults = ProductFeatureInterceptor(ProductFeatureProperties())
+        assertThrows<ApiException> {
+            defaults.preHandle(request("GET", "/api/v1/me/campus"), MockHttpServletResponse(), handler)
+        }
+        assertEquals(null, defaults.featureFor("GET", "/api/v1/me/campusfoo"))
+        assertEquals(null, defaults.featureFor("GET", "/api/v1/admin/sources"))
+        assertEquals(null, defaults.featureFor("GET", "/api/v1/me"))
+        assertTrue(defaults.preHandle(request("DELETE", "/api/v1/me"), MockHttpServletResponse(), handler))
+    }
+
     private fun request(
         method: String,
         path: String,
@@ -69,6 +82,12 @@ class ProductFeatureInterceptorTest {
             "GET" to "/api/v1/readiness",
             "GET" to "/api/v1/me/course-progress",
             "POST" to "/api/v1/me/arena/answers",
+            "GET" to "/api/v1/campus/orgs/86fcddf4-5e2b-4cab-b0c6-05e928d04529",
+            "DELETE" to "/api/v1/campus/orgs/86fcddf4-5e2b-4cab-b0c6-05e928d04529/members/86fcddf4-5e2b-4cab-b0c6-05e928d04529",
+            "GET" to "/api/v1/admin/campus/orgs",
+            "POST" to "/api/v1/admin/campus/orgs",
+            "GET" to "/api/v1/me/campus",
+            "POST" to "/api/v1/me/campus/leave",
         )
 
     private class TestHandler {

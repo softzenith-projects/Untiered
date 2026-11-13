@@ -18,6 +18,8 @@ data class ProductFeatureProperties(
     val arena: Boolean = true,
     val reports: Boolean = true,
     val questions: Boolean = false,
+    /** Untiered Campus (colleges). Off by default so its modules can merge dark. */
+    val campus: Boolean = false,
 ) {
     fun enabled(feature: ProductFeature): Boolean =
         when (feature) {
@@ -26,6 +28,7 @@ data class ProductFeatureProperties(
             ProductFeature.ARENA -> arena
             ProductFeature.REPORTS -> reports
             ProductFeature.QUESTIONS -> questions
+            ProductFeature.CAMPUS -> campus
         }
 }
 
@@ -35,6 +38,7 @@ enum class ProductFeature {
     ARENA,
     REPORTS,
     QUESTIONS,
+    CAMPUS,
 }
 
 /**
@@ -61,6 +65,11 @@ class ProductFeatureInterceptor(
         method: String,
         path: String,
     ): ProductFeature? {
+        if (path.startsWith("/api/v1/campus/") || path.startsWith("/api/v1/admin/campus/") || path == "/api/v1/admin/campus") {
+            return ProductFeature.CAMPUS
+        }
+        // `/me/campus` and everything under it, but not an unrelated `/me/campusfoo`.
+        if (path == "/api/v1/me/campus" || path.startsWith("/api/v1/me/campus/")) return ProductFeature.CAMPUS
         if (path.startsWith("/api/v1/me/course-progress")) return ProductFeature.COURSES
         if (path.startsWith("/api/v1/me/arena")) return ProductFeature.ARENA
         if (path == "/api/v1/readiness") return ProductFeature.REPORTS

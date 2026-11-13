@@ -74,6 +74,8 @@ interviewos:
     arena: ${NEXT_PUBLIC_FEATURE_ARENA:true}
     reports: ${NEXT_PUBLIC_FEATURE_REPORTS:true}
     questions: ${NEXT_PUBLIC_FEATURE_QUESTIONS:${NEXT_PUBLIC_QUESTION_BANK_BROWSABLE:false}}
+    # Untiered Campus (colleges, campus spec). Off until the owner turns it on.
+    campus: ${NEXT_PUBLIC_FEATURE_CAMPUS:false}
   auth:
     # Backend verifies Supabase-issued JWTs against the project's published JWKS.
     # No shared secret, and no user id is ever taken from the request body.
