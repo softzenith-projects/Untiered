@@ -459,3 +459,143 @@ the existing Arena (`/arena`), and completion is derived as described above.
    `practice_usage` row and make no credit charge.
 5. A session that ends `failed` marks its attempt `failed`, which hands back the
    allowance. An `abandoned` session still counts.
+
+---
+
+## Module 6: readiness
+
+Readiness is **derived on read**; no score is stored. It counts only evidence the college
+has a right to see: work done for this college's assignments (the plan §7 default). A
+student's own practice never enters it.
+
+### How it is computed (server-side only)
+
+- **Evidence items.** There are two kinds:
+  - Each completed assignment attempt whose session has a report with at least
+    `ReadinessService.MIN_ASSESSABLE_TURNS` assessable turns. The item's score is the
+    report's average competency percentage, from the same calculation `ReadinessService`
+    uses, scaled 0–100.
+  - Each completed `arena_scenarios` assignment. The item's score is `scenarioScore × 100`.
+
+  Every item belongs to its assignment's `component` and, if the assignment has one, its
+  `topic`.
+- **Component score**: the mean of the latest 3 items for that component. A component
+  with no items is `null`, which the UI shows as "Not attempted". It is **never 0**.
+- **Weights**: per college, default `coding 30, coreCs 25, technicalInterview 25,
+  communication 10, aptitude 10`. They must sum to 100.
+- **Overall**: the weighted mean over the components that have a score, with the weights
+  rescaled to sum to 100 over those components.
+- **Band**: given only when the student has at least 2 evidence items; otherwise
+  `"not_enough_evidence"`. `strong` is ≥ 85, `interview_ready` is 70–84,
+  `needs_improvement` is 50–69, and `needs_structured_prep` is < 50, on the overall score
+  rounded to an integer.
+
+### Shapes
+
+```ts
+type ReadinessBand = "strong" | "interview_ready" | "needs_improvement" | "needs_structured_prep" | "not_enough_evidence";
+
+interface ReadinessWeights { coding: number; coreCs: number; technicalInterview: number; communication: number; aptitude: number }
+
+interface ComponentScores {
+  coding: number | null; coreCs: number | null; technicalInterview: number | null;
+  communication: number | null; aptitude: number | null;
+}
+
+interface EvidenceItem {
+  assignmentId: string;
+  assignmentTitle: string;
+  component: ReadinessComponent;
+  topic: CampusTopic | null;
+  kind: AssignmentKind;
+  sessionId: string | null;      // interview items; opens the report
+  score: number;                 // 0–100, integer
+  completedAt: string;
+}
+
+interface StudentReadiness {
+  memberId: string;
+  name: string | null;
+  rollNumber: string | null;
+  batchName: string;
+  departmentCode: string;
+  overall: number | null;        // integer 0–100
+  band: ReadinessBand;
+  components: ComponentScores;
+  weights: ReadinessWeights;
+  evidence: EvidenceItem[];      // newest first; this is also the score history
+  suggestedTopics: { component: ReadinessComponent; topic: CampusTopic | null; reason: string }[];
+}
+```
+
+`suggestedTopics` is derived without AI: one entry for each component scoring below 70,
+and one for each topic whose items average below 70. Each `reason` is a plain sentence
+built from the numbers, e.g. "Average 58 across 2 DBMS assignments." The web maps
+components and topics to existing course and Arena links. Topics with no course get no
+link.
+
+### Routes
+
+| Method · path | Permission | Response |
+|---|---|---|
+| `GET /me/campus/readiness` | student, own data only | `StudentReadiness`; `404` when not a joined student |
+| `GET /campus/orgs/{org}/students/{memberId}/readiness` | any staff (faculty: scoped) | `StudentReadiness`. Audited as `readiness.viewed`. |
+| `GET /campus/orgs/{org}/students/{memberId}/reports/{sessionId}` | any staff (faculty: scoped) | The existing `SessionReportView`, only when that session belongs to an attempt of this member on one of this college's assignments; otherwise `404`. Generating the report on first open is allowed and uses the existing report lease. Audited as `report.viewed`. |
+| `GET /campus/orgs/{org}/readiness-weights` | any staff | `ReadinessWeights` |
+| `PUT /campus/orgs/{org}/readiness-weights` | college_admin | `ReadinessWeights` → `ReadinessWeights`; `400 weights_invalid` unless every weight is an integer 0–100 and they sum to 100 |
+
+---
+
+## Module 7: placement dashboard
+
+### Shapes
+
+```ts
+interface DashboardView {
+  filters: { batchId: string | null; departmentId: string | null };
+  enrolled: number;              // open or joined student invites + joined students with no invite
+  joined: number;                // joined students
+  active: number;                // joined students active in the last 14 days
+  completionRate: number | null; // completed ÷ (completed + overdue + due-now) recipient-assignments, 0–1
+  bands: Record<ReadinessBand, number>;
+  heatmap: {
+    columns: CampusTopic[];      // topics that have at least one evidence item in scope
+    rows: { departmentId: string; departmentCode: string;
+            cells: { topic: CampusTopic; average: number | null; students: number }[] }[];
+  };
+}
+
+type ReadinessSort = "name" | "overall" | "last_active" | "overdue";
+
+interface StudentReadinessRow {
+  memberId: string;
+  name: string | null;
+  rollNumber: string | null;
+  batchName: string;
+  departmentCode: string;
+  overall: number | null;
+  band: ReadinessBand;
+  components: ComponentScores;
+  assignmentsCompleted: number;
+  assignmentsOverdue: number;
+  lastActiveAt: string | null;
+}
+```
+
+A heatmap cell averages the latest item per student for that topic, among the students in
+that department. Its `average` is `null` when fewer than 3 students have evidence, so a
+cell never stands for one identifiable student.
+
+### Routes
+
+| Method · path | Permission | Response |
+|---|---|---|
+| `GET /campus/orgs/{org}/dashboard?batchId=&departmentId=` | any staff (faculty: scoped) | `DashboardView` |
+| `GET /campus/orgs/{org}/students/readiness?batchId=&departmentId=&band=&completion=&sort=&order=asc\|desc&cursor=` | any staff (faculty: scoped) | `{ items: StudentReadinessRow[], nextCursor }`. `completion` takes `all_done`, `has_overdue` or `not_started`. |
+| `GET /campus/orgs/{org}/exports/students.csv?<same filters>` | college_admin, tpo, faculty (scoped) | `text/csv` with UTF-8 BOM. Columns: name, roll number, department, batch, overall, band, each component, completed, overdue, last active. Audited as `students.exported` with the filters in `detail`. |
+
+**The PDF batch report** is a print-optimised page, `/campus/reports/batch`, which the TPO
+saves as a PDF from the browser's print dialog. It is assembled from `DashboardView` and
+the student rows, and needs no PDF library and no new dependency. Opening it is audited by
+calling `POST /campus/orgs/{org}/exports/batch-report-viewed` with
+`{ batchId?, departmentId? }`, which answers `204`.
