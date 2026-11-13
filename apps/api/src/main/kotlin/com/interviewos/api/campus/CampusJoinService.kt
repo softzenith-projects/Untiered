@@ -23,6 +23,7 @@ class CampusJoinService(
     private val users: UserRepository,
     private val me: MeCampusService,
     private val logos: OrgLogos,
+    private val notifications: CampusNotifications,
 ) {
     @Transactional(readOnly = true)
     fun preview(
@@ -86,6 +87,8 @@ class CampusJoinService(
         val rollNumber = invite.rollNumber?.takeIf { student && !invites.rollNumberHeld(invite.orgId, it) }
         val memberId = invites.insertMembership(invite, identity.id, rollNumber, if (student) CONSENT_VERSION else null)
         if (!invites.markJoined(invite, memberId)) throw inviteNotFound()
+        // A student placed under a batch with open assignments hears about each of them.
+        if (student) notifications.studentJoined(invite.orgId, memberId)
 
         val scope =
             if (student) {

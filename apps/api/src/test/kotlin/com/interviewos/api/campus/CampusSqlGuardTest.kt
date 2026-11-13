@@ -56,6 +56,10 @@ class CampusSqlGuardTest {
             "invite-sender" to mapOf("InviteRepository.kt" to 2),
             // Deleting import previews past their one-day expiry, in every college.
             "import-purge" to mapOf("InviteRepository.kt" to 1),
+            // Notification discovery: assignments inside their reminder window, the session a round
+            // came from, and colleges with students, each across colleges. Every email written from
+            // what they find binds that one college org_id.
+            "notification-discovery" to mapOf("CampusNotificationRepository.kt" to 3),
         )
 
     /**

@@ -46,6 +46,7 @@ class AssignedRoundAdmission internal constructor(
     private val access: CampusAccess,
     private val assignments: AssignmentRepository,
     private val features: ProductFeatureProperties,
+    private val notifications: CampusNotifications,
     private val clock: Clock,
 ) {
     @Autowired
@@ -53,7 +54,15 @@ class AssignedRoundAdmission internal constructor(
         access: CampusAccess,
         assignments: AssignmentRepository,
         features: ProductFeatureProperties,
-    ) : this(access, assignments, features, Clock.systemUTC())
+        notifications: CampusNotifications,
+    ) : this(access, assignments, features, notifications, Clock.systemUTC())
+
+    /**
+     * A round has completed: if it was a college assignment, tell the student its report is
+     * ready (campus spec section 9). Idempotent per session, a no-op for a personal round, and
+     * never allowed to fail the round's own completion.
+     */
+    fun roundCompleted(sessionId: UUID) = notifications.roundCompleted(sessionId)
 
     /** The assigned round's configuration, or `404 assignment_not_found`. Read-only. */
     fun roundFor(
