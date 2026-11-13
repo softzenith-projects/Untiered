@@ -18,7 +18,11 @@ globalThis.ResizeObserver ??= TestResizeObserver;
 // CodeMirror measures text ranges after its lazy editor mounts. Browsers provide both
 // methods; jsdom intentionally has no layout engine, so return empty geometry rather
 // than letting an unrelated asynchronous measurement throw during full-suite runs.
-Range.prototype.getClientRects ??= () => [] as unknown as DOMRectList;
-Range.prototype.getBoundingClientRect ??= () => new DOMRect();
+// A test file that opts into the Node environment (`// @vitest-environment node`) has no
+// DOM at all, so there is no Range to patch.
+if (typeof Range !== "undefined") {
+  Range.prototype.getClientRects ??= () => [] as unknown as DOMRectList;
+  Range.prototype.getBoundingClientRect ??= () => new DOMRect();
+}
 
 afterEach(cleanup);
