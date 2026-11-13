@@ -104,10 +104,9 @@ MCQ tests (spec 4b) are deferred; see assumption 6.
    roughly 40% of them tests. The
    history merges module by module, so it can be reviewed per module branch.
 
-## Known issue to fix before any real programme runs
-- Starting a programme queues every module's new-assignment email at once, so a 12-week
-  programme sends 12 emails on day one. Each email states its own dates, but the email for
-  each module should be sent on the day that module opens.
+## Fixed after the main run
+- Campus emails for scheduled assignments, such as a programme's later weeks, now go out
+  when each assignment opens, not when it is published (`fix/campus-programme-email-timing`).
 
 ## Open questions
 - Should "last active" exclude personal practice entirely? (Assumption 2.)
