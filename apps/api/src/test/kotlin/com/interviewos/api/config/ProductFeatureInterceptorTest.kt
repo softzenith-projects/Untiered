@@ -66,6 +66,13 @@ class ProductFeatureInterceptorTest {
         assertEquals(null, defaults.featureFor("GET", "/api/v1/admin/sources"))
         assertEquals(null, defaults.featureFor("GET", "/api/v1/me"))
         assertTrue(defaults.preHandle(request("DELETE", "/api/v1/me"), MockHttpServletResponse(), handler))
+        // The dashboard calls this for everyone; with campus off it answers [] instead of 404 (contract, module 4).
+        assertEquals(null, defaults.featureFor("GET", "/api/v1/me/assignments"))
+        assertTrue(defaults.preHandle(request("GET", "/api/v1/me/assignments"), MockHttpServletResponse(), handler))
+        assertEquals(
+            ProductFeature.CAMPUS,
+            defaults.featureFor("GET", "/api/v1/campus/orgs/86fcddf4-5e2b-4cab-b0c6-05e928d04529/assignments"),
+        )
     }
 
     private fun request(
