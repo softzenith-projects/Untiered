@@ -6,6 +6,7 @@ import { Alert, Skeleton } from "@/components/ui/feedback";
 import { fetchBatches, fetchCampusOrg, fetchDepartments } from "@/lib/api";
 
 import { useCampusOrg } from "./campus-context";
+import { PlacementDashboard } from "./placement-dashboard";
 import { useLoad } from "./use-load";
 
 function Stat({ label, value }: { label: string; value: number }) {
@@ -54,6 +55,7 @@ export function CampusHome() {
       ) : data.departments === 0 ? (
         <Alert tone="info">Start by adding the departments and batches under Departments and batches.</Alert>
       ) : null}
+      <PlacementDashboard />
     </div>
   );
 }
