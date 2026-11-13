@@ -326,3 +326,94 @@ export interface AssignedItem {
   blockedReason: AssignmentBlockedReason | null;
   sessionIds: string[];
 }
+
+// ---- Module 6: readiness, module 7: placement dashboard (docs/campus-api-contract.md) ----
+
+export type ReadinessBand = "strong" | "interview_ready" | "needs_improvement" | "needs_structured_prep" | "not_enough_evidence";
+
+export interface ReadinessWeights {
+  coding: number;
+  coreCs: number;
+  technicalInterview: number;
+  communication: number;
+  aptitude: number;
+}
+
+/** A `null` score means the component was never attempted; it is not 0. */
+export interface ComponentScores {
+  coding: number | null;
+  coreCs: number | null;
+  technicalInterview: number | null;
+  communication: number | null;
+  aptitude: number | null;
+}
+
+export interface EvidenceItem {
+  assignmentId: string;
+  assignmentTitle: string;
+  component: ReadinessComponent;
+  topic: CampusTopic | null;
+  kind: AssignmentKind;
+  sessionId: string | null;
+  score: number;
+  completedAt: string;
+}
+
+export interface SuggestedTopic {
+  component: ReadinessComponent;
+  topic: CampusTopic | null;
+  reason: string;
+}
+
+export interface StudentReadiness {
+  memberId: string;
+  name: string | null;
+  rollNumber: string | null;
+  batchName: string;
+  departmentCode: string;
+  overall: number | null;
+  band: ReadinessBand;
+  components: ComponentScores;
+  weights: ReadinessWeights;
+  evidence: EvidenceItem[];
+  suggestedTopics: SuggestedTopic[];
+}
+
+export interface HeatmapCell {
+  topic: CampusTopic;
+  average: number | null;
+  students: number;
+}
+
+export interface HeatmapRow {
+  departmentId: string;
+  departmentCode: string;
+  cells: HeatmapCell[];
+}
+
+export interface DashboardView {
+  filters: { batchId: string | null; departmentId: string | null };
+  enrolled: number;
+  joined: number;
+  active: number;
+  completionRate: number | null;
+  bands: Record<ReadinessBand, number>;
+  heatmap: { columns: CampusTopic[]; rows: HeatmapRow[] };
+}
+
+export type ReadinessSort = "name" | "overall" | "last_active" | "overdue";
+export type ReadinessCompletionFilter = "all_done" | "has_overdue" | "not_started";
+
+export interface StudentReadinessRow {
+  memberId: string;
+  name: string | null;
+  rollNumber: string | null;
+  batchName: string;
+  departmentCode: string;
+  overall: number | null;
+  band: ReadinessBand;
+  components: ComponentScores;
+  assignmentsCompleted: number;
+  assignmentsOverdue: number;
+  lastActiveAt: string | null;
+}

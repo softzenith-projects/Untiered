@@ -754,3 +754,31 @@
     color: var(--shiki-dark);
   }
 }
+
+/* The printable batch report (campus spec §7): saved as a PDF from the print dialog. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  body:has(.batch-report) :is(header, footer, nav, .no-print) {
+    display: none !important;
+  }
+  body:has(.batch-report) {
+    background: #fff;
+  }
+  .batch-report,
+  .batch-report * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .batch-report .card {
+    box-shadow: none;
+  }
+  .batch-report .print-section + .print-section {
+    break-before: page;
+  }
+  .batch-report tr {
+    break-inside: avoid;
+  }
+}

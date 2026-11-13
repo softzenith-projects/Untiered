@@ -48,6 +48,7 @@ const PORTAL_LINKS: PortalLink[] = [
   { href: "/campus/structure", label: "Departments and batches", roles: ["college_admin", "tpo"] },
   { href: "/campus/students", label: "Students", roles: ["college_admin", "tpo", "faculty"] },
   { href: "/campus/assignments", label: "Assignments", roles: ["college_admin", "tpo", "faculty"] },
+  { href: "/campus/readiness", label: "Readiness", roles: ["college_admin", "tpo", "faculty"] },
   { href: "/campus/staff", label: "Staff", roles: ["college_admin"] },
   { href: "/campus/settings", label: "Settings", roles: ["college_admin"] },
 ];

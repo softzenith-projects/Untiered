@@ -51,6 +51,12 @@ import type {
   CompletionStatus,
   RecipientProgress,
   CampusScenarioOption,
+  DashboardView,
+  ReadinessCompletionFilter,
+  ReadinessSort,
+  ReadinessWeights,
+  StudentReadiness,
+  StudentReadinessRow,
   AdminCreateInviteRequest,
   AdminOrgSummary,
   AdminUpdateOrgRequest,
@@ -933,4 +939,82 @@ export function fetchAssignmentProgress(
 /** What the signed-in student has been assigned. Not behind the campus switch: answers `[]` when off. */
 export function fetchMyAssignments(options: ApiGetOptions): Promise<AssignedItem[]> {
   return apiGet<AssignedItem[]>("/api/v1/me/assignments", options);
+}
+
+// ---- Untiered Campus, modules 6-7: readiness and the placement dashboard ----
+
+export interface DashboardFilter {
+  batchId?: string;
+  departmentId?: string;
+}
+
+export interface ReadinessFilter extends DashboardFilter {
+  band?: string;
+  completion?: ReadinessCompletionFilter;
+  sort?: ReadinessSort;
+  order?: "asc" | "desc";
+  cursor?: string;
+}
+
+/** The signed-in student's own readiness. `404` when they are not a joined student. */
+export function fetchMyReadiness(options: ApiGetOptions): Promise<StudentReadiness> {
+  return apiGet<StudentReadiness>("/api/v1/me/campus/readiness", options);
+}
+
+export function fetchStudentReadiness(orgId: string, memberId: string, options: ApiGetOptions): Promise<StudentReadiness> {
+  return apiGet<StudentReadiness>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/readiness`, options);
+}
+
+/** The existing session report, as a college staff member may read it. */
+export function fetchStaffStudentReport(orgId: string, memberId: string, sessionId: string, options: ApiGetOptions): Promise<SessionReport> {
+  return apiGet<SessionReport>(
+    `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/reports/${encodeURIComponent(sessionId)}`,
+    options,
+  );
+}
+
+export function fetchReadinessWeights(orgId: string, options: ApiGetOptions): Promise<ReadinessWeights> {
+  return apiGet<ReadinessWeights>(`${campusOrg(orgId)}/readiness-weights`, options);
+}
+
+export function updateReadinessWeights(accessToken: string, orgId: string, weights: ReadinessWeights): Promise<ReadinessWeights> {
+  return apiSend<ReadinessWeights>(`${campusOrg(orgId)}/readiness-weights`, "PUT", accessToken, weights);
+}
+
+export function fetchDashboard(orgId: string, options: ApiGetOptions, filter: DashboardFilter = {}): Promise<DashboardView> {
+  return apiGet<DashboardView>(`${campusOrg(orgId)}/dashboard${query({ ...filter })}`, options);
+}
+
+export function fetchReadinessRows(
+  orgId: string,
+  options: ApiGetOptions,
+  filter: ReadinessFilter = {},
+): Promise<CampusPage<StudentReadinessRow>> {
+  return apiGet<CampusPage<StudentReadinessRow>>(`${campusOrg(orgId)}/students/readiness${query({ ...filter })}`, options);
+}
+
+/** Records that a staff member opened the printable batch report. Answers `204`. */
+export async function recordBatchReportViewed(accessToken: string, orgId: string, filter: DashboardFilter = {}): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/exports/batch-report-viewed`, "POST", accessToken, filter);
+}
+
+/**
+ * The student CSV. It needs the bearer token, so it cannot be a plain link: fetch it as a
+ * Blob and let the caller save it.
+ */
+export async function downloadStudentsCsv(orgId: string, accessToken: string, filter: ReadinessFilter = {}): Promise<Blob> {
+  const { batchId, departmentId, band, completion } = filter;
+  const response = await fetch(`${env.apiBaseUrl}${campusOrg(orgId)}/exports/students.csv${query({ batchId, departmentId, band, completion })}`, {
+    headers: { Accept: "text/csv", Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const envelope = (await response.json().catch(() => null)) as ApiError | null;
+    throw new ApiRequestError(
+      response.status,
+      envelope?.error ?? "unknown_error",
+      envelope?.message ?? `The export failed with status ${response.status}.`,
+    );
+  }
+  return response.blob();
 }
