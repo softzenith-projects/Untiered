@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, Skeleton } from "@/components/ui/feedback";
 import { Checkbox, FieldHint, FieldLabel, Input, Radio, Select, Textarea } from "@/components/ui/field";
-import { fetchArenaScenarios, fetchBatches, fetchMembers } from "@/lib/api";
-import type { AssignmentKind, AssignmentView, CampusScenarioOption, MemberView } from "@untiered/shared";
+import { fetchArenaScenarios, fetchBatches, fetchMcqBank, fetchMembers } from "@/lib/api";
+import type { AssignmentKind, AssignmentView, CampusScenarioOption, McqBankSummary, MemberView } from "@untiered/shared";
 
 import { useCampusOrg } from "./campus-context";
 import {
@@ -16,6 +16,7 @@ import {
   defaultComponent,
   emptyForm,
   formFromView,
+  MCQ_LIMITS,
   ROUND_LABEL,
   ROUND_TYPES,
   TOPIC_LABEL,
@@ -46,6 +47,8 @@ export function AssignmentFormView({
   const id = useId();
   const [form, setForm] = useState<AssignmentForm>(() => (initial ? formFromView(initial) : emptyForm()));
   const [componentTouched, setComponentTouched] = useState(Boolean(initial));
+  const [topicTouched, setTopicTouched] = useState(Boolean(initial));
+  const [bank, setBank] = useState<McqBankSummary[] | null>(null);
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -73,7 +76,13 @@ export function AssignmentFormView({
           next.kind === "arena_scenarios"
             ? (scenarios.data ?? []).filter((s) => next.scenarioIds.includes(s.id))
             : [];
-        next.component = defaultComponent(next.kind, next.roundType, picked);
+        next.component = defaultComponent(next.kind, next.roundType, picked, next.mcqCourseSlugs);
+      }
+      // An MCQ test's topic follows its courses while they share one, until staff choose a topic.
+      if (!topicTouched && !("topic" in change) && next.kind === "mcq_test" && "mcqCourseSlugs" in change) {
+        const topics = new Set(next.mcqCourseSlugs.map((slug) => bank?.find((c) => c.courseSlug === slug)?.topic ?? null));
+        const [only] = [...topics];
+        next.topic = topics.size === 1 && only ? only : "";
       }
       if (next.kind === "interview" && next.roundType === "custom_topic") next.durationMinutes = 30;
       return next;
@@ -81,9 +90,9 @@ export function AssignmentFormView({
   }
 
   function validateStep(target: number): string[] {
-    const all = validateForm(form);
+    const all = validateForm(form, bank);
     const byStep: RegExp[][] = [
-      [/title|Instructions|focus topic|scenarios|topic round/i],
+      [/title|Instructions|focus topic|scenarios|topic round|course|questions|time limit/i],
       [/batch or student/i],
       [/deadline|Attempts|cap/i],
     ];
@@ -99,7 +108,7 @@ export function AssignmentFormView({
   async function submit(event: FormEvent, publish: boolean) {
     event.preventDefault();
     setApiError(null);
-    const found = validateForm(form);
+    const found = validateForm(form, bank);
     setErrors(found);
     if (found.length > 0) return;
     setPending(true);
@@ -113,6 +122,7 @@ export function AssignmentFormView({
   }
 
   const isInterview = form.kind === "interview";
+  const isMcq = form.kind === "mcq_test";
   const custom = isInterview && form.roundType === "custom_topic";
 
   return (
@@ -130,11 +140,12 @@ export function AssignmentFormView({
       {step === 0 ? (
         <fieldset className="flex flex-col gap-4">
           <legend className="text-heading text-ink">What are you assigning?</legend>
-          <div role="radiogroup" aria-label="Kind of assignment" className="grid gap-3 sm:grid-cols-2">
+          <div role="radiogroup" aria-label="Kind of assignment" className="grid gap-3 sm:grid-cols-3">
             {(
               [
                 ["interview", "AI interview", "Each student takes a spoken mock interview."],
                 ["arena_scenarios", "Arena scenario set", "Students play a chosen set of graded scenarios."],
+                ["mcq_test", "MCQ test", "Multiple-choice questions from the course chapters, graded on the server."],
               ] as [AssignmentKind, string, string][]
             ).map(([value, label, hint]) => (
               <label key={value} className="card card-interactive flex cursor-pointer items-start gap-3 p-4">
@@ -224,6 +235,14 @@ export function AssignmentFormView({
                 </div>
               </div>
             </>
+          ) : isMcq ? (
+            <McqPicker
+              courseSlugs={form.mcqCourseSlugs}
+              questionCount={form.mcqQuestionCount}
+              timeLimit={form.mcqTimeLimit}
+              onLoaded={setBank}
+              onChange={(change) => patch(change)}
+            />
           ) : (
             <ScenarioPicker
               loading={scenarios.loading && !scenarios.data}
@@ -300,12 +319,14 @@ export function AssignmentFormView({
               <Checkbox checked={form.allowLate} onChange={(e) => patch({ allowLate: e.target.checked })} />
               Allow late attempts
             </label>
+            {isInterview || isMcq ? (
+              <div>
+                <FieldLabel htmlFor={`${id}-attempts`}>Attempts per student</FieldLabel>
+                <Input id={`${id}-attempts`} type="number" min={1} max={10} value={form.attemptLimit} onChange={(e) => patch({ attemptLimit: e.target.value })} />
+              </div>
+            ) : null}
             {isInterview ? (
               <>
-                <div>
-                  <FieldLabel htmlFor={`${id}-attempts`}>Attempts per student</FieldLabel>
-                  <Input id={`${id}-attempts`} type="number" min={1} max={10} value={form.attemptLimit} onChange={(e) => patch({ attemptLimit: e.target.value })} />
-                </div>
                 <div>
                   <FieldLabel htmlFor={`${id}-cap`}>Interview cap per student (optional)</FieldLabel>
                   <Input
@@ -341,7 +362,14 @@ export function AssignmentFormView({
             </div>
             <div>
               <FieldLabel htmlFor={`${id}-topic`}>Topic (optional)</FieldLabel>
-              <Select id={`${id}-topic`} value={form.topic} onChange={(e) => patch({ topic: e.target.value as AssignmentForm["topic"] })}>
+              <Select
+                id={`${id}-topic`}
+                value={form.topic}
+                onChange={(e) => {
+                  setTopicTouched(true);
+                  patch({ topic: e.target.value as AssignmentForm["topic"] });
+                }}
+              >
                 <option value="">No topic</option>
                 {TOPICS.map((value) => (
                   <option key={value} value={value}>
@@ -390,6 +418,108 @@ export function AssignmentFormView({
         )}
       </div>
     </form>
+  );
+}
+
+/**
+ * The MCQ test's courses (only those the bank offers, with their question counts and topic),
+ * how many questions each attempt draws, and an optional time limit.
+ */
+function McqPicker({
+  courseSlugs,
+  questionCount,
+  timeLimit,
+  onLoaded,
+  onChange,
+}: {
+  courseSlugs: string[];
+  questionCount: string;
+  timeLimit: string;
+  onLoaded: (bank: McqBankSummary[]) => void;
+  onChange: (change: Partial<AssignmentForm>) => void;
+}) {
+  const { orgId, accessToken } = useCampusOrg();
+  const id = useId();
+  const load = useCallback((signal: AbortSignal) => fetchMcqBank(orgId, { accessToken, signal }), [orgId, accessToken]);
+  const bank = useLoad(load);
+  useEffect(() => {
+    if (bank.data) onLoaded(bank.data);
+  }, [bank.data, onLoaded]);
+
+  if (bank.error) return <Alert tone="error">{bank.error.message}</Alert>;
+  if (bank.loading && !bank.data) return <Skeleton className="h-24 w-full" />;
+  const courses = bank.data ?? [];
+  if (courses.length === 0) {
+    return <Alert tone="info">No course has enough multiple-choice questions for a test yet.</Alert>;
+  }
+  const available = courses.filter((c) => courseSlugs.includes(c.courseSlug)).reduce((sum, c) => sum + c.questions, 0);
+  return (
+    <div className="flex flex-col gap-4">
+      <div role="group" aria-label="Courses" className="flex flex-col gap-2">
+        <p className="text-caption text-ink-muted">
+          Questions are drawn at random from these courses&apos; chapter quizzes, so students may see different questions.
+          {courseSlugs.length > 0 ? ` The chosen courses hold ${available} questions.` : ""}
+        </p>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {courses.map((course) => {
+            const checked = courseSlugs.includes(course.courseSlug);
+            return (
+              <li key={course.courseSlug}>
+                <label className="flex items-start gap-3 rounded-lg border border-line p-3 text-body">
+                  <Checkbox
+                    checked={checked}
+                    disabled={!checked && courseSlugs.length >= MCQ_LIMITS.maxCourses}
+                    onChange={(e) =>
+                      onChange({
+                        mcqCourseSlugs: e.target.checked
+                          ? [...courseSlugs, course.courseSlug]
+                          : courseSlugs.filter((slug) => slug !== course.courseSlug),
+                      })
+                    }
+                  />
+                  <span>
+                    <span className="block font-semibold text-ink">{course.courseTitle}</span>
+                    <span className="block text-caption text-ink-muted">
+                      {course.questions} questions · {course.topic ? TOPIC_LABEL[course.topic] : "No campus topic"}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <FieldLabel htmlFor={`${id}-count`}>Questions per attempt</FieldLabel>
+          <Input
+            id={`${id}-count`}
+            type="number"
+            min={MCQ_LIMITS.minQuestions}
+            max={MCQ_LIMITS.maxQuestions}
+            value={questionCount}
+            aria-describedby={`${id}-count-hint`}
+            onChange={(e) => onChange({ mcqQuestionCount: e.target.value })}
+          />
+          <FieldHint id={`${id}-count-hint`}>
+            {MCQ_LIMITS.minQuestions} to {MCQ_LIMITS.maxQuestions}, and no more than the chosen courses hold.
+          </FieldHint>
+        </div>
+        <div>
+          <FieldLabel htmlFor={`${id}-limit`}>Time limit in minutes (optional)</FieldLabel>
+          <Input
+            id={`${id}-limit`}
+            type="number"
+            min={MCQ_LIMITS.minMinutes}
+            max={MCQ_LIMITS.maxMinutes}
+            value={timeLimit}
+            aria-describedby={`${id}-limit-hint`}
+            onChange={(e) => onChange({ mcqTimeLimit: e.target.value })}
+          />
+          <FieldHint id={`${id}-limit-hint`}>Empty means no limit. Students see a timer when there is one.</FieldHint>
+        </div>
+      </div>
+    </div>
   );
 }
 

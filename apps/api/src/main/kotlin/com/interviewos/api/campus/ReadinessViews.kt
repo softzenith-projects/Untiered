@@ -47,6 +47,8 @@ data class EvidenceItem(
     val sessionId: UUID?,
     val score: Int,
     val completedAt: String,
+    /** MCQ items: the submitted attempt (contract "Module 4b"); null for the other kinds. */
+    val mcqAttemptId: UUID? = null,
 )
 
 data class SuggestedTopic(

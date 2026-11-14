@@ -321,6 +321,11 @@ class ProgrammeRepository(
                   join public.user_step_answers ans on ans.step_id = st.id and ans.user_id = :userId
                  where x.org_id = :orgId and x.id in (:ids) and x.kind = 'arena_scenarios'
                  group by x.id
+                union all
+                select q.assignment_id, min(q.submitted_at)
+                  from public.mcq_attempts q
+                 where q.org_id = :orgId and q.member_id = :memberId and q.assignment_id in (:ids) and q.submitted_at is not null
+                 group by q.assignment_id
                 """.trimIndent(),
             ).param("orgId", scope.orgId)
             .param("memberId", memberId)

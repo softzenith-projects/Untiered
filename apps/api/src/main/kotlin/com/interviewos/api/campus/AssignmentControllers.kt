@@ -30,6 +30,12 @@ class CampusAssignmentController(
         @PathVariable orgId: UUID,
     ): List<CampusScenarioOption> = service.scenarioOptions(SupabaseIdentity.from(jwt), orgId)
 
+    @GetMapping("/mcq-bank")
+    fun mcqBank(
+        @AuthenticationPrincipal jwt: Jwt,
+        @PathVariable orgId: UUID,
+    ): List<McqBankSummary> = service.mcqBank(SupabaseIdentity.from(jwt), orgId)
+
     @GetMapping("/assignments")
     fun list(
         @AuthenticationPrincipal jwt: Jwt,

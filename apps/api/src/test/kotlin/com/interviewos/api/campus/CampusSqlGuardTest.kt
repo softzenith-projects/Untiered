@@ -31,6 +31,7 @@ class CampusSqlGuardTest {
             "assignments",
             "assignment_targets",
             "assignment_attempts",
+            "mcq_attempts",
             "campus_imports",
             "campus_import_rows",
             "campus_invites",
@@ -85,6 +86,7 @@ class CampusSqlGuardTest {
             "MemberRepository.kt" to listOf("MEMBER_SELECT"),
             "AssignmentRepository.kt" to listOf("ASSIGNMENT_SELECT"),
             "InviteRepository.kt" to listOf("INVITE_SELECT"),
+            "McqRepository.kt" to listOf("ATTEMPT_SELECT"),
         )
 
     private val source = File("src/main/kotlin/com/interviewos/api/campus")
@@ -191,7 +193,7 @@ class CampusSqlGuardTest {
                     "(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log" +
                     "|campus_imports|campus_import_rows|campus_invites|campus_staff_comments" +
                     "|programme_templates|programmes|programme_targets" +
-                    "|assignments|assignment_targets|assignment_attempts)\\b",
+                    "|assignments|assignment_targets|assignment_attempts|mcq_attempts)\\b",
             )
     }
 }

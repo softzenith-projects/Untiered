@@ -45,6 +45,18 @@ data class InterviewEvidenceRow(
     val scoringPayloadJson: String,
 )
 
+/** A submitted attempt at one of this college's MCQ tests, with the grade the server gave it. */
+data class McqEvidenceRow(
+    val attemptId: UUID,
+    val assignmentId: UUID,
+    val memberId: UUID,
+    val title: String,
+    val component: String,
+    val topic: String?,
+    val score: Int,
+    val submittedAt: Instant,
+)
+
 /** A published or archived assignment, with what readiness and completion read from it. */
 data class ReadinessAssignmentRow(
     val id: UUID,
@@ -353,6 +365,47 @@ class ReadinessRepository(
                 ).param("orgId", scope.orgId)
         bindFilters(statement, visible, filter)
         return statement.query { rs, _ -> rs.toEvidence() }.list()
+    }
+
+    /**
+     * Submitted attempts at this college's MCQ tests (published or archived), by students in
+     * scope. Read from the attempts directly, as interview evidence is, so a student moved to
+     * another batch keeps the evidence of the tests they took. Each attempt is one item.
+     */
+    fun mcqEvidence(
+        scope: OrgScope,
+        filter: ReadinessFilter,
+    ): List<McqEvidenceRow> {
+        val visible = scope.visibleBatchIds
+        if (visible != null && visible.isEmpty()) return emptyList()
+        val statement =
+            jdbc
+                .sql(
+                    """
+                    select q.id, q.assignment_id, q.member_id, x.title, x.readiness_component, x.topic, q.score, q.submitted_at
+                      from public.mcq_attempts q
+                      join public.assignments x on x.org_id = q.org_id and x.id = q.assignment_id
+                      join public.org_members m on m.org_id = q.org_id and m.id = q.member_id
+                      join public.org_batches b on b.org_id = m.org_id and b.id = m.batch_id
+                     where q.org_id = :orgId and q.submitted_at is not null
+                       and x.kind = 'mcq_test' and x.status in ('published', 'archived')
+                       and m.role = 'student' and m.status = 'joined'${memberFilters(visible, filter)}
+                    """.trimIndent(),
+                ).param("orgId", scope.orgId)
+        bindFilters(statement, visible, filter)
+        return statement
+            .query { rs, _ ->
+                McqEvidenceRow(
+                    attemptId = UUID.fromString(rs.getString("id")),
+                    assignmentId = UUID.fromString(rs.getString("assignment_id")),
+                    memberId = UUID.fromString(rs.getString("member_id")),
+                    title = rs.getString("title"),
+                    component = rs.getString("readiness_component"),
+                    topic = rs.getString("topic"),
+                    score = rs.getInt("score"),
+                    submittedAt = rs.getTimestamp("submitted_at").toInstant(),
+                )
+            }.list()
     }
 
     /**

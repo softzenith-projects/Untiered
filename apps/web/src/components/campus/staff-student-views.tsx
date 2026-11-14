@@ -43,7 +43,11 @@ export function StaffStudentReadiness({ memberId }: { memberId: string }) {
         <StudentReadinessView
           readiness={data}
           reportHref={(item) =>
-            item.sessionId ? campusHref(`/campus/readiness/${memberId}/reports/${item.sessionId}`, orgId) : null
+            item.kind === "interview" && item.sessionId
+              ? campusHref(`/campus/readiness/${memberId}/reports/${item.sessionId}`, orgId)
+              : item.mcqAttemptId
+                ? campusHref(`/campus/readiness/${memberId}/tests/${item.mcqAttemptId}`, orgId)
+                : null
           }
         />
       ) : null}

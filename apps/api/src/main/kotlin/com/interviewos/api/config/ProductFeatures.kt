@@ -79,6 +79,8 @@ class ProductFeatureInterceptor(
         }
         // `/me/campus` and everything under it, but not an unrelated `/me/campusfoo`.
         if (path == "/api/v1/me/campus" || path.startsWith("/api/v1/me/campus/")) return ProductFeature.CAMPUS
+        // MCQ tests (module 4b). `GET /me/assignments` itself stays outside the switch.
+        if (path.startsWith("/api/v1/me/mcq-attempts/") || MCQ_START_PATH.matches(path)) return ProductFeature.CAMPUS
         if (path.startsWith("/api/v1/me/course-progress")) return ProductFeature.COURSES
         if (path.startsWith("/api/v1/me/arena")) return ProductFeature.ARENA
         if (path == "/api/v1/readiness") return ProductFeature.REPORTS
@@ -96,6 +98,7 @@ class ProductFeatureInterceptor(
 
     private companion object {
         val REPORT_PATH = Regex("/api/v1/sessions/[^/]+/report")
+        val MCQ_START_PATH = Regex("/api/v1/me/assignments/[^/]+/mcq-attempts/?")
     }
 }
 

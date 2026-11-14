@@ -126,6 +126,17 @@ class AssignmentGateTest {
     }
 
     @Test
+    fun `an MCQ test is refused for its dates and its attempt limit, never for the cap or the allowance`() {
+        val mcq = AssignmentKind.MCQ_TEST
+        assertNull(gate(kind = mcq, attemptsUsed = 1, attemptLimit = 2, orgFundedUsed = 9, interviewCap = 1, collegeAllowance = 0))
+        assertEquals(Blocked.ATTEMPT_LIMIT, gate(kind = mcq, attemptsUsed = 2, attemptLimit = 2))
+        assertEquals(Blocked.NOT_OPEN, gate(kind = mcq, opensAt = now.plusSeconds(1)))
+        assertEquals(Blocked.PAST_DUE, gate(kind = mcq, dueAt = now))
+        assertEquals("coding", AssignmentRules.defaultComponent(mcq, null, listOf("dsa")))
+        assertEquals("core_cs", AssignmentRules.defaultComponent(mcq, null, listOf("dsa", "java")))
+    }
+
+    @Test
     fun `refusals carry the contract's codes and statuses`() {
         assertEquals("assignment_not_open" to HttpStatus.CONFLICT, Blocked.NOT_OPEN.toException().let { it.code to it.status })
         assertEquals("assignment_past_due" to HttpStatus.CONFLICT, Blocked.PAST_DUE.toException().let { it.code to it.status })

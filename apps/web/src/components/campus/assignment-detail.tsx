@@ -163,6 +163,14 @@ function Summary({ view }: { view: AssignmentView }) {
           ["Interview cap", String(view.interviewCap ?? view.attemptLimit)],
         ] as [string, string][])
       : []),
+    ...(view.kind === "mcq_test" && view.mcq
+      ? ([
+          ["Courses", view.mcq.courseSlugs.join(", ")],
+          ["Questions per attempt", String(view.mcq.questionCount)],
+          ["Time limit", view.mcq.timeLimitMinutes ? `${view.mcq.timeLimitMinutes} minutes` : "No limit"],
+          ["Attempts per student", String(view.attemptLimit)],
+        ] as [string, string][])
+      : []),
     ["Deadline", `${formatDue(view.dueAt)} (${relativeTime(view.dueAt)})`],
     ["Late attempts", view.allowLate ? "Allowed" : "Not allowed"],
     ["Readiness component", view.component ? COMPONENT_LABEL[view.component] : "Not set"],
@@ -286,6 +294,7 @@ function ProgressTable({ assignment }: { assignment: AssignmentView }) {
   const targeted = assignment.targetBatches;
   const batchOptions = (batches.data ?? []).filter((b) => targeted.length === 0 || targeted.some((t) => t.id === b.id));
   const isInterview = assignment.kind === "interview";
+  const isMcq = assignment.kind === "mcq_test";
 
   function header(key: SortKey, label: string) {
     const active = sort.key === key;
@@ -343,7 +352,13 @@ function ProgressTable({ assignment }: { assignment: AssignmentView }) {
                 {header("name", "Student")}
                 <th scope="col" className="p-3">Batch</th>
                 {header("status", "Status")}
-                {isInterview ? <th scope="col" className="p-3">Attempts</th> : <th scope="col" className="p-3">Scenario score</th>}
+                {isInterview ? (
+                  <th scope="col" className="p-3">Attempts</th>
+                ) : isMcq ? (
+                  <th scope="col" className="p-3">Best score</th>
+                ) : (
+                  <th scope="col" className="p-3">Scenario score</th>
+                )}
                 {header("lastActivity", "Last activity")}
               </tr>
             </thead>
@@ -361,7 +376,11 @@ function ProgressTable({ assignment }: { assignment: AssignmentView }) {
                   <td className="p-3">
                     {isInterview
                       ? `${row.attemptsUsed} of ${assignment.attemptLimit}`
-                      : row.scenarioScore === null
+                      : isMcq
+                        ? row.mcqScore === null || row.mcqScore === undefined
+                          ? `Not submitted (${row.attemptsUsed} of ${assignment.attemptLimit} attempts)`
+                          : `${row.mcqScore} / 100 (${row.attemptsUsed} of ${assignment.attemptLimit} attempts)`
+                        : row.scenarioScore === null
                         ? "Not scored"
                         : `${Math.round(row.scenarioScore * 100)}%`}
                   </td>

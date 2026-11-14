@@ -86,6 +86,7 @@ const progress = (over: Partial<RecipientProgress>): RecipientProgress => ({
   lastActivityAt: null,
   sessionIds: [],
   scenarioScore: null,
+  mcqScore: null,
   ...over,
 });
 

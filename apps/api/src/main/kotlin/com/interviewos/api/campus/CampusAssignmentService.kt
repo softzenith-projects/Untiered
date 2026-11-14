@@ -57,6 +57,20 @@ class CampusAssignmentService internal constructor(
         }
     }
 
+    /** The MCQ bank's courses with enough live questions to set a test from (contract "Module 4b"). */
+    @Transactional(readOnly = true)
+    fun mcqBank(
+        identity: SupabaseIdentity,
+        orgId: UUID,
+    ): List<McqBankSummary> {
+        val scope = access.resolve(identity, orgId)
+        scope.require(CampusPermission.ORG_VIEW)
+        return assignments
+            .mcqCourses()
+            .filter { it.questions >= AssignmentRules.MIN_MCQ_BANK }
+            .map { McqBankSummary(it.courseSlug, it.courseTitle, it.topic, it.questions) }
+    }
+
     // -- staff -----------------------------------------------------------------------
 
     @Transactional
@@ -156,6 +170,7 @@ class CampusAssignmentService internal constructor(
                 throw invalid("scenarioIds", "${withdrawn.joinToString()} is no longer available. Choose another scenario.")
             }
         }
+        if (current.kind == AssignmentKind.MCQ_TEST) checkMcqBank(current.mcqCourseSlugs.orEmpty(), current.mcqQuestionCount ?: 0)
         val targets = assignments.targets(scope, listOf(id)).getValue(id)
         if (targets.batches.isEmpty() && targets.students.isEmpty()) {
             throw invalid("targets", "choose at least one batch or student before publishing.")
@@ -215,10 +230,11 @@ class CampusAssignmentService internal constructor(
                             rollNumber = facts.rollNumber,
                             batchName = facts.batchName,
                             status = completion.wireValue,
-                            attemptsUsed = if (row.kind == AssignmentKind.INTERVIEW) facts.attemptsUsed else 0,
+                            attemptsUsed = if (row.kind != AssignmentKind.ARENA_SCENARIOS) facts.attemptsUsed else 0,
                             lastActivityAt = facts.lastActivityAt?.toString(),
                             sessionIds = if (row.kind == AssignmentKind.INTERVIEW) facts.sessionIds else emptyList(),
                             scenarioScore = facts.scenarioScore(row.kind),
+                            mcqScore = facts.mcqScore(row.kind),
                         )
                 }.filter { (completion, _) -> statusFilter == null || completion == statusFilter }
                 .map { it.second }
@@ -254,6 +270,7 @@ class CampusAssignmentService internal constructor(
         return rows.map { row ->
             val mine = facts[row.id]
             val interview = row.kind == AssignmentKind.INTERVIEW
+            val mcq = row.kind == AssignmentKind.MCQ_TEST
             val completed = mine?.completed(row.kind) ?: false
             val inProgress = mine?.inProgress(row.kind) ?: false
             val blocked =
@@ -293,11 +310,15 @@ class CampusAssignmentService internal constructor(
                 dueAt = row.dueAt.toString(),
                 allowLate = row.allowLate,
                 status = AssignmentRules.completion(completed, inProgress, row.dueAt, row.allowLate, now).wireValue,
-                attemptsUsed = if (interview) mine?.attemptsUsed ?: 0 else 0,
+                attemptsUsed = if (interview || mcq) mine?.attemptsUsed ?: 0 else 0,
                 attemptLimit = row.attemptLimit,
                 canStart = blocked == null,
                 blockedReason = blocked?.wireValue,
                 sessionIds = if (interview) mine?.sessionIds.orEmpty() else emptyList(),
+                mcq = row.mcqInput(),
+                mcqScore = mine?.mcqScore(row.kind),
+                mcqOpenAttemptId = if (mcq) mine?.mcqOpenAttemptId else null,
+                mcqLatestAttemptId = if (mcq) mine?.mcqLatestAttemptId else null,
             )
         }
     }
@@ -400,6 +421,7 @@ class CampusAssignmentService internal constructor(
                 "focusTopic".takeIf { request.focusTopic != null },
                 "language".takeIf { request.language != null },
                 "scenarioIds".takeIf { request.scenarioIds != null },
+                "mcq".takeIf { request.mcq != null },
                 "opensAt".takeIf { request.opensAt != null },
                 "attemptLimit".takeIf { request.attemptLimit != null },
                 "interviewCap".takeIf { request.interviewCap != null },
@@ -438,7 +460,7 @@ class CampusAssignmentService internal constructor(
         val kind =
             if (whole) {
                 AssignmentKind.fromDbValue(request.kind?.trim())
-                    ?: throw invalid("kind", "choose interview or arena_scenarios.")
+                    ?: throw invalid("kind", "choose interview, arena_scenarios or mcq_test.")
             } else {
                 base.kind
             }
@@ -481,6 +503,10 @@ class CampusAssignmentService internal constructor(
 
             AssignmentKind.ARENA_SCENARIOS -> {
                 scenarioFields(request, base.takeUnless { whole }, title, instructions, opensAt, dueAt, allowLate, component, topic)
+            }
+
+            AssignmentKind.MCQ_TEST -> {
+                mcqFields(request, base.takeUnless { whole }, title, instructions, opensAt, dueAt, allowLate, component, topic)
             }
         }
     }
@@ -630,6 +656,102 @@ class CampusAssignmentService internal constructor(
     }
 
     /**
+     * An MCQ test (contract "Module 4b"): 1 to [AssignmentRules.MAX_MCQ_COURSES] courses of the
+     * bank, each with at least [AssignmentRules.MIN_MCQ_BANK] live questions; 5 to 50 questions per
+     * attempt, no more than the courses hold; an optional 5 to 120 minute limit; 1 to 10 attempts.
+     */
+    private fun mcqFields(
+        request: AssignmentRequest,
+        base: AssignmentRow?,
+        title: String,
+        instructions: String?,
+        opensAt: Instant,
+        dueAt: Instant,
+        allowLate: Boolean,
+        component: String?,
+        topic: String?,
+    ): AssignmentFields {
+        val input = request.mcq
+        val slugs =
+            (input?.courseSlugs ?: base?.mcqCourseSlugs)
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                ?.distinct()
+                .orEmpty()
+        if (slugs.size !in 1..AssignmentRules.MAX_MCQ_COURSES) {
+            throw invalid("mcq.courseSlugs", "choose between 1 and ${AssignmentRules.MAX_MCQ_COURSES} courses.")
+        }
+        if (slugs.any { it.length > 80 || !COURSE_SLUG.matches(it) }) throw invalid("mcq.courseSlugs", "that is not a course.")
+        val count =
+            input?.questionCount ?: base?.mcqQuestionCount
+                ?: throw invalid("mcq.questionCount", "choose how many questions each attempt draws.")
+        if (count !in AssignmentRules.MIN_MCQ_QUESTIONS..AssignmentRules.MAX_MCQ_QUESTIONS) {
+            throw invalid(
+                "mcq.questionCount",
+                "draw ${AssignmentRules.MIN_MCQ_QUESTIONS} to ${AssignmentRules.MAX_MCQ_QUESTIONS} questions per attempt.",
+            )
+        }
+        checkMcqBank(slugs, count)
+        val minutes = input?.timeLimitMinutes ?: base?.mcqTimeLimitMinutes
+        if (minutes != null && minutes !in AssignmentRules.MIN_MCQ_MINUTES..AssignmentRules.MAX_MCQ_MINUTES) {
+            throw invalid(
+                "mcq.timeLimitMinutes",
+                "allow ${AssignmentRules.MIN_MCQ_MINUTES} to ${AssignmentRules.MAX_MCQ_MINUTES} minutes, or no limit.",
+            )
+        }
+        val attemptLimit = request.attemptLimit ?: base?.attemptLimit ?: 1
+        if (attemptLimit !in 1..AssignmentRules.MAX_ATTEMPTS) {
+            throw invalid("attemptLimit", "allow 1 to ${AssignmentRules.MAX_ATTEMPTS} attempts per student.")
+        }
+        val sameSet = base?.mcqCourseSlugs?.toSet() == slugs.toSet()
+        return AssignmentFields(
+            kind = AssignmentKind.MCQ_TEST,
+            title = title,
+            instructions = instructions,
+            roundType = null,
+            durationMinutes = null,
+            companyName = null,
+            roleTitle = null,
+            candidateStage = null,
+            language = "english",
+            focusTopic = null,
+            scenarioIds = null,
+            opensAt = opensAt,
+            dueAt = dueAt,
+            allowLate = allowLate,
+            attemptLimit = attemptLimit,
+            // An MCQ test costs no AI, so there is no college-funded interview to cap.
+            interviewCap = null,
+            component =
+                component ?: base?.component?.takeIf { sameSet }
+                    ?: AssignmentRules.defaultComponent(AssignmentKind.MCQ_TEST, null, slugs),
+            topic = topic,
+            mcqCourseSlugs = slugs,
+            mcqQuestionCount = count,
+            mcqTimeLimitMinutes = minutes,
+        )
+    }
+
+    /** Every course still has enough live questions, and together they hold at least [count]. */
+    private fun checkMcqBank(
+        slugs: List<String>,
+        count: Int,
+    ) {
+        val bank = assignments.mcqCourses(slugs).associateBy { it.courseSlug }
+        val thin = slugs.filter { (bank[it]?.questions ?: 0) < AssignmentRules.MIN_MCQ_BANK }
+        if (thin.isNotEmpty()) {
+            throw invalid(
+                "mcq.courseSlugs",
+                "${thin.joinToString()} has fewer than ${AssignmentRules.MIN_MCQ_BANK} questions in the bank. Choose another course.",
+            )
+        }
+        val available = slugs.sumOf { bank.getValue(it).questions }
+        if (count > available) {
+            throw invalid("mcq.questionCount", "the chosen courses have $available questions; draw at most that many.")
+        }
+    }
+
+    /**
      * The targets in the body, checked against this college and the caller's scope; null when
      * the body has none and none are [required]. A batch or student of another college, or one
      * outside a faculty member's batches, is a 404 — as it is everywhere else in campus.
@@ -685,6 +807,7 @@ class CampusAssignmentService internal constructor(
                 focusTopic = row.focusTopic,
                 language = if (interview) row.language else null,
                 scenarioIds = row.scenarioIds,
+                mcq = row.mcqInput(),
                 opensAt = row.opensAt.toString(),
                 dueAt = row.dueAt.toString(),
                 allowLate = row.allowLate,
@@ -767,6 +890,11 @@ class CampusAssignmentService internal constructor(
             "language".takeIf { before.language != next.language },
             "focusTopic".takeIf { before.focusTopic != next.focusTopic },
             "scenarioIds".takeIf { before.scenarioIds != next.scenarioIds },
+            "mcq".takeIf {
+                before.mcqCourseSlugs != next.mcqCourseSlugs ||
+                    before.mcqQuestionCount != next.mcqQuestionCount ||
+                    before.mcqTimeLimitMinutes != next.mcqTimeLimitMinutes
+            },
             "opensAt".takeIf { before.opensAt != next.opensAt },
             "dueAt".takeIf { before.dueAt != next.dueAt },
             "allowLate".takeIf { before.allowLate != next.allowLate },
@@ -797,7 +925,13 @@ class CampusAssignmentService internal constructor(
             interviewCap = interviewCap,
             component = component,
             topic = topic,
+            mcqCourseSlugs = mcqCourseSlugs,
+            mcqQuestionCount = mcqQuestionCount,
+            mcqTimeLimitMinutes = mcqTimeLimitMinutes,
         )
+
+    private fun AssignmentRow.mcqInput(): AssignmentMcq? =
+        if (kind == AssignmentKind.MCQ_TEST) AssignmentMcq(mcqCourseSlugs.orEmpty(), mcqQuestionCount, mcqTimeLimitMinutes) else null
 
     private fun archived() = ApiException.conflict("An archived assignment cannot be changed.", code = "assignment_archived")
 
@@ -809,6 +943,7 @@ class CampusAssignmentService internal constructor(
         const val MAX_TARGET_BATCHES = 100
         const val MAX_TARGET_STUDENTS = 1000
         private val SCENARIO_ID = Regex("^[a-z0-9-]+:[a-z0-9-]+$")
+        private val COURSE_SLUG = Regex("^[a-z0-9-]+$")
 
         fun invalid(
             field: String,

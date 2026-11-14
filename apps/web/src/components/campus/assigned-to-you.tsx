@@ -2,15 +2,18 @@
 
 import type { Route } from "next";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress";
-import { fetchMyAssignments, fetchMyProgrammes } from "@/lib/api";
+import { fetchMyAssignments, fetchMyProgrammes, startMcqAttempt } from "@/lib/api";
 import { useAccessToken } from "@/lib/use-access-token";
 import type { AssignedItem, MyProgrammeView } from "@untiered/shared";
 
 import { BLOCKED_REASON_TEXT, formatDue, relativeTime, ROUND_LABEL, STATUS_LABEL, STATUS_TONE } from "./assignment-model";
+import { errorText } from "./use-load";
 
 /**
  * "Assigned to you": what a student's college has set. Renders nothing at all unless the
@@ -104,11 +107,20 @@ export function ProgrammesBlock({ programmes }: { programmes: MyProgrammeView[] 
   );
 }
 
+function mcqSummary(item: AssignedItem): string {
+  const count = item.mcq?.questionCount;
+  const minutes = item.mcq?.timeLimitMinutes;
+  return `MCQ test${count ? `, ${count} questions` : ""}${minutes ? `, ${minutes} minutes` : ", no time limit"}`;
+}
+
 function AssignedCard({ item }: { item: AssignedItem }) {
   const interview = item.kind === "interview";
+  const mcq = item.kind === "mcq_test";
   const what = interview
     ? `${item.roundType ? ROUND_LABEL[item.roundType] : "Interview"}${item.durationMinutes ? `, ${item.durationMinutes} minutes` : ""}`
-    : `${item.scenarios.length} Arena ${item.scenarios.length === 1 ? "scenario" : "scenarios"}`;
+    : mcq
+      ? mcqSummary(item)
+      : `${item.scenarios.length} Arena ${item.scenarios.length === 1 ? "scenario" : "scenarios"}`;
   return (
     <article className="card flex h-full flex-col gap-3 p-5">
       <div className="flex items-start justify-between gap-3">
@@ -123,9 +135,12 @@ function AssignedCard({ item }: { item: AssignedItem }) {
       {item.instructions ? <p className="text-caption text-ink-muted">{item.instructions}</p> : null}
       <p className="text-caption text-ink-muted">
         Due {formatDue(item.dueAt)} ({relativeTime(item.dueAt)})
-        {interview ? ` · ${item.attemptsUsed} of ${item.attemptLimit} attempts used` : null}
+        {interview || mcq ? ` · ${item.attemptsUsed} of ${item.attemptLimit} attempts used` : null}
+        {mcq && item.mcqScore !== null && item.mcqScore !== undefined ? ` · best score ${item.mcqScore}` : null}
       </p>
-      {interview ? (
+      {mcq ? (
+        <McqActions item={item} />
+      ) : interview ? (
         item.canStart ? (
           <Link href={`/interview/new?assignment=${encodeURIComponent(item.id)}` as Route} className="action-primary self-start">
             Start <span className="sr-only">{item.title}</span>
@@ -153,5 +168,61 @@ function AssignedCard({ item }: { item: AssignedItem }) {
         </ul>
       )}
     </article>
+  );
+}
+
+/** Resume the open attempt, start one, or say why not; and the latest result once there is one. */
+function McqActions({ item }: { item: AssignedItem }) {
+  const router = useRouter();
+  const accessToken = useAccessToken();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function start() {
+    if (!accessToken) return;
+    setPending(true);
+    setError(null);
+    try {
+      const attempt = await startMcqAttempt(accessToken, item.id);
+      router.push(`/campus/me/tests/${encodeURIComponent(attempt.attemptId)}` as Route);
+    } catch (cause) {
+      setError(errorText(cause, "The test could not be started just now. Try again in a moment."));
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-3">
+        {item.mcqOpenAttemptId ? (
+          <Link href={`/campus/me/tests/${encodeURIComponent(item.mcqOpenAttemptId)}` as Route} className="action-primary self-start">
+            Resume test<span className="sr-only">: {item.title}</span>
+          </Link>
+        ) : item.canStart ? (
+          <Button type="button" onClick={() => void start()} disabled={pending}>
+            {item.mcqLatestAttemptId ? "Try again" : "Start test"}
+            <span className="sr-only">: {item.title}</span>
+          </Button>
+        ) : null}
+        {item.mcqLatestAttemptId ? (
+          <Link
+            href={`/campus/me/tests/${encodeURIComponent(item.mcqLatestAttemptId)}` as Route}
+            className="text-caption font-semibold text-accent underline"
+          >
+            See your latest result<span className="sr-only">: {item.title}</span>
+          </Link>
+        ) : null}
+      </div>
+      {!item.mcqOpenAttemptId && !item.canStart ? (
+        <p className="text-caption font-medium text-ink">
+          {(item.blockedReason && BLOCKED_REASON_TEXT[item.blockedReason]) || "This test cannot be started right now."}
+        </p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="text-caption font-medium text-danger">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

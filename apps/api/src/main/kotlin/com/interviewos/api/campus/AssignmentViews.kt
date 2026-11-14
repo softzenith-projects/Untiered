@@ -10,6 +10,13 @@ data class AssignmentTargets(
     val memberIds: List<UUID>? = null,
 )
 
+/** `AssignmentInput.mcq` (contract "Module 4b"): what an MCQ test draws from. */
+data class AssignmentMcq(
+    val courseSlugs: List<String>? = null,
+    val questionCount: Int? = null,
+    val timeLimitMinutes: Int? = null,
+)
+
 /**
  * `AssignmentInput`, as `POST` and `PATCH` receive it. Every field is optional here so that a
  * bad or missing value is a `400 assignment_invalid` naming the field, not a parse failure.
@@ -26,6 +33,7 @@ data class AssignmentRequest(
     val focusTopic: String? = null,
     val language: String? = null,
     val scenarioIds: List<String>? = null,
+    val mcq: AssignmentMcq? = null,
     val opensAt: String? = null,
     val dueAt: String? = null,
     val allowLate: Boolean? = null,
@@ -68,6 +76,7 @@ data class AssignmentView(
     val focusTopic: String?,
     val language: String?,
     val scenarioIds: List<String>?,
+    val mcq: AssignmentMcq?,
     val opensAt: String,
     val dueAt: String,
     val allowLate: Boolean,
@@ -96,6 +105,8 @@ data class RecipientProgress(
     val lastActivityAt: String?,
     val sessionIds: List<UUID>,
     val scenarioScore: Double?,
+    /** MCQ kind: the best submitted score, 0–100; null before any submission. */
+    val mcqScore: Int?,
 )
 
 data class CampusScenarioOption(
@@ -136,4 +147,12 @@ data class AssignedItem(
     val canStart: Boolean,
     val blockedReason: String?,
     val sessionIds: List<UUID>,
+    /** MCQ kind: the test's shape; null for the other kinds. */
+    val mcq: AssignmentMcq?,
+    /** MCQ kind: the best submitted score, 0–100; null before any submission. */
+    val mcqScore: Int?,
+    /** MCQ kind: the unsubmitted attempt to resume, if there is one. */
+    val mcqOpenAttemptId: UUID?,
+    /** MCQ kind: the latest submitted attempt, whose result the student can review. */
+    val mcqLatestAttemptId: UUID?,
 )
