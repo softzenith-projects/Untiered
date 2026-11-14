@@ -93,8 +93,9 @@ export function StudentReadinessView({
             <ScoreSparkline evidence={readiness.evidence} />
             <ul className="flex flex-col gap-2">
               {readiness.evidence.map((item) => {
-                const href = reportHref ? reportHref(item) : null;
                 const mcq = item.kind === "mcq_test";
+                const linkable = (item.kind === "interview" && item.sessionId) || (mcq && item.mcqAttemptId);
+                const href = linkable && reportHref ? reportHref(item) : null;
                 return (
                   <li key={`${item.assignmentId}-${item.completedAt}`} className="card flex flex-wrap items-center justify-between gap-3 p-4">
                     <div>
