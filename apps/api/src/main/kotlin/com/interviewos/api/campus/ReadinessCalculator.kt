@@ -78,6 +78,8 @@ data class ReadinessEvidence(
     val sessionId: UUID?,
     val score: Int,
     val completedAt: Instant,
+    /** MCQ items: the submitted attempt, which staff can open. */
+    val mcqAttemptId: UUID? = null,
 )
 
 data class ReadinessSuggestion(

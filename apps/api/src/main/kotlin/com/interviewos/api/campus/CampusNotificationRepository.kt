@@ -364,12 +364,15 @@ class CampusNotificationRepository(
 
     /**
      * Whether student `m` has completed assignment `c`, as the progress view derives it: a
-     * completed attempt for an interview, every step answered for a set of Arena scenarios.
+     * completed attempt for an interview, every step answered for a set of Arena scenarios, a
+     * submitted attempt for an MCQ test.
      */
     private fun doneExpression(): String =
         """
         (exists (select 1 from public.assignment_attempts a
                   where a.org_id = :orgId and a.assignment_id = c.id and a.member_id = m.id and a.status = 'completed')
+         or exists (select 1 from public.mcq_attempts q
+                     where q.org_id = :orgId and q.assignment_id = c.id and q.member_id = m.id and q.submitted_at is not null)
          or (c.kind = 'arena_scenarios'
              and exists (select 1 from public.arena_scenario_steps s0 where s0.scenario_id = any(c.scenario_ids))
              and not exists (select 1 from public.arena_scenario_steps s

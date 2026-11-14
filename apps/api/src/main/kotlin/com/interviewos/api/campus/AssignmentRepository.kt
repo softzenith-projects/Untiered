@@ -34,6 +34,9 @@ data class AssignmentRow(
     val publishedAt: Instant?,
     val createdByMemberId: UUID?,
     val createdByName: String?,
+    val mcqCourseSlugs: List<String>? = null,
+    val mcqQuestionCount: Int? = null,
+    val mcqTimeLimitMinutes: Int? = null,
 )
 
 /** The writable columns, written together once the service has validated them. */
@@ -56,6 +59,9 @@ data class AssignmentFields(
     val interviewCap: Int?,
     val component: String,
     val topic: String?,
+    val mcqCourseSlugs: List<String>? = null,
+    val mcqQuestionCount: Int? = null,
+    val mcqTimeLimitMinutes: Int? = null,
 )
 
 /** The targets of one assignment, with what the staff screens show for them. */
@@ -101,18 +107,33 @@ data class RecipientFacts(
     val firstCompletedAt: Instant? = null,
     /** The latest answer to one of the assignment's steps: when a scenario set was completed, once it is. */
     val lastAnswerAt: Instant? = null,
+    /** MCQ kind: some attempt was submitted. */
+    val mcqSubmitted: Boolean = false,
+    /** MCQ kind: the unsubmitted attempt, if one is open. */
+    val mcqOpenAttemptId: UUID? = null,
+    /** MCQ kind: the latest submitted attempt. */
+    val mcqLatestAttemptId: UUID? = null,
+    /** MCQ kind: the best submitted score, 0–100. */
+    val mcqBestScore: Int? = null,
+    /** MCQ kind: the first submission, when the test was completed. */
+    val mcqFirstSubmittedAt: Instant? = null,
 ) {
     fun completed(kind: AssignmentKind): Boolean =
         when (kind) {
             AssignmentKind.INTERVIEW -> attemptCompleted
             AssignmentKind.ARENA_SCENARIOS -> stepsTotal > 0 && stepsAnswered >= stepsTotal
+            AssignmentKind.MCQ_TEST -> mcqSubmitted
         }
 
     fun inProgress(kind: AssignmentKind): Boolean =
         when (kind) {
             AssignmentKind.INTERVIEW -> attemptInProgress
             AssignmentKind.ARENA_SCENARIOS -> stepsAnswered > 0
+            AssignmentKind.MCQ_TEST -> mcqOpenAttemptId != null
         }
+
+    /** The best submitted score of an MCQ test, 0–100; null for the other kinds or before a submission. */
+    fun mcqScore(kind: AssignmentKind): Int? = if (kind == AssignmentKind.MCQ_TEST) mcqBestScore else null
 
     /**
      * When the assignment was completed, or null while it is not: an interview at its first
@@ -126,6 +147,7 @@ data class RecipientFacts(
             when (kind) {
                 AssignmentKind.INTERVIEW -> firstCompletedAt
                 AssignmentKind.ARENA_SCENARIOS -> lastAnswerAt
+                AssignmentKind.MCQ_TEST -> mcqFirstSubmittedAt
             }
         }
 
@@ -143,6 +165,14 @@ data class ScenarioRow(
     val title: String,
     val tier: String,
     val estimatedMinutes: Int,
+)
+
+/** A course of the MCQ bank and how many live questions it has. */
+data class McqCourseRow(
+    val courseSlug: String,
+    val courseTitle: String,
+    val topic: String?,
+    val questions: Int,
 )
 
 /** How far one user is through one scenario. */
@@ -256,12 +286,12 @@ class AssignmentRepository(
                         org_id, created_by_member_id, kind, title, instructions, round_type, duration_minutes,
                         company_name, role_title, candidate_stage, language, focus_topic, scenario_ids,
                         opens_at, due_at, allow_late, attempt_limit, interview_cap, readiness_component, topic,
-                        programme_id, programme_week
+                        programme_id, programme_week, mcq_course_slugs, mcq_question_count, mcq_time_limit_minutes
                     ) values (
                         :orgId, :createdBy, :kind, :title, :instructions, :roundType, :duration,
                         :company, :role, :stage, :language, :focusTopic, ${scenarioArray(fields.scenarioIds)},
                         :opensAt, :dueAt, :allowLate, :attemptLimit, :interviewCap, :component, :topic,
-                        :programmeId, :programmeWeek
+                        :programmeId, :programmeWeek, ${courseArray(fields.mcqCourseSlugs)}, :mcqQuestions, :mcqMinutes
                     )
                     returning id
                     """.trimIndent(),
@@ -288,7 +318,9 @@ class AssignmentRepository(
                            candidate_stage = :stage, language = :language, focus_topic = :focusTopic,
                            scenario_ids = ${scenarioArray(fields.scenarioIds)}, opens_at = :opensAt, due_at = :dueAt,
                            allow_late = :allowLate, attempt_limit = :attemptLimit, interview_cap = :interviewCap,
-                           readiness_component = :component, topic = :topic
+                           readiness_component = :component, topic = :topic,
+                           mcq_course_slugs = ${courseArray(fields.mcqCourseSlugs)}, mcq_question_count = :mcqQuestions,
+                           mcq_time_limit_minutes = :mcqMinutes
                      where org_id = :orgId and id = :id
                     """.trimIndent(),
                 ).param("orgId", scope.orgId)
@@ -524,6 +556,19 @@ class AssignmentRepository(
                          where c.kind = 'arena_scenarios'
                     ), totals as (
                         select assignment_id, count(*) as total from steps group by assignment_id
+                    ), mcq as (
+                        select r.assignment_id, r.member_id, count(*) as attempts_used,
+                               coalesce(bool_or(q.submitted_at is not null), false) as submitted,
+                               (array_agg(q.id order by q.started_at) filter (where q.submitted_at is null))[1] as open_id,
+                               (array_agg(q.id order by q.submitted_at desc, q.id) filter (where q.submitted_at is not null))[1]
+                                 as latest_id,
+                               max(q.score) as best_score,
+                               min(q.submitted_at) as first_submitted_at,
+                               max(coalesce(q.submitted_at, q.started_at)) as last_at
+                          from recipients r
+                          join public.mcq_attempts q
+                            on q.org_id = :orgId and q.assignment_id = r.assignment_id and q.member_id = r.member_id
+                         group by r.assignment_id, r.member_id
                     ), answers as (
                         select r.assignment_id, r.member_id, count(*) as answered,
                                count(*) filter (where ans.is_correct) as correct, max(ans.answered_at) as last_at
@@ -534,7 +579,7 @@ class AssignmentRepository(
                     )
                     select r.assignment_id, r.member_id, m.user_id, u.display_name, u.email, m.roll_number,
                            b.id as batch_id, b.name as batch_name,
-                           coalesce(at.attempts_used, 0) as attempts_used,
+                           coalesce(at.attempts_used, 0) + coalesce(mq.attempts_used, 0) as attempts_used,
                            coalesce(at.org_funded_used, 0) as org_funded_used,
                            coalesce(at.completed, false) as attempt_completed,
                            coalesce(at.in_progress, false) as attempt_in_progress,
@@ -543,14 +588,18 @@ class AssignmentRepository(
                            coalesce(an.answered, 0) as steps_answered,
                            coalesce(an.correct, 0) as steps_correct,
                            coalesce(tt.total, 0) as steps_total,
-                           greatest(at.last_at, an.last_at) as last_activity_at,
-                           at.first_completed_at, an.last_at as last_answer_at
+                           greatest(at.last_at, an.last_at, mq.last_at) as last_activity_at,
+                           at.first_completed_at, an.last_at as last_answer_at,
+                           coalesce(mq.submitted, false) as mcq_submitted, mq.open_id as mcq_open_id,
+                           mq.latest_id as mcq_latest_id, mq.best_score as mcq_best_score,
+                           mq.first_submitted_at as mcq_first_submitted_at
                       from recipients r
                       join public.org_members m on m.org_id = :orgId and m.id = r.member_id
                       join public.users u on u.id = m.user_id
                       join public.org_batches b on b.org_id = :orgId and b.id = m.batch_id
                       left join attempts at on at.assignment_id = r.assignment_id and at.member_id = r.member_id
                       left join answers an on an.assignment_id = r.assignment_id and an.member_id = r.member_id
+                      left join mcq mq on mq.assignment_id = r.assignment_id and mq.member_id = r.member_id
                       left join totals tt on tt.assignment_id = r.assignment_id
                      where true$filters
                      order by r.assignment_id, b.name, m.roll_number nulls last, u.display_name nulls last, m.id
@@ -734,6 +783,32 @@ class AssignmentRepository(
             }.list()
     }
 
+    // -- the MCQ bank (not college data: the shared catalogue) -------------------------
+
+    /**
+     * Live question counts per course, with the course's title and campus topic; only the
+     * courses in [slugs] when given. Never reads a prompt or an answer key.
+     */
+    fun mcqCourses(slugs: Collection<String>? = null): List<McqCourseRow> {
+        if (slugs != null && slugs.isEmpty()) return emptyList()
+        val statement =
+            jdbc
+                .sql(
+                    """
+                    select q.course_slug, max(q.course_title) as course_title, max(q.topic) as topic, count(*) as questions
+                      from public.mcq_questions q
+                     where q.status = 'live'${if (slugs != null) " and q.course_slug in (:slugs)" else ""}
+                     group by q.course_slug
+                     order by max(q.course_title), q.course_slug
+                    """.trimIndent(),
+                )
+        slugs?.let { statement.param("slugs", it.toList()) }
+        return statement
+            .query { rs, _ ->
+                McqCourseRow(rs.getString("course_slug"), rs.getString("course_title"), rs.getString("topic"), rs.getInt("questions"))
+            }.list()
+    }
+
     /** Steps answered and total, per scenario, for one user. */
     fun scenarioProgress(
         userId: UUID,
@@ -781,6 +856,8 @@ class AssignmentRepository(
 
     private fun scenarioArray(ids: List<String>?): String = if (ids == null) "null" else "cast(array[:scenarioIds] as text[])"
 
+    private fun courseArray(slugs: List<String>?): String = if (slugs == null) "null" else "cast(array[:mcqCourses] as text[])"
+
     private fun bindFields(
         statement: JdbcClient.StatementSpec,
         fields: AssignmentFields,
@@ -805,6 +882,10 @@ class AssignmentRepository(
             .param("topic", fields.topic)
         // A list, so the placeholder expands to array[?, ?, …], one element per id.
         fields.scenarioIds?.let { statement.param("scenarioIds", it) }
+        statement
+            .param("mcqQuestions", fields.mcqQuestionCount)
+            .param("mcqMinutes", fields.mcqTimeLimitMinutes)
+        fields.mcqCourseSlugs?.let { statement.param("mcqCourses", it) }
     }
 
     private fun ResultSet.toAssignment(): AssignmentRow =
@@ -833,6 +914,9 @@ class AssignmentRepository(
             publishedAt = getTimestamp("published_at")?.toInstant(),
             createdByMemberId = getString("created_by_member_id")?.let(UUID::fromString),
             createdByName = getString("created_by_name"),
+            mcqCourseSlugs = getArray("mcq_course_slugs")?.let { array -> (array.array as Array<*>).map { it.toString() } },
+            mcqQuestionCount = getObject("mcq_question_count")?.let { (it as Number).toInt() },
+            mcqTimeLimitMinutes = getObject("mcq_time_limit_minutes")?.let { (it as Number).toInt() },
         )
 
     private fun ResultSet.toFacts(): RecipientFacts =
@@ -857,6 +941,11 @@ class AssignmentRepository(
             lastActivityAt = getTimestamp("last_activity_at")?.toInstant(),
             firstCompletedAt = getTimestamp("first_completed_at")?.toInstant(),
             lastAnswerAt = getTimestamp("last_answer_at")?.toInstant(),
+            mcqSubmitted = getBoolean("mcq_submitted"),
+            mcqOpenAttemptId = getString("mcq_open_id")?.let(UUID::fromString),
+            mcqLatestAttemptId = getString("mcq_latest_id")?.let(UUID::fromString),
+            mcqBestScore = getObject("mcq_best_score")?.let { (it as Number).toInt() },
+            mcqFirstSubmittedAt = getTimestamp("mcq_first_submitted_at")?.toInstant(),
         )
 
     private fun ResultSet.uuids(column: String): List<UUID> =
@@ -868,6 +957,7 @@ class AssignmentRepository(
                    x.company_name, x.role_title, x.candidate_stage, x.language, x.focus_topic, x.scenario_ids,
                    x.opens_at, x.due_at, x.allow_late, x.attempt_limit, x.interview_cap, x.readiness_component,
                    x.topic, x.status, x.created_at, x.published_at, x.created_by_member_id,
+                   x.mcq_course_slugs, x.mcq_question_count, x.mcq_time_limit_minutes,
                    cu.display_name as created_by_name
               from public.assignments x
               left join public.org_members cm on cm.org_id = x.org_id and cm.id = x.created_by_member_id

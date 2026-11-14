@@ -5,12 +5,13 @@ import com.interviewos.api.interview.RoundType
 import org.springframework.http.HttpStatus
 import java.time.Instant
 
-/** `interview` or `arena_scenarios`, as `assignments.kind` stores it. */
+/** `interview`, `arena_scenarios` or `mcq_test`, as `assignments.kind` stores it. */
 enum class AssignmentKind(
     val dbValue: String,
 ) {
     INTERVIEW("interview"),
     ARENA_SCENARIOS("arena_scenarios"),
+    MCQ_TEST("mcq_test"),
     ;
 
     companion object {
@@ -66,20 +67,30 @@ object AssignmentRules {
     const val MAX_ATTEMPTS = 10
     const val MAX_SCENARIOS = 20
 
+    /** An MCQ test (contract "Module 4b"): 5–50 questions, an optional 5–120 minute limit. */
+    const val MIN_MCQ_QUESTIONS = 5
+    const val MAX_MCQ_QUESTIONS = 50
+    const val MIN_MCQ_MINUTES = 5
+    const val MAX_MCQ_MINUTES = 120
+    const val MAX_MCQ_COURSES = 10
+
+    /** A course is offered for MCQ tests only with at least this many live questions. */
+    const val MIN_MCQ_BANK = 5
+
     /** The Arena course whose scenarios are all coding problems. */
     const val DSA_COURSE_ID = "dsa"
 
     /**
      * The readiness component staff did not choose, defaulted as the contract says. For a
      * scenario set, [scenarioCourseIds] are the courses of the chosen scenarios: coding when
-     * every one is DSA, core CS otherwise.
+     * every one is DSA, core CS otherwise. An MCQ test passes its course slugs the same way.
      */
     fun defaultComponent(
         kind: AssignmentKind,
         roundType: RoundType?,
         scenarioCourseIds: Collection<String> = emptyList(),
     ): String {
-        if (kind == AssignmentKind.ARENA_SCENARIOS) {
+        if (kind == AssignmentKind.ARENA_SCENARIOS || kind == AssignmentKind.MCQ_TEST) {
             val allDsa = scenarioCourseIds.isNotEmpty() && scenarioCourseIds.all { it == DSA_COURSE_ID }
             return if (allDsa) "coding" else "core_cs"
         }
@@ -124,7 +135,8 @@ object AssignmentRules {
  * (not handed back) against `attemptLimit`; 4. the student's org-funded attempts against
  * `interviewCap`; 5. the college's org-funded attempts (not handed back) against its
  * allowance. A scenario set is only ever refused for 1 and 2: it has no attempts, and costs
- * the college nothing.
+ * the college nothing. An MCQ test is refused for 1, 2 and 3: each start is an attempt, but it
+ * costs no AI, so neither the interview cap nor the college's allowance applies.
  */
 object AssignmentGate {
     enum class Blocked(
@@ -184,8 +196,9 @@ object AssignmentGate {
     ): Blocked? {
         if (now.isBefore(opensAt)) return Blocked.NOT_OPEN
         if (!allowLate && !now.isBefore(dueAt)) return Blocked.PAST_DUE
-        if (kind != AssignmentKind.INTERVIEW) return null
+        if (kind == AssignmentKind.ARENA_SCENARIOS) return null
         if (attemptsUsed >= attemptLimit) return Blocked.ATTEMPT_LIMIT
+        if (kind == AssignmentKind.MCQ_TEST) return null
         if (orgFundedUsed >= (interviewCap ?: attemptLimit)) return Blocked.STUDENT_CAP
         if (collegeUsed >= collegeAllowance) return Blocked.COLLEGE_ALLOWANCE
         return null

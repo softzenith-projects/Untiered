@@ -73,6 +73,11 @@ class ProductFeatureInterceptorTest {
             ProductFeature.CAMPUS,
             defaults.featureFor("GET", "/api/v1/campus/orgs/86fcddf4-5e2b-4cab-b0c6-05e928d04529/assignments"),
         )
+        // MCQ tests (module 4b) are campus routes, though they sit under /me.
+        val id = "86fcddf4-5e2b-4cab-b0c6-05e928d04529"
+        assertEquals(ProductFeature.CAMPUS, defaults.featureFor("POST", "/api/v1/me/assignments/$id/mcq-attempts"))
+        assertEquals(ProductFeature.CAMPUS, defaults.featureFor("GET", "/api/v1/me/mcq-attempts/$id"))
+        assertEquals(ProductFeature.CAMPUS, defaults.featureFor("POST", "/api/v1/me/mcq-attempts/$id/submit"))
     }
 
     @Test

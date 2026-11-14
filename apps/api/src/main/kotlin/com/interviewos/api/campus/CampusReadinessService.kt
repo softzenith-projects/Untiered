@@ -278,9 +278,9 @@ class CampusReadinessService internal constructor(
     // -- computing -----------------------------------------------------------------------------
 
     /**
-     * Every student in scope with their readiness and counts, from five statements whatever the
+     * Every student in scope with their readiness and counts, from six statements whatever the
      * number of students: the students, the assignments, the recipients' facts, the interview
-     * evidence (and the weights, read by the caller).
+     * evidence, the MCQ evidence (and the weights, read by the caller).
      */
     internal fun compute(
         scope: OrgScope,
@@ -311,6 +311,22 @@ class CampusReadinessService internal constructor(
             val assignment = rows[fact.assignmentId] ?: continue
             val item = scenarioItem(assignment, fact) ?: continue
             evidence.getOrPut(fact.memberId, ::mutableListOf) += item
+        }
+        for (row in readiness.mcqEvidence(scope, filter)) {
+            if (row.memberId !in inScope) continue
+            val component = ReadinessComponent.fromWireValue(row.component) ?: continue
+            evidence.getOrPut(row.memberId, ::mutableListOf) +=
+                ReadinessEvidence(
+                    assignmentId = row.assignmentId,
+                    assignmentTitle = row.title,
+                    component = component,
+                    topic = row.topic,
+                    kind = AssignmentKind.MCQ_TEST,
+                    sessionId = null,
+                    score = row.score,
+                    completedAt = row.submittedAt,
+                    mcqAttemptId = row.attemptId,
+                )
         }
 
         val published = facts.filter { rows[it.assignmentId]?.status == STATUS_PUBLISHED }.groupBy { it.memberId }
@@ -490,6 +506,7 @@ class CampusReadinessService internal constructor(
                         sessionId = it.sessionId,
                         score = it.score,
                         completedAt = it.completedAt.toString(),
+                        mcqAttemptId = it.mcqAttemptId,
                     )
                 },
             suggestedTopics = facts.result.suggestions.map { SuggestedTopic(it.component.wireValue, it.topic, it.reason) },
