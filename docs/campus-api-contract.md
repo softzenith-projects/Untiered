@@ -911,3 +911,67 @@ How each figure is read (`TpoOverview`, pinned by `TpoOverviewTest`):
   `CampusTopic` order.
 - `batches` lists every batch in scope, empty ones included, ordered by department code and
   then name.
+
+---
+
+## Module 13: college self-registration (leads)
+
+A college registers interest on `/colleges`. This creates a **lead**, never an
+organisation and never any access. A platform admin reviews the lead and converts it
+into a college. The feature has its own switch, `interviewos.features.campus-leads`
+(`NEXT_PUBLIC_FEATURE_CAMPUS_LEADS`, default `true`), independent of `campus`, so leads
+can be collected before Campus is switched on.
+
+```ts
+type LeadStatus = "new" | "contacted" | "converted" | "not_a_fit";
+type LeadRole = "tpo" | "faculty" | "college_admin" | "other";
+
+interface LeadRequest {                 // public, no sign-in
+  collegeName: string;                  // 2–200
+  city: string;                         // 1–120
+  state: string;                        // 1–120
+  contactName: string;                  // 1–200
+  contactRole: LeadRole;
+  email: string;                        // a valid address, lower-cased by the server
+  phone?: string | null;                // ≤ 20 characters: digits, spaces, + - ( )
+  approxStudents?: number | null;       // 1..100000
+  message?: string | null;              // ≤ 2000
+  consentToContact: true;               // the form's "you may contact me about this" box
+  turnstileToken: string;               // the existing Cloudflare Turnstile check
+  website?: string;                     // honeypot: must be empty, otherwise silently accepted and dropped
+}
+
+interface LeadView {
+  id: string; status: LeadStatus;
+  collegeName: string; city: string; state: string;
+  contactName: string; contactRole: LeadRole; email: string; phone: string | null;
+  approxStudents: number | null; message: string | null;
+  notes: string | null;                 // private to platform admins
+  orgId: string | null;                 // set once converted
+  createdAt: string; updatedAt: string; statusChangedBy: string | null;
+}
+```
+
+| Method · path | Who | Body → response |
+|---|---|---|
+| `POST /campus/leads` | **public** (the only unauthenticated campus route) | `LeadRequest` → `202 { received: true }`. Errors: `400 lead_invalid` (with a message naming the field); `400 turnstile_failed`; `429 rate_limited` (5 per IP per hour, 3 per email per day). A duplicate email for the same college within 30 days is merged into the open lead, not stored twice, and still answers `202`, so the response never reveals that a lead exists. |
+| `GET /admin/campus/leads?status=&q=&cursor=` | platform admin | → `{ items: LeadView[], nextCursor }`, newest first |
+| `GET /admin/campus/leads/{id}` | platform admin | → `LeadView` |
+| `PATCH /admin/campus/leads/{id}` | platform admin | `{ status?, notes? }` → `LeadView` (`converted` can only be set by convert) |
+| `POST /admin/campus/leads/{id}/convert` | platform admin | `{ name, slug, city?, state?, interviewAllowance? }` (prefilled from the lead) → `201 { org: OrgView, invite: InviteView }`. In one transaction it creates the organisation, a `college_admin` invite to the lead's email (module 3), and sets the lead to `converted` with its `orgId`. `409 lead_already_converted`. |
+
+**Notification.** A new lead queues one email to `interviewos.campus.lead-notify-email`
+(`CAMPUS_LEADS_NOTIFY_EMAIL`, empty means none) through the existing SES sender. The
+email contains the college, city, contact name and role, and a link to
+`/admin/campus/leads/{id}`. It never includes the phone number or the message. It is sent
+as an address-only delivery (no user row), the way module 3's invite job does it.
+
+**Data handling.**
+- The `campus_leads` table has RLS on and no policies for `authenticated`.
+- Rate-limit buckets store a hashed IP, never the raw IP.
+- A lead in `not_a_fit` is deleted after 180 days by a scheduled job.
+- A lead's contact can ask for deletion through the existing contact channel; a platform
+  admin can delete with `DELETE /admin/campus/leads/{id}` (`204`).
+
+Every status change and conversion is logged with the admin's user id; once a lead is
+converted, the college's own audit log takes over.
