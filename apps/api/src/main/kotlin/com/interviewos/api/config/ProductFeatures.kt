@@ -20,6 +20,8 @@ data class ProductFeatureProperties(
     val questions: Boolean = false,
     /** Untiered Campus (colleges). Off by default so its modules can merge dark. */
     val campus: Boolean = false,
+    /** College self-registration (contract Module 13). Independent of [campus], so leads can come in first. */
+    val campusLeads: Boolean = true,
 ) {
     fun enabled(feature: ProductFeature): Boolean =
         when (feature) {
@@ -29,6 +31,7 @@ data class ProductFeatureProperties(
             ProductFeature.REPORTS -> reports
             ProductFeature.QUESTIONS -> questions
             ProductFeature.CAMPUS -> campus
+            ProductFeature.CAMPUS_LEADS -> campusLeads
         }
 }
 
@@ -39,6 +42,7 @@ enum class ProductFeature {
     REPORTS,
     QUESTIONS,
     CAMPUS,
+    CAMPUS_LEADS,
 }
 
 /**
@@ -65,6 +69,11 @@ class ProductFeatureInterceptor(
         method: String,
         path: String,
     ): ProductFeature? {
+        // Leads have their own switch, checked before the campus prefixes that contain them.
+        if (path == "/api/v1/campus/leads" || path.startsWith("/api/v1/campus/leads/")) return ProductFeature.CAMPUS_LEADS
+        if (path == "/api/v1/admin/campus/leads" || path.startsWith("/api/v1/admin/campus/leads/")) {
+            return ProductFeature.CAMPUS_LEADS
+        }
         if (path.startsWith("/api/v1/campus/") || path.startsWith("/api/v1/admin/campus/") || path == "/api/v1/admin/campus") {
             return ProductFeature.CAMPUS
         }

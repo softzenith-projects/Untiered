@@ -43,6 +43,11 @@ class SecurityConfig {
                 // Razorpay has no user token. The signature over the body admits it instead,
                 // and BillingService refuses every delivery that does not carry a valid one.
                 it.requestMatchers(HttpMethod.POST, "/api/v1/billing/razorpay/webhook").permitAll()
+                // A college registering interest from the public /colleges page (campus contract
+                // Module 13). It creates a lead and nothing else: no organisation, no access. The
+                // honeypot, Turnstile and the per-IP and per-email limits in CampusLeadService stand
+                // in for a token. Exactly this one path and method; nothing else under /campus.
+                it.requestMatchers(HttpMethod.POST, "/api/v1/campus/leads").permitAll()
                 it.anyRequest().authenticated()
             }.oauth2ResourceServer { resourceServer ->
                 resourceServer.jwt { }
