@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import org.springframework.jdbc.datasource.DriverManagerDataSource
+import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.databind.json.JsonMapper
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -165,6 +166,18 @@ class CampusUsageLeaderboardDatabaseIntegrationTest {
         assertEquals(0.0, empty.getValue(orgA).aiCostUsd)
         assertNull(empty.getValue(orgA).aiCostPerInterviewUsd)
         assertNotFound { usage.usage(adminA, null, null) }
+    }
+
+    @Test
+    fun `an operator can read usage inside a read-only transaction, as the real route runs it`() {
+        // The service is @Transactional(readOnly = true) in the running app. The admin gate used
+        // to provision the operator's user row there, and Postgres refuses any INSERT in a
+        // read-only transaction, so the usage page answered 500 to every operator.
+        val readOnly = TransactionTemplate(DataSourceTransactionManager(dataSource)).apply { isReadOnly = true }
+        val rows = readOnly.execute { usage.usage(operator, null, null) }
+        assertNotNull(rows)
+        assertTrue(rows.any { it.orgId == orgA })
+        assertTrue(rows.any { it.orgId == orgB })
     }
 
     @Test

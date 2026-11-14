@@ -7,6 +7,7 @@ import com.interviewos.api.user.SupabaseIdentity
 import com.interviewos.api.user.UserRepository
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Component
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.UUID
 
 /**
@@ -38,7 +39,7 @@ class CampusAccess(
      */
     fun requirePlatformAdmin(identity: SupabaseIdentity): PlatformAdmin {
         adminAccess.require(identity)
-        userRepository.provision(identity)
+        provisionOperator(identity)
         return PlatformAdmin(identity.id)
     }
 
@@ -128,9 +129,19 @@ class CampusAccess(
                 .query(Long::class.java)
                 .single() > 0
         if (!exists) throw ApiException.notFound()
-        // The audit log names the operator by user id, which must exist as a row to be referenced.
-        userRepository.provision(identity)
+        provisionOperator(identity)
         return OrgScope(orgId, identity.id, role = null, memberId = null, platformAdmin = true)
+    }
+
+    /**
+     * The audit log names the operator by user id, which must exist as a row to be referenced.
+     * Only a write can audit, so a read-only transaction skips this: Postgres refuses any
+     * INSERT there, even one that would change nothing, and every read-only admin route
+     * (usage, programme templates, the MCQ bank) answered 500 to the operator because of it.
+     */
+    private fun provisionOperator(identity: SupabaseIdentity) {
+        if (TransactionSynchronizationManager.isCurrentTransactionReadOnly()) return
+        userRepository.provision(identity)
     }
 
     /** Batches granted directly, plus every batch of a granted department. */
