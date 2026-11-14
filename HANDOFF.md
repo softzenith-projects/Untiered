@@ -106,6 +106,24 @@ MCQ tests (spec 4b) are deferred; see assumption 6.
    roughly 40% of them tests. The
    history merges module by module, so it can be reviewed per module branch.
 
+## Added after the main run
+- **College self-registration (contract Module 13).**
+  - A "Register your college" form on `/colleges` creates a lead, never access. Your team
+    is emailed, and platform admins triage leads at `/admin/campus/leads` and convert one
+    into a college plus an invite for its first admin.
+  - Spam protection: Turnstile checked on the server, rate limits on hashed IPs, and a
+    honeypot field.
+  - New config: `TURNSTILE_SECRET_KEY`, `CAMPUS_LEADS_NOTIFY_EMAIL`,
+    `CAMPUS_LEADS_HASH_SALT` (set it in production, or the limits reset on every restart),
+    and `NEXT_PUBLIC_FEATURE_CAMPUS_LEADS` (default true).
+  - **New migration `20261114120000_campus_leads.sql` is NOT yet on the hosted
+    database.** Apply it with `db:push`.
+  - The privacy policy should mention lead data and the 180-day deletion of "Not a fit"
+    leads. That is the owner's legal call.
+- **TPO overview (contract Module 7b):** headline cards with change against the previous
+  30 days, the practice pipeline, readiness by skill, weakest topics and a batches table,
+  plus a "sign in to your portal" link for staff.
+
 ## Fixed after the main run
 - Campus emails for scheduled assignments, such as a programme's later weeks, now go out
   when each assignment opens, not when it is published (`fix/campus-programme-email-timing`).
