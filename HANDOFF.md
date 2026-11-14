@@ -27,7 +27,7 @@ All 12 modules are built (API and web) and merged on `feat/campus-v1`:
 - 11: usage and AI cost per college (internal)
 - 12: the opt-in anonymous leaderboard
 
-MCQ tests (spec 4b) are deferred; see assumption 6.
+MCQ tests (spec 4b) are deferred; see the MCQ tests entry above.
 
 ## Blockers for the owner
 1. **GitHub Actions is not running any job.** Every run since about 09:39 on 13 November
@@ -68,7 +68,7 @@ MCQ tests (spec 4b) are deferred; see assumption 6.
 5. **Funding:** college-assigned interviews come from a per-college `interview_allowance`
    that a platform admin sets by hand. They never use the student's free rounds or
    credits. A failed round hands its unit back.
-6. **MCQ tests are deferred** (spec 4b). Course MCQs are graded in the browser. Arena
+6. **MCQ tests are now built** (spec 4b). Course MCQs are graded in the browser. Arena
    scenario sets are graded on the server and can be assigned.
 7. **PDFs are print pages.** The batch report and certificates are print-optimised pages
    ("Save as PDF"), so no PDF library was added.
@@ -107,6 +107,17 @@ MCQ tests (spec 4b) are deferred; see assumption 6.
    history merges module by module, so it can be reviewed per module branch.
 
 ## Added after the main run
+- **MCQ tests (spec 4b).**
+  - The tests are marked on the server, from a 603-question bank exported from the course
+    quizzes (`scripts/export-mcq-bank.mjs`). A drift test fails when the courses change
+    and the bank needs regenerating.
+  - Courses: java 105, javascript 132, dsa 90, ai-agents 99, system-design 177. DBMS, OS,
+    networks and aptitude have no course content, so they have no questions.
+  - New migrations `20261114120500_campus_mcq.sql` and `20261114130000_campus_mcq_bank.sql`
+    are NOT on the hosted database yet.
+- **Local demo data:** `npm run campus:seed-demo -- --yes --staff you@x:tpo --student y@x`.
+  It refuses to run against anything that isn't local, and `--reset` removes it. See
+  `docs/guides/campus-local-testing.md`.
 - **College self-registration (contract Module 13).**
   - A "Register your college" form on `/colleges` creates a lead, never access. Your team
     is emailed, and platform admins triage leads at `/admin/campus/leads` and convert one
