@@ -138,6 +138,15 @@ MCQ tests (spec 4b) are deferred; see the MCQ tests entry above.
 ## Fixed after the main run
 - Campus emails for scheduled assignments, such as a programme's later weeks, now go out
   when each assignment opens, not when it is published (`fix/campus-programme-email-timing`).
+- Platform admins got a 500 on every read-only admin route: usage, programme templates, and a
+  college's MCQ bank, scenario options and comments. The admin gate inserted the operator's
+  user row inside a read-only transaction, which Postgres refuses. It now skips that step in
+  read-only transactions, where no audit row is written. Found by the owner in a browser;
+  the database tests had missed it because they ran outside a transaction
+  (`fix/campus-admin-readonly`, with a regression test that runs inside one).
+- For local admin testing with an email-and-password login (local Google sign-in has no
+  client id), set `ADMIN_USER_IDS` in `.env` to the local account's id. Never copy that
+  value to production.
 
 ## Open questions
 - Should "last active" exclude personal practice entirely? (Assumption 2.)
