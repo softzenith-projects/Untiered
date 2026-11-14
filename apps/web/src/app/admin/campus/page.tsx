@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { AdminColleges } from "@/components/campus/admin-colleges";
 import { SurfaceHeader } from "@/components/ui/surface-header";
+import { campusLeadsEnabled } from "@/lib/flags";
 import { requireCampus } from "@/lib/require-feature";
 
 export const metadata: Metadata = { title: "Colleges", robots: { index: false, follow: false } };
@@ -23,6 +24,11 @@ export default function AdminCampusPage() {
         <Link href="/admin/campus/programmes" className="w-fit text-caption font-semibold text-accent underline">
           Programme templates
         </Link>
+        {campusLeadsEnabled() ? (
+          <Link href="/admin/campus/leads" className="w-fit text-caption font-semibold text-accent underline">
+            College leads from /colleges
+          </Link>
+        ) : null}
         <AdminColleges />
       </div>
     </AppShell>

@@ -3,17 +3,18 @@ import Link from "next/link";
 
 import { BrandWordmark } from "@/components/brand-logo";
 import { SessionLink } from "@/components/session-link";
+import { CollegeLeadForm } from "@/components/campus/college-lead-form";
 import { SiteFooter } from "@/components/site-footer";
 import { buttonStyles } from "@/components/ui/button";
-import { CAMPUS_CONTACT_HREF, CAMPUS_PRODUCT_NAME } from "@/lib/campus";
-import { campusEnabled, featureEnabled } from "@/lib/flags";
+import { CAMPUS_CONTACT_HREF, CAMPUS_PRODUCT_NAME, CAMPUS_REGISTER_ANCHOR } from "@/lib/campus";
+import { campusEnabled, campusLeadsEnabled, featureEnabled } from "@/lib/flags";
 import { LEGAL } from "@/lib/legal";
 import { publicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Untiered for Colleges · Placement Interview Prep",
   description:
-    "Untiered Campus for placement cells: spoken AI mock interviews for every student, for the employers that visit your campus. Talk to us about a pilot.",
+    "Untiered Campus for placement cells: spoken AI mock interviews for every student, for the employers that visit your campus. Register your college for a pilot.",
   path: "/colleges",
 });
 
@@ -28,6 +29,8 @@ export const metadata: Metadata = publicPageMetadata({
 export default function CollegesPage() {
   const mockInterviewsEnabled = featureEnabled("mockInterviews");
   const coursesEnabled = featureEnabled("courses");
+  // With self-registration switched off, the page falls back to writing to us.
+  const leadsEnabled = campusLeadsEnabled();
 
   const today = [
     mockInterviewsEnabled
@@ -87,9 +90,15 @@ export default function CollegesPage() {
               ready before the drive.
             </p>
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <a href={CAMPUS_CONTACT_HREF} className={buttonStyles({ size: "lg" })}>
-                Talk to us about a pilot
-              </a>
+              {leadsEnabled ? (
+                <a href={`#${CAMPUS_REGISTER_ANCHOR}`} className={buttonStyles({ size: "lg" })}>
+                  Register your college
+                </a>
+              ) : (
+                <a href={CAMPUS_CONTACT_HREF} className={buttonStyles({ size: "lg" })}>
+                  Talk to us about a pilot
+                </a>
+              )}
               {mockInterviewsEnabled ? (
                 <Link href="/interview/new" className={buttonStyles({ variant: "onDark", size: "lg" })}>
                   Try an interview yourself
@@ -155,16 +164,43 @@ export default function CollegesPage() {
             </p>
           </section>
 
-          <section aria-labelledby="pilot-heading" className="flex flex-col items-start gap-4 rounded-2xl bg-navy p-6 text-on-navy sm:p-10">
-            <h2 id="pilot-heading" className="text-display text-balance text-on-navy">Start with one batch</h2>
-            <p className="max-w-2xl text-body text-on-navy-muted">
-              Write to {LEGAL.contactEmail} with your college, the batches you&rsquo;d like to start with, and roughly how many students.
-              We&rsquo;ll set up a call.
-            </p>
-            <a href={CAMPUS_CONTACT_HREF} className={buttonStyles({ size: "lg" })}>
-              Talk to us about a pilot
-            </a>
-          </section>
+          {leadsEnabled ? (
+            <section
+              id={CAMPUS_REGISTER_ANCHOR}
+              aria-labelledby="register-heading"
+              className="grid scroll-mt-6 gap-8 rounded-2xl border border-line bg-surface-raised p-6 sm:p-10 lg:grid-cols-[0.8fr_1.2fr]"
+            >
+              <div className="flex flex-col gap-3">
+                <span className="pill pill-highlight w-fit">Start with one batch</span>
+                <h2 id="register-heading" className="text-display text-balance text-ink">
+                  Register your college
+                </h2>
+                <p className="text-body text-ink-muted">
+                  Tell us who you are and where your college is. Someone from our team will write back to set up a call. Registering
+                  creates no account and shares nothing with your students.
+                </p>
+                <p className="text-caption text-ink-subtle">
+                  Prefer email? Write to{" "}
+                  <a href={CAMPUS_CONTACT_HREF} className="font-medium text-accent hover:underline">
+                    {LEGAL.contactEmail}
+                  </a>
+                  .
+                </p>
+              </div>
+              <CollegeLeadForm />
+            </section>
+          ) : (
+            <section aria-labelledby="pilot-heading" className="flex flex-col items-start gap-4 rounded-2xl bg-navy p-6 text-on-navy sm:p-10">
+              <h2 id="pilot-heading" className="text-display text-balance text-on-navy">Start with one batch</h2>
+              <p className="max-w-2xl text-body text-on-navy-muted">
+                Write to {LEGAL.contactEmail} with your college, the batches you&rsquo;d like to start with, and roughly how many students.
+                We&rsquo;ll set up a call.
+              </p>
+              <a href={CAMPUS_CONTACT_HREF} className={buttonStyles({ size: "lg" })}>
+                Talk to us about a pilot
+              </a>
+            </section>
+          )}
         </div>
       </main>
 
