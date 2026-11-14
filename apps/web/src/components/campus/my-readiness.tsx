@@ -42,7 +42,16 @@ export function MyReadiness() {
       <p className="text-caption text-ink-muted">
         This counts only the work your college has assigned you. Your own practice is not part of it.
       </p>
-      <StudentReadinessView readiness={data} reportHref={(item) => (item.sessionId ? (`/report/${item.sessionId}` as Route) : null)} />
+      <StudentReadinessView
+        readiness={data}
+        reportHref={(item) =>
+          item.kind === "interview" && item.sessionId
+            ? (`/report/${item.sessionId}` as Route)
+            : item.mcqAttemptId
+              ? (`/campus/me/tests/${item.mcqAttemptId}` as Route)
+              : null
+        }
+      />
     </div>
   );
 }

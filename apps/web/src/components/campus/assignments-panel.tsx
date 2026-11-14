@@ -22,8 +22,14 @@ export const ASSIGNMENT_STATUS_LABEL: Record<AssignmentStatus, string> = {
 };
 const STATUS_TONE = { draft: "info", published: "positive", archived: "navy" } as const;
 
-export function assignmentSummary(a: { kind: string; roundType?: string; scenarioIds?: string[] }): string {
+export function assignmentSummary(a: {
+  kind: string;
+  roundType?: string;
+  scenarioIds?: string[];
+  mcq?: { questionCount: number } | null;
+}): string {
   if (a.kind === "arena_scenarios") return `Arena, ${a.scenarioIds?.length ?? 0} scenarios`;
+  if (a.kind === "mcq_test") return `MCQ test, ${a.mcq?.questionCount ?? 0} questions`;
   return `Interview, ${a.roundType ? ROUND_LABEL[a.roundType as keyof typeof ROUND_LABEL] ?? a.roundType : "round"}`;
 }
 

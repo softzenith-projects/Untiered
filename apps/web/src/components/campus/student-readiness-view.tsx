@@ -24,7 +24,8 @@ export function BandPill({ band }: { band: StudentReadiness["band"] }) {
 
 /**
  * One student's readiness: the same on the staff drill-down and on the student's own page.
- * `reportHref` returns where an interview item's report opens, or null for no link.
+ * `reportHref` returns where an item opens (an interview's report, an MCQ test's answers), or
+ * null for no link.
  */
 export function StudentReadinessView({
   readiness,
@@ -92,7 +93,8 @@ export function StudentReadinessView({
             <ScoreSparkline evidence={readiness.evidence} />
             <ul className="flex flex-col gap-2">
               {readiness.evidence.map((item) => {
-                const href = item.kind === "interview" && item.sessionId && reportHref ? reportHref(item) : null;
+                const href = reportHref ? reportHref(item) : null;
+                const mcq = item.kind === "mcq_test";
                 return (
                   <li key={`${item.assignmentId}-${item.completedAt}`} className="card flex flex-wrap items-center justify-between gap-3 p-4">
                     <div>
@@ -105,7 +107,8 @@ export function StudentReadinessView({
                       <span className="text-heading text-ink">{item.score}</span>
                       {href ? (
                         <Link href={href} className="text-caption font-semibold text-accent underline">
-                          View report<span className="sr-only">: {item.assignmentTitle}</span>
+                          {mcq ? "View answers" : "View report"}
+                          <span className="sr-only">: {item.assignmentTitle}</span>
                         </Link>
                       ) : null}
                     </div>

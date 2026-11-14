@@ -222,7 +222,7 @@ export interface AdminCreateInviteRequest {
 
 // ---- Module 4: assignments (docs/campus-api-contract.md) ----
 
-export type AssignmentKind = "interview" | "arena_scenarios";
+export type AssignmentKind = "interview" | "arena_scenarios" | "mcq_test";
 export type AssignmentStatus = "draft" | "published" | "archived";
 export type CompletionStatus = "not_started" | "in_progress" | "completed" | "overdue";
 
@@ -250,6 +250,8 @@ export interface AssignmentInput {
   focusTopic?: string | null;
   language?: "english" | "hindi_english";
   scenarioIds?: string[];
+  /** mcq_test only (module 4b). */
+  mcq?: AssignmentMcq | null;
   opensAt?: string | null;
   dueAt: string;
   allowLate: boolean;
@@ -258,6 +260,13 @@ export interface AssignmentInput {
   targets: { batchIds: string[]; memberIds: string[] };
   component?: ReadinessComponent;
   topic?: CampusTopic | null;
+}
+
+/** An MCQ test's shape (module 4b): 1–10 courses, 5–50 questions, an optional 5–120 minute limit. */
+export interface AssignmentMcq {
+  courseSlugs: string[];
+  questionCount: number;
+  timeLimitMinutes?: number | null;
 }
 
 export interface AssignmentCounts {
@@ -293,6 +302,8 @@ export interface RecipientProgress {
   lastActivityAt: string | null;
   sessionIds: string[];
   scenarioScore: number | null;
+  /** mcq_test: the best submitted score, 0–100. */
+  mcqScore: number | null;
 }
 
 export interface CampusScenarioOption {
@@ -325,6 +336,63 @@ export interface AssignedItem {
   canStart: boolean;
   blockedReason: AssignmentBlockedReason | null;
   sessionIds: string[];
+  /** mcq_test only; null for the other kinds. */
+  mcq?: AssignmentMcq | null;
+  mcqScore?: number | null;
+  /** An unsubmitted attempt to resume. */
+  mcqOpenAttemptId?: string | null;
+  /** The latest submitted attempt, whose result can be reviewed. */
+  mcqLatestAttemptId?: string | null;
+}
+
+// ---- Module 4b: MCQ tests (docs/campus-api-contract.md) ----
+
+export interface McqBankSummary {
+  courseSlug: string;
+  courseTitle: string;
+  topic: CampusTopic | null;
+  questions: number;
+}
+
+/** A question as the student sees it: no answer key. */
+export interface McqQuestionView {
+  id: string;
+  prompt: string;
+  code: string | null;
+  options: { id: string; text: string }[];
+}
+
+export interface McqReviewItem {
+  questionId: string;
+  chosenOptionId: string | null;
+  correctOptionId: string;
+  explanation: string;
+}
+
+export interface McqResult {
+  correct: number;
+  total: number;
+  /** round(100 × correct ÷ total) */
+  score: number;
+  late: boolean;
+  review: McqReviewItem[];
+}
+
+export interface McqAttemptView {
+  attemptId: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  startedAt: string;
+  /** The start plus the time limit; null without one. */
+  deadlineAt: string | null;
+  questions: McqQuestionView[];
+  submittedAt: string | null;
+  /** Null until submitted. */
+  result: McqResult | null;
+}
+
+export interface McqSubmitRequest {
+  answers: { questionId: string; optionId: string }[];
 }
 
 // ---- Module 6: readiness, module 7: placement dashboard (docs/campus-api-contract.md) ----
@@ -357,6 +425,8 @@ export interface EvidenceItem {
   sessionId: string | null;
   score: number;
   completedAt: string;
+  /** mcq_test items: the submitted attempt, which staff can open. */
+  mcqAttemptId?: string | null;
 }
 
 export interface SuggestedTopic {

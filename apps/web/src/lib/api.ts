@@ -53,6 +53,9 @@ import type {
   CompletionStatus,
   RecipientProgress,
   CampusScenarioOption,
+  McqAttemptView,
+  McqBankSummary,
+  McqSubmitRequest,
   DashboardView,
   AttentionReason,
   AttentionRow,
@@ -1050,6 +1053,41 @@ export function fetchAssignmentProgress(
 /** What the signed-in student has been assigned. Not behind the campus switch: answers `[]` when off. */
 export function fetchMyAssignments(options: ApiGetOptions): Promise<AssignedItem[]> {
   return apiGet<AssignedItem[]>("/api/v1/me/assignments", options);
+}
+
+// ---- Untiered Campus, module 4b: MCQ tests ----
+
+/** Bank courses with at least five live questions; never a question or a key. */
+export function fetchMcqBank(orgId: string, options: ApiGetOptions): Promise<McqBankSummary[]> {
+  return apiGet<McqBankSummary[]>(`${campusOrg(orgId)}/mcq-bank`, options);
+}
+
+/** Starts an attempt at an MCQ test assignment; the questions come back without their key. */
+export function startMcqAttempt(accessToken: string, assignmentId: string): Promise<McqAttemptView> {
+  return apiSend<McqAttemptView>(`/api/v1/me/assignments/${encodeURIComponent(assignmentId)}/mcq-attempts`, "POST", accessToken);
+}
+
+/** The student's own attempt: to resume it, or its result once submitted. */
+export function fetchMcqAttempt(attemptId: string, options: ApiGetOptions): Promise<McqAttemptView> {
+  return apiGet<McqAttemptView>(`/api/v1/me/mcq-attempts/${encodeURIComponent(attemptId)}`, options);
+}
+
+/** Submits the answers; the server grades them and returns the result with the review. */
+export function submitMcqAttempt(accessToken: string, attemptId: string, body: McqSubmitRequest): Promise<McqAttemptView> {
+  return apiSend<McqAttemptView>(`/api/v1/me/mcq-attempts/${encodeURIComponent(attemptId)}/submit`, "POST", accessToken, body);
+}
+
+/** A student's attempt, for staff. Audited as `mcq.viewed`. */
+export function fetchStudentMcqAttempt(
+  orgId: string,
+  memberId: string,
+  attemptId: string,
+  options: ApiGetOptions,
+): Promise<McqAttemptView> {
+  return apiGet<McqAttemptView>(
+    `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/mcq-attempts/${encodeURIComponent(attemptId)}`,
+    options,
+  );
 }
 
 // ---- Untiered Campus, modules 6-7: readiness and the placement dashboard ----
