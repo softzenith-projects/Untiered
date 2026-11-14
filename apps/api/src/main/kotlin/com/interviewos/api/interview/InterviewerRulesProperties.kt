@@ -46,6 +46,12 @@ data class InterviewerRulesProperties(
     val echoAllAnswers: Boolean = false,
     /** An upload byte-identical to an earlier one in the session is refused before the model call. */
     val audioHashGuard: Boolean = false,
+    /**
+     * When the company's sourced bank has no question left in this round, plan from the AI pool
+     * instead of leaving the rest of the round to the model. Pool questions are labelled
+     * `model_knowledge` per turn, exactly as in a round with no bank at all.
+     */
+    val bankPoolFallthrough: Boolean = false,
     /** Phrases that announce the end of the interview, matched case-insensitively. */
     val wrapUpPhrases: List<String> = DEFAULT_WRAP_UP_PHRASES,
 ) {

@@ -1610,7 +1610,11 @@ class InterviewService(
         experienceMonths: Int?,
     ): PlannedFrom? {
         bankRounds.forRound(session.companyName, roundType)?.let { round ->
-            return bankRounds.next(userId, session.id, round)?.let { PlannedFrom.Bank(it) }
+            val fromBank = bankRounds.next(userId, session.id, round)?.let { PlannedFrom.Bank(it) }
+            // A bank that has run out in this round used to end the planning: every question after
+            // it was the model's own. With the fall-through on, the pool continues the round,
+            // each of its questions labelled as general knowledge (design review, step 2b).
+            if (fromBank != null || !interviewerRules.bankPoolFallthrough) return fromBank
         }
         return poolRounds
             .forRound(session.companyName, archetype, roundType, session.roleTitle, experienceMonths)
