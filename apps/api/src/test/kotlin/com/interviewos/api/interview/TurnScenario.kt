@@ -3,6 +3,7 @@ package com.interviewos.api.interview
 import com.interviewos.api.ai.AiUsage
 import com.interviewos.api.ai.AnswerAssessment
 import com.interviewos.api.ai.AnswerAudio
+import com.interviewos.api.pool.PoolQuestion
 import org.mockito.BDDMockito.given
 import java.time.Instant
 import java.util.UUID
@@ -13,7 +14,8 @@ import java.util.UUID
  * steps 1 and 2), where every test needs the same round with one thing changed.
  */
 class TurnScenario(
-    val harness: BankRoundHarness = BankRoundHarness(),
+    rules: InterviewerRulesProperties = InterviewerRulesProperties(),
+    val harness: BankRoundHarness = BankRoundHarness(interviewerRules = rules),
 ) {
     val candidate: UUID = UUID.fromString("6f1b7f4c-2b2a-4c3e-9a51-0a5f4f2f2a11")
     val sessionId: UUID = UUID.fromString("2b0e2f6c-7a1e-4a0f-9c3d-5c1b2f9a8e01")
@@ -121,6 +123,20 @@ class TurnScenario(
     )
 
     fun eventsOf(type: String): List<InterviewEvent> = harness.events.filter { it.type == type }
+
+    /** The pool holds [texts] for this round, so the selector has planned questions to give. */
+    fun poolHolds(
+        vararg texts: String,
+        roundType: RoundType = RoundType.TECHNICAL_FUNDAMENTALS,
+    ): List<PoolQuestion> {
+        given(harness.directory.resolve("Amazon")).willReturn(BankFixtures.amazon)
+        val questions = texts.map { PoolFixtures.question(it, roundType = roundType) }
+        harness.poolHolds(roundType, *questions.toTypedArray())
+        return questions
+    }
+
+    /** How many times the model was asked to assess an answer. */
+    fun assessments(): Int = harness.assessedRounds.size
 
     fun askedNext(): String = harness.insertedTurns().single().questionText
 

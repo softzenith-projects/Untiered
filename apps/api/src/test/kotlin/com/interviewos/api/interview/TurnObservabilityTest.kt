@@ -71,7 +71,8 @@ class TurnObservabilityTest {
         scenario.submit()
 
         assertEquals(long, scenario.askedNext())
-        val counted = scenario.eventsOf("question_over_limit").single()
+        // The length rule, off, also writes a shadow event; this is the one for what was spoken.
+        val counted = scenario.eventsOf("question_over_limit").single { it.outcome == "ready" }
         assertEquals("model_written", counted.reason)
         assertEquals("ready", counted.outcome)
         assertEquals(scenario.turnIndex + 1, counted.turnIndex)

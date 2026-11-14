@@ -144,6 +144,19 @@ interviewos:
         base-url: ${FALLBACK_PROVIDER_BASE_URL:https://api.moonshot.ai/v1}
         model: ${FALLBACK_PROVIDER_MODEL:kimi-k2-0711-preview}
         api-key: ${FALLBACK_PROVIDER_API_KEY:}
+  # Server rules on the interviewer's next line (interviewer design review, step 2;
+  # InterviewerRulesProperties). Every rule is off by default, which is the behaviour before
+  # it existed. While off, each still runs and writes what it would have done to
+  # interview_events with outcome 'shadow'; count those before switching one on.
+  interviewer:
+    final-variant: ${INTERVIEWER_FINAL_VARIANT:false}
+    planned-fallback: ${INTERVIEWER_PLANNED_FALLBACK:false}
+    wrap-up-guard: ${INTERVIEWER_WRAP_UP_GUARD:false}
+    length-guard: ${INTERVIEWER_LENGTH_GUARD:false}
+    repeat-guard: ${INTERVIEWER_REPEAT_GUARD:false}
+    repeat-threshold: ${INTERVIEWER_REPEAT_THRESHOLD:0.85}
+    echo-all-answers: ${INTERVIEWER_ECHO_ALL_ANSWERS:false}
+    audio-hash-guard: ${INTERVIEWER_AUDIO_HASH_GUARD:false}
   # Server-side code execution, for languages a browser cannot run. Off by default.
   #
   # Python runs in the candidate's own browser (Pyodide) and needs nothing here. Java

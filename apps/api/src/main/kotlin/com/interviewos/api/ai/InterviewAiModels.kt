@@ -352,7 +352,31 @@ data class RoundContext(
     val followUpLimit: Int = 2,
     /** The previous thread exhausted its follow-up budget; the next question must change topic. */
     val mustMoveOn: Boolean = false,
+    /** Which prompt and response schema the assessment uses. Chosen by the server. */
+    val variant: AssessmentVariant = AssessmentVariant.LEGACY,
 )
+
+/**
+ * The shape of an answer assessment (interviewer design review, step 2a).
+ *
+ * The model used to decide whether the round was over: `conclude` was one of its actions and
+ * `nextQuestionText` was nullable, so "nothing to ask" was a schema-legal answer at any minute
+ * of the round. Now the server knows before the call whether this answer is the last one and
+ * asks for a shape that only allows what that turn can do.
+ */
+enum class AssessmentVariant(
+    /** Under `ai/prompts/` and `ai/schemas/`. */
+    val resource: String,
+) {
+    /** Before `interviewos.interviewer.final-variant`: one shape for every turn. */
+    LEGACY("assess-answer"),
+
+    /** The round continues: no `conclude`, a next question required, no clock in the prompt. */
+    TURN("assess-answer-turn"),
+
+    /** The last answer: assessed only. The server speaks the closing line. */
+    FINAL("assess-answer-final"),
+}
 
 /** One completed exchange, as the model needs to see the history. */
 data class TurnTranscript(

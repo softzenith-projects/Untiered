@@ -1,0 +1,45 @@
+{
+  "type": "OBJECT",
+  "properties": {
+    "transcript": {
+      "type": "STRING"
+    },
+    "suggestedNextAction": {
+      "type": "STRING",
+      "enum": [
+        "follow_up",
+        "probe",
+        "challenge",
+        "move_on",
+        "raise_difficulty",
+        "redirect",
+        "hint",
+        "guide",
+        "conclude"
+      ]
+    },
+    "intervention": {
+      "type": "STRING",
+      "enum": [
+        "none",
+        "redirected",
+        "hinted",
+        "guided",
+        "corrected"
+      ]
+    },
+    "interventionNote": {
+      "type": "STRING",
+      "nullable": true
+    },
+    "deliveryObservation": {
+      "type": "STRING",
+      "nullable": true
+    }
+  },
+  "required": [
+    "transcript",
+    "suggestedNextAction",
+    "intervention"
+  ]
+}

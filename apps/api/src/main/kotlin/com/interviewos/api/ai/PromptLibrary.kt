@@ -43,7 +43,7 @@ class PromptLibrary(
         priorTurns: List<TurnTranscript>,
         currentQuestion: String,
     ): String =
-        fillRound(fillBrief(loadPrompt("assess-answer"), brief), round)
+        fillRound(fillBrief(loadPrompt(round.variant.resource), brief), round, clockFree = round.variant != AssessmentVariant.LEGACY)
             .replace("{{currentQuestion}}", currentQuestion)
             .replace("{{history}}", historyOf(priorTurns).ifBlank { "(this is the first answer)" })
 
@@ -317,6 +317,7 @@ class PromptLibrary(
     private fun fillRound(
         template: String,
         round: RoundContext,
+        clockFree: Boolean = false,
     ): String =
         template
             .replace("{{phase}}", round.phase)
@@ -324,7 +325,38 @@ class PromptLibrary(
             .replace("{{minutesRemaining}}", round.minutesRemaining.toString())
             .replace("{{durationMinutes}}", round.durationMinutes.toString())
             .replace("{{followUpLimit}}", round.followUpLimit.toString())
-            .replace("{{pacing}}", pacingFor(round))
+            .replace("{{pacing}}", if (clockFree) clockFreePacingFor(round) else pacingFor(round))
+
+    /**
+     * The pacing sentence for the two-variant assessment (design review, step 2a): the same
+     * sentences with the clock taken out. "There is only about nine minutes left" beside a
+     * topic list the model has used up read as an invitation to finish; the server owns the
+     * ending now, so the model is not told how near it is.
+     *
+     * The briefing keeps its time: there it is something the candidate is told, not a cue to
+     * the model. The time-up sentence is the final variant's, which asks for no next question.
+     */
+    private fun clockFreePacingFor(round: RoundContext): String =
+        when {
+            round.mustConclude -> {
+                "This was the candidate's last answer: the round is over. Assess it. The server closes the " +
+                    "interview, so you do not write anything to say next."
+            }
+
+            round.phase == CLOSING_PHASE && !round.mustMoveOn && !round.briefTheCandidate -> {
+                "Do not open new ground. Finish the thread you are on. Do not mention the time or that the " +
+                    "interview is ending."
+            }
+
+            round.phase == MAIN_PHASE && !round.mustMoveOn && !round.briefTheCandidate -> {
+                "You are in the main round. Never spend more than ${round.followUpLimit} consecutive follow-up " +
+                    "questions on one answer or thread."
+            }
+
+            else -> {
+                pacingFor(round)
+            }
+        }
 
     private fun pacingFor(round: RoundContext): String =
         when {
@@ -388,5 +420,6 @@ class PromptLibrary(
     private companion object {
         const val WARMUP_PHASE = "warm-up"
         const val CLOSING_PHASE = "closing"
+        const val MAIN_PHASE = "main round"
     }
 }
