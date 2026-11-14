@@ -75,6 +75,24 @@ class ProductFeatureInterceptorTest {
         )
     }
 
+    @Test
+    fun `campus leads have their own switch, on by default, and the campus switch does not close them`() {
+        val defaults = ProductFeatureInterceptor(ProductFeatureProperties())
+        assertEquals(ProductFeature.CAMPUS_LEADS, defaults.featureFor("POST", "/api/v1/campus/leads"))
+        assertEquals(ProductFeature.CAMPUS_LEADS, defaults.featureFor("GET", "/api/v1/admin/campus/leads"))
+        assertEquals(
+            ProductFeature.CAMPUS_LEADS,
+            defaults.featureFor("POST", "/api/v1/admin/campus/leads/86fcddf4-5e2b-4cab-b0c6-05e928d04529/convert"),
+        )
+        assertEquals(ProductFeature.CAMPUS, defaults.featureFor("GET", "/api/v1/campus/leadsfoo"))
+        assertTrue(defaults.preHandle(request("POST", "/api/v1/campus/leads"), MockHttpServletResponse(), handler))
+
+        val off = ProductFeatureInterceptor(ProductFeatureProperties(campus = true, campusLeads = false))
+        assertThrows<ApiException> { off.preHandle(request("POST", "/api/v1/campus/leads"), MockHttpServletResponse(), handler) }
+        assertThrows<ApiException> { off.preHandle(request("GET", "/api/v1/admin/campus/leads"), MockHttpServletResponse(), handler) }
+        assertTrue(off.preHandle(request("GET", "/api/v1/admin/campus/orgs"), MockHttpServletResponse(), handler))
+    }
+
     private fun request(
         method: String,
         path: String,
