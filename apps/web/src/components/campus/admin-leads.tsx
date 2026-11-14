@@ -54,8 +54,12 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialLeadId ?? null);
-  const [extra, setExtra] = useState<LeadView[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
+  // Pages after the first, tied to the first page they continue: a new filter starts over.
+  const [more, setMore] = useState<{ base: CampusPage<LeadView> | null; items: LeadView[]; cursor: string | null }>({
+    base: null,
+    items: [],
+    cursor: null,
+  });
   const [moreError, setMoreError] = useState<string | null>(null);
 
   const load = useCallback(
@@ -66,11 +70,9 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
     [accessToken, query, status],
   );
   const { data, error, loading, setData } = useLoad(load);
-
-  useEffect(() => {
-    setExtra([]);
-    setCursor(data?.nextCursor ?? null);
-  }, [data]);
+  const current = more.base === data ? more : { base: data, items: [] as LeadView[], cursor: data?.nextCursor ?? null };
+  const extra = current.items;
+  const cursor = current.cursor;
 
   const items = [...(data?.items ?? []), ...extra];
   const listed = items.find((lead) => lead.id === selectedId) ?? null;
@@ -90,15 +92,20 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
   }, [accessToken, listed, loading, selectedId]);
   const selected = listed ?? (direct?.id === selectedId ? direct : null);
 
+  function rewrite(change: (leads: LeadView[]) => LeadView[]) {
+    if (!data) return;
+    const nextData = { ...data, items: change(data.items) };
+    setData(nextData);
+    setMore({ base: nextData, items: change(extra), cursor });
+  }
+
   function replace(next: LeadView) {
-    setData((current) => (current ? { ...current, items: current.items.map((lead) => (lead.id === next.id ? next : lead)) } : current));
-    setExtra((current) => current.map((lead) => (lead.id === next.id ? next : lead)));
+    rewrite((leads) => leads.map((lead) => (lead.id === next.id ? next : lead)));
     if (direct?.id === next.id) setDirect(next);
   }
 
   function remove(leadId: string) {
-    setData((current) => (current ? { ...current, items: current.items.filter((lead) => lead.id !== leadId) } : current));
-    setExtra((current) => current.filter((lead) => lead.id !== leadId));
+    rewrite((leads) => leads.filter((lead) => lead.id !== leadId));
     setSelectedId(null);
   }
 
@@ -110,8 +117,7 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
         { ...(status ? { status } : {}), ...(query ? { q: query } : {}), cursor },
         { accessToken },
       );
-      setExtra((current) => [...current, ...page.items]);
-      setCursor(page.nextCursor);
+      setMore({ base: data, items: [...extra, ...page.items], cursor: page.nextCursor });
     } catch (cause) {
       setMoreError(errorText(cause, "More leads could not be loaded."));
     }
