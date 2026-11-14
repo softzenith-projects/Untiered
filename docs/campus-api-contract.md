@@ -984,3 +984,56 @@ marked so. With `TURNSTILE_SECRET_KEY` unset the captcha is not verified (logged
 
 Every status change and conversion is logged with the admin's user id; once a lead is
 converted, the college's own audit log takes over.
+
+---
+
+## Module 4b: MCQ tests
+
+An MCQ test is graded on the server only. Questions and answer keys live in Postgres, and
+the browser never receives a key before it submits. The bank is exported from the
+multiple-choice questions already in the course content, never written fresh. A topic
+with no course behind it has no questions, and the builder says so rather than offering
+it.
+
+```ts
+// Assignment kind gains "mcq_test".
+type AssignmentKind = "interview" | "arena_scenarios" | "mcq_test";
+
+// AssignmentInput additions for mcq_test:
+//   mcq: { courseSlugs: string[]; questionCount: number /* 5–50 */; timeLimitMinutes?: number | null /* 5–120 */ }
+// The default readiness component is core_cs, or coding when every course is dsa. Topic is staff-chosen as before.
+
+interface McqBankSummary { courseSlug: string; courseTitle: string; topic: CampusTopic | null; questions: number }
+
+interface McqQuestionView { id: string; prompt: string; code: string | null; options: { id: string; text: string }[] }   // no answer key
+interface McqAttemptView {
+  attemptId: string; assignmentId: string; startedAt: string; deadlineAt: string | null;
+  questions: McqQuestionView[]; submittedAt: string | null;
+  result: null | { correct: number; total: number; score: number;   // score = round(100 × correct ÷ total)
+                   review: { questionId: string; chosenOptionId: string | null; correctOptionId: string; explanation: string }[] };
+}
+```
+
+**Attempts.**
+- Starting an attempt draws `questionCount` questions at random from the chosen courses,
+  seeded per attempt, and stores which ones were drawn.
+- `attemptLimit` applies; each start uses one attempt.
+- Submitting grades every answer on the server; an unanswered question is wrong. The
+  attempt is then closed.
+- A submission after `deadlineAt` (start + time limit + 30 s grace) is graded on what it
+  contains, and the attempt is marked late.
+- Completion: the assignment is completed once any attempt is submitted.
+- Readiness: each submitted attempt is one evidence item, scored with the result's
+  `score`. The latest 3 count, as for other items.
+- College-funded allowance: not used; MCQ tests cost no AI.
+
+| Method · path | Who | Body → response |
+|---|---|---|
+| `GET /campus/orgs/{org}/mcq-bank` | any staff | → `McqBankSummary[]`, courses with at least 5 live questions only |
+| `POST /me/assignments/{id}/mcq-attempts` | the student | → `201 McqAttemptView`. Errors: `409 assignment_attempt_limit`, `409 assignment_not_open`, `409 assignment_past_due`, `409 mcq_attempt_open` (an unsubmitted attempt exists; resume it instead). |
+| `GET /me/mcq-attempts/{attemptId}` | the student | → `McqAttemptView` (resume, or the result after submitting) |
+| `POST /me/mcq-attempts/{attemptId}/submit` | the student | `{ answers: { questionId: string; optionId: string }[] }` → `McqAttemptView` with `result`. `409 mcq_attempt_submitted`. |
+| `GET /campus/orgs/{org}/students/{memberId}/mcq-attempts/{attemptId}` | staff (scoped) | → `McqAttemptView` with `result`; audited as `mcq.viewed` |
+
+`RecipientProgress` and `AssignedItem` carry `mcqScore: number | null` (the best submitted
+score) for `mcq_test` assignments.
