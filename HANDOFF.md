@@ -98,8 +98,10 @@ MCQ tests (spec 4b) are deferred; see assumption 6.
 2. **Legal / data protection:** update the privacy policy and terms to cover colleges as
    recipients of student data (India's DPDP Act) before the first real invite. The
    `campus` switch must stay off until then.
-3. Apply the nine campus migrations (`20261113120000` to `20261113200000`) with
-   `npm run db:push` as part of the merge.
+3. ~~Apply the nine campus migrations~~ **Done on 14 November 2026.** The owner ran
+   `npm run db:push` from `feat/campus-v1`, and all nine are applied to the hosted project.
+   They are additive and unused by the `develop` code. **Do not edit those nine files any
+   more;** any further schema change needs a new migration.
 4. The size is far over the 800-line guideline: about 37,400 added lines across 224 files,
    roughly 40% of them tests. The
    history merges module by module, so it can be reviewed per module branch.
