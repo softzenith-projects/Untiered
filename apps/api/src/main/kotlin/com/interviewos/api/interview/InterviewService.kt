@@ -597,6 +597,8 @@ class InterviewService(
         /** The browser's measurement of this answer's speech timing, as JSON. See [AnswerTiming]. */
         timing: String? = null,
     ): SubmitAnswerResponse {
+        // The start of "answer uploaded â†’ next question ready", recorded on answer_response_ready.
+        val requestStartedAt = System.nanoTime()
         val claim = repository.claimAnswerRequest(sessionId, userId, turnIndex, requestId, ActiveLeaseRenewal.LEASE_SECONDS)
         when (claim.status) {
             TurnRequestClaimStatus.COMPLETED -> {
@@ -718,6 +720,8 @@ class InterviewService(
                         outcome = "failed",
                         errorType = "ai_unavailable",
                         durationMs = elapsedMillis(assessmentStartedAt),
+                        reason = e.reason.dbValue,
+                        finishReason = e.finishReason,
                     )
                     if (repository.failSessionAndRefundUsage(sessionId, userId)) {
                         recordEvent(
@@ -802,8 +806,20 @@ class InterviewService(
                     requestId = requestId,
                     action = nextAction,
                     intervention = intervention.wireValue,
+                    // Which model actually decided this turn: the primary, or the one behind it.
+                    model = assessment.usage.model,
+                    finishReason = assessment.usage.finishReason,
                 ),
             )
+            // Diagnostic only. The browser heard nothing loud enough to be speech; the model
+            // was still asked, and whatever it heard stands.
+            val measuredTiming = AnswerTiming.parse(timing, objectMapper)
+            if (measuredTiming != null && measuredTiming.firstSoundMs == null) {
+                recordEvent(userId, sessionId, "no_speech_heard", turnIndex, requestId, reason = "browser_silent")
+            }
+            // What reached the candidate over the length limit, and where it came from. Counted
+            // after the transaction commits, so a rolled-back turn is not counted.
+            var overLimitReason: String? = null
             // Everything from here down writes to the database, and has to land together: the
             // answer record, then whichever of "mark the session completed" or "insert the
             // next turn" follows it. One `inTransaction` block, opened only now that the model
@@ -830,7 +846,7 @@ class InterviewService(
                                 deliveryNote = assessment.value.deliveryObservation?.takeIf { it.isNotBlank() },
                                 // Re-serialised from the validated value, so what is stored is only
                                 // ever a consistent measurement, never whatever the request carried.
-                                timingJson = AnswerTiming.parse(timing, objectMapper)?.let { objectMapper.writeValueAsString(it) },
+                                timingJson = measuredTiming?.let { objectMapper.writeValueAsString(it) },
                                 requestId = requestId,
                             )
                         if (!recorded) throw sessionStateChanged()
@@ -879,6 +895,14 @@ class InterviewService(
                             PlannedQuestionCheck.resolveText(planned?.text, askNow, assessment.value.askedPlannedQuestion, modelText)
                         val askedFrom = planned?.takeIf { asked.askedPlanned }
                         val nextText = asked.text
+                        if (nextText.length > QuestionLength.MAX_CHARS) {
+                            overLimitReason =
+                                when {
+                                    plan.briefTheCandidate -> "briefing"
+                                    asked.askedPlanned && !asked.faithful && nextText == planned?.text?.trim() -> "planned_stored"
+                                    else -> "model_written"
+                                }
+                        }
                         val nextIndex = turnIndex + 1
                         val inserted =
                             repository.insertTurn(
@@ -957,7 +981,18 @@ class InterviewService(
                 durationMs = elapsedMillis(persistStartedAt),
             )
             durable = true
-            recordEvent(userId, sessionId, "answer_response_ready", turnIndex, requestId, outcome = "ready")
+            overLimitReason?.let {
+                recordEvent(userId, sessionId, "question_over_limit", turnIndex + 1, requestId, outcome = "ready", reason = it)
+            }
+            recordEvent(
+                userId,
+                sessionId,
+                "answer_response_ready",
+                turnIndex,
+                requestId,
+                outcome = "ready",
+                durationMs = elapsedMillis(requestStartedAt),
+            )
             if (response.sessionComplete) {
                 recordEvent(userId, sessionId, "session_completed", turnIndex, requestId, outcome = "succeeded")
             }
@@ -1253,6 +1288,8 @@ class InterviewService(
         outcome: String? = null,
         errorType: String? = null,
         durationMs: Long? = null,
+        reason: String? = null,
+        finishReason: String? = null,
     ) {
         interviewEvents.record(
             InterviewEvent(
@@ -1264,6 +1301,8 @@ class InterviewService(
                 outcome = outcome,
                 errorType = errorType,
                 durationMs = durationMs,
+                reason = reason,
+                finishReason = finishReason,
             ),
         )
     }

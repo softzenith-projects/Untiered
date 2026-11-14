@@ -1,0 +1,129 @@
+{
+  "sessionId": "synthetic-late-stall",
+  "note": "Synthetic. Built from the failures the 14 Nov design review quotes, not from a real round.",
+  "roundType": "technical_fundamentals",
+  "durationMinutes": 60,
+  "enteredAt": "2026-11-12T10:00:00+00:00",
+  "turns": [
+    {
+      "turnIndex": 0, "phase": "warmup",
+      "question": "Could you introduce yourself and tell me what you are studying?",
+      "transcript": "Hi, I'm in my final year of computer science and I've mostly been building small web apps in Java.",
+      "answeredAt": "2026-11-12T10:01:00+00:00",
+      "audioSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "assessment": {"transcript": "-", "suggestedNextAction": "follow_up", "intervention": "none",
+        "nextQuestionText": "Which of those web apps are you proudest of, and which part was yours?"}
+    },
+    {
+      "turnIndex": 1, "phase": "warmup",
+      "question": "Which of those web apps are you proudest of, and which part was yours?",
+      "transcript": "A library management app. I wrote the whole backend in Spring Boot and the database schema.",
+      "answeredAt": "2026-11-12T10:03:00+00:00",
+      "audioSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "assessment": {"transcript": "-", "suggestedNextAction": "follow_up", "intervention": "none",
+        "nextQuestionText": "Which language and subjects are you most comfortable with?"}
+    },
+    {
+      "turnIndex": 2, "phase": "warmup",
+      "question": "Which language and subjects are you most comfortable with?",
+      "transcript": "Java mostly, and I like operating systems and databases more than networks.",
+      "answeredAt": "2026-11-12T10:05:00+00:00",
+      "audioSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "assessment": {"transcript": "-", "suggestedNextAction": "move_on", "intervention": "none",
+        "nextQuestionText": "Thanks. For the next fifty minutes I'll ask about operating systems, databases and networks, so think out loud. What is a process?"}
+    },
+    {
+      "turnIndex": 3, "phase": "main",
+      "question": "Thanks. For the next fifty minutes I'll ask about operating systems, databases and networks, so think out loud. What is a process?",
+      "transcript": "A process is a program in execution, with its own address space, its own memory and its own resources.",
+      "answeredAt": "2026-11-12T10:07:00+00:00",
+      "audioSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "assessment": {"transcript": "-", "suggestedNextAction": "follow_up", "intervention": "none",
+        "nextQuestionText": "How is a thread different from a process?"}
+    },
+    {
+      "turnIndex": 4, "phase": "main",
+      "question": "How is a thread different from a process?",
+      "transcript": "Threads live inside a process and share its memory, so switching between them is cheaper.",
+      "answeredAt": "2026-11-12T10:09:00+00:00",
+      "audioSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "assessment": {"transcript": "-", "suggestedNextAction": "move_on", "intervention": "none",
+        "nextQuestionText": "When would one query need both WHERE and HAVING?"},
+      "poolQuestionId": "a0000000-0000-0000-0000-000000000001"
+    },
+    {
+      "turnIndex": 5, "phase": "main",
+      "question": "When would one query need both WHERE and HAVING?",
+      "transcript": "So an index is like a lookup table, it makes reads faster because the database does not scan every row of the table.",
+      "answeredAt": "2026-11-12T10:11:00+00:00",
+      "audioSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "assessment": {"transcript": "-", "suggestedNextAction": "move_on", "intervention": "none",
+        "nextQuestionText": "When would one query need both WHERE and HAVING?"}
+    },
+    {
+      "turnIndex": 6, "phase": "main",
+      "question": "When would one query need both WHERE and HAVING?",
+      "transcript": "WHERE filters rows before grouping and HAVING filters the groups afterwards.",
+      "answeredAt": "2026-11-12T10:13:00+00:00",
+      "audioSha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "assessment": {"transcript": "-", "suggestedNextAction": "move_on", "intervention": "none",
+        "nextQuestionText": "What makes an index slow down a write?"}
+    },
+    {
+      "turnIndex": 7, "phase": "main",
+      "question": "What makes an index slow down a write?",
+      "transcript": "So an index is like a lookup table, it makes reads faster because the database does not scan every row of the table.",
+      "answeredAt": "2026-11-12T10:15:00+00:00",
+      "audioSha256": "7777777777777777777777777777777777777777777777777777777777777777",
+      "timing": {"recordedMs": 21000, "firstSoundMs": 800, "speakingMs": 19000, "pauseCount": 1, "longestPauseMs": 1200, "totalPauseMs": 1200},
+      "assessment": {"transcript": "-", "suggestedNextAction": "move_on", "intervention": "none",
+        "nextQuestionText": "What is a deadlock, and how would you prevent one?"}
+    },
+    {
+      "turnIndex": 8, "phase": "main",
+      "question": "What is a deadlock, and how would you prevent one?",
+      "transcript": "Two processes each hold a lock the other one needs, so neither can continue. You can order the locks.",
+      "answeredAt": "2026-11-12T10:40:00+00:00",
+      "audioSha256": "8888888888888888888888888888888888888888888888888888888888888888",
+      "assessment": {"transcript": "-", "suggestedNextAction": "move_on", "intervention": "none",
+        "nextQuestionText": null}
+    },
+    {
+      "turnIndex": 9, "phase": "main",
+      "question": "Let's move to another part of this round. How would you approach it in practice?",
+      "transcript": "Um, I'm not sure what part you mean. I suppose I would start from the requirements?",
+      "answeredAt": "2026-11-12T10:51:00+00:00",
+      "audioSha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "timing": {"recordedMs": 9000, "firstSoundMs": null, "speakingMs": 0, "pauseCount": 0, "longestPauseMs": 0, "totalPauseMs": 0},
+      "assessment": {"transcript": "-", "suggestedNextAction": "conclude", "intervention": "none",
+        "nextQuestionText": "That's our final topic. Let's wrap up with one quick one: what is normalisation in databases?"}
+    },
+    {
+      "turnIndex": 10, "phase": "main",
+      "question": "That's our final topic. Let's wrap up with one quick one: what is normalisation in databases?",
+      "transcript": "Normalisation is splitting tables so that each fact is stored once and updates do not go out of sync.",
+      "answeredAt": "2026-11-12T10:53:00+00:00",
+      "audioSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "assessment": {"transcript": "-", "suggestedNextAction": "move_on", "intervention": "none",
+        "nextQuestionText": "How is a thread different from a process?"}
+    },
+    {
+      "turnIndex": 11, "phase": "closing",
+      "question": "How is a thread different from a process?",
+      "transcript": "As I said, threads share the memory of their process and processes do not share memory.",
+      "answeredAt": "2026-11-12T10:57:00+00:00",
+      "audioSha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "assessment": {"transcript": "-", "suggestedNextAction": "move_on", "intervention": "none",
+        "nextQuestionText": ""}
+    },
+    {
+      "turnIndex": 12, "phase": "closing",
+      "question": "Let's move to another part of this round. How would you approach it in practice?",
+      "transcript": "I would break the problem down and test each part on its own.",
+      "answeredAt": "2026-11-12T10:59:40+00:00",
+      "audioSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "assessment": {"transcript": "-", "suggestedNextAction": "conclude", "intervention": "none",
+        "nextQuestionText": null}
+    }
+  ]
+}

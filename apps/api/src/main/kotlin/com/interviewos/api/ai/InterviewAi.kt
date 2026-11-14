@@ -203,9 +203,15 @@ interface InterviewAi {
  * outage or a timeout is somebody else's problem and another provider may well succeed.
  * A malformed request is *ours*, and will fail identically everywhere — retrying it down
  * the chain would turn one fast error into three slow ones and bill for the privilege.
+ *
+ * [reason] and [finishReason] are what the interview ledger records about the failure. Both
+ * are codes, never free text (see [AiFailureReason]).
  */
 class AiUnavailableException(
     message: String,
     cause: Throwable? = null,
     val worthRetryingElsewhere: Boolean = true,
+    val reason: AiFailureReason = AiFailureReason.UNKNOWN,
+    /** The provider's finish reason when the call returned one, already normalised. */
+    val finishReason: String? = null,
 ) : RuntimeException(message, cause)

@@ -83,6 +83,9 @@ class BankRoundHarness(
     val briefs = mutableListOf<InterviewBrief>()
     var case: ComposedCase? = null
     var assessment: AnswerAssessment? = null
+
+    /** What the assessment is reported as having cost, and which model served it. */
+    var assessmentUsage: AiUsage = AiUsage.none("test")
     var report: ReportContent? = null
     var hint: OfferedHint? = null
 
@@ -105,12 +108,15 @@ class BankRoundHarness(
             when (invocation.method.name) {
                 "composeCase" -> AiResult(checkNotNull(case), AiUsage.none("test"))
                 "composeRound" -> AiResult(checkNotNull(composedRound), AiUsage.none("test"))
-                "assessAnswer" -> AiResult(checkNotNull(assessment), AiUsage.none("test"))
+                "assessAnswer" -> AiResult(checkNotNull(assessment), assessmentUsage)
                 "offerHint" -> AiResult(checkNotNull(hint), AiUsage.none("test"))
                 "composeReport" -> AiResult(checkNotNull(report), AiUsage.none("test"))
                 else -> RETURNS_DEFAULTS.answer(invocation)
             }
         }
+
+    /** Every interview event the service wrote, in order. */
+    val events = mutableListOf<InterviewEvent>()
 
     val service =
         InterviewService(
@@ -131,7 +137,7 @@ class BankRoundHarness(
             resumeService = resumeService,
             roundWorkspaceComposer = RoundWorkspaceComposer(ai, mapper, ProblemVerifier(ai, mapper), poolMaterial),
             codeRunner = mock(CodeRunner::class.java),
-            interviewEvents = InterviewEventRecorder.NONE,
+            interviewEvents = InterviewEventRecorder { events += it },
             activeLeases = activeLeases,
             transactionManager = transactionManager,
         )

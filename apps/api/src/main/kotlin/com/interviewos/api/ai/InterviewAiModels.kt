@@ -32,6 +32,12 @@ data class AiUsage(
     val thoughtTokens: Int = 0,
     val audioTokens: Int = 0,
     val cachedTokens: Int = 0,
+    /**
+     * Why the provider stopped generating, normalised by [AiFailureReason.normaliseFinishReason]
+     * (`stop`, `max_tokens`, `safety`...). Null when the provider did not say. Recorded on the
+     * interview ledger, not the spend ledger, and dropped when two usages are added together.
+     */
+    val finishReason: String? = null,
 ) {
     /**
      * Input tokens billed at the text rate: whatever is left once the parts with their
