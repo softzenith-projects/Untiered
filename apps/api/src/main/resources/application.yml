@@ -87,6 +87,9 @@ interviewos:
     # Gemini is the only provider that can hear a spoken answer or read a PDF, so it
     # remains the backbone. What changed is that it is no longer the only thing tried.
     api-key: ${GEMINI_API_KEY:}
+    # Google advises leaving temperature, topP and topK at their defaults on Gemini 3.x
+    # (interviewer design review, step 3). True keeps sending today's temperatures.
+    send-sampling-params: ${GEMINI_SEND_SAMPLING_PARAMS:true}
 
   ai:
     budget:
@@ -118,6 +121,9 @@ interviewos:
     # named here is gone. Verify against https://ai.google.dev/gemini-api/docs/models and
     # a live call, not against this comment — models get retired without warning.
     #
+    # gemini-3.1-flash-lite has a listed earliest shutdown of 7 May 2027, replacement
+    # gemini-3.5-flash-lite: docs/model-lifecycle.md.
+    #
     # ORDER MATTERS AND IS RELIED ON: cheapest first, strongest last. Resume parsing
     # inverts it deliberately (FallbackInterviewAi.TRY_STRONGEST_FIRST) because it runs
     # once per candidate, nobody is waiting on it, and a misread employer degrades every
@@ -133,9 +139,17 @@ interviewos:
         # cuts off only a tail. Only the first model gets one: the last one able to hear an
         # answer has nobody behind it, and a deadline there ends the round. See InRoomDeadline.
         in-room-timeout: ${GEMINI_PRIMARY_IN_ROOM_TIMEOUT:20s}
+        # Gemini 3.x thinkingLevel for in-room calls (minimal|low|medium|high), sent instead of
+        # the 128-token budget. Empty keeps the budget. See ProviderConfig.thinkingLevel.
+        thinking-level: ${GEMINI_PRIMARY_THINKING_LEVEL:}
       - name: gemini-flash
         kind: gemini
-        model: ${GEMINI_FALLBACK_MODEL:gemini-3.5-flash}
+        # Pinned to gemini-3.6-flash: Google routes requests for gemini-3.5-flash to it, so naming
+        # it means the model tested is the model run. See docs/model-lifecycle.md.
+        model: ${GEMINI_FALLBACK_MODEL:gemini-3.6-flash}
+        # Leave empty until gemini-3.6-flash is confirmed to accept the level: this is the last
+        # provider that can hear an answer, and a 400 here fails the round.
+        thinking-level: ${GEMINI_FALLBACK_THINKING_LEVEL:}
       # A third vendor, so a Google outage does not stop reports and hints as well as
       # interviews. Text only: it can never take an answer assessment. Unset, it is
       # skipped with a line in the log.

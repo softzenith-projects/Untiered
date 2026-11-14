@@ -47,9 +47,29 @@ class GeminiInterviewAi(
      */
     private val inRoomTimeout: Duration? = null,
     private val recorder: AiSpendRecorder = AiSpendRecorder.NONE,
+    /**
+     * The Gemini 3.x thinking level for in-room calls, sent instead of the numeric budget, or null
+     * to keep the budget. See [ProviderConfig.thinkingLevel].
+     */
+    private val inRoomThinkingLevel: String? = null,
 ) : InterviewAi {
     private val log = LoggerFactory.getLogger(javaClass)
     private val restClient = restClientBuilder.build()
+
+    init {
+        require(inRoomThinkingLevel == null || inRoomThinkingLevel in THINKING_LEVELS) {
+            "Unknown Gemini thinking level '$inRoomThinkingLevel' for $reasoningModel; expected one of $THINKING_LEVELS."
+        }
+    }
+
+    /**
+     * Temperature, unless sampling parameters are switched off (design review, step 3: Google
+     * advises leaving temperature, topP and topK at their defaults on Gemini 3.x). Off, nothing is
+     * sent and the model's default applies. topP and topK have never been sent.
+     */
+    private fun MutableMap<String, Any>.temperature(value: Number) {
+        if (properties.sendSamplingParams) put("temperature", value)
+    }
 
     /**
      * For the calls a candidate sits in silence through: the question, the assessment of
@@ -210,7 +230,7 @@ class GeminiInterviewAi(
                         ),
                     ),
                 "tools" to listOf(mapOf("codeExecution" to emptyMap<String, Any>())),
-                "generationConfig" to mapOf("temperature" to 0),
+                "generationConfig" to buildMap<String, Any> { temperature(0) },
             )
         val response = call(reasoningModel, body)
         val outputs =
@@ -313,7 +333,7 @@ class GeminiInterviewAi(
                         ),
                     ),
                 "tools" to listOf(mapOf("googleSearch" to emptyMap<String, Any>())),
-                "generationConfig" to mapOf("temperature" to 0.2),
+                "generationConfig" to buildMap<String, Any> { temperature(0.2) },
             )
         val response = call(reasoningModel, body)
         val candidate = response.path("candidates").path(0)
@@ -480,8 +500,14 @@ class GeminiInterviewAi(
                     buildMap<String, Any> {
                         put("responseMimeType", "application/json")
                         put("responseSchema", responseSchema)
-                        put("temperature", 0.7)
-                        thinkingBudget?.let { put("thinkingConfig", mapOf("thinkingBudget" to it)) }
+                        temperature(0.7)
+                        // A level or a budget, never both: the two together are a 400.
+                        thinkingBudget?.let {
+                            put(
+                                "thinkingConfig",
+                                inRoomThinkingLevel?.let { level -> mapOf("thinkingLevel" to level) } ?: mapOf("thinkingBudget" to it),
+                            )
+                        }
                     },
             )
         for (attempt in 1..2) {
@@ -753,6 +779,9 @@ class GeminiInterviewAi(
          */
         const val WARMUP_PHASE = "warm-up"
         const val CLOSING_PHASE = "closing"
+
+        /** The values Gemini 3.x accepts for `thinkingLevel`, lower case as the REST examples write them. */
+        val THINKING_LEVELS = setOf("minimal", "low", "medium", "high")
     }
 
     private fun inlineDataPart(

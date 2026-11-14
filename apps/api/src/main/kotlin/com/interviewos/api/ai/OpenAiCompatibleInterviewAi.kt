@@ -255,6 +255,17 @@ data class ProviderConfig(
      * on a provider that has a capable one behind it. See [InRoomDeadline].
      */
     val inRoomTimeout: Duration? = null,
+    /**
+     * Gemini 3.x `thinkingLevel` for the calls a candidate waits on (`minimal`, `low`, `medium`,
+     * `high`), sent **instead of** the numeric budget — the two together are a 400. Unset, the
+     * provider keeps the 128-token budget it has always had (interviewer design review, step 3).
+     *
+     * Per provider because support differs by model: `minimal` is documented for
+     * `gemini-3.1-flash-lite` and `gemini-3.5-flash-lite`, and rejected by some newer Flash
+     * models. Set it on a model only once that model is known to accept the value — a 400 here
+     * is indistinguishable from an outage, and on the last audio-capable provider it fails the round.
+     */
+    val thinkingLevel: String? = null,
 ) {
     val configured: Boolean
         get() = apiKey.isNotBlank() && model.isNotBlank()
