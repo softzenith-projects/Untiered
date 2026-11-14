@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { campusEnabled, courseEnabled, featureEnabled, type ProductFeature } from "@/lib/flags";
+import { campusEnabled, campusLeadsEnabled, courseEnabled, featureEnabled, type ProductFeature } from "@/lib/flags";
 
 export function requireFeature(feature: ProductFeature): void {
   if (!featureEnabled(feature)) notFound();
@@ -19,4 +19,9 @@ export function requireArenaCourse(courseSlug: string): void {
 /** Every `/campus` and `/admin/campus` page starts with this. */
 export function requireCampus(): void {
   if (!campusEnabled()) notFound();
+}
+
+/** The lead review pages have their own switch, like the API's `/admin/campus/leads`. */
+export function requireCampusLeads(): void {
+  if (!campusLeadsEnabled()) notFound();
 }

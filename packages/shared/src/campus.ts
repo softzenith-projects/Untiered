@@ -635,3 +635,63 @@ export interface CertificateView {
   completedAt: string;
   certificateId: string;
 }
+
+// -- Module 13: college self-registration (leads) --------------------------------
+
+export type LeadStatus = "new" | "contacted" | "converted" | "not_a_fit";
+export type LeadRole = "tpo" | "faculty" | "college_admin" | "other";
+
+/** `POST /campus/leads`, the one campus route that needs no sign-in. */
+export interface LeadRequest {
+  collegeName: string;
+  city: string;
+  state: string;
+  contactName: string;
+  contactRole: LeadRole;
+  email: string;
+  phone?: string | null;
+  approxStudents?: number | null;
+  message?: string | null;
+  consentToContact: true;
+  turnstileToken: string;
+  /** Honeypot: hidden from people and always sent empty by the form. */
+  website?: string;
+}
+
+export interface LeadView {
+  id: string;
+  status: LeadStatus;
+  collegeName: string;
+  city: string;
+  state: string;
+  contactName: string;
+  contactRole: LeadRole;
+  email: string;
+  phone: string | null;
+  approxStudents: number | null;
+  message: string | null;
+  /** Private to platform admins. */
+  notes: string | null;
+  orgId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  statusChangedBy: string | null;
+}
+
+export interface UpdateLeadRequest {
+  status?: Exclude<LeadStatus, "converted">;
+  notes?: string;
+}
+
+export interface ConvertLeadRequest {
+  name: string;
+  slug: string;
+  city?: string;
+  state?: string;
+  interviewAllowance?: number;
+}
+
+export interface ConvertLeadResult {
+  org: OrgView;
+  invite: InviteView;
+}

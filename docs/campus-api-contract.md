@@ -957,7 +957,7 @@ interface LeadView {
 | `POST /campus/leads` | **public** (the only unauthenticated campus route) | `LeadRequest` → `202 { received: true }`. Errors: `400 lead_invalid` (with a message naming the field); `400 turnstile_failed`; `429 rate_limited` (5 per IP per hour, 3 per email per day). A duplicate email for the same college within 30 days is merged into the open lead, not stored twice, and still answers `202`, so the response never reveals that a lead exists. |
 | `GET /admin/campus/leads?status=&q=&cursor=` | platform admin | → `{ items: LeadView[], nextCursor }`, newest first |
 | `GET /admin/campus/leads/{id}` | platform admin | → `LeadView` |
-| `PATCH /admin/campus/leads/{id}` | platform admin | `{ status?, notes? }` → `LeadView` (`converted` can only be set by convert) |
+| `PATCH /admin/campus/leads/{id}` | platform admin | `{ status?, notes? }` → `LeadView` (`converted` can only be set by convert: `400 invalid_status`; a converted lead's status cannot change: `409 lead_already_converted`; notes over 5,000 characters: `400 invalid_notes`; an empty string clears the notes) |
 | `POST /admin/campus/leads/{id}/convert` | platform admin | `{ name, slug, city?, state?, interviewAllowance? }` (prefilled from the lead) → `201 { org: OrgView, invite: InviteView }`. In one transaction it creates the organisation, a `college_admin` invite to the lead's email (module 3), and sets the lead to `converted` with its `orgId`. `409 lead_already_converted`. |
 
 **Notification.** A new lead queues one email to `interviewos.campus.lead-notify-email`
@@ -972,6 +972,15 @@ as an address-only delivery (no user row), the way module 3's invite job does it
 - A lead in `not_a_fit` is deleted after 180 days by a scheduled job.
 - A lead's contact can ask for deletion through the existing contact channel; a platform
   admin can delete with `DELETE /admin/campus/leads/{id}` (`204`).
+
+**Implementation notes.** The IP limit is counted before the body is validated and the email
+limit after the captcha, so a failed attempt still spends an IP attempt but nobody can use up
+another person's email allowance without solving the captcha. A filled honeypot leaves no row,
+not even a rate-limit count. The client IP is the last `X-Forwarded-For` hop when the direct
+peer is private (Caddy), otherwise the socket address; IPv6 is bucketed per /64. A repeat
+submission updates the open lead with the newer details (blank optional fields keep the old
+values) and sends no second notification. The `not_a_fit` purge counts from when the lead was
+marked so. With `TURNSTILE_SECRET_KEY` unset the captcha is not verified (logged at startup).
 
 Every status change and conversion is logged with the admin's user id; once a lead is
 converted, the college's own audit log takes over.

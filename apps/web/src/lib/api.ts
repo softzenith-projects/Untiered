@@ -71,6 +71,12 @@ import type {
   StudentReadinessRow,
   AdminCreateInviteRequest,
   AdminOrgSummary,
+  ConvertLeadRequest,
+  ConvertLeadResult,
+  LeadRequest,
+  LeadStatus,
+  LeadView,
+  UpdateLeadRequest,
   AdminUpdateOrgRequest,
   AuditEntryView,
   BatchView,
@@ -763,6 +769,57 @@ export function uploadOrgLogo(accessToken: string, orgId: string, file: File): P
   const form = new FormData();
   form.set("file", file);
   return apiSend<OrgView>(`${adminOrg(orgId)}/logo`, "PUT", accessToken, form);
+}
+
+// -- college self-registration (contract Module 13) ------------------------------
+
+/**
+ * `POST /campus/leads`, sent without a token: the person filling in /colleges has no
+ * account. The answer is always `{ received: true }` whether or not we already knew of
+ * the college, so there is nothing to return but success or the error.
+ */
+export async function submitCollegeLead(body: LeadRequest): Promise<void> {
+  const response = await fetch(`${env.apiBaseUrl}/api/v1/campus/leads`, {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (response.ok) return;
+  const envelope = (await response.json().catch(() => null)) as ApiError | null;
+  throw reportIfServerFault(
+    "/api/v1/campus/leads",
+    new ApiRequestError(
+      response.status,
+      envelope?.error ?? "unknown_error",
+      envelope?.message ?? `Request to /api/v1/campus/leads failed with status ${response.status}.`,
+    ),
+  );
+}
+
+const ADMIN_LEADS = "/api/v1/admin/campus/leads";
+const adminLead = (leadId: string) => `${ADMIN_LEADS}/${encodeURIComponent(leadId)}`;
+
+export function fetchAdminLeads(
+  filter: { status?: LeadStatus; q?: string; cursor?: string },
+  options: ApiGetOptions,
+): Promise<CampusPage<LeadView>> {
+  return apiGet<CampusPage<LeadView>>(`${ADMIN_LEADS}${query(filter)}`, options);
+}
+
+export function fetchAdminLead(leadId: string, options: ApiGetOptions): Promise<LeadView> {
+  return apiGet<LeadView>(adminLead(leadId), options);
+}
+
+export function updateAdminLead(accessToken: string, leadId: string, body: UpdateLeadRequest): Promise<LeadView> {
+  return apiSend<LeadView>(adminLead(leadId), "PATCH", accessToken, body);
+}
+
+export function deleteAdminLead(accessToken: string, leadId: string): Promise<void> {
+  return apiSend<void>(adminLead(leadId), "DELETE", accessToken);
+}
+
+export function convertAdminLead(accessToken: string, leadId: string, body: ConvertLeadRequest): Promise<ConvertLeadResult> {
+  return apiSend<ConvertLeadResult>(`${adminLead(leadId)}/convert`, "POST", accessToken, body);
 }
 
 export function fetchMeCampus(options: ApiGetOptions): Promise<MeCampusView> {

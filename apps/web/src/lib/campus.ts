@@ -3,11 +3,14 @@ import { LEGAL } from "@/lib/legal";
 /**
  * Untiered Campus: the college partnership (docs/campus-v1-spec.md).
  *
- * Onboarding a college is done by hand for now (spec §1), so the only way in is to write
- * to us. A mailto rather than a form keeps a college's contact details out of any new
- * system until there is one built to hold them: no new service, nothing to retain.
+ * A college registers interest with the form on /colleges (contract Module 13), which
+ * creates a lead for a platform admin to review; a college is still onboarded by hand. The
+ * mailto below is the fallback when that form is switched off, and the "prefer email" link.
  */
 export const CAMPUS_PRODUCT_NAME = "Untiered Campus";
+
+/** The registration form's anchor on /colleges. */
+export const CAMPUS_REGISTER_ANCHOR = "register";
 
 const SUBJECT = "Untiered Campus pilot for our college";
 const BODY = [
