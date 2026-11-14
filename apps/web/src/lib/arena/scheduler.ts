@@ -1,4 +1,4 @@
-import { createEmptyCard, fsrs, Rating, type Card, type CardInput } from "ts-fsrs";
+import { createEmptyCard, fsrs, Rating, State, type Card, type CardInput } from "ts-fsrs";
 
 /**
  * The one place `ts-fsrs` is imported (task 055) — everything else in the Arena talks to
@@ -25,17 +25,34 @@ export interface ReviewState {
   lastReview: string | null; // ISO 8601
 }
 
+/**
+ * The stored state number, as a `ts-fsrs` `State`. ts-fsrs 6 types the field as its own enum
+ * rather than `number`. What comes back from storage is whatever was saved, so anything that is
+ * not one of the four states is read as `New`: rescheduled from scratch, never a crash.
+ */
+function toState(value: number): State {
+  switch (value) {
+    case State.Learning:
+      return State.Learning;
+    case State.Review:
+      return State.Review;
+    case State.Relearning:
+      return State.Relearning;
+    default:
+      return State.New;
+  }
+}
+
 function toCard(state: ReviewState): CardInput {
   return {
     due: state.due,
     stability: state.stability,
     difficulty: state.difficulty,
-    elapsed_days: 0,
     scheduled_days: state.scheduledDays,
     learning_steps: state.learningSteps,
     reps: state.reps,
     lapses: state.lapses,
-    state: state.state,
+    state: toState(state.state),
     last_review: state.lastReview,
   };
 }
