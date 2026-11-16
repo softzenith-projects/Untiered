@@ -129,8 +129,7 @@ Continuing with a planned question instead would need all of the following:
 Retention, consent and refunds are owner decisions.
 
 ## What I could NOT verify
-- **CI.** GitHub did not start any job on these branches: "recent account payments have failed
-  or your spending limit needs to be increased". The result is unknown.
+- **CI** was blocked by billing when the branch was written; it runs now and its result is in the merge status below.
 - **The migration** was applied to the local Supabase inside a transaction and rolled back. The
   constraints accept the new codes and reject free text and unknown events. That is a stand-in
   for CI's database job, not the job itself.
