@@ -89,8 +89,12 @@ object GroundingNote {
 
             sourcedQuestions > 0 -> {
                 val questions = if (sourcedQuestions == 1) "the one question" else "the $sourcedQuestions questions"
-                "The main questions in this round come from $questions reported for $rounds in sources we " +
-                    "hold, each cited in your report. Follow-ups are written from your answers."
+                // "Start with", not "come from": a round can outlast its sourced questions, and the
+                // ones asked after them are written from general patterns. Saying every main question
+                // was sourced would claim a source for questions that have none.
+                "The main questions in this round start with $questions reported for $rounds in sources " +
+                    "we hold, each cited in your report. Once those have been asked, further questions are " +
+                    "written from general patterns and are not cited. Follow-ups are written from your answers."
             }
 
             confidence == Confidence.RECOGNISED -> {

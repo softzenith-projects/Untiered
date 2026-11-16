@@ -186,6 +186,7 @@ interviewos:
     repeat-threshold: ${INTERVIEWER_REPEAT_THRESHOLD:0.85}
     echo-all-answers: ${INTERVIEWER_ECHO_ALL_ANSWERS:false}
     audio-hash-guard: ${INTERVIEWER_AUDIO_HASH_GUARD:false}
+    bank-pool-fallthrough: ${INTERVIEWER_BANK_POOL_FALLTHROUGH:false}
   # Server-side code execution, for languages a browser cannot run. Off by default.
   #
   # Python runs in the candidate's own browser (Pyodide) and needs nothing here. Java
