@@ -2,7 +2,8 @@ import type { Route } from "next";
 import Link from "next/link";
 
 import { buttonStyles } from "@/components/ui/button";
-import { CAMPUS_CONTACT_HREF, CAMPUS_PRODUCT_NAME } from "@/lib/campus";
+import { CAMPUS_CONTACT_HREF, CAMPUS_PRODUCT_NAME, CAMPUS_REGISTER_ANCHOR } from "@/lib/campus";
+import { campusLeadsEnabled } from "@/lib/flags";
 
 /**
  * The landing page's way in for colleges. It describes the partnership as something being
@@ -31,9 +32,15 @@ export function CollegesBand() {
             <Link href={"/colleges" as Route} className={buttonStyles({ size: "lg" })}>
               Untiered for colleges
             </Link>
-            <a href={CAMPUS_CONTACT_HREF} className={buttonStyles({ variant: "secondary", size: "lg" })}>
-              Talk to us about a pilot
-            </a>
+            {campusLeadsEnabled() ? (
+              <Link href={`/colleges#${CAMPUS_REGISTER_ANCHOR}` as Route} className={buttonStyles({ variant: "secondary", size: "lg" })}>
+                Register your college
+              </Link>
+            ) : (
+              <a href={CAMPUS_CONTACT_HREF} className={buttonStyles({ variant: "secondary", size: "lg" })}>
+                Talk to us about a pilot
+              </a>
+            )}
           </div>
         </div>
         <ul className="card flex flex-col gap-4 p-6 shadow-[var(--shadow-md)]">

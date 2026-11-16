@@ -74,6 +74,21 @@ interviewos:
     arena: ${NEXT_PUBLIC_FEATURE_ARENA:true}
     reports: ${NEXT_PUBLIC_FEATURE_REPORTS:true}
     questions: ${NEXT_PUBLIC_FEATURE_QUESTIONS:${NEXT_PUBLIC_QUESTION_BANK_BROWSABLE:false}}
+    # Untiered Campus (colleges, campus spec). Off until the owner turns it on.
+    campus: ${NEXT_PUBLIC_FEATURE_CAMPUS:false}
+    # College self-registration on /colleges (campus contract Module 13). Independent of
+    # campus, so leads can be collected before Campus is switched on.
+    campus-leads: ${NEXT_PUBLIC_FEATURE_CAMPUS_LEADS:true}
+  campus:
+    # Where a new college lead's notification goes. Empty sends none.
+    lead-notify-email: ${CAMPUS_LEADS_NOTIFY_EMAIL:}
+    # Salt for the hashed IP and email in the lead form's rate-limit buckets. Empty draws a
+    # random one per process, so the limits reset on restart.
+    lead-hash-salt: ${CAMPUS_LEADS_HASH_SALT:}
+  turnstile:
+    # Cloudflare Turnstile secret for the API's own captcha checks (the lead form). Empty
+    # skips verification, which is logged at startup; set it everywhere but local development.
+    secret-key: ${TURNSTILE_SECRET_KEY:}
   auth:
     # Backend verifies Supabase-issued JWTs against the project's published JWKS.
     # No shared secret, and no user id is ever taken from the request body.

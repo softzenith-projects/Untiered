@@ -44,3 +44,26 @@ describe("product feature flags", () => {
     expect(courseEnabled("new-unreviewed-course")).toBe(false);
   });
 });
+
+describe("campus flag", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is off unless explicitly true", async () => {
+    const { campusEnabled } = await import("@/lib/flags");
+    expect(campusEnabled()).toBe(false);
+    vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS", "true");
+    expect(campusEnabled()).toBe(true);
+  });
+});
+
+describe("campus leads switch", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is on unless explicitly turned off, independently of the campus switch", async () => {
+    const { campusLeadsEnabled } = await import("@/lib/flags");
+    vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS", "false");
+    expect(campusLeadsEnabled()).toBe(true);
+    vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS_LEADS", "false");
+    expect(campusLeadsEnabled()).toBe(false);
+  });
+});

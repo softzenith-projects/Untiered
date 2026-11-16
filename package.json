@@ -24,6 +24,7 @@
     "db:push": "npm run supabase -- db push",
     "db:reset": "npm run supabase -- db reset",
     "db:diff": "npm run supabase -- db diff -f",
+    "campus:seed-demo": "node --env-file-if-exists=.env scripts/campus-demo-seed.mjs",
     "db:lint": "npm run supabase -- db lint --level warning"
   },
   "engines": {

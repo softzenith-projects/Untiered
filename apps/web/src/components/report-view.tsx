@@ -38,7 +38,21 @@ function reportIsStillGenerating(cause: unknown): boolean {
  * transcript was dropped rather than displayed, because a score without evidence is a
  * badge, and an invented quote destroys the credibility this page exists to build.
  */
-export function ReportView({ sessionId, detailed = false }: { sessionId: string; detailed?: boolean }) {
+export type ReportLoader = (options: { accessToken: string; signal: AbortSignal }) => Promise<SessionReport>;
+
+export function ReportView({
+  sessionId,
+  detailed = false,
+  loadReport,
+}: {
+  sessionId: string;
+  detailed?: boolean;
+  /**
+   * Where the report comes from when it is not the signed-in candidate's own (college
+   * staff reading a student's report). It bypasses the candidate's report cache.
+   */
+  loadReport?: ReportLoader;
+}) {
   const accessToken = useAccessToken();
   const [attempt, setAttempt] = useState(0);
 
@@ -48,6 +62,7 @@ export function ReportView({ sessionId, detailed = false }: { sessionId: string;
       sessionId={sessionId}
       detailed={detailed}
       accessToken={accessToken}
+      loadReport={loadReport}
       onRetry={() => setAttempt((current) => current + 1)}
     />
   );
@@ -57,22 +72,24 @@ function ReportLoadAttempt({
   sessionId,
   detailed,
   accessToken,
+  loadReport,
   onRetry,
 }: {
   sessionId: string;
   detailed: boolean;
   accessToken: string | null | undefined;
+  loadReport: ReportLoader | undefined;
   onRetry: () => void;
 }) {
   // Already in hand when the candidate arrives from the interview's closing screen, which
   // waited for it; the page then renders at once instead of asking for it again.
-  const [report, setReport] = useState<SessionReport | null>(() => cachedReport(sessionId));
+  const [report, setReport] = useState<SessionReport | null>(() => (loadReport ? null : cachedReport(sessionId)));
   const [error, setError] = useState<string | null>(null);
   const [expired, setExpired] = useState<string | null>(null);
   const [waitTimedOut, setWaitTimedOut] = useState(false);
 
   useEffect(() => {
-    if (!accessToken || cachedReport(sessionId)) return;
+    if (!accessToken || (!loadReport && cachedReport(sessionId))) return;
     let active = true;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     const controller = new AbortController();
@@ -81,8 +98,9 @@ function ReportLoadAttempt({
 
     const load = async () => {
       try {
-        const loaded = await fetchReport(sessionId, { accessToken, signal: controller.signal });
-        rememberReport(sessionId, loaded);
+        const options = { accessToken, signal: controller.signal };
+        const loaded = loadReport ? await loadReport(options) : await fetchReport(sessionId, options);
+        if (!loadReport) rememberReport(sessionId, loaded);
         if (active) setReport(loaded);
       } catch (cause) {
         if (!active) return;
@@ -112,6 +130,8 @@ function ReportLoadAttempt({
       controller.abort();
       if (retryTimer) clearTimeout(retryTimer);
     };
+    // The loader is fixed for the life of one attempt (the parent re-keys on change).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, sessionId]);
 
   if (expired) {
@@ -176,7 +196,7 @@ function ReportLoadAttempt({
     return <ReportLoadingState />;
   }
 
-  return <ReportDocument report={report} detailed={detailed} />;
+  return <ReportDocument report={report} detailed={detailed} staff={Boolean(loadReport)} />;
 }
 
 /** A useful waiting room for the model-written report, without inventing a score. */
@@ -227,7 +247,16 @@ export function ReportLoadingState() {
  * `.length` on a field that had just been added. The server backfills the shape it knows
  * about (`ReportService.withEveryField`), and this is the belt to that pair of braces.
  */
-export function ReportDocument({ report, detailed = true }: { report: SessionReport; detailed?: boolean }) {
+export function ReportDocument({
+  report,
+  detailed = true,
+  staff = false,
+}: {
+  report: SessionReport;
+  detailed?: boolean;
+  /** A college staff member reading a student's report: no links into the student's own practice. */
+  staff?: boolean;
+}) {
   const competencies = report.competencies ?? [];
   const annotations = report.annotations ?? [];
   const practicePlan = report.practicePlan ?? [];
@@ -249,7 +278,7 @@ export function ReportDocument({ report, detailed = true }: { report: SessionRep
 
   return (
     <article className="flex flex-col gap-8 md:gap-10">
-      {detailed ? (
+      {detailed && !staff ? (
         <Link href={`/report/${report.sessionId}`} className="w-fit text-caption font-semibold text-accent hover:underline">
           <span aria-hidden>←</span> Back to report summary
         </Link>
@@ -320,6 +349,7 @@ export function ReportDocument({ report, detailed = true }: { report: SessionRep
           />
         )}
         <ReportNextAction
+          staff={staff}
           item={practicePlan[0] ?? null}
           recommendedNextSession={report.recommendedNextSession}
           answeredTurns={report.answeredTurns}
@@ -328,7 +358,7 @@ export function ReportDocument({ report, detailed = true }: { report: SessionRep
         />
       </div>
 
-      {!detailed ? (
+      {!detailed && !staff ? (
         <section className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-accent/20 bg-accent-wash px-5 py-5 sm:flex-row sm:items-center sm:px-6">
           <div>
             <h2 className="text-heading text-ink">Want the evidence behind every score?</h2>
@@ -494,12 +524,14 @@ export function ReportDocument({ report, detailed = true }: { report: SessionRep
       </Section>
 
       <footer className="flex flex-wrap items-center gap-4 rounded-2xl border border-accent/20 bg-accent-wash p-6 sm:p-8">
-        <Link
-          href="/interview/new"
-          className="rounded-lg bg-accent px-5 py-2.5 text-body font-medium text-accent-contrast hover:bg-accent-strong"
-        >
-          Practise again
-        </Link>
+        {staff ? null : (
+          <Link
+            href="/interview/new"
+            className="rounded-lg bg-accent px-5 py-2.5 text-body font-medium text-accent-contrast hover:bg-accent-strong"
+          >
+            Practise again
+          </Link>
+        )}
         <p className="text-caption text-ink-subtle">
           Recommended next: {report.recommendedNextSession}
         </p>
@@ -571,7 +603,9 @@ function ReportNextAction({
   answeredTurns,
   assessableTurns,
   assistedAnswers,
+  staff,
 }: {
+  staff: boolean;
   item: ReportPracticeItem | null;
   recommendedNextSession: string;
   answeredTurns: number;
@@ -592,9 +626,11 @@ function ReportNextAction({
         <p className="rounded-xl bg-accent-wash px-4 py-3 text-caption leading-relaxed text-ink">{item.drill}</p>
       ) : null}
 
-      <Link href="/interview/new" className="action-primary min-h-12 w-full px-5 text-body">
-        Practise this focus
-      </Link>
+      {staff ? null : (
+        <Link href="/interview/new" className="action-primary min-h-12 w-full px-5 text-body">
+          Practise this focus
+        </Link>
+      )}
 
       <div className="border-t border-line pt-5">
         <h3 className="text-heading text-ink">Round details</h3>

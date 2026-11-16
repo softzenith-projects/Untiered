@@ -63,6 +63,12 @@ data class StartSessionRequest(
     val candidateStage: String? = null,
     @field:Size(max = 160)
     val focusTopic: String? = null,
+    /**
+     * A round a college assigned (campus spec §4). When present, the round's configuration is
+     * taken from the assignment and the client's values for it are ignored, and the college
+     * pays for it rather than the candidate's free rounds or credits.
+     */
+    val assignmentId: UUID? = null,
 )
 
 /** One exchange as the client needs to render it. */
@@ -130,6 +136,11 @@ data class SessionView(
     val board: JsonNode? = null,
     /** Candidate-selected syllabus for a custom topic round. */
     val focusTopic: String? = null,
+    /**
+     * Whether a college assigned this round (campus spec §4). Only then does the room send
+     * integrity events (§5); the student was told so on the start screen, before consent.
+     */
+    val assigned: Boolean = false,
 )
 
 /**

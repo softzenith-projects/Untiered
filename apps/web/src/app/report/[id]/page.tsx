@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 import { AppShell } from "@/components/app-shell";
+import { OwnIntegritySection } from "@/components/integrity-summary";
 import { ReportView } from "@/components/report-view";
+import { campusEnabled } from "@/lib/flags";
 import { requireFeature } from "@/lib/require-feature";
 
 export const metadata: Metadata = { title: "Your report" };
@@ -30,8 +32,10 @@ export default async function ReportPage({
         * its own `max-w-prose` — widening the sheet does not widen the line length text is
         * actually read at.
         */}
-      <div className="w-full">
+      <div className="flex w-full flex-col gap-6">
         <ReportView sessionId={id} detailed={detail === "1"} />
+        {/* Campus module 5: shown only for a round a college assigned (`recorded`). */}
+        {campusEnabled() ? <OwnIntegritySection sessionId={id} /> : null}
       </div>
     </AppShell>
   );

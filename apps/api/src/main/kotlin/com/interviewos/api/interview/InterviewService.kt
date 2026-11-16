@@ -12,6 +12,8 @@ import com.interviewos.api.ai.RoundContext
 import com.interviewos.api.ai.TurnTranscript
 import com.interviewos.api.bank.BankQuestion
 import com.interviewos.api.billing.BillingProperties
+import com.interviewos.api.campus.AssignedRound
+import com.interviewos.api.campus.AssignedRoundAdmission
 import com.interviewos.api.common.ApiException
 import com.interviewos.api.resume.CandidateBackground
 import com.interviewos.api.resume.ResumeService
@@ -67,6 +69,7 @@ class InterviewService(
     private val codeRunner: CodeRunner,
     private val interviewEvents: InterviewEventRecorder,
     private val activeLeases: ActiveLeaseRenewal,
+    private val assignedRounds: AssignedRoundAdmission,
     transactionManager: PlatformTransactionManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -240,14 +243,23 @@ class InterviewService(
         identity: SupabaseIdentity,
         request: StartSessionRequest,
     ): SessionView {
+        val assignmentId = request.assignmentId ?: return startRound(identity, request, assigned = null)
+        // A college-assigned round (campus spec §4): the configuration is the assignment's, never
+        // the client's — including an empty company or role, which the client cannot use to turn
+        // the college's round into a different one. Consent is still asked for, first.
+        requireAudioConsent(request)
+        val assigned = assignedRounds.roundFor(identity, assignmentId)
+        return startRound(identity, request.withAssignedRound(assigned), assigned)
+    }
+
+    private fun startRound(
+        identity: SupabaseIdentity,
+        request: StartSessionRequest,
+        assigned: AssignedRound?,
+    ): SessionView {
         val userId = identity.id
 
-        if (!request.consentAudio) {
-            throw ApiException.badRequest(
-                "The interview is spoken, so recording your voice is required. Nothing is captured without your consent.",
-                code = "consent_required",
-            )
-        }
+        requireAudioConsent(request)
 
         val roundType =
             RoundType.parseOrNull(request.roundType)
@@ -316,7 +328,11 @@ class InterviewService(
                 // before that endpoint had ever been called failed on the users foreign key.
                 // Any entry point that creates user-owned rows has to stand on its own.
                 userRepository.provision(identity)
-                admitAndInsert(userId, normalisedRequest, roundType, resolution, declaredStage)
+                if (assigned == null) {
+                    admitAndInsert(userId, normalisedRequest, roundType, resolution, declaredStage)
+                } else {
+                    admitAssignedAndInsert(identity, assigned, normalisedRequest, roundType, resolution, declaredStage)
+                }
             }
 
         // The session row has committed, so a failure from here on can no longer be rolled
@@ -400,28 +416,7 @@ class InterviewService(
             }
         }
 
-        val sessionId =
-            try {
-                repository.insertSession(
-                    userId = userId,
-                    companyName = request.companyName.trim(),
-                    archetype = resolution.archetype,
-                    confidence = resolution.confidence,
-                    roleTitle = request.roleTitle.trim(),
-                    roundType = roundType.dbValue,
-                    language = request.language,
-                    consentAudio = request.consentAudio,
-                    consentVideo = request.consentVideo,
-                    durationMinutes = request.durationMinutes,
-                    declaredStage = declaredStage,
-                    focusTopic = request.focusTopic,
-                )
-            } catch (e: DuplicateKeyException) {
-                throw ApiException.conflict(
-                    "Finish or leave your current interview before starting another one.",
-                    code = "session_in_progress",
-                )
-            }
+        val sessionId = insertSession(userId, request, roundType, resolution, declaredStage)
         // Same transaction as the check above, so two racing starts cannot both fit in
         // the last minutes of the day. Planned minutes, because the clock is what ends a
         // round and so the plan is what it can cost. A paid round is charged a credit at
@@ -439,6 +434,104 @@ class InterviewService(
             .log("Round admitted")
         return sessionId
     }
+
+    /**
+     * A round the college pays for (campus spec §4, contract "Admission"). The same
+     * transaction and the same candidate lock as [admitAndInsert], and the same one round at a
+     * time — but the caps are the assignment's and the college's, checked under a lock on the
+     * organisation row by [AssignedRoundAdmission], and nothing is written to the candidate's
+     * own ledgers: no `practice_usage` row and no credit charge. A free round or a credit is the
+     * candidate's; this interview is the college's.
+     */
+    private fun admitAssignedAndInsert(
+        identity: SupabaseIdentity,
+        assigned: AssignedRound,
+        request: StartSessionRequest,
+        roundType: RoundType,
+        resolution: ArchetypeResolution,
+        declaredStage: DeclaredStage?,
+    ): UUID {
+        val userId = identity.id
+        repository.lockForAdmission(userId)
+        if (repository.findOpenSessionId(userId) != null) {
+            throw ApiException.conflict(
+                "Finish or leave your current interview before starting another one.",
+                code = "session_in_progress",
+            )
+        }
+        val sessionId =
+            try {
+                assignedRounds.admit(identity, assigned.assignmentId) {
+                    insertSession(userId, request, roundType, resolution, declaredStage)
+                }
+            } catch (e: ApiException) {
+                log
+                    .atInfo()
+                    .addKeyValue("user_id", userId)
+                    .addKeyValue("assignment_id", assigned.assignmentId)
+                    .addKeyValue("reason", e.code)
+                    .log("Assigned round refused")
+                throw e
+            }
+        log
+            .atInfo()
+            .addKeyValue("user_id", userId)
+            .addKeyValue("session_id", sessionId)
+            .addKeyValue("assignment_id", assigned.assignmentId)
+            .addKeyValue("funding", "org")
+            .log("Round admitted")
+        return sessionId
+    }
+
+    private fun insertSession(
+        userId: UUID,
+        request: StartSessionRequest,
+        roundType: RoundType,
+        resolution: ArchetypeResolution,
+        declaredStage: DeclaredStage?,
+    ): UUID =
+        try {
+            repository.insertSession(
+                userId = userId,
+                companyName = request.companyName.trim(),
+                archetype = resolution.archetype,
+                confidence = resolution.confidence,
+                roleTitle = request.roleTitle.trim(),
+                roundType = roundType.dbValue,
+                language = request.language,
+                consentAudio = request.consentAudio,
+                consentVideo = request.consentVideo,
+                durationMinutes = request.durationMinutes,
+                declaredStage = declaredStage,
+                focusTopic = request.focusTopic,
+            )
+        } catch (e: DuplicateKeyException) {
+            throw ApiException.conflict(
+                "Finish or leave your current interview before starting another one.",
+                code = "session_in_progress",
+            )
+        }
+
+    private fun requireAudioConsent(request: StartSessionRequest) {
+        if (!request.consentAudio) {
+            throw ApiException.badRequest(
+                "The interview is spoken, so recording your voice is required. Nothing is captured without your consent.",
+                code = "consent_required",
+            )
+        }
+    }
+
+    /** The client's request with the assignment's round in place of whatever the client sent. */
+    private fun StartSessionRequest.withAssignedRound(assigned: AssignedRound): StartSessionRequest =
+        copy(
+            companyName = assigned.companyName.orEmpty(),
+            roleTitle = assigned.roleTitle.orEmpty(),
+            roundType = assigned.roundType,
+            durationMinutes = assigned.durationMinutes,
+            language = assigned.language,
+            candidateStage = assigned.candidateStage,
+            focusTopic = assigned.focusTopic,
+        )
 
     /**
      * Everything that needs the model, done with no transaction open, then the opening
@@ -841,6 +934,7 @@ class InterviewService(
                         val shouldConclude = endRound || plan.mustConclude
                         if (shouldConclude) {
                             if (!repository.markSessionStatus(sessionId, userId, "completed")) throw sessionStateChanged()
+                            assignedRounds.roundCompleted(sessionId)
                             return@inTransaction persistAnswerResponse(
                                 sessionId,
                                 userId,
@@ -1205,6 +1299,7 @@ class InterviewService(
                     now = Instant.now(),
                 ).outOfTime
         if (!repository.markSessionStatus(sessionId, userId, "completed")) throw sessionStateChanged()
+        assignedRounds.roundCompleted(sessionId)
         recordEvent(userId, sessionId, "session_completed", outcome = "succeeded")
         return SubmitAnswerResponse(
             sessionComplete = true,
@@ -1337,6 +1432,7 @@ class InterviewService(
                     ?.takeIf { it.answeredAt == null }
                     ?.let { turnViewOf(it, userId, sessionId) },
             focusTopic = session.focusTopic,
+            assigned = session.assigned,
         )
     }
 

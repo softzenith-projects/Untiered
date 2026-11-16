@@ -13,6 +13,9 @@ import com.interviewos.api.bank.BankQuestion
 import com.interviewos.api.bank.CompanyDirectory
 import com.interviewos.api.bank.QuestionBankRepository
 import com.interviewos.api.billing.BillingProperties
+import com.interviewos.api.campus.AssignedRound
+import com.interviewos.api.campus.AssignedRoundAdmission
+import com.interviewos.api.common.ApiException
 import com.interviewos.api.pool.PoolQuestion
 import com.interviewos.api.pool.QuestionPoolRepository
 import com.interviewos.api.pool.RoleFamily
@@ -68,6 +71,36 @@ class BankRoundHarness(
             }
         }
     val activeLeases = ActiveLeaseRenewal(repository)
+
+    /** The round a test's assignment holds; null means the assignment is not the candidate's (404). */
+    var assignedRound: AssignedRound? = null
+
+    /** What the college's caps say at admission; null admits the round. */
+    var assignedRefusal: ApiException? = null
+
+    /**
+     * College-assigned rounds (campus spec §4); a personal round never reaches it. Scripted like
+     * the model: [AssignedRoundAdmission.admit] runs the session insert it is handed, as the real
+     * one does inside the admission transaction, unless [assignedRefusal] says no.
+     */
+    val assignedRounds: AssignedRoundAdmission =
+        mock(AssignedRoundAdmission::class.java) { invocation ->
+            when (invocation.method.name) {
+                "roundFor" -> {
+                    assignedRound ?: throw AssignedRoundAdmission.notFound()
+                }
+
+                "admit" -> {
+                    assignedRefusal?.let { throw it }
+                    @Suppress("UNCHECKED_CAST")
+                    (invocation.arguments[2] as () -> UUID).invoke()
+                }
+
+                else -> {
+                    RETURNS_DEFAULTS.answer(invocation)
+                }
+            }
+        }
     val directory: CompanyDirectory = mock(CompanyDirectory::class.java)
     val bank: QuestionBankRepository = mock(QuestionBankRepository::class.java)
     val pool: QuestionPoolRepository = mock(QuestionPoolRepository::class.java)
@@ -133,6 +166,7 @@ class BankRoundHarness(
             codeRunner = mock(CodeRunner::class.java),
             interviewEvents = InterviewEventRecorder.NONE,
             activeLeases = activeLeases,
+            assignedRounds = assignedRounds,
             transactionManager = transactionManager,
         )
 
