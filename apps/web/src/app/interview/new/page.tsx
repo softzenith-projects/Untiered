@@ -22,10 +22,11 @@ export default async function NewInterviewPage({
     from?: string | string[];
     company?: string | string[];
     role?: string | string[];
+    assignment?: string | string[];
   }>;
 }) {
   requireFeature("mockInterviews");
-  const { round: roundParam, topic: topicParam, from: fromParam, company, role } = await searchParams;
+  const { round: roundParam, topic: topicParam, from: fromParam, company, role, assignment } = await searchParams;
   const topic = Array.isArray(topicParam) ? topicParam[0] : topicParam;
   const from = Array.isArray(fromParam) ? fromParam[0] : fromParam;
   const requestedRound = Array.isArray(roundParam) ? roundParam[0] : roundParam;
@@ -40,6 +41,7 @@ export default async function NewInterviewPage({
           roundPreselected={from === "rounds" && roundType !== undefined}
           initialCompany={prefill(company)}
           initialRole={prefill(role)}
+          assignmentId={prefill(assignment) || undefined}
         />
       </div>
     </AppShell>

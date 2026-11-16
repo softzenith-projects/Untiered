@@ -76,6 +76,17 @@ describe("updateSession", () => {
     expect(location.searchParams.get("next")).toBe(path);
   });
 
+  it("keeps the query string, so an invite link survives sign-in", async () => {
+    signedOut();
+
+    const response = await updateSession(requestFor("/campus/join?token=abc-_123"));
+
+    expect(response.status).toBe(307);
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.pathname).toBe("/login");
+    expect(location.searchParams.get("next")).toBe("/campus/join?token=abc-_123");
+  });
+
   it.each(["/courses", "/courses/dsa/11-backtracking", "/arena", "/interview/new", "/report/3f2a"])(
     "lets a signed-in candidate through to %s",
     async (path) => {
@@ -140,6 +151,31 @@ describe("updateSession", () => {
 
     expect(new URL(response.headers.get("location") ?? "").pathname).toBe("/dashboard");
   });
+
+  it("sends a signed-in person on to a same-origin next, such as the college portal", async () => {
+    signedIn();
+
+    const response = await updateSession(requestFor("/login?next=%2Fcampus%3Forg%3Do1"));
+
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.origin).toBe("http://localhost:3000");
+    expect(location.pathname).toBe("/campus");
+    expect(location.searchParams.get("org")).toBe("o1");
+  });
+
+  it.each(["https://example.com/campus", "//example.com", "/login?next=/login"])(
+    "never follows an unsafe or looping next (%s) from the sign-in page",
+    async (next) => {
+      signedIn();
+
+      const response = await updateSession(requestFor(`/login?next=${encodeURIComponent(next)}`));
+
+      const location = new URL(response.headers.get("location") ?? "");
+      expect(location.origin).toBe("http://localhost:3000");
+      expect(location.pathname).toBe("/dashboard");
+      expect(location.search).toBe("");
+    },
+  );
 
   it("verifies the token locally instead of asking the auth server who this is", async () => {
     signedIn();

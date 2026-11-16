@@ -1,90 +1,171 @@
-# Handoff — 13 November 2026
+# Handoff — 14 November 2026
 
 ## Task
-Introduce Untiered Campus (B2B college partnerships): a "for colleges" CTA on the site,
-the owner's spec adapted to this codebase, and a schema/API plan for modules 1–4 for review.
-Source: owner's PDF "Untiered Campus: College Partnership Features (v1)" (13 Nov 2026).
+Interviewer design review (14 Nov 2026, PDF), steps 1–3 of its "Order to ship" only. No task
+file; the brief was given in session. Steps 4–6 not started.
 
 ## What I built
-- **Spec, adapted:** [docs/campus-v1-spec.md](docs/campus-v1-spec.md). This is the PDF with
-  every change marked **[Changed]** and a reason given. Main changes: MCQ tests deferred;
-  no accounts created at import; no "optional recording consent" at join; platform admin
-  stays the config allow-list; interviews a college assigns are paid from a per-college
-  allowance.
-- **Plan for modules 1–4 (no backend code):** [docs/campus-v1-plan.md](docs/campus-v1-plan.md)
-  covers what can be reused and what conflicts, three migrations in full SQL, the
-  tenant-isolation approach, the permission matrix, the REST API, the account-linking flow,
-  the frontend routes, and risks with open questions.
-- **Public `/colleges` page:** [apps/web/src/app/colleges/page.tsx](apps/web/src/app/colleges/page.tsx).
-  It separates what students can use today from what is still in development, and its
-  call to action is "Talk to us about a pilot". That is a mailto to the support address
-  with the subject and the questions filled in ([lib/campus.ts](apps/web/src/lib/campus.ts)).
-- **Landing page CTA:** a "For colleges" band above the testimonials
-  ([components/landing/colleges-band.tsx](apps/web/src/components/landing/colleges-band.tsx)),
-  a "For colleges" link in the header nav, and one in the footer.
-- `/colleges` is added to `INDEXABLE_ROUTES` (sitemap and canonical) and to the SEO
-  metadata test. There are new tests in `app/colleges/colleges-page.test.tsx`.
+Branch `feat/interviewer-guards`, one commit per step, plus PR #160 for one part.
+
+- **Step 1, observability and replay (`f4ed989`).**
+  - `AiFailureReason` codes on every model failure, plus the provider's finish reason (Gemini
+    `finishReason` or `promptFeedback.blockReason`; OpenAI-format `finish_reason`).
+  - Migration `20261114200000_interview_event_reasons.sql` gives `interview_events` the columns
+    `model`, `finish_reason` and `reason` (codes only). It also adds `session_turns.answer_audio_sha256`.
+  - New counters: `no_speech_heard`, `question_over_limit`, and the upload-to-next-question time
+    on `answer_response_ready`.
+  - Replay harness: `apps/api/src/test/kotlin/.../interview/replay/`. The fixtures and the export
+    SQL are in `apps/api/src/test/resources/replay/`.
+- **Step 2, server rules (`88622ac`).**
+  - `TurnGuards` (pure functions), `InterviewerRulesProperties` (flags), `AnswerPace`, and
+    `EchoedAnswer.matchOf`.
+  - New prompts and schemas: `assess-answer-turn.*` and `assess-answer-final.*`.
+  - Wiring in `InterviewService.submitAnswer` / `chooseNextLine`.
+- **Step 3, Gemini settings (`13cf831`).**
+  - A per-provider `thinking-level` and the `send-sampling-params` flag.
+  - The fallback model is pinned to `gemini-3.6-flash`.
+  - `docs/model-lifecycle.md`.
+- **PR #160 (`feat/bank-pool-fallthrough`, based on this branch).** The bank-to-pool
+  fall-through, behind a flag, and a rewording of the candidate-facing grounding note.
+
+### Flags, all defaulting to the old behaviour
+While a rule is off it still runs and writes outcome `shadow` to `interview_events`, so each
+can be counted on real rounds before it is turned on.
+
+| Flag (`interviewos.…`) | Env | Default |
+|---|---|---|
+| `interviewer.final-variant` | `INTERVIEWER_FINAL_VARIANT` | false |
+| `interviewer.planned-fallback` | `INTERVIEWER_PLANNED_FALLBACK` | false |
+| `interviewer.wrap-up-guard` | `INTERVIEWER_WRAP_UP_GUARD` | false |
+| `interviewer.length-guard` (+ `max-question-chars` 120) | `INTERVIEWER_LENGTH_GUARD` | false |
+| `interviewer.repeat-guard` (+ `repeat-threshold`) | `INTERVIEWER_REPEAT_GUARD`, `INTERVIEWER_REPEAT_THRESHOLD` | false, 0.85 |
+| `interviewer.echo-all-answers` | `INTERVIEWER_ECHO_ALL_ANSWERS` | false |
+| `interviewer.audio-hash-guard` | `INTERVIEWER_AUDIO_HASH_GUARD` | false |
+| `interviewer.bank-pool-fallthrough` (PR #160) | `INTERVIEWER_BANK_POOL_FALLTHROUGH` | false |
+| `gemini.send-sampling-params` | `GEMINI_SEND_SAMPLING_PARAMS` | true |
+| `ai.providers[].thinking-level` | `GEMINI_PRIMARY_THINKING_LEVEL`, `GEMINI_FALLBACK_THINKING_LEVEL` | empty (128-token budget) |
+
+Not behind a flag: the default for `GEMINI_FALLBACK_MODEL` is now `gemini-3.6-flash`, as the brief
+asked.
+
+Environment variables that can override model ids: `GEMINI_PRIMARY_MODEL`, `GEMINI_FALLBACK_MODEL`,
+`FALLBACK_PROVIDER_MODEL`, and through Spring relaxed binding `INTERVIEWOS_GEMINI_REASONINGMODEL`
+and `INTERVIEWOS_GEMINI_SPEECHMODEL`.
+
+## Where the code contradicted the review
+- **Two of the review's premises don't hold in the code.**
+  - The review says broad failure categories such as `echoed_transcript` are stored. They never
+    were: `answer_rejected` and `echoed_transcript` violated the table's check constraints, and
+    the best-effort ledger swallowed the error. The migration fixes this.
+  - Answer audio is not retained, so "listen to the echo turns" is impossible for past rounds.
+- **The 120-character limit collides with the briefing turn**, where the server itself asks for
+  2–3 sentences. The briefing turn is exempt (owner's decision).
+- **The clock is in the pacing sentences too**, not only the Elapsed/Remaining line. The minute
+  counts are stripped in the turn variant; the briefing keeps the time it tells the candidate
+  (owner's decision). For the closing phase I replaced "if you mention the time, say exactly this
+  much" with "Do not mention the time or that the interview is ending", because the original
+  sentence makes no sense without a number.
+- **The selector cannot always return a candidate.**
+  - The bank takes first claim, and the pool was never reached once the bank ran out (PR #160).
+  - There is no pool for project deep-dive, custom-topic or most non-engineering roles.
+  - The pool never brings a question back across rounds (`recycle = false`), so a returning
+    candidate exhausts it. That is a likely contributor to late-round stalls, not covered by the review.
+- **Thinking `minimal` is not confirmed for `gemini-3.6-flash`**, and newer Flash models reject
+  it. That is why it's per provider and not global.
 
 ## Assumptions I made
-- **Contact goes by mailto, not a form.** A form would need a backend to store college
-  contact details. A mailto adds no new service and keeps no data.
-- **The page claims nothing that isn't built.** Batch invites, assignments, readiness and
-  integrity flags sit under an "In development" label. The landing band says "Batch tools
-  are in development with partner colleges".
-- **One sentence is a commitment the plan makes, not a feature that exists yet:** "A
-  student joins their college's space themselves, and is shown what the college will see
-  before anything is shared." If you disagree with that design, change the sentence.
-- **`/colleges` is not in the Google Analytics allowlist.** Adding it widens tracking, and
-  CLAUDE.md says the privacy policy then has to change in the same commit. I left it
-  untracked; adding it is your call.
-- The plan recommends **service-layer enforcement with a typed `OrgScope`, composite
-  `(org_id, id)` foreign keys, a source-guard test and a real-Postgres isolation suite**,
-  not Postgres RLS. The reason: the API connects as the table owner and bypasses RLS, so
-  RLS would mean changing the connection model for the whole product. Full reasoning is in
-  plan §2.
+- The schema has no field for "the candidate asked for a repeat". So a re-ask of the current
+  question is allowed once, in other words, when the action is redirect, hint or guide or any help
+  was recorded, and the previous turn was not itself a re-ask.
+- Repeat similarity is a word-level edit-distance ratio on the whole line and on its last sentence
+  (only when that sentence has 4 or more words).
+- Rules judge model-written text only. A stored planned question is never cut or blocked.
+- On the final turn the schema still allows `conclude`, so stored `next_action` keeps its meaning.
+- When a rule replaces the line, the model's `basis`, `probes` and `askedBecause` are dropped,
+  because they describe a question nobody asked.
+- With the flags on, a workspace round or a warm-up turn whose line is rejected gets the generic
+  filler, with outcome `unavailable` (the owner chose filler plus alert).
+- `gemini-3.6-flash` has no row in `AiPrices`. It is costed at UNKNOWN (the 3.5 Flash rate), so it
+  is over-counted rather than free. Its audio price was not verified.
+
+## Step 2g: proposals, not built
+**Detecting an upload with no speech**
+1. Browser timing (`AnswerTiming.firstSoundMs == null`). Already sent and already counted as
+   `no_speech_heard`. Refusing on it would save the whole assessment call (about $0.003 and
+   3–4 s) at no cost. Risk: a quiet speaker below the browser's threshold, and older clients
+   send no timing. **Recommended first**, gated on shadow counts.
+2. Server-side energy check. Needs an Opus/WebM decoder, which the JVM doesn't have, so it means
+   a new dependency or ffmpeg. A few milliseconds of CPU per answer, but a real dependency cost.
+3. A `speechHeard` field in the schema, as in the review's call B. A few output tokens and no
+   extra call, but it's a schema change, so step 4/5 territory.
+
+**Re-transcribing an echo before asking the candidate to repeat**
+The audio bytes are still in memory during the request, so all three options are feasible.
+1. A history-free, transcription-only call on the primary model, keeping the first call's
+   decision. About $0.001 for a 45 s answer and 2–3 s. It needs a small prompt, a schema and an
+   `InterviewAi.transcribe`. **Recommended**: it removes what the model could copy from.
+2. Re-run the full assessment on the fallback model. About $0.007 (3.6 Flash audio price
+   unverified) and 4–8 s.
+3. `gemini-3.5-transcribe`. About $0.004 for 45 s per the review (unverified). Hindi-English
+   support isn't confirmed.
+
+Echo frequency is now countable (`echo_detected`), so the expected spend can be read from the
+ledger before choosing.
+
+## Step 2h: unchanged, described
+Today, when every provider fails: `answer_assessment_failed` is written (now with a reason and
+finish reason), `failSessionAndRefundUsage` marks the session failed and returns the free round
+or credit, `session_failed` is written, and the room gets a 503: "The interview has been stopped
+rather than scored unfairly."
+
+Continuing with a planned question instead would need all of the following:
+- An answered turn without a transcript. `session_turns_answer_consistency` forbids that today.
+- Keeping the audio until a later assessment succeeds. That reverses the decision not to retain
+  answer audio, and the consent copy changes with it.
+- A background re-assessment with retries, and a report that waits for it.
+- A planned question to ask, which exists only where the bank or pool has one.
+- A refund rule for a round that was partly assessed.
+
+Retention, consent and refunds are owner decisions.
 
 ## What I could NOT verify
-- **Visual design of `/colleges` and the band.** I did not render them in a browser. They
-  only use existing tokens and classes (`card`, `pill-*`, `bg-navy`, `buttonStyles`).
-- Whether the mailto opens sensibly on mobile mail clients.
-- **Everything in the plan is untested design.** It needs your review before any
-  migration or endpoint is written.
+- **CI** was blocked by billing when the branch was written; it runs now and its result is in the merge status below.
+- **The migration** was applied to the local Supabase inside a transaction and rolled back. The
+  constraints accept the new codes and reject free text and unknown events. That is a stand-in
+  for CI's database job, not the job itself.
+- **Live Gemini behaviour.** Not checked:
+  - whether the turn schema's required non-null field is honoured;
+  - `thinkingLevel` on each model;
+  - latency, and real echo, repeat and no-speech rates.
+- **Google's docs** were read from search excerpts. The pages now redirect to
+  `aistudio.google.com`, and fetching there was refused in this session.
 
 ## Verification status
-- Web: typecheck, lint, tests (109 files, 4,103 tests) and build all pass locally, with
-  `node_modules` matching the lockfile.
-- Backend: not touched. It passed in CI anyway.
-- CI: see merge status.
+- `cd apps/api && ./gradlew ktlintCheck test build` passes on `feat/interviewer-guards`
+  (`13cf831`) and on `feat/bank-pool-fallthrough` (`82fe073`). The web app is untouched.
+- The replay runs on the synthetic fixtures and prints a per-rule summary
+  (`apps/api/build/reports/turn-replay.txt`).
 
 ## Merge status
-- **Campus branch:** `feat/campus-colleges-cta` merges into `develop` only after its CI
-  run is green. No migrations in this change.
-- **Also fixed and merged today, because it blocked the gate:** `develop` was already red
-  at `c984459` on four Shiki tests in `highlight-code.test.ts`. The cause had two parts:
-  - Under jsdom, Shiki 4.6's WASM loader calls `Blob.stream()`, which jsdom does not provide.
-  - Yesterday's `fix/highlighter-vitest-node-env` moved that test file to Vitest's Node
-    environment, which was right. But `vitest.setup.ts` patched `Range` unconditionally,
-    Node has no `Range`, so the setup crashed and CI stayed red.
-
-  I added a guard in `vitest.setup.ts`. CI was green on every job (run 43385303787), and
-  the branch merged into `develop` at `cfedb51`.
-- Production is not affected: a Next build runs in Node, and in plain Node 24 Shiki 4.6.0
-  highlights correctly.
-- Local tests passed at first only because local `node_modules` had Shiki 4.5.0. I ran
-  `npm ci` to match the lockfile.
+- `feat/interviewer-guards` is pushed and **not merged**, because CI could not run (CLAUDE.md
+  rule 1: no CI, no merge). When CI is green, merge it and run `npm run db:push` in the same step.
+  Check `npm run supabase -- migration list --linked` first: the campus migrations
+  (20261113…–20261114…) are on `feat/campus-v1`, not on `develop`. If they are already on the
+  remote, a push from `develop` may refuse.
+- PR #160 is open against `feat/interviewer-guards`. It changes what the candidate is told about
+  sourced questions.
 
 ## Suggested next task
-- After you review the plan: modules 1 and 2 (Migration A, the `campus` package, the
-  platform-admin and organisation endpoints, the isolation suite, `/admin/campus`), as a
-  PR, because it touches permissions.
+Run the replay on the 11 and 12 November sessions (export SQL in the replay README), then turn
+on the flags whose `shadow` counts look right.
 
 ## Open questions for you
-Plan §7 has the full list. These decide module 3:
-1. What can a college see: only assigned rounds (my recommendation), or a student's
-   personal practice too?
-2. A student invited at their college address signs in with Gmail. Allow joining after an
-   explicit confirmation (my recommendation), or require the exact invited address?
-3. Do the privacy policy and terms get updated for colleges before the first real invite?
-   That is a legal and data-protection call.
-4. Do MCQ tests have to be in v1? If so, they need a server-held question and answer bank
-   (plan 4b).
+1. **`gemini-2.5-flash-preview-tts` has a listed earliest shutdown of 17 November 2026** (listed
+   replacements: `gemini-3.8-flash-tts`, `gemini-3.8-flash-lite-tts`). It is the server voice.
+   This was not in scope; it needs a decision this week.
+2. GitHub Actions billing, so CI can run.
+3. The export of the 11 and 12 November rounds, for the real replay.
+4. One live call to confirm `gemini-3.6-flash` accepts `thinkingLevel: minimal`, and its price
+   row for `AiPrices`.
+5. The review document isn't in the repo (`docs/reviews/` doesn't exist). Commit it if it should
+   be the reference.

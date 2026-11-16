@@ -23,6 +23,7 @@ class ProductFeatureInterceptorTest {
                     arena = false,
                     reports = false,
                     questions = false,
+                    campus = false,
                 ),
             )
 
@@ -37,7 +38,7 @@ class ProductFeatureInterceptorTest {
 
     @Test
     fun `enabled features and deletion routes remain available`() {
-        val enabled = ProductFeatureInterceptor(ProductFeatureProperties(questions = true))
+        val enabled = ProductFeatureInterceptor(ProductFeatureProperties(questions = true, campus = true))
         for ((method, path) in gatedPaths) {
             assertTrue(enabled.preHandle(request(method, path), MockHttpServletResponse(), handler))
         }
@@ -55,6 +56,48 @@ class ProductFeatureInterceptorTest {
         )
     }
 
+    @Test
+    fun `campus is off by default and closes only its own paths`() {
+        val defaults = ProductFeatureInterceptor(ProductFeatureProperties())
+        assertThrows<ApiException> {
+            defaults.preHandle(request("GET", "/api/v1/me/campus"), MockHttpServletResponse(), handler)
+        }
+        assertEquals(null, defaults.featureFor("GET", "/api/v1/me/campusfoo"))
+        assertEquals(null, defaults.featureFor("GET", "/api/v1/admin/sources"))
+        assertEquals(null, defaults.featureFor("GET", "/api/v1/me"))
+        assertTrue(defaults.preHandle(request("DELETE", "/api/v1/me"), MockHttpServletResponse(), handler))
+        // The dashboard calls this for everyone; with campus off it answers [] instead of 404 (contract, module 4).
+        assertEquals(null, defaults.featureFor("GET", "/api/v1/me/assignments"))
+        assertTrue(defaults.preHandle(request("GET", "/api/v1/me/assignments"), MockHttpServletResponse(), handler))
+        assertEquals(
+            ProductFeature.CAMPUS,
+            defaults.featureFor("GET", "/api/v1/campus/orgs/86fcddf4-5e2b-4cab-b0c6-05e928d04529/assignments"),
+        )
+        // MCQ tests (module 4b) are campus routes, though they sit under /me.
+        val id = "86fcddf4-5e2b-4cab-b0c6-05e928d04529"
+        assertEquals(ProductFeature.CAMPUS, defaults.featureFor("POST", "/api/v1/me/assignments/$id/mcq-attempts"))
+        assertEquals(ProductFeature.CAMPUS, defaults.featureFor("GET", "/api/v1/me/mcq-attempts/$id"))
+        assertEquals(ProductFeature.CAMPUS, defaults.featureFor("POST", "/api/v1/me/mcq-attempts/$id/submit"))
+    }
+
+    @Test
+    fun `campus leads have their own switch, on by default, and the campus switch does not close them`() {
+        val defaults = ProductFeatureInterceptor(ProductFeatureProperties())
+        assertEquals(ProductFeature.CAMPUS_LEADS, defaults.featureFor("POST", "/api/v1/campus/leads"))
+        assertEquals(ProductFeature.CAMPUS_LEADS, defaults.featureFor("GET", "/api/v1/admin/campus/leads"))
+        assertEquals(
+            ProductFeature.CAMPUS_LEADS,
+            defaults.featureFor("POST", "/api/v1/admin/campus/leads/86fcddf4-5e2b-4cab-b0c6-05e928d04529/convert"),
+        )
+        assertEquals(ProductFeature.CAMPUS, defaults.featureFor("GET", "/api/v1/campus/leadsfoo"))
+        assertTrue(defaults.preHandle(request("POST", "/api/v1/campus/leads"), MockHttpServletResponse(), handler))
+
+        val off = ProductFeatureInterceptor(ProductFeatureProperties(campus = true, campusLeads = false))
+        assertThrows<ApiException> { off.preHandle(request("POST", "/api/v1/campus/leads"), MockHttpServletResponse(), handler) }
+        assertThrows<ApiException> { off.preHandle(request("GET", "/api/v1/admin/campus/leads"), MockHttpServletResponse(), handler) }
+        assertTrue(off.preHandle(request("GET", "/api/v1/admin/campus/orgs"), MockHttpServletResponse(), handler))
+    }
+
     private fun request(
         method: String,
         path: String,
@@ -69,6 +112,12 @@ class ProductFeatureInterceptorTest {
             "GET" to "/api/v1/readiness",
             "GET" to "/api/v1/me/course-progress",
             "POST" to "/api/v1/me/arena/answers",
+            "GET" to "/api/v1/campus/orgs/86fcddf4-5e2b-4cab-b0c6-05e928d04529",
+            "DELETE" to "/api/v1/campus/orgs/86fcddf4-5e2b-4cab-b0c6-05e928d04529/members/86fcddf4-5e2b-4cab-b0c6-05e928d04529",
+            "GET" to "/api/v1/admin/campus/orgs",
+            "POST" to "/api/v1/admin/campus/orgs",
+            "GET" to "/api/v1/me/campus",
+            "POST" to "/api/v1/me/campus/leave",
         )
 
     private class TestHandler {
