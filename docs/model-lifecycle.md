@@ -12,7 +12,7 @@ redirect to `aistudio.google.com/docs/...` and could not be fetched in that sess
 |---|---|---|---|
 | Reasoning and audio, primary | `gemini-3.1-flash-lite` | `GEMINI_PRIMARY_MODEL` | Earliest shutdown **7 May 2027**. Listed replacement: `gemini-3.5-flash-lite`. |
 | Reasoning and audio, fallback | `gemini-3.6-flash` | `GEMINI_FALLBACK_MODEL` | No shutdown announced. Was `gemini-3.5-flash`, which Google now routes to `gemini-3.6-flash` automatically; pinned by name on 14 November 2026 so the model tested is the model run. |
-| Interviewer voice (server) | `gemini-2.5-flash-preview-tts` | `INTERVIEWOS_GEMINI_SPEECHMODEL` | **Earliest shutdown 17 November 2026.** Listed replacements: `gemini-3.8-flash-tts`, `gemini-3.8-flash-lite-tts`. Only used when the browser does not speak the question itself. |
+| Interviewer voice (server) | `gemini-3.8-flash-lite-tts` | `INTERVIEWOS_GEMINI_SPEECHMODEL` | Moved on 16 November 2026 from `gemini-2.5-flash-preview-tts` (earliest shutdown 17 November 2026). Standard price $0.50 in / $6.00 audio out per 1M tokens, **doubling on 1 January 2027** (to $1.00 / $12.00; from a secondary source, not checked against Google). The other listed replacement is `gemini-3.8-flash-tts` ($9.00 out, $18.00 from January). Voice quality, the `Kore` voice and Hindi-English speech are not checked live. Only used when the browser does not speak the question itself. |
 | Text-only third provider | `kimi-k2-0711-preview` | `FALLBACK_PROVIDER_MODEL` | Not a Google model. |
 
 ## Moving the primary to `gemini-3.5-flash-lite`

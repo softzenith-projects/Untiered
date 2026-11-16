@@ -20,7 +20,7 @@ import java.util.Base64
 /**
  * Google Gemini as the whole interview loop's AI: resume parsing and answer
  * understanding and scoring on `gemini-3.5-flash`, the interviewer's spoken voice on
- * `gemini-2.5-flash-preview-tts`. Prompts and response schemas live in
+ * `gemini-3.8-flash-lite-tts`. Prompts and response schemas live in
  * `src/main/resources/ai/` so they are reviewable in version control, not buried in
  * string literals.
  *
