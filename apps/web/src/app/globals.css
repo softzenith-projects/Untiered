@@ -754,3 +754,57 @@
     color: var(--shiki-dark);
   }
 }
+
+/* The printable batch report (campus spec §7): saved as a PDF from the print dialog. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  body:has(.batch-report) :is(header, footer, nav, .no-print) {
+    display: none !important;
+  }
+  body:has(.batch-report) {
+    background: #fff;
+  }
+  .batch-report,
+  .batch-report * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .batch-report .card {
+    box-shadow: none;
+  }
+  .batch-report .print-section + .print-section {
+    break-before: page;
+  }
+  .batch-report tr {
+    break-inside: avoid;
+  }
+
+  /* The programme certificate: one A4 landscape sheet, nothing around it. */
+  @page certificate {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  body:has(.certificate-page) :is(header:not(.certificate-sheet header), footer:not(.certificate-sheet footer), nav, .no-print) {
+    display: none !important;
+  }
+  body:has(.certificate-page) {
+    background: #fff;
+  }
+  .certificate-page,
+  .certificate-page * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .certificate-sheet {
+    page: certificate;
+    width: 100%;
+    max-width: none;
+    height: 188mm;
+    aspect-ratio: auto;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}

@@ -16,8 +16,9 @@ import java.util.UUID
  *
  * 1. **One transaction:** durable jobs are queued to purge the user's prefix in every
  *    bucket (recordings, resumes, the profile photo), and `public.users` is deleted, which
- *    cascades to every user-owned table. The jobs live outside that foreign-key tree, so
- *    they survive it. Either both happen or neither does. The one exception is
+ *    cascades to every user-owned table. College invites are keyed by email rather than by
+ *    account, so the ones addressed to this account or accepted by it are deleted first. The
+ *    jobs live outside that foreign-key tree, so they survive it. Either both happen or neither does. The one exception is
  *    `public.payments`: a payment record is kept for tax and refunds, detached from the
  *    account (`on delete set null`), with nothing in it that names the person.
  * 2. **Then the auth user** is removed through the Supabase admin API. Its row cascades to
@@ -54,6 +55,7 @@ class AccountDeletion(
             setOf(storageProperties.mediaBucket, storageProperties.resumeBucket).forEach { bucket ->
                 repository.enqueueAccountPurge(userId, bucket, prefix)
             }
+            repository.deleteCampusInvites(userId)
             repository.deleteUser(userId)
         }
 

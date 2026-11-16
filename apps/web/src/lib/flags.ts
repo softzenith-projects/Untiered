@@ -56,3 +56,20 @@ export function courseEnabled(courseSlug: string): boolean {
 export function questionBankBrowsable(): boolean {
   return featureEnabled("questions");
 }
+
+/**
+ * Untiered Campus (docs/campus-v1-plan.md). Off by default: with it off every campus
+ * page is a 404 and nothing in the student experience mentions it.
+ */
+export function campusEnabled(): boolean {
+  return configured(process.env.NEXT_PUBLIC_FEATURE_CAMPUS, false);
+}
+
+/**
+ * College self-registration on /colleges (contract Module 13). On by default and
+ * independent of Campus, so colleges can register interest before Campus is switched on.
+ * Off, /colleges falls back to the mailto link.
+ */
+export function campusLeadsEnabled(): boolean {
+  return configured(process.env.NEXT_PUBLIC_FEATURE_CAMPUS_LEADS, true);
+}

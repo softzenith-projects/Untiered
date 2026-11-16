@@ -7,7 +7,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 
 import { DailyLimitNotice, isDailyLimitReached } from "@/components/daily-limit-notice";
 import { deleteSession, fetchEntitlement, fetchMe, fetchProfile, fetchReadiness, fetchSessions, SESSION_PAGE_SIZE } from "@/lib/api";
-import { featureEnabled } from "@/lib/flags";
+import { AssignedToYou } from "@/components/campus/assigned-to-you";
+import { StaffPortalCard } from "@/components/campus/staff-portal-card";
+import { campusEnabled, featureEnabled } from "@/lib/flags";
 import { useAccessToken } from "@/lib/use-access-token";
 import { displayNameFor } from "@/lib/display-name";
 
@@ -432,6 +434,9 @@ export function DashboardView({
           ) : null}
         </header>
       )}
+
+      {campusEnabled() ? <StaffPortalCard /> : null}
+      {campusEnabled() ? <AssignedToYou /> : null}
 
       {visibleSessions.length > 0 || visibleReadiness.length > 0 ? (
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">

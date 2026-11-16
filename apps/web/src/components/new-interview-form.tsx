@@ -1,6 +1,6 @@
 "use client";
 
-import type { CandidateStage, EntitlementView, RoundDraft, RoundType } from "@untiered/shared";
+import type { AssignedItem, CandidateStage, EntitlementView, RoundDraft, RoundType } from "@untiered/shared";
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox, CONTROL_CLASS, Input, Radio } from "@/components/ui/field";
 import { DailyLimitNotice, isDailyLimitReached } from "@/components/daily-limit-notice";
 import { LoopBriefStep } from "@/components/loop-brief-step";
-import { ApiRequestError, composeRound, fetchEntitlement, startSession } from "@/lib/api";
+import { BLOCKED_REASON_TEXT, formatDue, ROUND_LABEL } from "@/components/campus/assignment-model";
+import { ApiRequestError, composeRound, fetchEntitlement, fetchMyAssignments, startSession } from "@/lib/api";
+import { campusEnabled } from "@/lib/flags";
 import { loadVoices, pickVoice } from "@/lib/browser-speech";
 import { ROUND_CATALOGUE } from "@/lib/rounds";
 import { useAccessToken } from "@/lib/use-access-token";
@@ -47,20 +49,32 @@ const EXAMPLES = [
  * Company and role are still named per session and nothing is stored as a target
  * (PRD 05). The composer changes how they are typed, not what is kept.
  */
-export function NewInterviewForm({
-  initialRoundType,
-  initialTopic = "",
-  roundPreselected = false,
-  initialCompany = "",
-  initialRole = "",
-}: {
+export function NewInterviewForm(props: NewInterviewFormProps) {
+  // A round a college assigned has its own, locked setup. Without the parameter (or with
+  // Campus off) the form below is exactly what it always was.
+  const { assignmentId, ...rest } = props;
+  if (assignmentId && campusEnabled()) return <AssignedInterviewForm assignmentId={assignmentId} />;
+  return <StandardInterviewForm {...rest} />;
+}
+
+interface NewInterviewFormProps {
   initialRoundType?: RoundType;
   initialTopic?: string;
   roundPreselected?: boolean;
   /** Filled in from a dashboard quick start; the candidate can still change both. */
   initialCompany?: string;
   initialRole?: string;
-}) {
+  /** `?assignment=` from the dashboard: start the round a college assigned. */
+  assignmentId?: string;
+}
+
+function StandardInterviewForm({
+  initialRoundType,
+  initialTopic = "",
+  roundPreselected = false,
+  initialCompany = "",
+  initialRole = "",
+}: Omit<NewInterviewFormProps, "assignmentId">) {
   const router = useRouter();
   const accessToken = useAccessToken();
   const topic = initialTopic.trim();
@@ -1014,5 +1028,215 @@ function Consent({
         <span className="text-caption text-ink-muted">{detail}</span>
       </span>
     </label>
+  );
+}
+
+/** What to tell a student when the server refuses to start an assigned round. */
+/**
+ * What a college sees about an assigned round beyond its report (campus module 5). Shown on the
+ * assigned start screen only, before the consent step; a personal round counts none of it.
+ */
+export const ASSIGNED_INTEGRITY_NOTICE =
+  "Because your college assigned this interview, it will see how many times you switched tabs or windows or pasted text, and how your answer timing looked. Nothing else about your screen is recorded.";
+
+export function assignmentStartError(cause: unknown): string {
+  if (!(cause instanceof ApiRequestError)) return "The interview could not be started. Please try again.";
+  switch (cause.code) {
+    case "assignment_not_found":
+      return "This assignment is no longer available to you. Check your dashboard for what is currently assigned.";
+    case "assignment_not_open":
+      return BLOCKED_REASON_TEXT.not_open ?? cause.message;
+    case "assignment_past_due":
+      return BLOCKED_REASON_TEXT.past_due ?? cause.message;
+    case "assignment_attempt_limit":
+      return BLOCKED_REASON_TEXT.attempt_limit ?? cause.message;
+    case "assignment_student_cap":
+      return BLOCKED_REASON_TEXT.student_cap ?? cause.message;
+    case "college_allowance_exhausted":
+      return BLOCKED_REASON_TEXT.college_allowance ?? cause.message;
+    case "session_in_progress":
+      return "You already have an interview in progress. Finish or leave it from your dashboard first.";
+    default:
+      return cause.message || "The interview could not be started. Please try again.";
+  }
+}
+
+/**
+ * Starting a round a college assigned. Everything about the round is the college's choice
+ * and is shown, not editable; the server takes the shape from the assignment and ignores
+ * whatever is sent. The college pays for it, so no free round or credit is involved. The
+ * consent step is the same one every round has: no recording consent, no interview.
+ */
+function AssignedInterviewForm({ assignmentId }: { assignmentId: string }) {
+  const router = useRouter();
+  const accessToken = useAccessToken();
+  const [item, setItem] = useState<AssignedItem | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [missing, setMissing] = useState(false);
+  const [consentAudio, setConsentAudio] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
+  const [speaksLocally, setSpeaksLocally] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    const controller = new AbortController();
+    fetchMyAssignments({ accessToken, signal: controller.signal })
+      .then((list) => {
+        if (controller.signal.aborted) return;
+        const found = list.find((entry) => entry.id === assignmentId && entry.kind === "interview");
+        if (found) setItem(found);
+        else setMissing(true);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setLoadError("Your assignment could not be loaded just now. Try again in a moment.");
+      });
+    return () => controller.abort();
+  }, [accessToken, assignmentId]);
+
+  useEffect(() => {
+    let active = true;
+    void loadVoices().then((voices) => {
+      if (active) setSpeaksLocally(pickVoice(voices, "english") !== null);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const back = (
+    <Link href="/dashboard" className="w-fit text-caption font-medium text-accent hover:underline">
+      Back to your dashboard
+    </Link>
+  );
+  if (loadError || missing) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p role="alert" className="rounded-xl border border-danger/25 bg-danger/5 px-4 py-3 text-body text-danger">
+          {loadError ?? "This assignment is not available to you. It may have been archived, or it is not one of yours."}
+        </p>
+        {back}
+      </div>
+    );
+  }
+  if (!item) {
+    return (
+      <p role="status" className="text-body text-ink-muted">
+        Loading your assignment…
+      </p>
+    );
+  }
+
+  const roundLabel = item.roundType ? ROUND_LABEL[item.roundType] : "Interview";
+  const blocked = !item.canStart;
+  const locked: [string, string][] = [
+    ["Round", roundLabel],
+    ["Length", item.durationMinutes ? `${item.durationMinutes} minutes` : "Set by your college"],
+    ["Company", item.companyName || "General practice"],
+    ["Role", item.roleTitle || "Not specified"],
+    ["Due", formatDue(item.dueAt)],
+    ["Attempts", `${item.attemptsUsed} of ${item.attemptLimit} used`],
+  ];
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!accessToken || !item || pending) return;
+    setPending(true);
+    setError(null);
+    try {
+      const session = await startSession(accessToken, {
+        speaksLocally,
+        companyName: item.companyName ?? "",
+        roleTitle: item.roleTitle ?? "",
+        roundType: (item.roundType ?? "technical_fundamentals") as RoundType,
+        language: "english",
+        consentAudio,
+        consentVideo: cameraOn,
+        ...(item.durationMinutes ? { durationMinutes: item.durationMinutes } : {}),
+        assignmentId: item.id,
+      });
+      router.push(`/interview/${session.id}`);
+    } catch (cause) {
+      setPending(false);
+      setError(assignmentStartError(cause));
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-8">
+      <header className="hero-band relative overflow-hidden p-7 sm:p-9">
+        <div className="relative flex flex-col gap-3">
+          <p className="pill pill-navy w-fit">Assigned interview</p>
+          <h1 className="text-title text-balance text-on-navy">
+            Assigned by {item.orgName}: {item.title}
+          </h1>
+          {item.instructions ? <p className="max-w-2xl text-body text-on-navy-muted">{item.instructions}</p> : null}
+        </div>
+      </header>
+
+      <section aria-labelledby="locked-round" className="rounded-2xl border border-line bg-surface-raised p-5 shadow-[var(--shadow-sm)] sm:p-6">
+        <h2 id="locked-round" className="pb-3 text-heading text-ink">
+          Set by your college
+        </h2>
+        <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-[8rem_1fr]">
+          {locked.map(([term, value]) => (
+            <div key={term} className="contents">
+              <dt className="text-caption font-semibold text-ink">{term}</dt>
+              <dd className="text-body text-ink-muted">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="pt-3 text-caption text-ink-subtle">
+          These cannot be changed. Your college pays for this interview, so it does not use your free rounds or credits.
+        </p>
+        {/* Campus module 5: said before consent, in the words the counts are shown in. */}
+        <p className="pt-2 text-caption text-ink-muted">{ASSIGNED_INTEGRITY_NOTICE}</p>
+      </section>
+
+      {blocked ? (
+        <p role="alert" className="rounded-xl border border-highlight/35 bg-highlight/10 px-4 py-3 text-body text-ink">
+          {(item.blockedReason && BLOCKED_REASON_TEXT[item.blockedReason]) || "This interview cannot be started right now."}
+        </p>
+      ) : null}
+
+      <fieldset className="flex flex-col gap-4 rounded-2xl border border-accent/25 bg-accent-wash p-5 shadow-[var(--shadow-sm)] sm:p-6">
+        <legend className="px-2 text-heading text-ink">Before we start</legend>
+        <p className="text-caption text-ink-muted">
+          This interview is spoken. With your consent, each answer is recorded in your browser
+          and sent to Gemini for assessment. We do not save the answer audio. Your transcript and
+          report are kept for 28 days, and you can delete them earlier.{" "}
+          <Link href={"/privacy" as Route} target="_blank" className="font-medium text-accent hover:underline">
+            How we handle your data
+          </Link>
+        </p>
+        <Consent
+          checked={consentAudio}
+          onChange={setConsentAudio}
+          title="Record my voice"
+          detail="Required. Each recording is used to assess your answer, then discarded after processing."
+        />
+        <Consent
+          checked={cameraOn}
+          onChange={setCameraOn}
+          title="Turn my camera on"
+          detail="Optional. You and the interviewer face each other, the way a real interview runs. Your camera stays on your screen — nothing from it is uploaded, recorded or scored."
+        />
+      </fieldset>
+
+      {error ? (
+        <p role="alert" className="rounded-xl border border-danger/25 bg-danger/5 px-4 py-3 text-body text-danger">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="flex items-center gap-4">
+        <Button type="submit" disabled={blocked || !consentAudio || !accessToken || pending} aria-busy={pending}>
+          {pending ? "Setting up…" : "Begin interview"}
+        </Button>
+        {!consentAudio && !blocked ? <p className="text-caption text-ink-subtle">Voice recording is required to continue.</p> : null}
+        {back}
+      </div>
+    </form>
   );
 }

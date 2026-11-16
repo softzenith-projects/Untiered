@@ -65,20 +65,10 @@ class ReadinessService(
             } catch (_: Exception) {
                 return ReportEvidence(null, emptyList())
             }
-        val assessable =
-            (payload["assessableTurns"] as? Number)?.toInt()
-                ?: (payload["answeredTurns"] as? Number)?.toInt()
-                ?: 0
-        if (assessable < MIN_ASSESSABLE_TURNS) return ReportEvidence(null, emptyList())
+        if (!ReportScore.hasEnoughEvidence(payload)) return ReportEvidence(null, emptyList())
 
-        val competencies = (payload["competencies"] as? List<*>)?.filterIsInstance<Map<*, *>>().orEmpty()
-        val ratios =
-            competencies.mapNotNull { competency ->
-                val score = (competency["score"] as? Number)?.toDouble()
-                val max = (competency["maxScore"] as? Number)?.toDouble()
-                if (score != null && max != null && max > 0) score / max * 100 else null
-            }
-        val averageScore = ratios.takeIf { it.isNotEmpty() }?.average()?.let { Math.round(it * 10) / 10.0 }
+        val competencies = ReportScore.competencies(payload)
+        val averageScore = ReportScore.averageCompetencyPercentage(payload)?.let { Math.round(it * 10) / 10.0 }
         val weakCompetencies =
             competencies
                 .mapNotNull { competency ->
@@ -110,8 +100,10 @@ class ReadinessService(
         val weakCompetencies: List<String>,
     )
 
-    private companion object {
-        const val WEAK_THRESHOLD = 0.5
-        const val MIN_ASSESSABLE_TURNS = 2
+    companion object {
+        private const val WEAK_THRESHOLD = 0.5
+
+        /** The evidence threshold; campus readiness applies the same one ([ReportScore]). */
+        const val MIN_ASSESSABLE_TURNS = ReportScore.MIN_ASSESSABLE_TURNS
     }
 }

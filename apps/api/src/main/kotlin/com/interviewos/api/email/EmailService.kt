@@ -47,6 +47,7 @@ class EmailService(
                    set daily_question = :daily,
                        announcements = :announcements,
                        reengagement = :reengagement,
+                       campus_reminders = coalesce(cast(:campus as boolean), campus_reminders),
                        consented_at = case when :anyOptIn then now() else null end,
                        updated_at = now()
                  where user_id = :id
@@ -55,6 +56,7 @@ class EmailService(
             .param("daily", request.dailyQuestion)
             .param("announcements", request.announcements)
             .param("reengagement", request.reengagement)
+            .param("campus", request.campusReminders)
             .param("anyOptIn", request.dailyQuestion || request.announcements || request.reengagement)
             .update()
         cancelUnsubscribed(identity.id)
@@ -69,6 +71,7 @@ class EmailService(
                     """
                     update public.email_preferences
                        set daily_question = false, announcements = false, reengagement = false,
+                           campus_reminders = false,
                            updated_at = now(), unsubscribe_token = gen_random_uuid()
                      where unsubscribe_token = :token
                     returning user_id
@@ -114,7 +117,7 @@ class EmailService(
         jdbcClient
             .sql(
                 """
-                select daily_question, announcements, reengagement, consented_at
+                select daily_question, announcements, reengagement, consented_at, campus_reminders
                   from public.email_preferences where user_id = :id
                 """.trimIndent(),
             ).param("id", id)
@@ -124,6 +127,7 @@ class EmailService(
                     rs.getBoolean("announcements"),
                     rs.getBoolean("reengagement"),
                     rs.getTimestamp("consented_at")?.toInstant(),
+                    rs.getBoolean("campus_reminders"),
                 )
             }.single()
 
@@ -132,12 +136,13 @@ class EmailService(
             .sql(
                 """
                 update public.email_deliveries d set status = 'cancelled'
-                 where d.user_id = :id and d.status = 'pending' and d.category <> 'welcome'
+                 where d.user_id = :id and d.status = 'pending' and d.category not in ('welcome', 'campus_assignment')
                    and not exists (
                      select 1 from public.email_preferences p where p.user_id = d.user_id
                        and ((d.category = 'daily_question' and p.daily_question)
                          or (d.category in ('announcement', 'informative') and p.announcements)
-                         or (d.category = 'reengagement' and p.reengagement))
+                         or (d.category = 'reengagement' and p.reengagement)
+                         or (d.category in ('campus_reminder', 'campus_report_ready', 'campus_weekly') and p.campus_reminders))
                    )
                 """.trimIndent(),
             ).param("id", id)

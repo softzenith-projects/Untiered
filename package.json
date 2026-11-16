@@ -24,6 +24,7 @@
     "db:push": "npm run supabase -- db push",
     "db:reset": "npm run supabase -- db reset",
     "db:diff": "npm run supabase -- db diff -f",
+    "campus:seed-demo": "node --env-file-if-exists=.env scripts/campus-demo-seed.mjs",
     "db:lint": "npm run supabase -- db lint --level warning"
   },
   "engines": {
@@ -32,7 +33,7 @@
   "devDependencies": {
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "supabase": "^2.120.0"
+    "supabase": "^3.1.0"
   },
   "//overrides": [
     "One React, everywhere. Excalidraw depends on @radix-ui/* whose peer ranges still",
