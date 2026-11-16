@@ -21,12 +21,16 @@ data class EmailPreferencesView(
     val announcements: Boolean,
     val reengagement: Boolean,
     val consentedAt: Instant?,
+    /** Campus reminders, report-ready emails and weekly summaries (campus spec section 9). */
+    val campusReminders: Boolean = true,
 )
 
 data class UpdateEmailPreferences(
     val dailyQuestion: Boolean,
     val announcements: Boolean,
     val reengagement: Boolean,
+    /** Null leaves the setting as it is, so a client that predates it keeps working. */
+    val campusReminders: Boolean? = null,
 )
 
 data class ScheduleEmailCampaign(

@@ -217,7 +217,8 @@ class SessionRepository(
                        status::text as status, started_at, entered_at, ended_at, report_expired_at,
                        (consent_video_at is not null) as consent_video, duration_minutes,
                        coalesce(archetype_confidence, 'inferred') as archetype_confidence,
-                       workspace::text as workspace, board::text as board, stated_level, focus_topic
+                       workspace::text as workspace, board::text as board, stated_level, focus_topic,
+                       exists (select 1 from public.assignment_attempts a where a.session_id = sessions.id) as assigned
                   from public.sessions
                  where id = :id and user_id = :u
                 """.trimIndent(),
@@ -312,6 +313,14 @@ class SessionRepository(
                       from transitioned
                      where t.session_id = transitioned.id and t.user_id = transitioned.user_id
                     returning t.session_id
+                ), attempt as (
+                    -- A round a college assigned ends its attempt with it (campus spec §4). An
+                    -- abandoned attempt still counts against the caps; only 'failed' hands back.
+                    update public.assignment_attempts a
+                       set status = :status, ended_at = now()
+                      from transitioned
+                     where a.session_id = transitioned.id and a.status = 'in_progress'
+                    returning a.id
                 )
                 select count(*) as changed from queued
                 """.trimIndent(),
@@ -356,6 +365,14 @@ class SessionRepository(
                       on c.session_id = f.id and c.user_id = :u and c.reason = 'consume'
                   on conflict do nothing
                   returning id
+                ), attempt_handed_back as (
+                  -- A college-assigned round that failed on our side gives the college its
+                  -- interview back, as a credit is given back above (campus spec §4).
+                  update public.assignment_attempts a
+                     set status = 'failed', ended_at = now()
+                    from failed f
+                   where a.session_id = f.id and a.status = 'in_progress'
+                  returning a.id
                 )
                 select exists(select 1 from failed) as changed,
                        (select count(*) from refunded) as refunded_count,
@@ -1029,6 +1046,8 @@ class SessionRepository(
         requestId: UUID,
         /** Validated [AnswerTiming] as JSON, or null when the browser measured none. */
         timingJson: String? = null,
+        /** SHA-256 of the upload, hex. Only the digest is kept; the audio is not. */
+        audioSha256: String? = null,
     ): Boolean =
         jdbcClient
             .sql(
@@ -1043,7 +1062,8 @@ class SessionRepository(
                        intervention = cast(:intervention as public.intervention_type),
                        intervention_note = :note,
                        delivery_note = :delivery,
-                       answer_timing = cast(:timing as jsonb)
+                       answer_timing = cast(:timing as jsonb),
+                       answer_audio_sha256 = :audio_sha
                  where session_id = :s and user_id = :u and turn_index = :i
                    and answered_at is null
                    and answer_request_id = :request
@@ -1061,11 +1081,31 @@ class SessionRepository(
             .param("note", interventionNote)
             .param("delivery", deliveryNote)
             .param("timing", timingJson)
+            .param("audio_sha", audioSha256)
             .param("request", requestId)
             .param("s", sessionId)
             .param("u", userId)
             .param("i", turnIndex)
             .update() == 1
+
+    /** Hashes of the answers already recorded in this session, to catch a resent recording. */
+    fun answerAudioHashes(
+        sessionId: UUID,
+        userId: UUID,
+    ): Set<String> =
+        jdbcClient
+            .sql(
+                """
+                select answer_audio_sha256
+                  from public.session_turns
+                 where session_id = :s and user_id = :u and answer_audio_sha256 is not null
+                """.trimIndent(),
+            ).param("s", sessionId)
+            .param("u", userId)
+            .query(String::class.java)
+            .set()
+            .filterNotNull()
+            .toSet()
 
     fun completeAnswerRequest(
         sessionId: UUID,
@@ -1330,6 +1370,7 @@ class SessionRepository(
             board = rs.getString("board"),
             declaredStage = DeclaredStage.parseOrNull(rs.getString("stated_level")),
             focusTopic = rs.getString("focus_topic"),
+            assigned = rs.getBoolean("assigned"),
         )
 
     private fun mapTurn(rs: ResultSet) =
@@ -1412,6 +1453,8 @@ data class SessionRow(
     val focusTopic: String? = null,
     /** The first time the candidate entered the room; the round clock starts here. */
     val enteredAt: Instant? = startedAt,
+    /** Started from a college's assignment (campus spec §4), so integrity signals are recorded (§5). */
+    val assigned: Boolean = false,
 )
 
 /**

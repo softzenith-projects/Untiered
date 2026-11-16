@@ -34,6 +34,7 @@ vi.mock("@supabase/ssr", () => ({
 const PAGE_METADATA: Record<(typeof INDEXABLE_ROUTES)[number], () => Promise<{ metadata: Metadata }>> = {
   "/": () => import("@/app/page"),
   "/pricing": () => import("@/app/pricing/page"),
+  "/colleges": () => import("@/app/colleges/page"),
   "/about": () => import("@/app/about/page"),
   "/contact": () => import("@/app/contact/page"),
   "/privacy": () => import("@/app/privacy/page"),

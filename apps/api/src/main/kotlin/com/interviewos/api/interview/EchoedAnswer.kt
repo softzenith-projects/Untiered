@@ -29,6 +29,31 @@ object EchoedAnswer {
         return current.length >= MIN_COMPARABLE_LENGTH && current == previous
     }
 
+    /** Which earlier answer a transcript copies, if any. */
+    enum class Match(
+        /** The `interview_events.reason` code. */
+        val reason: String,
+    ) {
+        PREVIOUS("previous_answer"),
+        EARLIER("earlier_answer"),
+    }
+
+    /**
+     * Whether [transcript] copies any of [earlierAnswers] (oldest first), and which.
+     *
+     * The review's case: a 19-second answer stored as a copy of the one two turns before it,
+     * which the comparison with the previous answer alone could not see.
+     */
+    fun matchOf(
+        transcript: String?,
+        earlierAnswers: List<String?>,
+    ): Match? {
+        val answers = earlierAnswers.filterNotNull()
+        if (answers.isEmpty()) return null
+        if (isEcho(transcript, answers.last())) return Match.PREVIOUS
+        return if (answers.dropLast(1).any { isEcho(transcript, it) }) Match.EARLIER else null
+    }
+
     private fun normalise(text: String): String =
         text
             .lowercase()

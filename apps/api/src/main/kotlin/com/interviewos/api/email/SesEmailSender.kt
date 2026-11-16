@@ -60,8 +60,10 @@ class SesEmailSender(
         helper.setTo(address)
         helper.setSubject(subject)
         val isWelcome = category == "welcome"
-        val accountLink =
-            "${properties.publicBaseUrl.trimEnd('/')}/${if (category == "daily_question") "daily-challenge" else "dashboard"}"
+        val accountLink = "${properties.publicBaseUrl.trimEnd('/')}/${accountPath(category)}"
+        // A new-assignment email is an instruction from the student's college, not a
+        // subscription: it has no unsubscribe, only a link to the preferences that govern the rest.
+        val transactional = isWelcome || category == "campus_assignment"
         val safeAccountLink = escapeHtml(accountLink)
         val safeLogoUrl = escapeHtml("${properties.publicBaseUrl.trimEnd('/')}/brand/wordmark-light.png")
         val preferencesLink = "${properties.publicBaseUrl.trimEnd('/')}/profile#account"
@@ -71,14 +73,14 @@ class SesEmailSender(
                 appendLine(body)
                 appendLine()
                 appendLine("${if (isWelcome) "Start practising" else "Your account"}: $accountLink")
-                if (!isWelcome) {
-                    appendLine("Manage emails: $preferencesLink")
-                    appendLine("Unsubscribe: $unsubscribePage")
-                }
+                if (!isWelcome) appendLine("Manage emails: $preferencesLink")
+                if (!transactional) appendLine("Unsubscribe: $unsubscribePage")
             }
         val footer =
             if (isWelcome) {
                 "Talent has no tiers. No tiers attached."
+            } else if (category == "campus_assignment") {
+                "<a href=\"${escapeHtml(preferencesLink)}\">Manage email preferences</a>"
             } else {
                 "<a href=\"${escapeHtml(preferencesLink)}\">Manage email preferences</a> · " +
                     "<a href=\"${escapeHtml(unsubscribePage)}\">Unsubscribe</a>"
@@ -94,7 +96,7 @@ class SesEmailSender(
             } else {
                 "<p style=\"font-size:14px;font-weight:800;letter-spacing:.12em;color:#1865db\">UNTIERED</p>"
             }
-        val buttonLabel = if (isWelcome) "Start practising →" else "Visit your account"
+        val buttonLabel = if (isWelcome) "Start practising →" else escapeHtml(accountLabel(category))
         val buttonColor = if (isWelcome) "#6948e8" else "#1865db"
         val footerAlignment = if (isWelcome) "center" else "left"
         val html =
@@ -112,10 +114,73 @@ class SesEmailSender(
             </body></html>
             """.trimIndent()
         helper.setText(text, html)
-        if (category != "welcome") {
+        if (!transactional) {
             mime.setHeader("List-Unsubscribe", "<${properties.apiBaseUrl.trimEnd('/')}/api/v1/email/unsubscribe/$unsubscribeToken>")
             mime.setHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
         }
+        deliver(mime, address)
+    }
+
+    /**
+     * A one-off transactional email to someone who may have no account yet � a college
+     * invite. No account link and no unsubscribe footer: there is no account or preference to
+     * point at, and the message is the invitation itself. [body] is plain text; [actionUrl] is
+     * the single button.
+     */
+    fun sendTransactional(
+        address: String,
+        subject: String,
+        body: String,
+        actionLabel: String,
+        actionUrl: String,
+    ) {
+        val mime = MimeMessage(Session.getInstance(Properties()))
+        val helper = MimeMessageHelper(mime, true, "UTF-8")
+        helper.setFrom(properties.from)
+        helper.setReplyTo(properties.replyTo)
+        helper.setTo(address)
+        helper.setSubject(subject)
+        val text =
+            buildString {
+                appendLine(body)
+                appendLine()
+                appendLine("$actionLabel: $actionUrl")
+            }
+        val html =
+            """
+            <!doctype html>
+            <html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+            <body style="margin:0;background:#f3f7ff;padding:20px 8px">
+              <main style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px 24px;background:#fff;border:1px solid #d8e3f2;border-radius:16px;color:#17315a;line-height:1.6">
+                <p style="font-size:14px;font-weight:800;letter-spacing:.12em;color:#1865db">UNTIERED</p>
+                <h1 style="font-size:28px;line-height:1.2">${escapeHtml(subject)}</h1>
+                <p style="font-size:16px;white-space:pre-wrap">${escapeHtml(body)}</p>
+                <p><a href="${escapeHtml(
+                actionUrl,
+            )}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#1865db;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(
+                actionLabel,
+            )}</a></p>
+                <p style="font-size:13px;color:#5b6d89;word-break:break-all">${escapeHtml(actionUrl)}</p>
+              </main>
+            </body></html>
+            """.trimIndent()
+        helper.setText(text, html)
+        deliver(mime, address)
+    }
+
+    private fun accountPath(category: String): String =
+        when (category) {
+            "daily_question" -> "daily-challenge"
+            "campus_weekly" -> "campus"
+            else -> "dashboard"
+        }
+
+    private fun accountLabel(category: String): String = if (category == "campus_weekly") "Open Untiered Campus" else "Visit your account"
+
+    private fun deliver(
+        mime: MimeMessage,
+        address: String,
+    ) {
         mime.saveChanges()
         val bytes = ByteArrayOutputStream().also(mime::writeTo).toByteArray()
         client.sendEmail(

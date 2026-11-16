@@ -179,6 +179,8 @@ class FallbackInterviewAi(
                     "provider_attempt_succeeded",
                     "succeeded",
                     elapsedMillis(startedAt),
+                    model = result.usage.model,
+                    finishReason = result.usage.finishReason,
                 )
                 return result
             } catch (e: AiUnavailableException) {
@@ -189,6 +191,8 @@ class FallbackInterviewAi(
                     "failed",
                     elapsedMillis(startedAt),
                     "ai_unavailable",
+                    finishReason = e.finishReason,
+                    reason = e.reason.dbValue,
                 )
                 if (!e.worthRetryingElsewhere) throw e
                 last = e
@@ -205,6 +209,8 @@ class FallbackInterviewAi(
         throw AiUnavailableException(
             "Every configured provider failed for $call. Last error: ${last?.message}",
             last,
+            reason = last?.reason ?: AiFailureReason.UNKNOWN,
+            finishReason = last?.finishReason,
         )
     }
 
@@ -215,6 +221,11 @@ class FallbackInterviewAi(
         outcome: String,
         durationMs: Long? = null,
         errorType: String? = null,
+        /** The model that served the call, as its usage reports it. Success only. */
+        model: String? = null,
+        finishReason: String? = null,
+        /** An [AiFailureReason] code. Failure only. */
+        reason: String? = null,
     ) {
         val attribution = AiSpendContext.current() ?: return
         val userId = attribution.userId ?: return
@@ -231,6 +242,9 @@ class FallbackInterviewAi(
                 outcome = outcome,
                 errorType = errorType,
                 durationMs = durationMs,
+                model = model,
+                finishReason = finishReason,
+                reason = reason,
             ),
         )
     }

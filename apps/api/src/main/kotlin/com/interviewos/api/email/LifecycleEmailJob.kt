@@ -1,5 +1,6 @@
 package com.interviewos.api.email
 
+import com.interviewos.api.config.ProductFeatureProperties
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.scheduling.annotation.Scheduled
@@ -51,6 +52,7 @@ class LifecycleEmailJob(
     private val properties: EmailProperties,
     private val restClientBuilder: RestClient.Builder,
     private val sender: SesEmailSender,
+    private val features: ProductFeatureProperties = ProductFeatureProperties(),
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val india = ZoneId.of("Asia/Kolkata")
@@ -82,9 +84,11 @@ class LifecycleEmailJob(
                 update public.email_deliveries set status = 'cancelled'
                  where status = 'pending'
                    and ((category = 'welcome' and created_at < now() - interval '2 days')
-                     or (category = 'daily_question' and dedupe_key <> :today))
+                     or (category = 'daily_question' and dedupe_key <> :today)
+                     or (category like 'campus\_%' and not :campus))
                 """.trimIndent(),
             ).param("today", "daily-question-${LocalDate.now(india)}")
+            .param("campus", features.campus)
             .update()
         val id =
             jdbcClient
@@ -111,6 +115,8 @@ class LifecycleEmailJob(
                            (d.category = 'welcome'
                              or (d.category = 'daily_question' and p.daily_question)
                              or (d.category in ('announcement', 'informative') and p.announcements)
+                             or d.category = 'campus_assignment'
+                             or (d.category in ('campus_reminder', 'campus_report_ready', 'campus_weekly') and p.campus_reminders)
                              or (d.category = 'reengagement' and p.reengagement)) as allowed,
                            (d.category <> 'reengagement'
                              or (d.dedupe_key = 'reengagement-7' and u.last_seen_at < now() - interval '7 days')

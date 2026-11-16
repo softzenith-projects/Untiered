@@ -40,6 +40,68 @@ import type {
   UsageCounts,
 } from "@untiered/shared";
 
+import type {
+  AcceptInviteRequest,
+  AcceptInviteResponse,
+  AssignedItem,
+  AssignmentInput,
+  IntegrityEventBatch,
+  IntegritySummary,
+  AssignmentPublishedPatch,
+  AssignmentStatus,
+  AssignmentView,
+  CompletionStatus,
+  RecipientProgress,
+  CampusScenarioOption,
+  McqAttemptView,
+  McqBankSummary,
+  McqSubmitRequest,
+  DashboardView,
+  AttentionReason,
+  AttentionRow,
+  ReadinessCompletionFilter,
+  ReadinessSort,
+  StaffComment,
+  CertificateView,
+  MyProgrammeView,
+  ProgrammeProgress,
+  ProgrammeTemplate,
+  ProgrammeTemplateInput,
+  ProgrammeView,
+  StartProgrammeRequest,
+  ReadinessWeights,
+  StudentReadiness,
+  StudentReadinessRow,
+  AdminCreateInviteRequest,
+  AdminOrgSummary,
+  ConvertLeadRequest,
+  ConvertLeadResult,
+  LeadRequest,
+  LeadStatus,
+  LeadView,
+  UpdateLeadRequest,
+  AdminUpdateOrgRequest,
+  AuditEntryView,
+  BatchView,
+  CampusPage,
+  CampusRole,
+  CollegeUpdateOrgRequest,
+  CreateInviteRequest,
+  CreateOrgRequest,
+  DepartmentView,
+  FacultyScopesView,
+  ImportCommitResult,
+  ImportPreview,
+  InvitePreview,
+  InviteView,
+  LeaderboardScope,
+  LeaderboardView,
+  MeCampusView,
+  MemberView,
+  OrgUsageRow,
+  OrgView,
+} from "@untiered/shared";
+
 import { env } from "@/lib/env";
 import type { AnswerTiming } from "@/lib/speech-timing";
 
@@ -132,12 +194,12 @@ async function apiGet<T>(path: string, { accessToken, signal }: ApiGetOptions): 
   );
 
   if (!response.ok) {
-    const envelope = (await response.json().catch(() => null)) as ApiError | null;
+    const envelope = (await response.json().catch(() => null)) as (ApiError & { code?: string }) | null;
     throw reportIfServerFault(
       path,
       new ApiRequestError(
         response.status,
-        envelope?.error ?? "unknown_error",
+        envelope?.error ?? envelope?.code ?? "unknown_error",
         envelope?.message ?? `Request to ${path} failed with status ${response.status}.`,
       ),
     );
@@ -165,12 +227,12 @@ async function apiSend<T>(
   });
 
   if (!response.ok) {
-    const envelope = (await response.json().catch(() => null)) as ApiError | null;
+    const envelope = (await response.json().catch(() => null)) as (ApiError & { code?: string }) | null;
     throw reportIfServerFault(
       path,
       new ApiRequestError(
         response.status,
-        envelope?.error ?? "unknown_error",
+        envelope?.error ?? envelope?.code ?? "unknown_error",
         envelope?.message ?? `Request to ${path} failed with status ${response.status}.`,
       ),
     );
@@ -192,9 +254,14 @@ export interface EmailPreferences {
   announcements: boolean;
   reengagement: boolean;
   consentedAt: string | null;
+  /** Campus reminders, report-ready emails and weekly summaries (campus spec §9). */
+  campusReminders?: boolean;
 }
 
-export type EmailPreferenceChoices = Pick<EmailPreferences, "dailyQuestion" | "announcements" | "reengagement">;
+export type EmailPreferenceChoices = Pick<EmailPreferences, "dailyQuestion" | "announcements" | "reengagement"> & {
+  /** Left out, the setting is unchanged. */
+  campusReminders?: boolean;
+};
 
 export function fetchEmailPreferences(options: ApiGetOptions): Promise<EmailPreferences> {
   return apiGet<EmailPreferences>("/api/v1/me/email-preferences", options);
@@ -393,6 +460,40 @@ export function reportInterviewClientEvent(
     ...(requestId === undefined ? {} : { requestId }),
     ...(phase === undefined ? {} : { phase }),
   });
+}
+
+/**
+ * Sends a batch of integrity counts for an assigned round (campus module 5). Only the event
+ * type and, for a paste, its length — never what was pasted or where the student went.
+ *
+ * `keepalive` lets the request outlive the page, for the flush on `pagehide`. It is a fetch
+ * rather than `navigator.sendBeacon` because a beacon cannot carry the bearer token.
+ */
+export async function sendIntegrityEvents(
+  accessToken: string,
+  sessionId: string,
+  batch: IntegrityEventBatch,
+  options: { keepalive?: boolean } = {},
+): Promise<void> {
+  const path = `/api/v1/sessions/${encodeURIComponent(sessionId)}/integrity-events`;
+  const response = await fetch(`${env.apiBaseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(batch),
+    ...(options.keepalive ? { keepalive: true } : {}),
+  });
+  if (!response.ok) {
+    throw new ApiRequestError(response.status, "integrity_events_failed", `Request to ${path} failed with status ${response.status}.`);
+  }
+}
+
+/** The student's own integrity summary for one round; `recorded` is false unless it was assigned. */
+export function fetchIntegrity(sessionId: string, options: ApiGetOptions): Promise<IntegritySummary> {
+  return apiGet<IntegritySummary>(`/api/v1/sessions/${encodeURIComponent(sessionId)}/integrity`, options);
 }
 
 export function fetchReport(id: string, options: ApiGetOptions): Promise<SessionReport> {
@@ -637,4 +738,544 @@ export function importArenaProgress(
   body: ImportArenaProgressRequest,
 ): Promise<ArenaProgressView> {
   return apiSend<ArenaProgressView>("/api/v1/me/arena/import", "POST", accessToken, body);
+}
+
+// ---- Untiered Campus, modules 1-2 (docs/campus-api-contract.md) ----
+
+function query(params: Record<string, string | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) if (value) search.set(key, value);
+  const text = search.toString();
+  return text ? `?${text}` : "";
+}
+
+const campusOrg = (orgId: string) => `/api/v1/campus/orgs/${encodeURIComponent(orgId)}`;
+const adminOrg = (orgId: string) => `/api/v1/admin/campus/orgs/${encodeURIComponent(orgId)}`;
+
+export function fetchAdminOrgs(options: ApiGetOptions): Promise<AdminOrgSummary[]> {
+  return apiGet<AdminOrgSummary[]>("/api/v1/admin/campus/orgs", options);
+}
+
+export function createAdminOrg(accessToken: string, body: CreateOrgRequest): Promise<OrgView> {
+  return apiSend<OrgView>("/api/v1/admin/campus/orgs", "POST", accessToken, body);
+}
+
+export function fetchAdminOrg(orgId: string, options: ApiGetOptions): Promise<AdminOrgSummary> {
+  return apiGet<AdminOrgSummary>(adminOrg(orgId), options);
+}
+
+export function updateAdminOrg(accessToken: string, orgId: string, body: AdminUpdateOrgRequest): Promise<OrgView> {
+  return apiSend<OrgView>(adminOrg(orgId), "PATCH", accessToken, body);
+}
+
+export function uploadOrgLogo(accessToken: string, orgId: string, file: File): Promise<OrgView> {
+  const form = new FormData();
+  form.set("file", file);
+  return apiSend<OrgView>(`${adminOrg(orgId)}/logo`, "PUT", accessToken, form);
+}
+
+// -- college self-registration (contract Module 13) ------------------------------
+
+/**
+ * `POST /campus/leads`, sent without a token: the person filling in /colleges has no
+ * account. The answer is always `{ received: true }` whether or not we already knew of
+ * the college, so there is nothing to return but success or the error.
+ */
+export async function submitCollegeLead(body: LeadRequest): Promise<void> {
+  const response = await fetch(`${env.apiBaseUrl}/api/v1/campus/leads`, {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (response.ok) return;
+  const envelope = (await response.json().catch(() => null)) as ApiError | null;
+  throw reportIfServerFault(
+    "/api/v1/campus/leads",
+    new ApiRequestError(
+      response.status,
+      envelope?.error ?? "unknown_error",
+      envelope?.message ?? `Request to /api/v1/campus/leads failed with status ${response.status}.`,
+    ),
+  );
+}
+
+const ADMIN_LEADS = "/api/v1/admin/campus/leads";
+const adminLead = (leadId: string) => `${ADMIN_LEADS}/${encodeURIComponent(leadId)}`;
+
+export function fetchAdminLeads(
+  filter: { status?: LeadStatus; q?: string; cursor?: string },
+  options: ApiGetOptions,
+): Promise<CampusPage<LeadView>> {
+  return apiGet<CampusPage<LeadView>>(`${ADMIN_LEADS}${query(filter)}`, options);
+}
+
+export function fetchAdminLead(leadId: string, options: ApiGetOptions): Promise<LeadView> {
+  return apiGet<LeadView>(adminLead(leadId), options);
+}
+
+export function updateAdminLead(accessToken: string, leadId: string, body: UpdateLeadRequest): Promise<LeadView> {
+  return apiSend<LeadView>(adminLead(leadId), "PATCH", accessToken, body);
+}
+
+export function deleteAdminLead(accessToken: string, leadId: string): Promise<void> {
+  return apiSend<void>(adminLead(leadId), "DELETE", accessToken);
+}
+
+export function convertAdminLead(accessToken: string, leadId: string, body: ConvertLeadRequest): Promise<ConvertLeadResult> {
+  return apiSend<ConvertLeadResult>(`${adminLead(leadId)}/convert`, "POST", accessToken, body);
+}
+
+export function fetchMeCampus(options: ApiGetOptions): Promise<MeCampusView> {
+  return apiGet<MeCampusView>("/api/v1/me/campus", options);
+}
+
+export function fetchCampusOrg(orgId: string, options: ApiGetOptions): Promise<OrgView> {
+  return apiGet<OrgView>(campusOrg(orgId), options);
+}
+
+export function updateCampusOrg(accessToken: string, orgId: string, body: CollegeUpdateOrgRequest): Promise<OrgView> {
+  return apiSend<OrgView>(campusOrg(orgId), "PATCH", accessToken, body);
+}
+
+export function fetchDepartments(orgId: string, options: ApiGetOptions): Promise<DepartmentView[]> {
+  return apiGet<DepartmentView[]>(`${campusOrg(orgId)}/departments`, options);
+}
+
+export function createDepartment(
+  accessToken: string,
+  orgId: string,
+  body: { code: string; name: string },
+): Promise<DepartmentView> {
+  return apiSend<DepartmentView>(`${campusOrg(orgId)}/departments`, "POST", accessToken, body);
+}
+
+export function updateDepartment(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  body: { code?: string; name?: string },
+): Promise<DepartmentView> {
+  return apiSend<DepartmentView>(`${campusOrg(orgId)}/departments/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export async function deleteDepartment(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/departments/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export function fetchBatches(orgId: string, options: ApiGetOptions, departmentId?: string): Promise<BatchView[]> {
+  return apiGet<BatchView[]>(`${campusOrg(orgId)}/batches${query({ departmentId })}`, options);
+}
+
+export function createBatch(
+  accessToken: string,
+  orgId: string,
+  body: { departmentId: string; graduationYear: number; name: string },
+): Promise<BatchView> {
+  return apiSend<BatchView>(`${campusOrg(orgId)}/batches`, "POST", accessToken, body);
+}
+
+export function updateBatch(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  body: { graduationYear?: number; name?: string },
+): Promise<BatchView> {
+  return apiSend<BatchView>(`${campusOrg(orgId)}/batches/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export async function deleteBatch(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/batches/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export interface MemberFilter {
+  role?: CampusRole;
+  batchId?: string;
+  departmentId?: string;
+  q?: string;
+  cursor?: string;
+}
+
+export function fetchMembers(orgId: string, options: ApiGetOptions, filter: MemberFilter = {}): Promise<CampusPage<MemberView>> {
+  return apiGet<CampusPage<MemberView>>(`${campusOrg(orgId)}/members${query({ ...filter })}`, options);
+}
+
+export function updateMember(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  body: { batchId?: string; rollNumber?: string },
+): Promise<MemberView> {
+  return apiSend<MemberView>(`${campusOrg(orgId)}/members/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export async function removeMember(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/members/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export function changeMemberRole(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  role: Exclude<CampusRole, "student">,
+): Promise<MemberView> {
+  return apiSend<MemberView>(`${campusOrg(orgId)}/members/${encodeURIComponent(id)}/role`, "PATCH", accessToken, { role });
+}
+
+export function fetchFacultyScopes(orgId: string, id: string, options: ApiGetOptions): Promise<FacultyScopesView> {
+  return apiGet<FacultyScopesView>(`${campusOrg(orgId)}/members/${encodeURIComponent(id)}/faculty-scopes`, options);
+}
+
+export function saveFacultyScopes(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  scopes: FacultyScopesView,
+): Promise<FacultyScopesView> {
+  return apiSend<FacultyScopesView>(
+    `${campusOrg(orgId)}/members/${encodeURIComponent(id)}/faculty-scopes`,
+    "PUT",
+    accessToken,
+    scopes,
+  );
+}
+
+export function fetchAuditLog(orgId: string, options: ApiGetOptions, cursor?: string): Promise<CampusPage<AuditEntryView>> {
+  return apiGet<CampusPage<AuditEntryView>>(`${campusOrg(orgId)}/audit-log${query({ cursor })}`, options);
+}
+
+// ---- Untiered Campus, module 3: student onboarding ----
+
+export interface InviteFilter {
+  status?: string;
+  role?: CampusRole;
+  batchId?: string;
+  q?: string;
+  cursor?: string;
+}
+
+export function fetchInvites(orgId: string, options: ApiGetOptions, filter: InviteFilter = {}): Promise<CampusPage<InviteView>> {
+  return apiGet<CampusPage<InviteView>>(`${campusOrg(orgId)}/invites${query({ ...filter })}`, options);
+}
+
+export function createInvite(accessToken: string, orgId: string, body: CreateInviteRequest): Promise<InviteView> {
+  return apiSend<InviteView>(`${campusOrg(orgId)}/invites`, "POST", accessToken, body);
+}
+
+export function resendInvite(accessToken: string, orgId: string, id: string): Promise<InviteView> {
+  return apiSend<InviteView>(`${campusOrg(orgId)}/invites/${encodeURIComponent(id)}/resend`, "POST", accessToken);
+}
+
+export function revokeInvite(accessToken: string, orgId: string, id: string): Promise<InviteView> {
+  return apiSend<InviteView>(`${campusOrg(orgId)}/invites/${encodeURIComponent(id)}/revoke`, "POST", accessToken);
+}
+
+/** Uploads a student CSV; nothing is invited until `commitImport`. */
+export function uploadImport(accessToken: string, orgId: string, file: File): Promise<ImportPreview> {
+  const form = new FormData();
+  form.set("file", file);
+  return apiSend<ImportPreview>(`${campusOrg(orgId)}/imports`, "POST", accessToken, form);
+}
+
+export function commitImport(accessToken: string, orgId: string, id: string): Promise<ImportCommitResult> {
+  return apiSend<ImportCommitResult>(`${campusOrg(orgId)}/imports/${encodeURIComponent(id)}/commit`, "POST", accessToken);
+}
+
+export async function discardImport(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/imports/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export function fetchAdminInvites(orgId: string, options: ApiGetOptions, cursor?: string): Promise<CampusPage<InviteView>> {
+  return apiGet<CampusPage<InviteView>>(`${adminOrg(orgId)}/invites${query({ cursor })}`, options);
+}
+
+export function createAdminInvite(accessToken: string, orgId: string, body: AdminCreateInviteRequest): Promise<InviteView> {
+  return apiSend<InviteView>(`${adminOrg(orgId)}/invites`, "POST", accessToken, body);
+}
+
+const inviteToken = (token: string) => `/api/v1/campus/invites/${encodeURIComponent(token)}`;
+
+export function fetchInvitePreview(token: string, options: ApiGetOptions): Promise<InvitePreview> {
+  return apiGet<InvitePreview>(inviteToken(token), options);
+}
+
+export function acceptInvite(accessToken: string, token: string, body: AcceptInviteRequest): Promise<AcceptInviteResponse> {
+  return apiSend<AcceptInviteResponse>(`${inviteToken(token)}/accept`, "POST", accessToken, body);
+}
+
+export async function leaveCollege(accessToken: string): Promise<void> {
+  await apiSend<void>("/api/v1/me/campus/leave", "POST", accessToken);
+}
+
+// ---- Untiered Campus, module 4: assignments ----
+
+export function fetchArenaScenarios(orgId: string, options: ApiGetOptions): Promise<CampusScenarioOption[]> {
+  return apiGet<CampusScenarioOption[]>(`${campusOrg(orgId)}/arena-scenarios`, options);
+}
+
+export function fetchAssignments(orgId: string, options: ApiGetOptions, status?: AssignmentStatus): Promise<AssignmentView[]> {
+  return apiGet<AssignmentView[]>(`${campusOrg(orgId)}/assignments${query({ status })}`, options);
+}
+
+export function createAssignment(accessToken: string, orgId: string, body: AssignmentInput): Promise<AssignmentView> {
+  return apiSend<AssignmentView>(`${campusOrg(orgId)}/assignments`, "POST", accessToken, body);
+}
+
+export function fetchAssignment(orgId: string, id: string, options: ApiGetOptions): Promise<AssignmentView> {
+  return apiGet<AssignmentView>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}`, options);
+}
+
+export function updateAssignment(
+  accessToken: string,
+  orgId: string,
+  id: string,
+  body: Partial<AssignmentInput> | AssignmentPublishedPatch,
+): Promise<AssignmentView> {
+  return apiSend<AssignmentView>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export function publishAssignment(accessToken: string, orgId: string, id: string): Promise<AssignmentView> {
+  return apiSend<AssignmentView>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}/publish`, "POST", accessToken);
+}
+
+export function archiveAssignment(accessToken: string, orgId: string, id: string): Promise<AssignmentView> {
+  return apiSend<AssignmentView>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}/archive`, "POST", accessToken);
+}
+
+export function fetchAssignmentProgress(
+  orgId: string,
+  id: string,
+  options: ApiGetOptions,
+  filter: { batchId?: string; status?: CompletionStatus } = {},
+): Promise<RecipientProgress[]> {
+  return apiGet<RecipientProgress[]>(`${campusOrg(orgId)}/assignments/${encodeURIComponent(id)}/progress${query({ ...filter })}`, options);
+}
+
+/** What the signed-in student has been assigned. Not behind the campus switch: answers `[]` when off. */
+export function fetchMyAssignments(options: ApiGetOptions): Promise<AssignedItem[]> {
+  return apiGet<AssignedItem[]>("/api/v1/me/assignments", options);
+}
+
+// ---- Untiered Campus, module 4b: MCQ tests ----
+
+/** Bank courses with at least five live questions; never a question or a key. */
+export function fetchMcqBank(orgId: string, options: ApiGetOptions): Promise<McqBankSummary[]> {
+  return apiGet<McqBankSummary[]>(`${campusOrg(orgId)}/mcq-bank`, options);
+}
+
+/** Starts an attempt at an MCQ test assignment; the questions come back without their key. */
+export function startMcqAttempt(accessToken: string, assignmentId: string): Promise<McqAttemptView> {
+  return apiSend<McqAttemptView>(`/api/v1/me/assignments/${encodeURIComponent(assignmentId)}/mcq-attempts`, "POST", accessToken);
+}
+
+/** The student's own attempt: to resume it, or its result once submitted. */
+export function fetchMcqAttempt(attemptId: string, options: ApiGetOptions): Promise<McqAttemptView> {
+  return apiGet<McqAttemptView>(`/api/v1/me/mcq-attempts/${encodeURIComponent(attemptId)}`, options);
+}
+
+/** Submits the answers; the server grades them and returns the result with the review. */
+export function submitMcqAttempt(accessToken: string, attemptId: string, body: McqSubmitRequest): Promise<McqAttemptView> {
+  return apiSend<McqAttemptView>(`/api/v1/me/mcq-attempts/${encodeURIComponent(attemptId)}/submit`, "POST", accessToken, body);
+}
+
+/** A student's attempt, for staff. Audited as `mcq.viewed`. */
+export function fetchStudentMcqAttempt(
+  orgId: string,
+  memberId: string,
+  attemptId: string,
+  options: ApiGetOptions,
+): Promise<McqAttemptView> {
+  return apiGet<McqAttemptView>(
+    `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/mcq-attempts/${encodeURIComponent(attemptId)}`,
+    options,
+  );
+}
+
+// ---- Untiered Campus, modules 6-7: readiness and the placement dashboard ----
+
+export interface DashboardFilter {
+  batchId?: string;
+  departmentId?: string;
+}
+
+export interface ReadinessFilter extends DashboardFilter {
+  band?: string;
+  completion?: ReadinessCompletionFilter;
+  sort?: ReadinessSort;
+  order?: "asc" | "desc";
+  cursor?: string;
+}
+
+/** Platform admin: usage and estimated AI cost per college. Dates are YYYY-MM-DD, both inclusive. */
+export function fetchCampusUsage(params: { from?: string; to?: string }, options: ApiGetOptions): Promise<OrgUsageRow[]> {
+  const query = new URLSearchParams();
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  return apiGet<OrgUsageRow[]>(`/api/v1/admin/campus/usage${suffix}`, options);
+}
+
+export function fetchMyLeaderboard(scope: LeaderboardScope, options: ApiGetOptions): Promise<LeaderboardView> {
+  return apiGet<LeaderboardView>(`/api/v1/me/campus/leaderboard?scope=${scope}`, options);
+}
+
+export function setLeaderboardOptIn(accessToken: string, optIn: boolean): Promise<{ optIn: boolean }> {
+  return apiSend<{ optIn: boolean }>("/api/v1/me/campus/leaderboard-preference", "PUT", accessToken, { optIn });
+}
+
+/** The signed-in student's own readiness. `404` when they are not a joined student. */
+export function fetchMyReadiness(options: ApiGetOptions): Promise<StudentReadiness> {
+  return apiGet<StudentReadiness>("/api/v1/me/campus/readiness", options);
+}
+
+export function fetchStudentReadiness(orgId: string, memberId: string, options: ApiGetOptions): Promise<StudentReadiness> {
+  return apiGet<StudentReadiness>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/readiness`, options);
+}
+
+/** The existing session report, as a college staff member may read it. */
+export function fetchStaffStudentReport(orgId: string, memberId: string, sessionId: string, options: ApiGetOptions): Promise<SessionReport> {
+  return apiGet<SessionReport>(
+    `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/reports/${encodeURIComponent(sessionId)}`,
+    options,
+  );
+}
+
+/** The integrity summary of one of the student's assigned rounds, as college staff read it. */
+export function fetchStaffStudentIntegrity(
+  orgId: string,
+  memberId: string,
+  sessionId: string,
+  options: ApiGetOptions,
+): Promise<IntegritySummary> {
+  return apiGet<IntegritySummary>(
+    `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/reports/${encodeURIComponent(sessionId)}/integrity`,
+    options,
+  );
+}
+
+export function fetchReadinessWeights(orgId: string, options: ApiGetOptions): Promise<ReadinessWeights> {
+  return apiGet<ReadinessWeights>(`${campusOrg(orgId)}/readiness-weights`, options);
+}
+
+export function updateReadinessWeights(accessToken: string, orgId: string, weights: ReadinessWeights): Promise<ReadinessWeights> {
+  return apiSend<ReadinessWeights>(`${campusOrg(orgId)}/readiness-weights`, "PUT", accessToken, weights);
+}
+
+export function fetchDashboard(orgId: string, options: ApiGetOptions, filter: DashboardFilter = {}): Promise<DashboardView> {
+  return apiGet<DashboardView>(`${campusOrg(orgId)}/dashboard${query({ ...filter })}`, options);
+}
+
+export function fetchReadinessRows(
+  orgId: string,
+  options: ApiGetOptions,
+  filter: ReadinessFilter = {},
+): Promise<CampusPage<StudentReadinessRow>> {
+  return apiGet<CampusPage<StudentReadinessRow>>(`${campusOrg(orgId)}/students/readiness${query({ ...filter })}`, options);
+}
+
+/** Records that a staff member opened the printable batch report. Answers `204`. */
+export async function recordBatchReportViewed(accessToken: string, orgId: string, filter: DashboardFilter = {}): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/exports/batch-report-viewed`, "POST", accessToken, filter);
+}
+
+/**
+ * The student CSV. It needs the bearer token, so it cannot be a plain link: fetch it as a
+ * Blob and let the caller save it.
+ */
+export async function downloadStudentsCsv(orgId: string, accessToken: string, filter: ReadinessFilter = {}): Promise<Blob> {
+  const { batchId, departmentId, band, completion } = filter;
+  const response = await fetch(`${env.apiBaseUrl}${campusOrg(orgId)}/exports/students.csv${query({ batchId, departmentId, band, completion })}`, {
+    headers: { Accept: "text/csv", Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const envelope = (await response.json().catch(() => null)) as ApiError | null;
+    throw new ApiRequestError(
+      response.status,
+      envelope?.error ?? "unknown_error",
+      envelope?.message ?? `The export failed with status ${response.status}.`,
+    );
+  }
+  return response.blob();
+}
+
+// ---- Untiered Campus, module 8: the faculty view ----
+
+export function fetchAttention(orgId: string, options: ApiGetOptions, reason?: AttentionReason): Promise<AttentionRow[]> {
+  return apiGet<AttentionRow[]>(`${campusOrg(orgId)}/attention${query({ reason })}`, options);
+}
+
+/** Private staff notes on one student, newest first. Staff only; a student never sees them. */
+export function fetchStaffComments(orgId: string, memberId: string, options: ApiGetOptions): Promise<StaffComment[]> {
+  return apiGet<StaffComment[]>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/comments`, options);
+}
+
+export function createStaffComment(
+  accessToken: string,
+  orgId: string,
+  memberId: string,
+  body: { body: string; sessionId?: string | null },
+): Promise<StaffComment> {
+  return apiSend<StaffComment>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/comments`, "POST", accessToken, body);
+}
+
+export function updateStaffComment(accessToken: string, orgId: string, id: string, body: string): Promise<StaffComment> {
+  return apiSend<StaffComment>(`${campusOrg(orgId)}/comments/${encodeURIComponent(id)}`, "PATCH", accessToken, { body });
+}
+
+export async function deleteStaffComment(accessToken: string, orgId: string, id: string): Promise<void> {
+  await apiSend<void>(`${campusOrg(orgId)}/comments/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+// ---- Untiered Campus, module 10: programmes ----
+
+const ADMIN_TEMPLATES = "/api/v1/admin/campus/programme-templates";
+
+export function fetchAdminProgrammeTemplates(options: ApiGetOptions): Promise<ProgrammeTemplate[]> {
+  return apiGet<ProgrammeTemplate[]>(ADMIN_TEMPLATES, options);
+}
+
+export function createProgrammeTemplate(accessToken: string, body: ProgrammeTemplateInput): Promise<ProgrammeTemplate> {
+  return apiSend<ProgrammeTemplate>(ADMIN_TEMPLATES, "POST", accessToken, body);
+}
+
+export function updateProgrammeTemplate(accessToken: string, id: string, body: Partial<ProgrammeTemplateInput>): Promise<ProgrammeTemplate> {
+  return apiSend<ProgrammeTemplate>(`${ADMIN_TEMPLATES}/${encodeURIComponent(id)}`, "PATCH", accessToken, body);
+}
+
+export async function deleteProgrammeTemplate(accessToken: string, id: string): Promise<void> {
+  await apiSend<void>(`${ADMIN_TEMPLATES}/${encodeURIComponent(id)}`, "DELETE", accessToken);
+}
+
+export function fetchProgrammeTemplates(orgId: string, options: ApiGetOptions): Promise<ProgrammeTemplate[]> {
+  return apiGet<ProgrammeTemplate[]>(`${campusOrg(orgId)}/programme-templates`, options);
+}
+
+export function fetchProgrammes(orgId: string, options: ApiGetOptions): Promise<ProgrammeView[]> {
+  return apiGet<ProgrammeView[]>(`${campusOrg(orgId)}/programmes`, options);
+}
+
+export function startProgramme(accessToken: string, orgId: string, body: StartProgrammeRequest): Promise<ProgrammeView> {
+  return apiSend<ProgrammeView>(`${campusOrg(orgId)}/programmes`, "POST", accessToken, body);
+}
+
+export function fetchProgramme(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeView> {
+  return apiGet<ProgrammeView>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}`, options);
+}
+
+export function fetchProgrammeProgress(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeProgress[]> {
+  return apiGet<ProgrammeProgress[]>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}/progress`, options);
+}
+
+export function archiveProgramme(accessToken: string, orgId: string, id: string): Promise<ProgrammeView> {
+  return apiSend<ProgrammeView>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}/archive`, "POST", accessToken);
+}
+
+/** The signed-in student's programmes. Not behind the campus switch: answers `[]` when off. */
+export function fetchMyProgrammes(options: ApiGetOptions): Promise<MyProgrammeView[]> {
+  return apiGet<MyProgrammeView[]>("/api/v1/me/programmes", options);
+}
+
+/** `404` until every module of the programme is completed. */
+export function fetchMyCertificate(programmeId: string, options: ApiGetOptions): Promise<CertificateView> {
+  return apiGet<CertificateView>(`/api/v1/me/programmes/${encodeURIComponent(programmeId)}/certificate`, options);
 }

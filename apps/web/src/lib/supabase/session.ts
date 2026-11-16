@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { env } from "@/lib/env";
+import { DEFAULT_SIGNED_IN_PATH, safeNext } from "@/lib/safe-next";
 
 /**
  * Routes that require a signed-in candidate. Courses and the Arena were public until the
@@ -18,6 +19,8 @@ const PROTECTED_PREFIXES = [
   "/profile",
   "/history",
   "/report",
+  "/campus",
+  "/admin",
 ];
 
 /**
@@ -99,14 +102,20 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   if (!user && isProtected(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    redirectUrl.search = `?next=${encodeURIComponent(pathname)}`;
+    // The query string rides along: /campus/join?token=... must survive sign-in.
+    redirectUrl.search = `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`;
     return NextResponse.redirect(redirectUrl);
   }
 
   if (user && SIGNED_OUT_ONLY.includes(pathname)) {
+    // A signed-in person following "College staff? Sign in" (/login?next=/campus) goes
+    // where the link meant, not to their own dashboard. The destination is narrowed to a
+    // same-origin path, and never back to a signed-out-only page, which would loop.
+    const next = new URL(safeNext(request.nextUrl.searchParams.get("next")), request.nextUrl.origin);
+    const destination = SIGNED_OUT_ONLY.includes(next.pathname) ? new URL(DEFAULT_SIGNED_IN_PATH, next) : next;
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    redirectUrl.search = "";
+    redirectUrl.pathname = destination.pathname;
+    redirectUrl.search = destination.search;
     return NextResponse.redirect(redirectUrl);
   }
 

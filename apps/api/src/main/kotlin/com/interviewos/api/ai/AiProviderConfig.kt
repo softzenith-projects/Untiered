@@ -82,6 +82,11 @@ class AiProviderConfig {
                             reasoningModel = provider.model.ifBlank { gemini.reasoningModel },
                             inRoomTimeout = provider.inRoomTimeout,
                             recorder = recorder,
+                            inRoomThinkingLevel =
+                                provider.thinkingLevel
+                                    ?.trim()
+                                    ?.lowercase()
+                                    ?.takeIf { it.isNotEmpty() },
                         )
                     }
 

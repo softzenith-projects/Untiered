@@ -21,6 +21,42 @@ import kotlin.test.assertTrue
 
 class SesEmailSenderTest {
     @Test
+    fun `a transactional email has its one button and no account or unsubscribe links`() {
+        val client = mock(SesV2Client::class.java)
+        val properties = EmailProperties(publicBaseUrl = "https://untiered.tech", apiBaseUrl = "https://api.untiered.tech")
+        SesEmailSender(client, properties).sendTransactional(
+            "student@college.edu",
+            "Join Demo <College> on Untiered",
+            "Demo College has invited you.",
+            "Join Demo College",
+            "https://untiered.tech/campus/join?token=abc&x=1",
+        )
+
+        val request = ArgumentCaptor.forClass(SendEmailRequest::class.java)
+        verify(client).sendEmail(request.capture())
+        assertEquals(listOf("student@college.edu"), request.value.destination().toAddresses())
+        val mime =
+            MimeMessage(
+                Session.getInstance(Properties()),
+                ByteArrayInputStream(
+                    request.value
+                        .content()
+                        .raw()
+                        .data()
+                        .asByteArray(),
+                ),
+            )
+        assertEquals("Join Demo <College> on Untiered", mime.subject)
+        assertEquals(null, mime.getHeader("List-Unsubscribe"))
+        val parts = mutableMapOf<String, String>()
+        collectParts(mime, parts)
+        assertTrue(parts.getValue("text/plain").contains("Join Demo College: https://untiered.tech/campus/join?token=abc&x=1"))
+        assertTrue(parts.getValue("text/html").contains("href=\"https://untiered.tech/campus/join?token=abc&amp;x=1\""))
+        assertFalse(parts.getValue("text/html").contains("unsubscribe"))
+        assertFalse(parts.getValue("text/plain").contains("Your account"))
+    }
+
+    @Test
     fun `sends branded multipart email through SES with backend sender and reply to`() {
         val client = mock(SesV2Client::class.java)
         val properties = EmailProperties(publicBaseUrl = "https://untiered.tech", apiBaseUrl = "https://api.untiered.tech")
@@ -75,6 +111,43 @@ class SesEmailSenderTest {
                 ),
             )
         assertEquals(null, mime.getHeader("List-Unsubscribe", null))
+    }
+
+    @Test
+    fun `campus emails link to the dashboard or Campus, and only the optional ones can be unsubscribed from`() {
+        fun sent(category: String): MimeMessage {
+            val client = mock(SesV2Client::class.java)
+            SesEmailSender(
+                client,
+                EmailProperties(publicBaseUrl = "https://untiered.tech"),
+            ).send("a@example.invalid", category, "Subject", "Body", "tok")
+            val request = ArgumentCaptor.forClass(SendEmailRequest::class.java)
+            verify(client).sendEmail(request.capture())
+            return MimeMessage(
+                Session.getInstance(Properties()),
+                ByteArrayInputStream(
+                    request.value
+                        .content()
+                        .raw()
+                        .data()
+                        .asByteArray(),
+                ),
+            )
+        }
+
+        val assignment = sent("campus_assignment")
+        assertEquals(null, assignment.getHeader("List-Unsubscribe", null))
+        val assignmentParts = mutableMapOf<String, String>()
+        collectParts(assignment, assignmentParts)
+        assertTrue(assignmentParts.getValue("text/plain").contains("https://untiered.tech/dashboard"))
+        assertFalse(assignmentParts.getValue("text/plain").contains("Unsubscribe:"))
+
+        val reminder = sent("campus_reminder")
+        assertTrue(reminder.getHeader("List-Unsubscribe", null) != null)
+
+        val weekly = mutableMapOf<String, String>()
+        collectParts(sent("campus_weekly"), weekly)
+        assertTrue(weekly.getValue("text/plain").contains("https://untiered.tech/campus"))
     }
 
     @Test

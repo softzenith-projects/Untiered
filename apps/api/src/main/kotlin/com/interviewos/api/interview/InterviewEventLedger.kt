@@ -38,6 +38,15 @@ data class InterviewEvent(
     val action: String? = null,
     val intervention: String? = null,
     val durationMs: Long? = null,
+    /** The model that served a call or a turn's decision, as its usage reported it. */
+    val model: String? = null,
+    /** The provider's finish reason, normalised (`stop`, `max_tokens`...). */
+    val finishReason: String? = null,
+    /**
+     * Why: an [com.interviewos.api.ai.AiFailureReason] code on a failed call, or which rule
+     * fired on a guard event. Always a code from the `reason` check constraint, never text.
+     */
+    val reason: String? = null,
 )
 
 /**
@@ -66,10 +75,12 @@ class InterviewEventRepository(
                 """
                 insert into public.interview_events
                   (user_id, session_id, turn_index, request_id, event_type, phase,
-                   provider, operation, outcome, error_type, action, intervention, duration_ms)
+                   provider, operation, outcome, error_type, action, intervention, duration_ms,
+                   model, finish_reason, reason)
                 values
                   (:u, :s, :turn, :request, :event, :phase,
-                   :provider, :operation, :outcome, :error, :action, :intervention, :duration)
+                   :provider, :operation, :outcome, :error, :action, :intervention, :duration,
+                   :model, :finish, :reason)
                 """.trimIndent(),
             ).param("u", event.userId)
             .param("s", event.sessionId)
@@ -84,6 +95,9 @@ class InterviewEventRepository(
             .param("action", event.action)
             .param("intervention", event.intervention)
             .param("duration", event.durationMs?.coerceIn(0, MAX_DURATION_MS))
+            .param("model", event.model?.take(120))
+            .param("finish", event.finishReason)
+            .param("reason", event.reason)
             .update()
     }
 
@@ -116,7 +130,8 @@ class InterviewEventRepository(
                     select *
                       from (
                         select id, occurred_at, turn_index, request_id, event_type, phase,
-                               provider, operation, outcome, error_type, action, intervention, duration_ms
+                               provider, operation, outcome, error_type, action, intervention, duration_ms,
+                               model, finish_reason, reason
                           from public.interview_events
                          where session_id = :s
                          order by occurred_at desc, id desc
@@ -194,6 +209,9 @@ class InterviewEventRepository(
             action = rs.getString("action"),
             intervention = rs.getString("intervention"),
             durationMs = rs.getObject("duration_ms")?.let { rs.getLong("duration_ms") },
+            model = rs.getString("model"),
+            finishReason = rs.getString("finish_reason"),
+            reason = rs.getString("reason"),
         )
 
     private companion object {
@@ -277,6 +295,9 @@ data class InterviewEventView(
     val action: String?,
     val intervention: String?,
     val durationMs: Long?,
+    val model: String? = null,
+    val finishReason: String? = null,
+    val reason: String? = null,
 )
 
 @Component
