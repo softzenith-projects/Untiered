@@ -1,0 +1,70 @@
+{
+  "type": "OBJECT",
+  "properties": {
+    "transcript": {
+      "type": "STRING"
+    },
+    "suggestedNextAction": {
+      "type": "STRING",
+      "enum": [
+        "follow_up",
+        "probe",
+        "challenge",
+        "move_on",
+        "raise_difficulty",
+        "redirect",
+        "hint",
+        "guide"
+      ]
+    },
+    "intervention": {
+      "type": "STRING",
+      "enum": [
+        "none",
+        "redirected",
+        "hinted",
+        "guided",
+        "corrected"
+      ]
+    },
+    "interventionNote": {
+      "type": "STRING",
+      "nullable": true
+    },
+    "deliveryObservation": {
+      "type": "STRING",
+      "nullable": true
+    },
+    "nextQuestionText": {
+      "type": "STRING",
+      "description": "The single next thing the interviewer says out loud. One short question. Do not restate or summarise the answer at length before asking it.",
+      "maxLength": 120
+    },
+    "questionBasis": {
+      "type": "STRING",
+      "description": "The archetype-level pattern this question comes from. No company-specific claims.",
+      "nullable": true
+    },
+    "questionProbes": {
+      "type": "STRING",
+      "description": "What this question is testing, in one short phrase.",
+      "nullable": true
+    },
+    "questionAskedBecause": {
+      "type": "STRING",
+      "description": "Why this candidate is being asked this, referring to what they have already said.",
+      "nullable": true
+    },
+    "askedPlannedQuestion": {
+      "type": "BOOLEAN",
+      "description": "True when nextQuestionText asks the planned question; false otherwise, including when there is none.",
+      "nullable": true
+    }
+  },
+  "required": [
+    "transcript",
+    "suggestedNextAction",
+    "intervention",
+    "nextQuestionText"
+  ]
+}

@@ -1,154 +1,171 @@
-# Handoff — 14 November 2026 (campus run, complete)
+# Handoff — 14 November 2026
 
 ## Task
-Build Untiered Campus, the B2B college partnership, from the owner's spec "Untiered
-Campus: College Partnership Features (v1)". The spec as adapted to this codebase is
-`docs/campus-v1-spec.md`, the plan is `docs/campus-v1-plan.md`, and the wire contract is
-`docs/campus-api-contract.md`. The owner asked to "do the remaining" and then to
-"complete remaining".
+Interviewer design review (14 Nov 2026, PDF), steps 1–3 of its "Order to ship" only. No task
+file; the brief was given in session. Steps 4–6 not started.
 
-## Status at a glance
-- **Live on `develop`:** the public `/colleges` page and the home-page "For colleges"
-  CTA (`4b26297`), plus the Shiki test fix (`cfedb51`).
-- **Everything else is on `feat/campus-v1`** and has not been merged into `develop`. It
-  is behind the `campus` feature switch, which is off by default, and it touches
-  permissions, so it reaches `develop` only through a PR the owner reviews.
+## What I built
+Branch `feat/interviewer-guards`, one commit per step, plus PR #160 for one part.
 
-All 12 modules are built (API and web) and merged on `feat/campus-v1`:
-- 1–2: organisations, roles
-- 3: onboarding (CSV, invites, join and consent)
-- 4: assignments with college-funded, capped admission
-- 5: integrity signals
-- 6: readiness
-- 7: the placement dashboard, CSV export and printable batch report
-- 8: the faculty "needs attention" list and private staff notes
-- 9: notifications
-- 10: programmes with weekly unlock and printable certificates
-- 11: usage and AI cost per college (internal)
-- 12: the opt-in anonymous leaderboard
+- **Step 1, observability and replay (`f4ed989`).**
+  - `AiFailureReason` codes on every model failure, plus the provider's finish reason (Gemini
+    `finishReason` or `promptFeedback.blockReason`; OpenAI-format `finish_reason`).
+  - Migration `20261114200000_interview_event_reasons.sql` gives `interview_events` the columns
+    `model`, `finish_reason` and `reason` (codes only). It also adds `session_turns.answer_audio_sha256`.
+  - New counters: `no_speech_heard`, `question_over_limit`, and the upload-to-next-question time
+    on `answer_response_ready`.
+  - Replay harness: `apps/api/src/test/kotlin/.../interview/replay/`. The fixtures and the export
+    SQL are in `apps/api/src/test/resources/replay/`.
+- **Step 2, server rules (`88622ac`).**
+  - `TurnGuards` (pure functions), `InterviewerRulesProperties` (flags), `AnswerPace`, and
+    `EchoedAnswer.matchOf`.
+  - New prompts and schemas: `assess-answer-turn.*` and `assess-answer-final.*`.
+  - Wiring in `InterviewService.submitAnswer` / `chooseNextLine`.
+- **Step 3, Gemini settings (`13cf831`).**
+  - A per-provider `thinking-level` and the `send-sampling-params` flag.
+  - The fallback model is pinned to `gemini-3.6-flash`.
+  - `docs/model-lifecycle.md`.
+- **PR #160 (`feat/bank-pool-fallthrough`, based on this branch).** The bank-to-pool
+  fall-through, behind a flag, and a rewording of the candidate-facing grounding note.
 
-MCQ tests (spec 4b) are deferred; see the MCQ tests entry above.
+### Flags, all defaulting to the old behaviour
+While a rule is off it still runs and writes outcome `shadow` to `interview_events`, so each
+can be counted on real rounds before it is turned on.
 
-## Blockers for the owner
-1. **GitHub Actions is not running any job.** Every run since about 09:39 on 13 November
-   fails before it starts: "recent account payments have failed or your spending limit
-   needs to be increased". Fix this under Billing & plans. Until then nothing can pass
-   the CI gate into `develop`.
+| Flag (`interviewos.…`) | Env | Default |
+|---|---|---|
+| `interviewer.final-variant` | `INTERVIEWER_FINAL_VARIANT` | false |
+| `interviewer.planned-fallback` | `INTERVIEWER_PLANNED_FALLBACK` | false |
+| `interviewer.wrap-up-guard` | `INTERVIEWER_WRAP_UP_GUARD` | false |
+| `interviewer.length-guard` (+ `max-question-chars` 120) | `INTERVIEWER_LENGTH_GUARD` | false |
+| `interviewer.repeat-guard` (+ `repeat-threshold`) | `INTERVIEWER_REPEAT_GUARD`, `INTERVIEWER_REPEAT_THRESHOLD` | false, 0.85 |
+| `interviewer.echo-all-answers` | `INTERVIEWER_ECHO_ALL_ANSWERS` | false |
+| `interviewer.audio-hash-guard` | `INTERVIEWER_AUDIO_HASH_GUARD` | false |
+| `interviewer.bank-pool-fallthrough` (PR #160) | `INTERVIEWER_BANK_POOL_FALLTHROUGH` | false |
+| `gemini.send-sampling-params` | `GEMINI_SEND_SAMPLING_PARAMS` | true |
+| `ai.providers[].thinking-level` | `GEMINI_PRIMARY_THINKING_LEVEL`, `GEMINI_FALLBACK_THINKING_LEVEL` | empty (128-token budget) |
 
-## How it was verified, since CI could not run
-- The campus work has been verified locally only, on the merged `feat/campus-v1`. CI
-  has seen nothing after `2210ef2`.
-- Backend: `./gradlew ktlintCheck test build` gives 1,220 tests and 0 failures, with
-  every `*DatabaseIntegrationTest` running against a local Supabase Postgres that has all
-  campus migrations applied.
-- The campus database suites ran with nothing skipped:
-  - isolation: 11
-  - onboarding: 8
-  - assignments: 5, including the race for the last allowance unit
-  - readiness: 7
-  - notifications: 11
-  - integrity
-  - faculty and programmes: 7 each
-  - usage and leaderboard
-- Web: typecheck, lint, build, and 4,251 tests in 124 files.
-- Two web tests that cold-import whole modules got longer timeouts, each with a comment.
-  No assertion was changed.
+Not behind a flag: the default for `GEMINI_FALLBACK_MODEL` is now `gemini-3.6-flash`, as the brief
+asked.
 
-## Assumptions made, which the owner should confirm
-1. **What a college can see:** only work it assigned, meaning assignment rounds, their
-   reports and its integrity counts, plus Arena scenario sets. A student's personal
-   practice is never shown.
-2. **Exception — last active:** "last active" and "active in 14 days" do count personal
-   practice, as a date only. The join consent copy says so.
-3. **Mismatched email:** a student invited at a college address can accept while signed
-   in with another account, after an explicit confirmation. The token proves they
-   received the invite email.
-4. **No accounts at import.** An existing account is linked only when its holder accepts.
-   The import preview never reveals whether an email has an Untiered account.
-5. **Funding:** college-assigned interviews come from a per-college `interview_allowance`
-   that a platform admin sets by hand. They never use the student's free rounds or
-   credits. A failed round hands its unit back.
-6. **MCQ tests are now built** (spec 4b). Course MCQs are graded in the browser. Arena
-   scenario sets are graded on the server and can be assigned.
-7. **PDFs are print pages.** The batch report and certificates are print-optimised pages
-   ("Save as PDF"), so no PDF library was added.
-8. **Integrity:** only assigned rounds are counted: tab and window switches, pastes, and
-   answer timing. They are counts, never verdicts, and the student sees the same summary.
-   The start screen says what is counted.
-9. **Emails:**
-   - The new-assignment email has no unsubscribe link, because it is a college
-     instruction.
-   - Reminders, report-ready and the weekly summary respect a "College reminders" toggle.
-   - No email ever contains a score.
-10. **Consent copy** lives on the server (`CampusJoinService`). Module 8 bumps it to
-    `campus-2026-11-14` to disclose private staff notes.
+Environment variables that can override model ids: `GEMINI_PRIMARY_MODEL`, `GEMINI_FALLBACK_MODEL`,
+`FALLBACK_PROVIDER_MODEL`, and through Spring relaxed binding `INTERVIEWOS_GEMINI_REASONINGMODEL`
+and `INTERVIEWOS_GEMINI_SPEECHMODEL`.
+
+## Where the code contradicted the review
+- **Two of the review's premises don't hold in the code.**
+  - The review says broad failure categories such as `echoed_transcript` are stored. They never
+    were: `answer_rejected` and `echoed_transcript` violated the table's check constraints, and
+    the best-effort ledger swallowed the error. The migration fixes this.
+  - Answer audio is not retained, so "listen to the echo turns" is impossible for past rounds.
+- **The 120-character limit collides with the briefing turn**, where the server itself asks for
+  2–3 sentences. The briefing turn is exempt (owner's decision).
+- **The clock is in the pacing sentences too**, not only the Elapsed/Remaining line. The minute
+  counts are stripped in the turn variant; the briefing keeps the time it tells the candidate
+  (owner's decision). For the closing phase I replaced "if you mention the time, say exactly this
+  much" with "Do not mention the time or that the interview is ending", because the original
+  sentence makes no sense without a number.
+- **The selector cannot always return a candidate.**
+  - The bank takes first claim, and the pool was never reached once the bank ran out (PR #160).
+  - There is no pool for project deep-dive, custom-topic or most non-engineering roles.
+  - The pool never brings a question back across rounds (`recycle = false`), so a returning
+    candidate exhausts it. That is a likely contributor to late-round stalls, not covered by the review.
+- **Thinking `minimal` is not confirmed for `gemini-3.6-flash`**, and newer Flash models reject
+  it. That is why it's per provider and not global.
+
+## Assumptions I made
+- The schema has no field for "the candidate asked for a repeat". So a re-ask of the current
+  question is allowed once, in other words, when the action is redirect, hint or guide or any help
+  was recorded, and the previous turn was not itself a re-ask.
+- Repeat similarity is a word-level edit-distance ratio on the whole line and on its last sentence
+  (only when that sentence has 4 or more words).
+- Rules judge model-written text only. A stored planned question is never cut or blocked.
+- On the final turn the schema still allows `conclude`, so stored `next_action` keeps its meaning.
+- When a rule replaces the line, the model's `basis`, `probes` and `askedBecause` are dropped,
+  because they describe a question nobody asked.
+- With the flags on, a workspace round or a warm-up turn whose line is rejected gets the generic
+  filler, with outcome `unavailable` (the owner chose filler plus alert).
+- `gemini-3.6-flash` has no row in `AiPrices`. It is costed at UNKNOWN (the 3.5 Flash rate), so it
+  is over-counted rather than free. Its audio price was not verified.
+
+## Step 2g: proposals, not built
+**Detecting an upload with no speech**
+1. Browser timing (`AnswerTiming.firstSoundMs == null`). Already sent and already counted as
+   `no_speech_heard`. Refusing on it would save the whole assessment call (about $0.003 and
+   3–4 s) at no cost. Risk: a quiet speaker below the browser's threshold, and older clients
+   send no timing. **Recommended first**, gated on shadow counts.
+2. Server-side energy check. Needs an Opus/WebM decoder, which the JVM doesn't have, so it means
+   a new dependency or ffmpeg. A few milliseconds of CPU per answer, but a real dependency cost.
+3. A `speechHeard` field in the schema, as in the review's call B. A few output tokens and no
+   extra call, but it's a schema change, so step 4/5 territory.
+
+**Re-transcribing an echo before asking the candidate to repeat**
+The audio bytes are still in memory during the request, so all three options are feasible.
+1. A history-free, transcription-only call on the primary model, keeping the first call's
+   decision. About $0.001 for a 45 s answer and 2–3 s. It needs a small prompt, a schema and an
+   `InterviewAi.transcribe`. **Recommended**: it removes what the model could copy from.
+2. Re-run the full assessment on the fallback model. About $0.007 (3.6 Flash audio price
+   unverified) and 4–8 s.
+3. `gemini-3.5-transcribe`. About $0.004 for 45 s per the review (unverified). Hindi-English
+   support isn't confirmed.
+
+Echo frequency is now countable (`echo_detected`), so the expected spend can be read from the
+ledger before choosing.
+
+## Step 2h: unchanged, described
+Today, when every provider fails: `answer_assessment_failed` is written (now with a reason and
+finish reason), `failSessionAndRefundUsage` marks the session failed and returns the free round
+or credit, `session_failed` is written, and the room gets a 503: "The interview has been stopped
+rather than scored unfairly."
+
+Continuing with a planned question instead would need all of the following:
+- An answered turn without a transcript. `session_turns_answer_consistency` forbids that today.
+- Keeping the audio until a later assessment succeeds. That reverses the decision not to retain
+  answer audio, and the consent copy changes with it.
+- A background re-assessment with retries, and a report that waits for it.
+- A planned question to ask, which exists only where the bank or pool has one.
+- A refund rule for a round that was partly assessed.
+
+Retention, consent and refunds are owner decisions.
 
 ## What I could NOT verify
-- Anything in a browser: visual design, the print layouts, the heatmap colours, dark
-  mode.
-- Real SES delivery of invite and campus emails. With SES off, invites never get a
-  usable link, so the join flow cannot be tried locally.
-- Real-browser integrity events (the order of blur and visibility events, keepalive on
-  tab close).
-- Live report generation from the staff route (the AI is mocked).
-- Latency at college scale.
+- **CI** was blocked by billing when the branch was written; it runs now and its result is in the merge status below.
+- **The migration** was applied to the local Supabase inside a transaction and rolled back. The
+  constraints accept the new codes and reject free text and unknown events. That is a stand-in
+  for CI's database job, not the job itself.
+- **Live Gemini behaviour.** Not checked:
+  - whether the turn schema's required non-null field is honoured;
+  - `thinkingLevel` on each model;
+  - latency, and real echo, repeat and no-speech rates.
+- **Google's docs** were read from search excerpts. The pages now redirect to
+  `aistudio.google.com`, and fetching there was refused in this session.
 
-## Before merging `feat/campus-v1` into `develop` (owner)
-1. Fix GitHub billing and get green CI on the PR.
-2. **Legal / data protection:** update the privacy policy and terms to cover colleges as
-   recipients of student data (India's DPDP Act) before the first real invite. The
-   `campus` switch must stay off until then.
-3. ~~Apply the nine campus migrations~~ **Done on 14 November 2026.** The owner ran
-   `npm run db:push` from `feat/campus-v1`, and all nine are applied to the hosted project.
-   They are additive and unused by the `develop` code. **Do not edit those nine files any
-   more;** any further schema change needs a new migration.
-4. The size is far over the 800-line guideline: about 37,400 added lines across 224 files,
-   roughly 40% of them tests. The
-   history merges module by module, so it can be reviewed per module branch.
+## Verification status
+- `cd apps/api && ./gradlew ktlintCheck test build` passes on `feat/interviewer-guards`
+  (`13cf831`) and on `feat/bank-pool-fallthrough` (`82fe073`). The web app is untouched.
+- The replay runs on the synthetic fixtures and prints a per-rule summary
+  (`apps/api/build/reports/turn-replay.txt`).
 
-## Added after the main run
-- **MCQ tests (spec 4b).**
-  - The tests are marked on the server, from a 603-question bank exported from the course
-    quizzes (`scripts/export-mcq-bank.mjs`). A drift test fails when the courses change
-    and the bank needs regenerating.
-  - Courses: java 105, javascript 132, dsa 90, ai-agents 99, system-design 177. DBMS, OS,
-    networks and aptitude have no course content, so they have no questions.
-  - New migrations `20261114120500_campus_mcq.sql` and `20261114130000_campus_mcq_bank.sql`
-    are NOT on the hosted database yet.
-- **Local demo data:** `npm run campus:seed-demo -- --yes --staff you@x:tpo --student y@x`.
-  It refuses to run against anything that isn't local, and `--reset` removes it. See
-  `docs/guides/campus-local-testing.md`.
-- **College self-registration (contract Module 13).**
-  - A "Register your college" form on `/colleges` creates a lead, never access. Your team
-    is emailed, and platform admins triage leads at `/admin/campus/leads` and convert one
-    into a college plus an invite for its first admin.
-  - Spam protection: Turnstile checked on the server, rate limits on hashed IPs, and a
-    honeypot field.
-  - New config: `TURNSTILE_SECRET_KEY`, `CAMPUS_LEADS_NOTIFY_EMAIL`,
-    `CAMPUS_LEADS_HASH_SALT` (set it in production, or the limits reset on every restart),
-    and `NEXT_PUBLIC_FEATURE_CAMPUS_LEADS` (default true).
-  - **New migration `20261114120000_campus_leads.sql` is NOT yet on the hosted
-    database.** Apply it with `db:push`.
-  - The privacy policy should mention lead data and the 180-day deletion of "Not a fit"
-    leads. That is the owner's legal call.
-- **TPO overview (contract Module 7b):** headline cards with change against the previous
-  30 days, the practice pipeline, readiness by skill, weakest topics and a batches table,
-  plus a "sign in to your portal" link for staff.
+## Merge status
+- `feat/interviewer-guards` is pushed and **not merged**, because CI could not run (CLAUDE.md
+  rule 1: no CI, no merge). When CI is green, merge it and run `npm run db:push` in the same step.
+  Check `npm run supabase -- migration list --linked` first: the campus migrations
+  (20261113…–20261114…) are on `feat/campus-v1`, not on `develop`. If they are already on the
+  remote, a push from `develop` may refuse.
+- PR #160 is open against `feat/interviewer-guards`. It changes what the candidate is told about
+  sourced questions.
 
-## Fixed after the main run
-- Campus emails for scheduled assignments, such as a programme's later weeks, now go out
-  when each assignment opens, not when it is published (`fix/campus-programme-email-timing`).
-- Platform admins got a 500 on every read-only admin route: usage, programme templates, and a
-  college's MCQ bank, scenario options and comments. The admin gate inserted the operator's
-  user row inside a read-only transaction, which Postgres refuses. It now skips that step in
-  read-only transactions, where no audit row is written. Found by the owner in a browser;
-  the database tests had missed it because they ran outside a transaction
-  (`fix/campus-admin-readonly`, with a regression test that runs inside one).
-- For local admin testing with an email-and-password login (local Google sign-in has no
-  client id), set `ADMIN_USER_IDS` in `.env` to the local account's id. Never copy that
-  value to production.
+## Suggested next task
+Run the replay on the 11 and 12 November sessions (export SQL in the replay README), then turn
+on the flags whose `shadow` counts look right.
 
-## Open questions
-- Should "last active" exclude personal practice entirely? (Assumption 2.)
-- Should college-funded interview allowances be billed? Payments for colleges are out of
-  scope in v1.
+## Open questions for you
+1. **`gemini-2.5-flash-preview-tts` has a listed earliest shutdown of 17 November 2026** (listed
+   replacements: `gemini-3.8-flash-tts`, `gemini-3.8-flash-lite-tts`). It is the server voice.
+   This was not in scope; it needs a decision this week.
+2. GitHub Actions billing, so CI can run.
+3. The export of the 11 and 12 November rounds, for the real replay.
+4. One live call to confirm `gemini-3.6-flash` accepts `thinkingLevel: minimal`, and its price
+   row for `AiPrices`.
+5. The review document isn't in the repo (`docs/reviews/` doesn't exist). Commit it if it should
+   be the reference.

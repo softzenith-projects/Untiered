@@ -6,6 +6,7 @@ import org.springframework.core.io.ClassPathResource
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
+import org.springframework.web.client.HttpServerErrorException
 import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
@@ -46,9 +47,29 @@ class GeminiInterviewAi(
      */
     private val inRoomTimeout: Duration? = null,
     private val recorder: AiSpendRecorder = AiSpendRecorder.NONE,
+    /**
+     * The Gemini 3.x thinking level for in-room calls, sent instead of the numeric budget, or null
+     * to keep the budget. See [ProviderConfig.thinkingLevel].
+     */
+    private val inRoomThinkingLevel: String? = null,
 ) : InterviewAi {
     private val log = LoggerFactory.getLogger(javaClass)
     private val restClient = restClientBuilder.build()
+
+    init {
+        require(inRoomThinkingLevel == null || inRoomThinkingLevel in THINKING_LEVELS) {
+            "Unknown Gemini thinking level '$inRoomThinkingLevel' for $reasoningModel; expected one of $THINKING_LEVELS."
+        }
+    }
+
+    /**
+     * Temperature, unless sampling parameters are switched off (design review, step 3: Google
+     * advises leaving temperature, topP and topK at their defaults on Gemini 3.x). Off, nothing is
+     * sent and the model's default applies. topP and topK have never been sent.
+     */
+    private fun MutableMap<String, Any>.temperature(value: Number) {
+        if (properties.sendSamplingParams) put("temperature", value)
+    }
 
     /**
      * For the calls a candidate sits in silence through: the question, the assessment of
@@ -128,7 +149,13 @@ class GeminiInterviewAi(
         val data = inline.path("data").asString()
         val mimeType = inline.path("mimeType").asString()?.takeIf { it.isNotBlank() } ?: "audio/L16;rate=24000"
         return billedResult(response, properties.speechModel) {
-            if (data.isNullOrBlank()) throw AiUnavailableException("Gemini returned no audio for the question.")
+            if (data.isNullOrBlank()) {
+                throw AiUnavailableException(
+                    "Gemini returned no audio for the question.",
+                    reason = AiFailureReason.EMPTY_RESPONSE,
+                    finishReason = finishReasonOf(response),
+                )
+            }
             playable(Base64.getDecoder().decode(data), mimeType)
         }
     }
@@ -203,7 +230,7 @@ class GeminiInterviewAi(
                         ),
                     ),
                 "tools" to listOf(mapOf("codeExecution" to emptyMap<String, Any>())),
-                "generationConfig" to mapOf("temperature" to 0),
+                "generationConfig" to buildMap<String, Any> { temperature(0) },
             )
         val response = call(reasoningModel, body)
         val outputs =
@@ -215,7 +242,13 @@ class GeminiInterviewAi(
                 .filter { it.has("codeExecutionResult") }
                 .map { it.path("codeExecutionResult").path("output").asString() ?: "" }
         return billedResult(response, reasoningModel) {
-            if (outputs.isEmpty()) throw AiUnavailableException("Gemini did not run the program on $reasoningModel.")
+            if (outputs.isEmpty()) {
+                throw AiUnavailableException(
+                    "Gemini did not run the program on $reasoningModel.",
+                    reason = AiFailureReason.EMPTY_RESPONSE,
+                    finishReason = finishReasonOf(response),
+                )
+            }
             SandboxRun(outputs)
         }
     }
@@ -246,7 +279,7 @@ class GeminiInterviewAi(
         val prompt = prompts.assessAnswer(brief, round, priorTurns, currentQuestion)
 
         val parts = listOf(textPart(prompt), inlineDataPart(answer.contentType, answer.bytes))
-        val (node, usage) = generateJson(reasoningModel, parts, prompts.schema("assess-answer"), Thinking.IN_THE_ROOM, inRoomClient)
+        val (node, usage) = generateJson(reasoningModel, parts, prompts.schema(round.variant.resource), Thinking.IN_THE_ROOM, inRoomClient)
         return decodedResult(node, usage, AnswerAssessment::class.java)
     }
 
@@ -300,7 +333,7 @@ class GeminiInterviewAi(
                         ),
                     ),
                 "tools" to listOf(mapOf("googleSearch" to emptyMap<String, Any>())),
-                "generationConfig" to mapOf("temperature" to 0.2),
+                "generationConfig" to buildMap<String, Any> { temperature(0.2) },
             )
         val response = call(reasoningModel, body)
         val candidate = response.path("candidates").path(0)
@@ -308,6 +341,8 @@ class GeminiInterviewAi(
             if (candidate.isMissingNode) {
                 throw AiUnavailableException(
                     "Gemini returned no answer to the employer search on $reasoningModel.",
+                    reason = AiFailureReason.EMPTY_RESPONSE,
+                    finishReason = finishReasonOf(response),
                 )
             }
             GroundedAnswer.read(candidate)
@@ -387,7 +422,7 @@ class GeminiInterviewAi(
         for (index in 0 until embeddings.size()) {
             val values = embeddings.path(index).path("values")
             if (!values.isArray || values.isEmpty) {
-                throw AiUnavailableException("Gemini returned an empty embedding from $model.")
+                throw AiUnavailableException("Gemini returned an empty embedding from $model.", reason = AiFailureReason.DECODE_FAILED)
             }
             vectors += FloatArray(values.size()) { i -> values.path(i).asDouble(0.0).toFloat() }
         }
@@ -395,12 +430,16 @@ class GeminiInterviewAi(
             // Silently short would mis-pair every vector after the gap with the wrong
             // question, and a deduplicator comparing the wrong things drops real questions
             // and keeps duplicates — so this fails rather than guesses.
-            throw AiUnavailableException("Gemini embedded ${vectors.size} of $expectedCount texts on $model.")
+            throw AiUnavailableException(
+                "Gemini embedded ${vectors.size} of $expectedCount texts on $model.",
+                reason = AiFailureReason.DECODE_FAILED,
+            )
         }
         vectors.firstOrNull()?.let {
             if (it.size != dimensions) {
                 throw AiUnavailableException(
                     "Gemini returned ${it.size}-dimension embeddings from $model; the pool column holds $dimensions.",
+                    reason = AiFailureReason.DECODE_FAILED,
                 )
             }
         }
@@ -438,7 +477,12 @@ class GeminiInterviewAi(
             AiResult(objectMapper.treeToValue(node, type), usage)
         } catch (ex: RuntimeException) {
             recordFailedAiCall(recorder, providerName, usage)
-            throw AiUnavailableException("Gemini returned an unusable ${type.simpleName} response.", ex)
+            throw AiUnavailableException(
+                "Gemini returned an unusable ${type.simpleName} response.",
+                ex,
+                reason = AiFailureReason.DECODE_FAILED,
+                finishReason = usage.finishReason,
+            )
         }
 
     private fun generateJson(
@@ -456,8 +500,14 @@ class GeminiInterviewAi(
                     buildMap<String, Any> {
                         put("responseMimeType", "application/json")
                         put("responseSchema", responseSchema)
-                        put("temperature", 0.7)
-                        thinkingBudget?.let { put("thinkingConfig", mapOf("thinkingBudget" to it)) }
+                        temperature(0.7)
+                        // A level or a budget, never both: the two together are a 400.
+                        thinkingBudget?.let {
+                            put(
+                                "thinkingConfig",
+                                inRoomThinkingLevel?.let { level -> mapOf("thinkingLevel" to level) } ?: mapOf("thinkingBudget" to it),
+                            )
+                        }
                     },
             )
         for (attempt in 1..2) {
@@ -473,13 +523,22 @@ class GeminiInterviewAi(
                     .asString()
             if (text.isNullOrBlank()) {
                 recordFailedAiCall(recorder, providerName, usageOf(response, model))
-                throw AiUnavailableException("Gemini returned an empty response for $model.")
+                throw AiUnavailableException(
+                    "Gemini returned an empty response for $model.",
+                    reason = AiFailureReason.EMPTY_RESPONSE,
+                    finishReason = finishReasonOf(response),
+                )
             }
             val parsed = runCatching { objectMapper.readTree(text) }
             if (parsed.isSuccess) return parsed.getOrThrow() to usageOf(response, model)
             recordFailedAiCall(recorder, providerName, usageOf(response, model))
             if (attempt == 2) {
-                throw AiUnavailableException("Gemini returned malformed JSON for $model twice.", parsed.exceptionOrNull())
+                throw AiUnavailableException(
+                    "Gemini returned malformed JSON for $model twice.",
+                    parsed.exceptionOrNull(),
+                    reason = AiFailureReason.MALFORMED_JSON,
+                    finishReason = finishReasonOf(response),
+                )
             }
             log.warn("Gemini returned malformed JSON for {}; retrying the same model once", model)
         }
@@ -506,7 +565,7 @@ class GeminiInterviewAi(
                 .body(body)
                 .retrieve()
                 .body(JsonNode::class.java)
-                ?: throw AiUnavailableException("Gemini returned no body for $model.")
+                ?: throw AiUnavailableException("Gemini returned no body for $model.", reason = AiFailureReason.EMPTY_RESPONSE)
         } catch (ex: HttpClientErrorException.TooManyRequests) {
             // Worth telling apart from every other failure. A 429 here is usually the
             // project's spend cap rather than request rate, and the two need completely
@@ -522,6 +581,7 @@ class GeminiInterviewAi(
                     "Gemini is rate-limiting requests to $model."
                 },
                 ex,
+                reason = if (quota) AiFailureReason.SPEND_CAP else AiFailureReason.RATE_LIMITED,
             )
         } catch (ex: HttpClientErrorException.NotFound) {
             // A retired model, almost always. It is worth shouting about because it does
@@ -535,12 +595,18 @@ class GeminiInterviewAi(
                 model,
                 ex,
             )
-            throw AiUnavailableException("Gemini model $model is not available.", ex, worthRetryingElsewhere = false)
+            throw AiUnavailableException(
+                "Gemini model $model is not available.",
+                ex,
+                worthRetryingElsewhere = false,
+                reason = AiFailureReason.MODEL_NOT_FOUND,
+            )
         } catch (ex: HttpClientErrorException) {
             throw AiUnavailableException(
                 "Gemini rejected the request to $model: ${ex.statusCode}.",
                 ex,
                 worthRetryingElsewhere = ex.statusCode.value() == 408,
+                reason = if (ex.statusCode.value() == 408) AiFailureReason.TIMEOUT else AiFailureReason.REQUEST_REJECTED,
             )
         } catch (ex: ResourceAccessException) {
             // Told apart so the log says "slow", not "broken": a deadline that fires is the
@@ -550,9 +616,14 @@ class GeminiInterviewAi(
             throw AiUnavailableException(
                 if (timedOut) "Gemini did not answer on $model in time." else "Gemini request to $model failed.",
                 ex,
+                reason = if (timedOut) AiFailureReason.TIMEOUT else AiFailureReason.UNREACHABLE,
             )
         } catch (ex: RestClientException) {
-            throw AiUnavailableException("Gemini request to $model failed.", ex)
+            throw AiUnavailableException(
+                "Gemini request to $model failed.",
+                ex,
+                reason = if (ex is HttpServerErrorException) AiFailureReason.PROVIDER_ERROR else AiFailureReason.UNREACHABLE,
+            )
         }
 
     private fun estimatedInputUsage(
@@ -609,7 +680,31 @@ class GeminiInterviewAi(
             thoughtTokens = usage.path("thoughtsTokenCount").asInt(0),
             audioTokens = modalityTokens(usage.path("promptTokensDetails"), "AUDIO"),
             cachedTokens = usage.path("cachedContentTokenCount").asInt(0),
+            finishReason = finishReasonOf(response),
         )
+    }
+
+    /**
+     * Why generation stopped: `STOP` on a normal answer, `MAX_TOKENS` when the output was cut
+     * off (the usual cause of malformed JSON), `SAFETY` and its relatives when it was withheld.
+     * A prompt blocked before generation has no candidate at all, only `promptFeedback`.
+     */
+    private fun finishReasonOf(response: JsonNode): String? {
+        val finish =
+            response
+                .path("candidates")
+                .path(0)
+                .path("finishReason")
+                .asString()
+                ?.takeIf { it.isNotBlank() }
+        val blocked =
+            response
+                .path("promptFeedback")
+                .path("blockReason")
+                .asString()
+                ?.takeIf { it.isNotBlank() }
+                ?.let { "blocked_$it" }
+        return AiFailureReason.normaliseFinishReason(finish ?: blocked)
     }
 
     private fun modalityTokens(
@@ -668,7 +763,10 @@ class GeminiInterviewAi(
 
     private fun requireConfigured() {
         if (!properties.configured) {
-            throw AiUnavailableException("GEMINI_API_KEY is not set; the interview AI is unavailable.")
+            throw AiUnavailableException(
+                "GEMINI_API_KEY is not set; the interview AI is unavailable.",
+                reason = AiFailureReason.NOT_CONFIGURED,
+            )
         }
     }
 
@@ -681,6 +779,9 @@ class GeminiInterviewAi(
          */
         const val WARMUP_PHASE = "warm-up"
         const val CLOSING_PHASE = "closing"
+
+        /** The values Gemini 3.x accepts for `thinkingLevel`, lower case as the REST examples write them. */
+        val THINKING_LEVELS = setOf("minimal", "low", "medium", "high")
     }
 
     private fun inlineDataPart(

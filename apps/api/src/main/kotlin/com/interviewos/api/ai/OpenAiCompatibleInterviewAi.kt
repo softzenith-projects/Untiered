@@ -142,7 +142,11 @@ class OpenAiCompatibleInterviewAi(
                 .asString()
         if (content.isNullOrBlank()) {
             recordFailedAiCall(recorder, providerName, usage)
-            throw AiUnavailableException("${config.name} returned an empty completion.")
+            throw AiUnavailableException(
+                "${config.name} returned an empty completion.",
+                reason = AiFailureReason.EMPTY_RESPONSE,
+                finishReason = usage.finishReason,
+            )
         }
 
         val parsed =
@@ -152,7 +156,12 @@ class OpenAiCompatibleInterviewAi(
                 // The model answered but not in the shape we need. Another provider might
                 // do better, so this is worth passing down the chain.
                 recordFailedAiCall(recorder, providerName, usage)
-                throw AiUnavailableException("${config.name} returned JSON we could not read.", e)
+                throw AiUnavailableException(
+                    "${config.name} returned JSON we could not read.",
+                    e,
+                    reason = AiFailureReason.DECODE_FAILED,
+                    finishReason = usage.finishReason,
+                )
             }
 
         return AiResult(parsed, usage)
@@ -164,6 +173,14 @@ class OpenAiCompatibleInterviewAi(
             model = config.model,
             promptTokens = usage.path("prompt_tokens").asInt(0),
             outputTokens = usage.path("completion_tokens").asInt(0),
+            finishReason =
+                AiFailureReason.normaliseFinishReason(
+                    response
+                        .path("choices")
+                        .path(0)
+                        .path("finish_reason")
+                        .asString(),
+                ),
         )
     }
 
@@ -177,9 +194,9 @@ class OpenAiCompatibleInterviewAi(
                 .body(body)
                 .retrieve()
                 .body(JsonNode::class.java)
-                ?: throw AiUnavailableException("${config.name} returned no body.")
+                ?: throw AiUnavailableException("${config.name} returned no body.", reason = AiFailureReason.EMPTY_RESPONSE)
         } catch (e: HttpClientErrorException.TooManyRequests) {
-            throw AiUnavailableException("${config.name} is rate-limited or out of quota.", e)
+            throw AiUnavailableException("${config.name} is rate-limited or out of quota.", e, reason = AiFailureReason.RATE_LIMITED)
         } catch (e: HttpClientErrorException) {
             // A 4xx that is not a quota refusal is our request being wrong, and it will
             // be just as wrong at the next provider.
@@ -187,16 +204,21 @@ class OpenAiCompatibleInterviewAi(
                 "${config.name} rejected the request: ${e.statusCode}.",
                 e,
                 worthRetryingElsewhere = false,
+                reason = AiFailureReason.REQUEST_REJECTED,
             )
         } catch (e: HttpServerErrorException) {
-            throw AiUnavailableException("${config.name} is having problems: ${e.statusCode}.", e)
+            throw AiUnavailableException("${config.name} is having problems: ${e.statusCode}.", e, reason = AiFailureReason.PROVIDER_ERROR)
         } catch (e: RestClientException) {
             val timedOut = generateSequence<Throwable>(e) { it.cause }.any { it is HttpTimeoutException || it is SocketTimeoutException }
             if (timedOut) {
                 val inputTokens = (body.toString().length / 4).coerceAtLeast(1)
                 recordFailedAiCall(recorder, providerName, AiUsage(config.model, inputTokens, 0), estimated = true)
             }
-            throw AiUnavailableException("${config.name} could not be reached.", e)
+            throw AiUnavailableException(
+                "${config.name} could not be reached.",
+                e,
+                reason = if (timedOut) AiFailureReason.TIMEOUT else AiFailureReason.UNREACHABLE,
+            )
         }
 
     /** Models fence JSON in markdown however firmly they are told not to. */
@@ -214,6 +236,7 @@ class OpenAiCompatibleInterviewAi(
         throw AiUnavailableException(
             "${config.name} cannot do $what; it is a text-only fallback.",
             worthRetryingElsewhere = false,
+            reason = AiFailureReason.UNSUPPORTED,
         )
 }
 
@@ -232,6 +255,17 @@ data class ProviderConfig(
      * on a provider that has a capable one behind it. See [InRoomDeadline].
      */
     val inRoomTimeout: Duration? = null,
+    /**
+     * Gemini 3.x `thinkingLevel` for the calls a candidate waits on (`minimal`, `low`, `medium`,
+     * `high`), sent **instead of** the numeric budget — the two together are a 400. Unset, the
+     * provider keeps the 128-token budget it has always had (interviewer design review, step 3).
+     *
+     * Per provider because support differs by model: `minimal` is documented for
+     * `gemini-3.1-flash-lite` and `gemini-3.5-flash-lite`, and rejected by some newer Flash
+     * models. Set it on a model only once that model is known to accept the value — a 400 here
+     * is indistinguishable from an outage, and on the last audio-capable provider it fails the round.
+     */
+    val thinkingLevel: String? = null,
 ) {
     val configured: Boolean
         get() = apiKey.isNotBlank() && model.isNotBlank()

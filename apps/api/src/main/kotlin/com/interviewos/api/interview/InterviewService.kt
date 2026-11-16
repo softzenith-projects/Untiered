@@ -4,6 +4,7 @@ import com.interviewos.api.ai.AiSpendContext
 import com.interviewos.api.ai.AiUnavailableException
 import com.interviewos.api.ai.AnswerAudio
 import com.interviewos.api.ai.AskedQuestion
+import com.interviewos.api.ai.AssessmentVariant
 import com.interviewos.api.ai.Intervention
 import com.interviewos.api.ai.InterviewAi
 import com.interviewos.api.ai.InterviewBrief
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
+import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -71,6 +73,7 @@ class InterviewService(
     private val activeLeases: ActiveLeaseRenewal,
     private val assignedRounds: AssignedRoundAdmission,
     transactionManager: PlatformTransactionManager,
+    private val interviewerRules: InterviewerRulesProperties = InterviewerRulesProperties(),
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val transactions = TransactionTemplate(transactionManager)
@@ -690,6 +693,8 @@ class InterviewService(
         /** The browser's measurement of this answer's speech timing, as JSON. See [AnswerTiming]. */
         timing: String? = null,
     ): SubmitAnswerResponse {
+        // The start of "answer uploaded â†’ next question ready", recorded on answer_response_ready.
+        val requestStartedAt = System.nanoTime()
         val claim = repository.claimAnswerRequest(sessionId, userId, turnIndex, requestId, ActiveLeaseRenewal.LEASE_SECONDS)
         when (claim.status) {
             TurnRequestClaimStatus.COMPLETED -> {
@@ -748,6 +753,33 @@ class InterviewService(
                     warmupTurns = if (session.workspace == null) roundType.warmupTurns(session.durationMinutes) else 0,
                 )
 
+            // A browser that resends an earlier recording gets the same transcript back, and the
+            // model is paid to hear it twice. Caught by hash before any call (design review, 2f).
+            // Not when the round is ending anyway, for the same reason as the echo check below.
+            val audioSha256 = sha256Hex(audio.bytes)
+            if (!endRound && !plan.outOfTime && audioSha256 in repository.answerAudioHashes(sessionId, userId)) {
+                val refused = interviewerRules.audioHashGuard
+                recordEvent(
+                    userId,
+                    sessionId,
+                    "echo_detected",
+                    turnIndex,
+                    requestId,
+                    outcome = if (refused) "applied" else "shadow",
+                    reason = "audio_hash",
+                )
+                if (refused) throw echoedAnswer(userId, sessionId, turnIndex, requestId)
+            }
+            // The server knows before the call whether this answer is the last one, and asks for a
+            // shape that only allows what that turn can do (design review, 2a).
+            val finalTurn = endRound || plan.mustConclude
+            val variant =
+                when {
+                    !interviewerRules.finalVariant -> AssessmentVariant.LEGACY
+                    finalTurn -> AssessmentVariant.FINAL
+                    else -> AssessmentVariant.TURN
+                }
+
             val resolution =
                 ArchetypeResolution(Archetype.fromDbValue(session.archetype), confidenceOf(session.archetypeConfidence))
             // The question planned for the next turn, if the round has one to offer. Never in the
@@ -755,13 +787,13 @@ class InterviewService(
             // already is the question. The first question of the round proper must be it.
             val askNow = plan.briefTheCandidate || mustMoveOn
             val background = resumeService.backgroundFor(userId)
-            val planned =
-                if (
-                    session.workspace == null &&
+            val plannedWasConsidered =
+                session.workspace == null &&
                     roundType != RoundType.CUSTOM_TOPIC &&
                     !plan.mustConclude &&
                     (plan.phase == TurnPhase.MAIN || askNow)
-                ) {
+            val planned =
+                if (plannedWasConsidered) {
                     plannedQuestion(userId, session, roundType, resolution.archetype, background?.tenure?.totalExperienceMonths)
                 } else {
                     null
@@ -795,6 +827,7 @@ class InterviewService(
                                     ),
                                     followUpLimit = roundType.followUpLimit,
                                     mustMoveOn = mustMoveOn,
+                                    variant = variant,
                                 ),
                             priorTurns = priorTurns,
                             currentQuestion = turn.questionText,
@@ -811,6 +844,8 @@ class InterviewService(
                         outcome = "failed",
                         errorType = "ai_unavailable",
                         durationMs = elapsedMillis(assessmentStartedAt),
+                        reason = e.reason.dbValue,
+                        finishReason = e.finishReason,
                     )
                     if (repository.failSessionAndRefundUsage(sessionId, userId)) {
                         recordEvent(
@@ -852,26 +887,29 @@ class InterviewService(
                 durationMs = elapsedMillis(assessmentStartedAt),
             )
 
-            // A transcript identical to the previous answer is a failed transcription. Nothing is
+            // A transcript identical to an earlier answer is a failed transcription. Nothing is
             // recorded, the claim is released in `finally`, and the room asks for the answer
             // again. Not when the round is ending anyway: the clock and the End button both
-            // mean there is no "again" to ask for.
-            if (!endRound && !plan.outOfTime &&
-                EchoedAnswer.isEcho(assessment.value.transcript, priorTurns.lastOrNull()?.answerTranscript)
-            ) {
+            // mean there is no "again" to ask for. The previous answer has always been checked;
+            // every earlier one is checked with `echo-all-answers` (design review, 2f).
+            val echo =
+                if (!endRound && !plan.outOfTime) {
+                    EchoedAnswer.matchOf(assessment.value.transcript, priorTurns.map { it.answerTranscript })
+                } else {
+                    null
+                }
+            if (echo != null) {
+                val refused = echo == EchoedAnswer.Match.PREVIOUS || interviewerRules.echoAllAnswers
                 recordEvent(
                     userId,
                     sessionId,
-                    "answer_rejected",
+                    "echo_detected",
                     turnIndex,
                     requestId,
-                    outcome = "failed",
-                    errorType = "echoed_transcript",
+                    outcome = if (refused) "applied" else "shadow",
+                    reason = echo.reason,
                 )
-                throw ApiException.unprocessable(
-                    "We didn't catch that answer clearly. Please give it again.",
-                    code = EchoedAnswer.ERROR_CODE,
-                )
+                if (refused) throw echoedAnswer(userId, sessionId, turnIndex, requestId)
             }
 
             val suggestedAction = normaliseAction(assessment.value.suggestedNextAction)
@@ -895,8 +933,27 @@ class InterviewService(
                     requestId = requestId,
                     action = nextAction,
                     intervention = intervention.wireValue,
+                    // Which model actually decided this turn: the primary, or the one behind it.
+                    model = assessment.usage.model,
+                    finishReason = assessment.usage.finishReason,
                 ),
             )
+            // Diagnostic only. The browser heard nothing loud enough to be speech; the model
+            // was still asked, and whatever it heard stands.
+            val measuredTiming = AnswerTiming.parse(timing, objectMapper)
+            if (measuredTiming != null && measuredTiming.firstSoundMs == null) {
+                recordEvent(userId, sessionId, "no_speech_heard", turnIndex, requestId, reason = "browser_silent")
+            }
+            // Diagnostic only, never a reason to refuse: short, slow and code-switched answers are
+            // all real answers. An implausible pace is a hint the transcript and the audio disagree.
+            AnswerPace.outOfRange(assessment.value.transcript, measuredTiming)?.let {
+                recordEvent(userId, sessionId, "answer_pace_out_of_range", turnIndex, requestId, reason = it)
+            }
+            // Rule events for the next line, written once the turn has committed.
+            val guardEvents = mutableListOf<GuardEvent>()
+            // What reached the candidate over the length limit, and where it came from. Counted
+            // after the transaction commits, so a rolled-back turn is not counted.
+            var overLimitReason: String? = null
             // Everything from here down writes to the database, and has to land together: the
             // answer record, then whichever of "mark the session completed" or "insert the
             // next turn" follows it. One `inTransaction` block, opened only now that the model
@@ -923,8 +980,9 @@ class InterviewService(
                                 deliveryNote = assessment.value.deliveryObservation?.takeIf { it.isNotBlank() },
                                 // Re-serialised from the validated value, so what is stored is only
                                 // ever a consistent measurement, never whatever the request carried.
-                                timingJson = AnswerTiming.parse(timing, objectMapper)?.let { objectMapper.writeValueAsString(it) },
+                                timingJson = measuredTiming?.let { objectMapper.writeValueAsString(it) },
                                 requestId = requestId,
+                                audioSha256 = audioSha256,
                             )
                         if (!recorded) throw sessionStateChanged()
 
@@ -965,14 +1023,34 @@ class InterviewService(
                             assessment.value.nextQuestionText
                                 ?.let { QuestionText.withoutPreamble(it) }
                                 ?.takeIf { it.isNotBlank() }
-                                ?: continuationQuestion(roundType, session.focusTopic, answered)
 
                         // Whether this turn asks the planned question is the engine's call, checked against
-                        // its stored wording; a drifted question is replaced after its lead-in.
-                        val asked =
-                            PlannedQuestionCheck.resolveText(planned?.text, askNow, assessment.value.askedPlannedQuestion, modelText)
-                        val askedFrom = planned?.takeIf { asked.askedPlanned }
-                        val nextText = asked.text
+                        // its stored wording; a drifted question is replaced after its lead-in. Then the
+                        // server's rules on the line itself (design review, 2b–2e).
+                        val choice =
+                            chooseNextLine(
+                                modelText = modelText,
+                                modelSaysAskedPlanned = assessment.value.askedPlannedQuestion,
+                                planned = planned,
+                                plannedWasConsidered = plannedWasConsidered,
+                                askNow = askNow,
+                                plan = plan,
+                                fallbackContext = FallbackContext(userId, session, roundType, resolution.archetype, background),
+                                answered = answered,
+                                askedSoFar = priorTurns.map { it.questionText } + turn.questionText,
+                                helpGiven = nextAction in HELP_ACTIONS || intervention.isAssisted,
+                                events = guardEvents,
+                            )
+                        val askedFrom = choice.askedFrom
+                        val nextText = choice.text
+                        if (nextText.length > QuestionLength.MAX_CHARS) {
+                            overLimitReason =
+                                when {
+                                    plan.briefTheCandidate -> "briefing"
+                                    askedFrom != null && nextText == askedFrom.text.trim() -> "planned_stored"
+                                    else -> "model_written"
+                                }
+                        }
                         val nextIndex = turnIndex + 1
                         val inserted =
                             repository.insertTurn(
@@ -987,9 +1065,11 @@ class InterviewService(
                                 provenanceJson =
                                     provenanceJson(
                                         company = session.companyName,
-                                        basis = assessment.value.questionBasis,
-                                        probes = assessment.value.questionProbes.takeIf { asked.faithful },
-                                        askedBecause = assessment.value.questionAskedBecause.takeIf { asked.faithful },
+                                        // What the model said about a question it did not get to ask describes
+                                        // nothing the candidate heard, so it goes with the replaced line.
+                                        basis = assessment.value.questionBasis.takeIf { !choice.replaced },
+                                        probes = assessment.value.questionProbes.takeIf { choice.faithful },
+                                        askedBecause = assessment.value.questionAskedBecause.takeIf { choice.faithful },
                                         bankQuestion = (askedFrom as? PlannedFrom.Bank)?.question,
                                         poolQuestion = askedFrom as? PlannedFrom.Pool,
                                     ),
@@ -1051,7 +1131,21 @@ class InterviewService(
                 durationMs = elapsedMillis(persistStartedAt),
             )
             durable = true
-            recordEvent(userId, sessionId, "answer_response_ready", turnIndex, requestId, outcome = "ready")
+            overLimitReason?.let {
+                recordEvent(userId, sessionId, "question_over_limit", turnIndex + 1, requestId, outcome = "ready", reason = it)
+            }
+            guardEvents.forEach {
+                recordEvent(userId, sessionId, it.type, turnIndex + 1, requestId, outcome = it.outcome, reason = it.reason)
+            }
+            recordEvent(
+                userId,
+                sessionId,
+                "answer_response_ready",
+                turnIndex,
+                requestId,
+                outcome = "ready",
+                durationMs = elapsedMillis(requestStartedAt),
+            )
             if (response.sessionComplete) {
                 recordEvent(userId, sessionId, "session_completed", turnIndex, requestId, outcome = "succeeded")
             }
@@ -1348,6 +1442,8 @@ class InterviewService(
         outcome: String? = null,
         errorType: String? = null,
         durationMs: Long? = null,
+        reason: String? = null,
+        finishReason: String? = null,
     ) {
         interviewEvents.record(
             InterviewEvent(
@@ -1359,11 +1455,153 @@ class InterviewService(
                 outcome = outcome,
                 errorType = errorType,
                 durationMs = durationMs,
+                reason = reason,
+                finishReason = finishReason,
             ),
         )
     }
 
     private fun elapsedMillis(startedAt: Long): Long = (System.nanoTime() - startedAt) / 1_000_000
+
+    /** Records a refused answer and returns the error the room shows: "please give it again". */
+    private fun echoedAnswer(
+        userId: UUID,
+        sessionId: UUID,
+        turnIndex: Int,
+        requestId: UUID,
+    ): ApiException {
+        recordEvent(userId, sessionId, "answer_rejected", turnIndex, requestId, outcome = "failed", errorType = "echoed_transcript")
+        return ApiException.unprocessable("We didn't catch that answer clearly. Please give it again.", code = EchoedAnswer.ERROR_CODE)
+    }
+
+    /** A rule event for the next line, held until the turn commits. */
+    private data class GuardEvent(
+        val type: String,
+        val outcome: String,
+        val reason: String,
+    )
+
+    /** What a fallback needs to look up a planned question the turn did not already have. */
+    private data class FallbackContext(
+        val userId: UUID,
+        val session: SessionRow,
+        val roundType: RoundType,
+        val archetype: Archetype,
+        val background: CandidateBackground?,
+    )
+
+    /** The line the candidate hears next, and where it came from. */
+    private data class NextLine(
+        val text: String,
+        /** The planned question this line asks, when it asks one. Its id is stored with the turn. */
+        val askedFrom: PlannedFrom?,
+        /** False when the words are not the model's own; its notes on the question are then dropped. */
+        val faithful: Boolean,
+        /** True when a server rule replaced the model's line altogether. */
+        val replaced: Boolean = false,
+    )
+
+    /**
+     * The next line, after the server's rules have had their say (design review, step 2).
+     *
+     * Every rule in [TurnGuards] runs on every turn. A rule whose flag is off changes nothing and
+     * writes a `shadow` event; one whose flag is on replaces the line with the round's planned
+     * question — the one the selector already holds, or one looked up now — and writes `applied`.
+     * With no stored question to fall back on, the generic continuation is used and the
+     * fallback event's outcome is `unavailable`: the alert that this round had nothing to give.
+     * A custom-topic round's continuation is written around its own topic, so for it that is
+     * the intended fallback, not an alert.
+     *
+     * With every flag off the line is exactly what it was before these rules existed.
+     */
+    private fun chooseNextLine(
+        modelText: String?,
+        modelSaysAskedPlanned: Boolean?,
+        planned: PlannedFrom?,
+        plannedWasConsidered: Boolean,
+        askNow: Boolean,
+        plan: TurnPlan,
+        fallbackContext: FallbackContext,
+        answered: Int,
+        askedSoFar: List<String>,
+        helpGiven: Boolean,
+        events: MutableList<GuardEvent>,
+    ): NextLine {
+        val rules = interviewerRules
+        val resolved = modelText?.let { PlannedQuestionCheck.resolveText(planned?.text, askNow, modelSaysAskedPlanned, it) }
+        val facts =
+            TurnGuards.TurnFacts(
+                briefing = plan.briefTheCandidate,
+                askedSoFar = askedSoFar,
+                reAskAllowed = helpGiven && !TurnGuards.wasReAsk(askedSoFar, rules.repeatThreshold),
+            )
+        val violations =
+            TurnGuards.violations(
+                TurnGuards.NextLine(resolved?.text, resolved?.askedPlanned == true, planned?.text),
+                facts,
+                rules,
+            )
+        violations
+            .filter { it != TurnGuards.Rule.NO_QUESTION }
+            .forEach { events += GuardEvent(it.event, if (it.enabledIn(rules)) "applied" else "shadow", it.reason) }
+
+        val applied = violations.firstOrNull { it.enabledIn(rules) }
+        val roundType = fallbackContext.roundType
+        if (applied == null) {
+            if (resolved != null) return NextLine(resolved.text, planned?.takeIf { resolved.askedPlanned }, resolved.faithful)
+            // No question, and the planned fallback is off: the line it has always been.
+            events += GuardEvent(TurnGuards.Rule.NO_QUESTION.event, "shadow", TurnGuards.Rule.NO_QUESTION.reason)
+            val filler =
+                PlannedQuestionCheck.resolveText(
+                    planned?.text,
+                    askNow,
+                    modelSaysAskedPlanned,
+                    continuationQuestion(roundType, fallbackContext.session.focusTopic, answered),
+                )
+            return NextLine(filler.text, planned?.takeIf { filler.askedPlanned }, filler.faithful)
+        }
+
+        val fallback = planned ?: if (plannedWasConsidered) null else fallbackPlanned(fallbackContext, plan)
+        if (fallback != null) {
+            events += GuardEvent("planned_fallback_used", "applied", applied.reason)
+            return NextLine(fallback.text.trim(), fallback, faithful = false, replaced = true)
+        }
+        val outcome = if (roundType == RoundType.CUSTOM_TOPIC) "applied" else "unavailable"
+        events += GuardEvent("planned_fallback_used", outcome, applied.reason)
+        return NextLine(
+            continuationQuestion(roundType, fallbackContext.session.focusTopic, answered),
+            askedFrom = null,
+            faithful = false,
+            replaced = true,
+        )
+    }
+
+    /**
+     * A planned question for a turn that was not offered one: the closing phase, and turns where
+     * the model was not due to move on. Not in the warm-up, whose beats are the server's own;
+     * not in a workspace round, whose material already is the question; not in a custom-topic
+     * round, which has no bank or pool.
+     */
+    private fun fallbackPlanned(
+        context: FallbackContext,
+        plan: TurnPlan,
+    ): PlannedFrom? {
+        if (context.session.workspace != null || context.roundType == RoundType.CUSTOM_TOPIC) return null
+        if (plan.phase == TurnPhase.WARMUP) return null
+        return plannedQuestion(
+            context.userId,
+            context.session,
+            context.roundType,
+            context.archetype,
+            context.background?.tenure?.totalExperienceMonths,
+        )
+    }
+
+    private fun sha256Hex(bytes: ByteArray): String =
+        MessageDigest
+            .getInstance("SHA-256")
+            .digest(bytes)
+            .joinToString("") { "%02x".format(it) }
 
     private fun persistAnswerResponse(
         sessionId: UUID,
@@ -1677,6 +1915,7 @@ class InterviewService(
         stage: CandidateStage? = null,
         followUpLimit: Int = 2,
         mustMoveOn: Boolean = false,
+        variant: AssessmentVariant = AssessmentVariant.LEGACY,
     ) = RoundContext(
         phase =
             when (phase) {
@@ -1692,6 +1931,7 @@ class InterviewService(
         mustConclude = mustConclude,
         followUpLimit = followUpLimit,
         mustMoveOn = mustMoveOn,
+        variant = variant,
     )
 
     private fun TurnRow.toTranscript() =
@@ -1760,6 +2000,9 @@ class InterviewService(
 
         val DRAFT_CONFIDENCES = setOf("high", "medium", "low")
         val FOLLOW_UP_ACTIONS = setOf("follow_up", "probe", "challenge")
+
+        /** Actions where the interviewer gave the candidate a hand; the question may be asked again, reworded. */
+        val HELP_ACTIONS = setOf("redirect", "hint", "guide")
 
         /**
          * What a drafted round becomes when the one the model chose is not run at campus

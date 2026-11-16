@@ -1046,6 +1046,8 @@ class SessionRepository(
         requestId: UUID,
         /** Validated [AnswerTiming] as JSON, or null when the browser measured none. */
         timingJson: String? = null,
+        /** SHA-256 of the upload, hex. Only the digest is kept; the audio is not. */
+        audioSha256: String? = null,
     ): Boolean =
         jdbcClient
             .sql(
@@ -1060,7 +1062,8 @@ class SessionRepository(
                        intervention = cast(:intervention as public.intervention_type),
                        intervention_note = :note,
                        delivery_note = :delivery,
-                       answer_timing = cast(:timing as jsonb)
+                       answer_timing = cast(:timing as jsonb),
+                       answer_audio_sha256 = :audio_sha
                  where session_id = :s and user_id = :u and turn_index = :i
                    and answered_at is null
                    and answer_request_id = :request
@@ -1078,11 +1081,31 @@ class SessionRepository(
             .param("note", interventionNote)
             .param("delivery", deliveryNote)
             .param("timing", timingJson)
+            .param("audio_sha", audioSha256)
             .param("request", requestId)
             .param("s", sessionId)
             .param("u", userId)
             .param("i", turnIndex)
             .update() == 1
+
+    /** Hashes of the answers already recorded in this session, to catch a resent recording. */
+    fun answerAudioHashes(
+        sessionId: UUID,
+        userId: UUID,
+    ): Set<String> =
+        jdbcClient
+            .sql(
+                """
+                select answer_audio_sha256
+                  from public.session_turns
+                 where session_id = :s and user_id = :u and answer_audio_sha256 is not null
+                """.trimIndent(),
+            ).param("s", sessionId)
+            .param("u", userId)
+            .query(String::class.java)
+            .set()
+            .filterNotNull()
+            .toSet()
 
     fun completeAnswerRequest(
         sessionId: UUID,

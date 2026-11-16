@@ -9,6 +9,7 @@ import com.interviewos.api.ai.InterviewAi
 import com.interviewos.api.ai.InterviewBrief
 import com.interviewos.api.ai.OfferedHint
 import com.interviewos.api.ai.ReportContent
+import com.interviewos.api.ai.RoundContext
 import com.interviewos.api.bank.BankQuestion
 import com.interviewos.api.bank.CompanyDirectory
 import com.interviewos.api.bank.QuestionBankRepository
@@ -53,6 +54,8 @@ class BankRoundHarness(
         mock(PlatformTransactionManager::class.java) { invocation ->
             if (invocation.method.name == "getTransaction") SimpleTransactionStatus() else null
         },
+    /** The server's turn rules (design review, step 2). All off by default, as in production. */
+    interviewerRules: InterviewerRulesProperties = InterviewerRulesProperties(),
 ) {
     val mapper: JsonMapper = JsonMapper.builder().addModule(KotlinModule.Builder().build()).build()
     val repository: SessionRepository =
@@ -114,8 +117,14 @@ class BankRoundHarness(
 
     /** What the model is asked, in order. */
     val briefs = mutableListOf<InterviewBrief>()
+
+    /** The round context of every assessment, in order: which variant, which phase. */
+    val assessedRounds = mutableListOf<RoundContext>()
     var case: ComposedCase? = null
     var assessment: AnswerAssessment? = null
+
+    /** What the assessment is reported as having cost, and which model served it. */
+    var assessmentUsage: AiUsage = AiUsage.none("test")
     var report: ReportContent? = null
     var hint: OfferedHint? = null
 
@@ -136,14 +145,35 @@ class BankRoundHarness(
             brief?.let { briefs += it }
             onAiCall?.invoke(invocation.method.name)
             when (invocation.method.name) {
-                "composeCase" -> AiResult(checkNotNull(case), AiUsage.none("test"))
-                "composeRound" -> AiResult(checkNotNull(composedRound), AiUsage.none("test"))
-                "assessAnswer" -> AiResult(checkNotNull(assessment), AiUsage.none("test"))
-                "offerHint" -> AiResult(checkNotNull(hint), AiUsage.none("test"))
-                "composeReport" -> AiResult(checkNotNull(report), AiUsage.none("test"))
-                else -> RETURNS_DEFAULTS.answer(invocation)
+                "composeCase" -> {
+                    AiResult(checkNotNull(case), AiUsage.none("test"))
+                }
+
+                "composeRound" -> {
+                    AiResult(checkNotNull(composedRound), AiUsage.none("test"))
+                }
+
+                "assessAnswer" -> {
+                    assessedRounds += invocation.arguments[1] as RoundContext
+                    AiResult(checkNotNull(assessment), assessmentUsage)
+                }
+
+                "offerHint" -> {
+                    AiResult(checkNotNull(hint), AiUsage.none("test"))
+                }
+
+                "composeReport" -> {
+                    AiResult(checkNotNull(report), AiUsage.none("test"))
+                }
+
+                else -> {
+                    RETURNS_DEFAULTS.answer(invocation)
+                }
             }
         }
+
+    /** Every interview event the service wrote, in order. */
+    val events = mutableListOf<InterviewEvent>()
 
     val service =
         InterviewService(
@@ -164,10 +194,11 @@ class BankRoundHarness(
             resumeService = resumeService,
             roundWorkspaceComposer = RoundWorkspaceComposer(ai, mapper, ProblemVerifier(ai, mapper), poolMaterial),
             codeRunner = mock(CodeRunner::class.java),
-            interviewEvents = InterviewEventRecorder.NONE,
+            interviewEvents = InterviewEventRecorder { events += it },
             activeLeases = activeLeases,
             assignedRounds = assignedRounds,
             transactionManager = transactionManager,
+            interviewerRules = interviewerRules,
         )
 
     val reportService = ReportService(repository, ai, mapper, RetentionProperties(), resumeService, activeLeases)
