@@ -14,7 +14,7 @@ data class GeminiProperties(
     val apiKey: String = "",
     val baseUrl: String = "https://generativelanguage.googleapis.com/v1beta",
     val reasoningModel: String = "gemini-3.6-flash",
-    val speechModel: String = "gemini-2.5-flash-preview-tts",
+    val speechModel: String = "gemini-3.8-flash-lite-tts",
     /** One of Gemini's prebuilt TTS voices. */
     val voiceName: String = "Kore",
     /**

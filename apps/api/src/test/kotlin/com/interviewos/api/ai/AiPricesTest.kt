@@ -95,6 +95,16 @@ class AiPricesTest {
     }
 
     @Test
+    fun `the current voice model is priced, not guessed`() {
+        val tenSeconds = AiUsage("gemini-3.8-flash-lite-tts", promptTokens = 30, outputTokens = 250)
+
+        assertTrue(AiPrices.isKnown("gemini-3.8-flash-lite-tts"))
+        assertTrue(AiPrices.isKnown("gemini-3.8-flash-tts"))
+        // 250 at $6/M plus 30 at $0.50/M.
+        assertEquals(1515, AiPrices.microUsd(tenSeconds))
+    }
+
+    @Test
     fun `usages add up across a round without losing the parts that are priced separately`() {
         val first = AiUsage("gemini-2.5-flash-lite", 100, 10, thoughtTokens = 1, audioTokens = 20, cachedTokens = 30)
         val second = AiUsage("gemini-2.5-flash-lite", 200, 20, thoughtTokens = 2, audioTokens = 40, cachedTokens = 60)

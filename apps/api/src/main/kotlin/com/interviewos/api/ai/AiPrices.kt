@@ -61,6 +61,11 @@ object AiPrices {
             // sound. That is the whole reason a long question costs real money: the bill
             // scales with how long the interviewer talks, not with how hard the question was.
             "gemini-2.5-flash-preview-tts" to Price(text = 0.50, audio = 10.00, output = 10.00, cached = 0.50),
+            // The 3.8 TTS models replace the two above (shutdown 17 November 2026). Prices are
+            // the rates through 31 December 2026; both double on 1 January 2027, when these
+            // rows must change (flash-tts 1.00 / 18.00, flash-lite-tts 1.00 / 12.00).
+            "gemini-3.8-flash-tts" to Price(text = 0.50, audio = 9.00, output = 9.00, cached = 0.50),
+            "gemini-3.8-flash-lite-tts" to Price(text = 0.50, audio = 6.00, output = 6.00, cached = 0.50),
             "gemini-3.1-flash-tts-preview" to Price(text = 1.00, audio = 20.00, output = 20.00, cached = 1.00),
             // Embeddings, used only by the question pool's deduplicator. Input-priced;
             // there is no output to bill, and the output rate is set to the input rate
