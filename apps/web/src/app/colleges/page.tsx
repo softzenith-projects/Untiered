@@ -68,11 +68,22 @@ export default function CollegesPage() {
           <Link href="/" className="inline-flex min-h-11 items-center focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" aria-label="Untiered home">
             <BrandWordmark />
           </Link>
-          <SessionLink
-            signedIn={{ href: "/dashboard", label: "Dashboard" }}
-            signedOut={{ href: "/login", label: "Sign in" }}
-            className="rounded-lg px-3 py-2 text-caption font-semibold text-accent transition-colors hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          />
+          {/* This page is for placement cells, so its sign-in is the college staff portal, not the student one. */}
+          {campusEnabled() ? (
+            <SessionLink
+              signedIn={{ href: "/campus" as Route, label: "College portal" }}
+              signedOut={{ href: "/login?next=/campus" as Route, label: "College staff sign in" }}
+              className={buttonStyles({ variant: "secondary", size: "sm" })}
+            />
+          ) : leadsEnabled ? (
+            <a href={`#${CAMPUS_REGISTER_ANCHOR}`} className={buttonStyles({ variant: "secondary", size: "sm" })}>
+              Register your college
+            </a>
+          ) : (
+            <a href={CAMPUS_CONTACT_HREF} className={buttonStyles({ variant: "secondary", size: "sm" })}>
+              Talk to us about a pilot
+            </a>
+          )}
         </div>
       </header>
 
@@ -80,7 +91,7 @@ export default function CollegesPage() {
         <section className="relative overflow-hidden bg-navy text-on-navy">
           <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-0 opacity-40" />
           <div className="relative mx-auto flex layout-content flex-col gap-6 px-4 py-14 sm:px-6 lg:py-20">
-            <span className="pill pill-navy w-fit">{CAMPUS_PRODUCT_NAME} · For colleges</span>
+            <span className="pill pill-navy w-fit">{CAMPUS_PRODUCT_NAME} · For Colleges</span>
             <h1 className="max-w-3xl text-hero text-balance text-on-navy">
               Every student in the batch deserves a <span className="text-accent-on-navy">practice interview.</span>
             </h1>
@@ -105,14 +116,6 @@ export default function CollegesPage() {
                 </Link>
               ) : null}
             </div>
-            {campusEnabled() ? (
-              <Link
-                href={"/login?next=/campus" as Route}
-                className="w-fit text-caption font-semibold text-accent-on-navy underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-navy"
-              >
-                College staff? Sign in to your portal
-              </Link>
-            ) : null}
           </div>
         </section>
 

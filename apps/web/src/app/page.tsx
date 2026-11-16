@@ -94,14 +94,25 @@ function SiteHeader({ mockInterviewsEnabled, coursesEnabled }: { mockInterviewsE
             <Link href={"/courses" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">Courses</Link>
           ) : null}
           <Link href={"/pricing" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">Pricing</Link>
-          <Link href={"/colleges" as Route} className="inline-flex min-h-11 items-center text-caption font-medium text-ink-muted hover:text-ink">For colleges</Link>
         </nav>
-        <HeaderActions
-          cta={{
-            href: coursesEnabled && !mockInterviewsEnabled ? "/courses" : mockInterviewsEnabled ? "/interview/new" : "/login",
-            label: mockInterviewsEnabled ? "Start free" : coursesEnabled ? "Start learning" : "Sign in",
-          }}
-        />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            href={"/colleges" as Route}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent bg-accent-wash px-3 py-2 text-caption font-semibold text-accent transition-colors hover:bg-accent hover:text-accent-contrast focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:px-4"
+          >
+            <svg aria-hidden="true" viewBox="0 0 20 20" className="hidden size-4 sm:block" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+              <path d="M10 3 2 7l8 4 8-4-8-4Z" />
+              <path d="M5 8.5V13c0 1.1 2.2 2.5 5 2.5s5-1.4 5-2.5V8.5" />
+            </svg>
+            For Colleges
+          </Link>
+          <HeaderActions
+            cta={{
+              href: coursesEnabled && !mockInterviewsEnabled ? "/courses" : mockInterviewsEnabled ? "/interview/new" : "/login",
+              label: mockInterviewsEnabled ? "Start free" : coursesEnabled ? "Start learning" : "Sign in",
+            }}
+          />
+        </div>
       </div>
     </header>
   );
