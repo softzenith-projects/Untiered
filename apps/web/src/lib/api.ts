@@ -117,6 +117,56 @@ function reportIfServerFault(path: string, error: ApiRequestError): ApiRequestEr
   return error;
 }
 
+/**
+ * The API gave no answer the page could read. Either the request never connected, or
+ * something in front of the API answered without CORS headers: Caddy's bare 503s while the
+ * API was frozen for seven hours on 17 November 2026, which the browser surfaces only as
+ * "Failed to fetch". Nothing reached Sentry during that outage; this is what reaches it now.
+ */
+export class ApiUnreachableError extends Error {
+  readonly path: string;
+
+  constructor(path: string, cause: unknown) {
+    super(`The API could not be reached (${path}).`, { cause });
+    this.name = "ApiUnreachableError";
+    this.path = path;
+  }
+}
+
+/** One report per tab per minute: an outage is one issue with a count, not a flood. */
+const UNREACHABLE_REPORT_INTERVAL_MS = 60_000;
+let lastUnreachableReportAt = Number.NEGATIVE_INFINITY;
+
+/**
+ * Reports a request that got no readable answer, then lets the caller rethrow the original
+ * error so the page behaves as before. Not reported: a request the page itself cancelled,
+ * or one made while the browser knows it is offline, since neither is the API's fault.
+ */
+function reportIfUnreachable(path: string, error: unknown, signal?: AbortSignal): void {
+  if (signal?.aborted) return;
+  if (error instanceof DOMException && error.name === "AbortError") return;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  const now = Date.now();
+  if (now - lastUnreachableReportAt < UNREACHABLE_REPORT_INTERVAL_MS) return;
+  lastUnreachableReportAt = now;
+  Sentry.captureException(new ApiUnreachableError(path, error), {
+    level: "error",
+    tags: { api_path: path, api_reachable: "no" },
+    // Every path, one issue: the question is "is the API reachable", not "is /me".
+    fingerprint: ["api-unreachable"],
+  });
+}
+
+/** `fetch`, reporting to Sentry when it gets no answer at all. */
+async function fetchReported(path: string, url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (error) {
+    reportIfUnreachable(path, error, init.signal ?? undefined);
+    throw error;
+  }
+}
+
 export class ApiRequestError extends Error {
   readonly status: number;
   readonly code: string;
@@ -179,19 +229,26 @@ async function fetchRead(url: string, init: RequestInit, signal?: AbortSignal): 
 }
 
 async function apiGet<T>(path: string, { accessToken, signal }: ApiGetOptions): Promise<T> {
-  const response = await fetchRead(
-    `${env.apiBaseUrl}${path}`,
-    {
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${accessToken}`,
+  let response: Response;
+  try {
+    response = await fetchRead(
+      `${env.apiBaseUrl}${path}`,
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        // The API is the authority on freshness; never serve a cached profile.
+        cache: "no-store",
+        ...(signal ? { signal } : {}),
       },
-      // The API is the authority on freshness; never serve a cached profile.
-      cache: "no-store",
-      ...(signal ? { signal } : {}),
-    },
-    signal,
-  );
+      signal,
+    );
+  } catch (error) {
+    // Only after every repeat has failed: a blip that cleared on retry is not an outage.
+    reportIfUnreachable(path, error, signal);
+    throw error;
+  }
 
   if (!response.ok) {
     const envelope = (await response.json().catch(() => null)) as (ApiError & { code?: string }) | null;
@@ -215,7 +272,7 @@ async function apiSend<T>(
   body?: unknown,
 ): Promise<T> {
   const isForm = body instanceof FormData;
-  const response = await fetch(`${env.apiBaseUrl}${path}`, {
+  const response = await fetchReported(path, `${env.apiBaseUrl}${path}`, {
     method,
     headers: {
       Accept: "application/json",
@@ -272,7 +329,9 @@ export function updateEmailPreferences(accessToken: string, choices: EmailPrefer
 }
 
 export async function unsubscribeEmail(token: string): Promise<void> {
-  const response = await fetch(`${env.apiBaseUrl}/api/v1/email/unsubscribe/${encodeURIComponent(token)}`, { method: "POST" });
+  const response = await fetchReported("/api/v1/email/unsubscribe", `${env.apiBaseUrl}/api/v1/email/unsubscribe/${encodeURIComponent(token)}`, {
+    method: "POST",
+  });
   if (!response.ok) throw new Error("Could not unsubscribe right now.");
 }
 
@@ -782,7 +841,7 @@ export function uploadOrgLogo(accessToken: string, orgId: string, file: File): P
  * the college, so there is nothing to return but success or the error.
  */
 export async function submitCollegeLead(body: LeadRequest): Promise<void> {
-  const response = await fetch(`${env.apiBaseUrl}/api/v1/campus/leads`, {
+  const response = await fetchReported("/api/v1/campus/leads", `${env.apiBaseUrl}/api/v1/campus/leads`, {
     method: "POST",
     headers: { Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -1183,7 +1242,7 @@ export async function recordBatchReportViewed(accessToken: string, orgId: string
  */
 export async function downloadStudentsCsv(orgId: string, accessToken: string, filter: ReadinessFilter = {}): Promise<Blob> {
   const { batchId, departmentId, band, completion } = filter;
-  const response = await fetch(`${env.apiBaseUrl}${campusOrg(orgId)}/exports/students.csv${query({ batchId, departmentId, band, completion })}`, {
+  const response = await fetchReported("/exports/students.csv", `${env.apiBaseUrl}${campusOrg(orgId)}/exports/students.csv${query({ batchId, departmentId, band, completion })}`, {
     headers: { Accept: "text/csv", Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
