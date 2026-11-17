@@ -65,7 +65,6 @@ class SesEmailSender(
         // subscription: it has no unsubscribe, only a link to the preferences that govern the rest.
         val transactional = isWelcome || category == "campus_assignment"
         val safeAccountLink = escapeHtml(accountLink)
-        val safeLogoUrl = escapeHtml("${properties.publicBaseUrl.trimEnd('/')}/brand/wordmark-light.png")
         val preferencesLink = "${properties.publicBaseUrl.trimEnd('/')}/profile#account"
         val unsubscribePage = "${properties.publicBaseUrl.trimEnd('/')}/unsubscribe?token=$unsubscribeToken"
         val text =
@@ -78,7 +77,7 @@ class SesEmailSender(
             }
         val footer =
             if (isWelcome) {
-                "Talent has no tiers. No tiers attached."
+                BRAND_FOOTER
             } else if (category == "campus_assignment") {
                 "<a href=\"${escapeHtml(preferencesLink)}\">Manage email preferences</a>"
             } else {
@@ -87,17 +86,12 @@ class SesEmailSender(
             }
         val header =
             if (isWelcome) {
-                """
-                <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #e5e7ef;margin-bottom:28px">
-                  <img src="$safeLogoUrl" alt="Untiered" width="230" style="display:block;width:230px;max-width:80%;height:auto;margin:auto">
-                </div>
-                <p style="display:inline-block;margin:0 0 14px;padding:6px 12px;border-radius:999px;background:#f0ebff;color:#6948e8;font-size:11px;font-weight:800;letter-spacing:.12em">TALENT HAS NO TIERS</p>
-                """.trimIndent()
+                brandedHeader()
             } else {
                 "<p style=\"font-size:14px;font-weight:800;letter-spacing:.12em;color:#1865db\">UNTIERED</p>"
             }
         val buttonLabel = if (isWelcome) "Start practising →" else escapeHtml(accountLabel(category))
-        val buttonColor = if (isWelcome) "#6948e8" else "#1865db"
+        val buttonColor = if (isWelcome) BRAND_PURPLE else "#1865db"
         val footerAlignment = if (isWelcome) "center" else "left"
         val html =
             """
@@ -125,7 +119,10 @@ class SesEmailSender(
      * A one-off transactional email to someone who may have no account yet � a college
      * invite. No account link and no unsubscribe footer: there is no account or preference to
      * point at, and the message is the invitation itself. [body] is plain text; [actionUrl] is
-     * the single button.
+     * the single button, with the raw link under it for clients that strip buttons.
+     *
+     * It wears the welcome email's branding (wordmark, pill, purple button, centred footer), so
+     * the first thing a college sees from us looks like the rest of what we send.
      */
     fun sendTransactional(
         address: String,
@@ -146,26 +143,37 @@ class SesEmailSender(
                 appendLine()
                 appendLine("$actionLabel: $actionUrl")
             }
+        val safeActionUrl = escapeHtml(actionUrl)
         val html =
             """
             <!doctype html>
             <html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
             <body style="margin:0;background:#f3f7ff;padding:20px 8px">
-              <main style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px 24px;background:#fff;border:1px solid #d8e3f2;border-radius:16px;color:#17315a;line-height:1.6">
-                <p style="font-size:14px;font-weight:800;letter-spacing:.12em;color:#1865db">UNTIERED</p>
+              <main style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px 24px;background:#fff;border:1px solid #e5e7ef;border-radius:16px;color:#25304a;line-height:1.7">
+                ${brandedHeader()}
                 <h1 style="font-size:28px;line-height:1.2">${escapeHtml(subject)}</h1>
                 <p style="font-size:16px;white-space:pre-wrap">${escapeHtml(body)}</p>
-                <p><a href="${escapeHtml(
-                actionUrl,
-            )}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#1865db;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(
+                <p style="text-align:center;margin:28px 0"><a href="$safeActionUrl" style="display:inline-block;padding:13px 22px;border-radius:10px;background:$BRAND_PURPLE;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(
                 actionLabel,
-            )}</a></p>
-                <p style="font-size:13px;color:#5b6d89;word-break:break-all">${escapeHtml(actionUrl)}</p>
+            )} →</a></p>
+                <p style="text-align:center;font-size:13px;color:#68738a;word-break:break-all">Or open this link: <a href="$safeActionUrl" style="color:$BRAND_PURPLE">$safeActionUrl</a></p>
+                <p style="margin-top:32px;border-top:1px solid #e5e7ef;padding-top:16px;text-align:center;font-size:13px;color:#68738a">$BRAND_FOOTER</p>
               </main>
             </body></html>
             """.trimIndent()
         helper.setText(text, html)
         deliver(mime, address)
+    }
+
+    /** The wordmark over a rule, then the "Talent has no tiers" pill: the welcome email's top. */
+    private fun brandedHeader(): String {
+        val safeLogoUrl = escapeHtml("${properties.publicBaseUrl.trimEnd('/')}/brand/wordmark-light.png")
+        return """
+            <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #e5e7ef;margin-bottom:28px">
+              <img src="$safeLogoUrl" alt="Untiered" width="230" style="display:block;width:230px;max-width:80%;height:auto;margin:auto">
+            </div>
+            <p style="display:inline-block;margin:0 0 14px;padding:6px 12px;border-radius:999px;background:#f0ebff;color:$BRAND_PURPLE;font-size:11px;font-weight:800;letter-spacing:.12em">TALENT HAS NO TIERS</p>
+            """.trimIndent()
     }
 
     private fun accountPath(category: String): String =
@@ -191,6 +199,11 @@ class SesEmailSender(
                 .content(EmailContent.builder().raw(RawMessage.builder().data(SdkBytes.fromByteArray(bytes)).build()).build())
                 .build(),
         )
+    }
+
+    private companion object {
+        const val BRAND_PURPLE = "#6948e8"
+        const val BRAND_FOOTER = "Talent has no tiers. No tiers attached."
     }
 }
 
