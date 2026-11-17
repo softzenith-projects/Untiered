@@ -7,9 +7,22 @@ spring:
     url: ${DATABASE_URL}
     username: ${DATABASE_USER}
     password: ${DATABASE_PASSWORD}
+  # Platform threads, not virtual ones. On Java 21 a virtual thread that blocks inside a
+  # `synchronized` block holds its carrier, and this VM has about two carriers. On
+  # 17 November 2026 a burst of ten requests from one new account's first dashboard load
+  # pinned both, the threads holding the database connections could never be scheduled
+  # again to give them back, and the API answered nothing (health checks included) for
+  # seven hours. Platform threads cannot deadlock that way: a request that waits too long
+  # for a connection fails after Hikari's 30 seconds instead. Revisit on Java 24+ (JEP 491).
   threads:
     virtual:
-      enabled: true
+      enabled: false
+  task:
+    scheduling:
+      # Without virtual threads Spring's scheduler has one thread, and sixteen @Scheduled
+      # jobs (emails, leases, purges) would queue behind whichever is slowest.
+      pool:
+        size: 8
   lifecycle:
     timeout-per-shutdown-phase: 110s
 

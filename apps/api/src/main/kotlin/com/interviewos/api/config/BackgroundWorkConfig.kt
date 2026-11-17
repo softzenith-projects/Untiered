@@ -10,15 +10,17 @@ import org.springframework.core.task.TaskExecutor
  *
  * Speech rejects at capacity so after-commit threads do not wait for a permit.
  *
- * Tasks are I/O bound — an HTTP call to Gemini, then one to storage — so they run on
- * virtual threads. Speech's Gemini calls are bounded separately by QuestionSpeech.
+ * Tasks run on platform threads, bounded by each executor's concurrency limit. They used to
+ * run on virtual threads, which share the request handlers' two or so carriers: on Java 21
+ * a pinned background task can freeze web requests too (see `spring.threads.virtual` in
+ * application.yml). Speech's Gemini calls are bounded separately by QuestionSpeech.
  */
 @Configuration
 class BackgroundWorkConfig {
     @Bean(name = ["interviewBackgroundExecutor"])
     fun interviewBackgroundExecutor(): TaskExecutor =
         SimpleAsyncTaskExecutor("interview-bg-").apply {
-            setVirtualThreads(true)
+            setVirtualThreads(false)
             setConcurrencyLimit(MAX_CONCURRENT_BACKGROUND_TASKS)
             setTaskTerminationTimeout(110_000)
             setCancelRemainingTasksOnClose(false)
@@ -32,7 +34,7 @@ class BackgroundWorkConfig {
         limit: Int,
     ): TaskExecutor =
         SimpleAsyncTaskExecutor(prefix).apply {
-            setVirtualThreads(true)
+            setVirtualThreads(false)
             setConcurrencyLimit(limit)
             setRejectTasksWhenLimitReached(true)
             // During a deploy, let accepted work finish before the process exits. A
