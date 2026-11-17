@@ -57,6 +57,42 @@ class SesEmailSenderTest {
     }
 
     @Test
+    fun `a transactional email wears the welcome email's branding`() {
+        val client = mock(SesV2Client::class.java)
+        val properties = EmailProperties(publicBaseUrl = "https://untiered.tech", apiBaseUrl = "https://api.untiered.tech")
+        SesEmailSender(client, properties).sendTransactional(
+            "admin@college.edu",
+            "Join Test College on Untiered",
+            "Test College has invited you.",
+            "Join Test College",
+            "https://untiered.tech/campus/join?token=abc",
+        )
+
+        val request = ArgumentCaptor.forClass(SendEmailRequest::class.java)
+        verify(client).sendEmail(request.capture())
+        val mime =
+            MimeMessage(
+                Session.getInstance(Properties()),
+                ByteArrayInputStream(
+                    request.value
+                        .content()
+                        .raw()
+                        .data()
+                        .asByteArray(),
+                ),
+            )
+        val parts = mutableMapOf<String, String>()
+        collectParts(mime, parts)
+        val html = parts.getValue("text/html")
+        assertTrue(html.contains("src=\"https://untiered.tech/brand/wordmark-light.png\""))
+        assertTrue(html.contains("TALENT HAS NO TIERS"))
+        assertTrue(html.contains("background:#6948e8"))
+        assertTrue(html.contains("Join Test College →"))
+        assertTrue(html.contains("Talent has no tiers. No tiers attached."))
+        assertFalse(html.contains("background:#1865db"))
+    }
+
+    @Test
     fun `sends branded multipart email through SES with backend sender and reply to`() {
         val client = mock(SesV2Client::class.java)
         val properties = EmailProperties(publicBaseUrl = "https://untiered.tech", apiBaseUrl = "https://api.untiered.tech")

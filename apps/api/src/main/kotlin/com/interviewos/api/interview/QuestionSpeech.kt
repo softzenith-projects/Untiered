@@ -255,7 +255,7 @@ class QuestionSpeech(
         if (chunks.size == 1) return withGeminiPermit { attributed { interviewAi.synthesizeSpeech(text, language).value } }
 
         val spoken =
-            Executors.newVirtualThreadPerTaskExecutor().let { chunkExecutor ->
+            Executors.newThreadPerTaskExecutor(Thread.ofPlatform().name("speech-chunk-", 0).factory()).let { chunkExecutor ->
                 try {
                     val calls =
                         chunks.map { chunk ->

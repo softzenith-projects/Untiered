@@ -145,7 +145,7 @@ class PoolGenerationJob(
     private fun workConcurrently(state: RunState) {
         val workers =
             (1..properties.concurrency).map { index ->
-                Thread.ofVirtual().name("pool-gen-${state.runId}-$index").unstarted { drain(state) }
+                Thread.ofPlatform().name("pool-gen-${state.runId}-$index").unstarted { drain(state) }
             }
         workers.forEach { it.start() }
         workers.forEach {
