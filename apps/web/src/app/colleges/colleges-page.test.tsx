@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import CollegesPage from "./page";
 import { CollegesBand } from "@/components/landing/colleges-band";
 import { LEGAL } from "@/lib/legal";
+import { useAccessToken } from "@/lib/use-access-token";
 
 vi.mock("@/lib/use-access-token", () => ({ useAccessToken: vi.fn(() => null) }));
 
@@ -16,7 +17,9 @@ afterEach(() => vi.unstubAllEnvs());
 describe("colleges page", () => {
   it("asks a college to register with the form, and keeps email as an option", () => {
     render(<CollegesPage />);
-    expect(screen.getByRole("link", { name: "Register your college" })).toHaveAttribute("href", "#register");
+    for (const link of screen.getAllByRole("link", { name: "Register your college" })) {
+      expect(link).toHaveAttribute("href", "#register");
+    }
     const section = screen.getByRole("region", { name: "Register your college" });
     expect(section).toHaveAttribute("id", "register");
     expect(within(section).getByRole("form", { name: "Register your college" })).toBeInTheDocument();
@@ -49,19 +52,29 @@ describe("colleges page", () => {
     expect(within(today).queryByRole("heading", { name: "Readiness view" })).not.toBeInTheDocument();
   });
 
-  it("offers college staff a way into their portal when the campus switch is on", () => {
+  it("signs college staff into their portal, not the student app, when the campus switch is on", () => {
     vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS", "true");
     render(<CollegesPage />);
-    expect(screen.getByRole("link", { name: "College staff? Sign in to your portal" })).toHaveAttribute(
-      "href",
-      "/login?next=/campus",
-    );
+    const header = screen.getByRole("banner");
+    expect(within(header).getByRole("link", { name: "College staff sign in" })).toHaveAttribute("href", "/login?next=/campus");
+    expect(within(header).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   });
 
-  it("does not link to a portal that is switched off", () => {
+  it("takes signed-in staff straight to the college portal", () => {
+    vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS", "true");
+    vi.mocked(useAccessToken).mockReturnValueOnce("token");
+    render(<CollegesPage />);
+    const header = screen.getByRole("banner");
+    expect(within(header).getByRole("link", { name: "College portal" })).toHaveAttribute("href", "/campus");
+    expect(within(header).queryByRole("link", { name: "Dashboard" })).not.toBeInTheDocument();
+  });
+
+  it("offers no sign-in in the header while the portal is switched off", () => {
     vi.stubEnv("NEXT_PUBLIC_FEATURE_CAMPUS", "false");
     render(<CollegesPage />);
-    expect(screen.queryByRole("link", { name: /college staff/i })).not.toBeInTheDocument();
+    const header = screen.getByRole("banner");
+    expect(within(header).queryByRole("link", { name: /sign in/i })).not.toBeInTheDocument();
+    expect(within(header).getByRole("link", { name: "Register your college" })).toHaveAttribute("href", "#register");
   });
 
   it("does not claim the camera is recorded", () => {
@@ -73,7 +86,7 @@ describe("colleges page", () => {
 describe("landing page colleges band", () => {
   it("links to the colleges page and to the registration form, and says the batch tools are in development", () => {
     render(<CollegesBand />);
-    expect(screen.getByRole("link", { name: "Untiered for colleges" })).toHaveAttribute("href", "/colleges");
+    expect(screen.getByRole("link", { name: "Untiered for Colleges" })).toHaveAttribute("href", "/colleges");
     expect(screen.getByRole("link", { name: "Register your college" })).toHaveAttribute("href", "/colleges#register");
     expect(screen.getByText(/in development with partner colleges/i)).toBeInTheDocument();
   });

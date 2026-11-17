@@ -20,7 +20,7 @@ export function CollegesBand() {
     <section aria-labelledby="colleges-heading" className="border-b border-line bg-surface-sunken">
       <div className="mx-auto grid layout-content gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16 lg:py-20">
         <div className="flex flex-col gap-4">
-          <span className="pill pill-highlight w-fit">For colleges · {CAMPUS_PRODUCT_NAME}</span>
+          <span className="pill pill-highlight w-fit">For Colleges · {CAMPUS_PRODUCT_NAME}</span>
           <h2 id="colleges-heading" className="text-display text-balance text-ink">
             Placement prep for the whole batch, not just the top ten.
           </h2>
@@ -30,7 +30,7 @@ export function CollegesBand() {
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Link href={"/colleges" as Route} className={buttonStyles({ size: "lg" })}>
-              Untiered for colleges
+              Untiered for Colleges
             </Link>
             {campusLeadsEnabled() ? (
               <Link href={`/colleges#${CAMPUS_REGISTER_ANCHOR}` as Route} className={buttonStyles({ variant: "secondary", size: "lg" })}>
