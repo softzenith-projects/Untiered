@@ -133,6 +133,18 @@ export function practiceLinks(component: ReadinessComponent, topic: CampusTopic 
 
 export const NO_COURSE_TEXT = "No Untiered course for this topic yet";
 
+/** "Today", "1 day ago", "6 days ago", then the date; "Never" when there is no activity. */
+export function lastActiveText(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return "Never";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Never";
+  const days = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "1 day ago";
+  if (days < 30) return `${days} days ago`;
+  return formatDate(iso);
+}
+
 export function formatDate(iso: string | null): string {
   if (!iso) return "Never";
   const date = new Date(iso);

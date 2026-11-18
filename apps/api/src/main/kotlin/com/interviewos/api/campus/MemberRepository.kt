@@ -368,6 +368,7 @@ class MemberRepository(
     private fun ResultSet.toMember(): MemberRow {
         val role = CampusRole.fromDbValue(getString("role")) ?: error("Unknown campus role in org_members")
         val joinedAt = getTimestamp("joined_at").toInstant()
+        val lastActive = getTimestamp("last_active_at")?.toInstant()
         return MemberRow(
             view =
                 MemberView(
@@ -380,7 +381,8 @@ class MemberRepository(
                     departmentCode = getString("department_code"),
                     rollNumber = getString("roll_number"),
                     joinedAt = joinedAt.toString(),
-                    active = getBoolean("active"),
+                    active = lastActive != null && lastActive.isAfter(Instant.now().minus(CampusReadinessService.ACTIVE_WINDOW)),
+                    lastActiveAt = lastActive?.toString(),
                 ),
             userId = UUID.fromString(getString("user_id")),
             role = role,
@@ -397,12 +399,11 @@ class MemberRepository(
          */
         const val MEMBER_SELECT = """select m.id, m.user_id, u.display_name, u.email, m.role, m.batch_id,
                    b.name as batch_name, d.code as department_code, m.roll_number, m.joined_at,
-                   (exists (select 1 from public.sessions s
-                             where s.user_id = m.user_id and s.created_at > now() - interval '14 days')
-                    or exists (select 1 from public.user_step_answers a
-                                where a.user_id = m.user_id and a.answered_at > now() - interval '14 days')
-                    or exists (select 1 from public.arena_cards c
-                                where c.user_id = m.user_id and c.last_review > now() - interval '14 days')) as active
+                   greatest(
+                       (select max(s.created_at) from public.sessions s where s.user_id = m.user_id),
+                       (select max(a.answered_at) from public.user_step_answers a where a.user_id = m.user_id),
+                       (select max(c.last_review) from public.arena_cards c where c.user_id = m.user_id)
+                   ) as last_active_at
               from public.org_members m
               join public.users u on u.id = m.user_id
               left join public.org_batches b on b.org_id = m.org_id and b.id = m.batch_id

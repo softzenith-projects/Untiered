@@ -67,6 +67,8 @@ data class MemberView(
     val rollNumber: String?,
     val joinedAt: String,
     val active: Boolean,
+    /** The latest round, scenario answer or Arena review (the signals `active` comes from); null when none. */
+    val lastActiveAt: String? = null,
 )
 
 data class FacultyScopesView(
