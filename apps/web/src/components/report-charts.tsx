@@ -5,14 +5,12 @@ import { cn } from "@/lib/cn";
 /**
  * The marking scale, drawn.
  *
- * These two graphics exist because of one number. The report's scoring was recalibrated
- * to be genuinely demanding — 2 out of 5 is the *default* for a competent, ordinary
- * answer, which means an ordinary round now comes out at 40%. A candidate who has only
- * ever seen a percentage on a school paper reads 40% as a fail, and a report that opens
- * with a fail is one they close. The recalibration was worth doing precisely because it
- * leaves room above the middle for improvement to be visible; showing it as a bare
- * percentage, or as a gauge that is 60% empty, throws that away in the first second of
- * reading.
+ * The scale is named for what a score would do in a real round (owner, 18 November 2026):
+ * 60% is the level that would likely clear a round of this kind, 70% and above is a clear
+ * pass, and everything under 50% would not clear one yet. The names say that plainly, so a
+ * percentage is never left for the candidate to read against a school paper. It replaced
+ * a scale whose middle, 40%, was called "ordinary", and which labelled 60% "Strong" while
+ * colouring it as "Getting there".
  *
  * So neither of these draws a "how full" bar for the overall score. The scale is drawn as
  * an instrument with its zones named, and the candidate is a mark on it. Nothing is empty,
@@ -43,50 +41,56 @@ export interface ScoreBand {
 export const SCORE_BANDS = [
   {
     from: 0,
+    to: 20,
+    name: "Start from the basics",
+    meaning: "the answers did not get started on what the questions were testing",
+  },
+  {
+    from: 20,
+    to: 30,
+    name: "Not passed",
+    meaning: "the answers missed what the questions were testing",
+  },
+  {
+    from: 30,
     to: 40,
-    name: "Under par",
-    meaning: "the answers did not engage with what the questions were testing",
+    name: "Needs a lot of work",
+    meaning: "some of it was right, with large gaps beneath it",
   },
   {
     from: 40,
     to: 50,
-    name: "Ordinary",
-    meaning: "competent answers with nothing beneath them, which is this scale's default",
+    name: "Not clearing yet",
+    meaning: "correct as far as it went, with nothing beneath it, which would not yet clear a round",
   },
   {
     from: 50,
     to: 60,
-    name: "Good",
-    meaning: "handled properly, with real depth when pushed",
+    name: "Average",
+    meaning: "a mix of answers that would clear a round and answers that would not",
   },
   {
     from: 60,
     to: 70,
-    name: "Strong",
-    meaning: "you anticipated the follow-up before it came",
+    name: "Good enough",
+    meaning: "handled properly, with real depth when pushed, which would likely clear a round of this kind",
   },
   {
     from: 70,
-    to: 80,
-    name: "Exceptional",
-    meaning: "the answer a hiring manager repeats to someone else afterwards",
-  },
-  {
-    from: 80,
     to: 100,
-    name: "The ceiling",
-    meaning: "as well as these questions can be answered",
+    name: "Strong",
+    meaning: "the follow-up was anticipated before it came, which is a clear pass",
   },
 ] as const satisfies readonly ScoreBand[];
 
 /**
- * The score an ordinary answer earns, as a percentage.
+ * The score that would likely clear a round of this kind, as a percentage.
  *
- * 2 out of 5 is the prompt's anchor for "correct as far as it goes, nothing beneath it".
- * It is drawn on every competency bar as a datum, so a bar that looks short can be seen
- * to have reached the mark rather than only to have failed to fill the track.
+ * 3 out of 5 is the prompt's anchor for "handled properly, with real depth when pushed".
+ * It is drawn on every competency bar as a datum, so a candidate can see at a glance which
+ * answers reached the level a real round asks for and which fell short of it.
  */
-export const ORDINARY_MARK = 40;
+export const CLEARING_MARK = 60;
 
 export type ScoreTone = "positive" | "warning" | "danger";
 
@@ -95,7 +99,7 @@ export type ScoreTone = "positive" | "warning" | "danger";
  * beside every colour, so colour reinforces meaning without becoming the only signal.
  */
 export function scoreToneForPercent(percent: number): ScoreTone {
-  if (percent > 70) return "positive";
+  if (percent >= CLEARING_MARK) return "positive";
   if (percent >= 50) return "warning";
   return "danger";
 }
@@ -111,7 +115,7 @@ export const TONE_STYLES: Record<
   { label: string; fill: string; svgFill: string; stroke: string; wash: string; border: string; text: string }
 > = {
   positive: {
-    label: "Strong",
+    label: "On track",
     fill: "bg-positive",
     svgFill: "fill-positive",
     stroke: "stroke-positive",
@@ -120,7 +124,7 @@ export const TONE_STYLES: Record<
     text: "text-positive",
   },
   warning: {
-    label: "Getting there",
+    label: "Borderline",
     fill: "bg-highlight",
     svgFill: "fill-highlight",
     stroke: "stroke-highlight",
@@ -129,7 +133,7 @@ export const TONE_STYLES: Record<
     text: "text-warning",
   },
   danger: {
-    label: "Needs work",
+    label: "Below the bar",
     fill: "bg-danger",
     svgFill: "fill-danger",
     stroke: "stroke-danger",
@@ -151,8 +155,8 @@ function scoreFillClass(percent: number): string {
 export function ToneLegend() {
   const entries: Array<{ tone: ScoreTone; range: string }> = [
     { tone: "danger", range: "below 50%" },
-    { tone: "warning", range: "50–70%" },
-    { tone: "positive", range: "above 70%" },
+    { tone: "warning", range: "50–60%" },
+    { tone: "positive", range: "60% and above" },
   ];
   return (
     <ul aria-label="What the colours mean" className="flex flex-wrap gap-x-5 gap-y-2">
@@ -248,7 +252,7 @@ export function OverallScore({ competencies }: { competencies: ReportCompetency[
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={percent}
-          aria-valuetext={`${percent}% — ${band.name.toLowerCase()}: ${band.meaning}. On this scale 40% is an ordinary answer, 50% good, 60% strong and 70% exceptional.`}
+          aria-valuetext={`${percent}% — ${band.name.toLowerCase()}: ${band.meaning}. On this scale 60% would likely clear a round of this kind, 70% and above is strong, and below 50% would not clear one yet.`}
           className="relative h-9 w-full border border-line-strong bg-surface-sunken"
         >
           {/* Where they landed. The only band drawn differently, and the only accent here. */}
@@ -326,11 +330,11 @@ export function OverallScore({ competencies }: { competencies: ReportCompetency[
           How this is scored
         </summary>
         <p className="max-w-prose pt-3 text-body text-ink-muted">
-          The scale is set deliberately hard. 40% is a competent, ordinary answer and where most
-          rounds land — including rounds that pass. 50% is good, 60% genuinely strong, 70% the
-          answer an interviewer repeats to somebody else afterwards. A number in the forties is
-          the middle of this scale rather than a failure, and the room above it is left open so
-          that getting better has somewhere to show.
+          Each score is named for what it would do in a real round. 60% is the level that would
+          likely clear a round of this kind, and 70% and above is a clear pass. 50–60% is
+          average: some answers would clear and some would not. Below 50% would not clear a
+          round yet: 40% means correct as far as it went, with nothing beneath it. The marking
+          is strict on purpose, so a pass here means something in the real room.
         </p>
       </details>
     </figure>
@@ -437,14 +441,12 @@ function HighlightGroup({
  * Every competency on one axis, so which held up and which did not is a glance rather
  * than a scroll.
  *
- * The tracks are full width and share a left edge on purpose: the ordinary mark then lines
+ * The tracks are full width and share a left edge on purpose: the clearing mark then lines
  * up down the whole chart into a single reference line, and a bar can be seen to have
- * reached it. Scored out of five, an ordinary answer fills two fifths of its track, and
- * without the datum a whole chart of perfectly respectable answers looks like a chart of
- * near-empty bars.
+ * reached it or not.
  *
  * The fill follows the report's shared traffic-light thresholds, while the numeric score,
- * named band and ordinary-answer datum keep colour from carrying meaning by itself.
+ * named band and clearing datum keep colour from carrying meaning by itself.
  */
 export function CompetencyBars({ competencies }: { competencies: ReportCompetency[] | undefined }) {
   const items = (competencies ?? []).filter((item) => item.maxScore > 0);
@@ -469,8 +471,8 @@ export function CompetencyBars({ competencies }: { competencies: ReportCompetenc
                 aria-valuemax={item.maxScore}
                 aria-valuenow={item.score}
                 aria-valuetext={`${item.score} out of ${item.maxScore}, against ${
-                  Math.round(item.maxScore * ORDINARY_MARK) / 100
-                } for an ordinary answer`}
+                  Math.round(item.maxScore * CLEARING_MARK) / 100
+                } to clear a round`}
                 aria-label={item.competency}
                 className="relative h-2.5 w-full bg-surface-sunken"
               >
@@ -483,7 +485,7 @@ export function CompetencyBars({ competencies }: { competencies: ReportCompetenc
                 <span
                   aria-hidden="true"
                   className="absolute -top-1 -bottom-1 w-px -translate-x-1/2 bg-ink-subtle"
-                  style={{ left: `${ORDINARY_MARK}%` }}
+                  style={{ left: `${CLEARING_MARK}%` }}
                 />
               </div>
             </li>
@@ -492,8 +494,8 @@ export function CompetencyBars({ competencies }: { competencies: ReportCompetenc
       </ul>
 
       <figcaption className="max-w-prose text-caption text-ink-muted">
-        Each competency against its own maximum. The mark at {ORDINARY_MARK}% is an ordinary
-        answer — a bar that reaches it did what the question asked.
+        Each competency against its own maximum. The mark at {CLEARING_MARK}% is the level
+        that would likely clear a round of this kind.
       </figcaption>
     </figure>
   );

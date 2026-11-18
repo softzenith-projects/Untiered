@@ -114,8 +114,8 @@ describe("overview helpers", () => {
     expect(parts.reduce((sum, part) => sum + part.count, 0)).toBe(30);
   });
 
-  it("colours scores green from 70, amber from 50, red below", () => {
-    expect([scoreTone(70), scoreTone(69), scoreTone(50), scoreTone(49)]).toEqual(["positive", "highlight", "highlight", "danger"]);
+  it("colours scores green from 60, amber from 50, red below", () => {
+    expect([scoreTone(60), scoreTone(59), scoreTone(50), scoreTone(49)]).toEqual(["positive", "highlight", "highlight", "danger"]);
   });
 });
 

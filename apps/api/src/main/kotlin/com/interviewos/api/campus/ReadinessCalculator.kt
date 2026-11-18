@@ -117,7 +117,9 @@ data class ReadinessResult(
 object ReadinessCalculator {
     const val LATEST_PER_COMPONENT = 3
     const val MIN_EVIDENCE_ITEMS = 2
-    const val SUGGEST_BELOW = 70
+
+    /** Below this a component or topic would not clear a round yet, so it is worth naming. */
+    const val SUGGEST_BELOW = 60
 
     /** Topic labels for sentences, in the contract's `CampusTopic` order. */
     val TOPIC_LABELS: Map<String, String> =
@@ -165,6 +167,11 @@ object ReadinessCalculator {
     /**
      * The band of an overall score that is already rounded. No band below the evidence
      * threshold, and none without an overall score to place.
+     *
+     * The lines are the interview report's (owner, 18 November 2026): 60 would likely clear
+     * a round and 70 is a clear pass. Readiness is built from those same percentages, so its
+     * bands sit on them too, and a student is never "needs improvement" to their college
+     * while their own reports say they would get through.
      */
     fun band(
         overall: Int?,
@@ -172,8 +179,8 @@ object ReadinessCalculator {
     ): ReadinessBand =
         when {
             overall == null || evidenceItems < MIN_EVIDENCE_ITEMS -> ReadinessBand.NOT_ENOUGH_EVIDENCE
-            overall >= 85 -> ReadinessBand.STRONG
-            overall >= 70 -> ReadinessBand.INTERVIEW_READY
+            overall >= 70 -> ReadinessBand.STRONG
+            overall >= 60 -> ReadinessBand.INTERVIEW_READY
             overall >= 50 -> ReadinessBand.NEEDS_IMPROVEMENT
             else -> ReadinessBand.NEEDS_STRUCTURED_PREP
         }

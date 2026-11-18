@@ -294,7 +294,7 @@ class CampusReadinessDatabaseIntegrationTest {
     @Test
     fun `the TPO overview never shows College B, and a faculty member's overview is narrowed to their batches`() {
         completedAttempt(orgA, interviewA, cse1Member, cse1, score = 5)
-        completedAttempt(orgA, interviewA, member(cse2), cse2, score = 4)
+        completedAttempt(orgA, interviewA, member(cse2), cse2, score = 2)
         completedAttempt(orgA, interviewA, member(cse3), cse3, score = 3)
         completedAttempt(orgA, interviewA, ece1Member, ece1, score = 1)
         // College B's student is strong: if any of it leaked into A, every average below would move.
@@ -312,12 +312,12 @@ class CampusReadinessDatabaseIntegrationTest {
             DashboardPipeline(invited = 3, joined = 4, active = 4, assigned = 4, attempted = 4, completed = 4, interviewReady = 0),
             tpo.pipeline,
         )
-        assertEquals(ComponentAverage(average = 65, students = 4), tpo.componentAverages.technicalInterview, "(100 + 80 + 60 + 20) / 4")
+        assertEquals(ComponentAverage(average = 55, students = 4), tpo.componentAverages.technicalInterview, "(100 + 40 + 60 + 20) / 4")
         assertEquals(ComponentAverage(average = null, students = 0), tpo.componentAverages.coding)
-        assertEquals(listOf(TopGap("dbms", 65, 4)), tpo.topGaps)
+        assertEquals(listOf(TopGap("dbms", 55, 4)), tpo.topGaps)
         assertEquals(4, tpo.trend.completedLast30)
         assertEquals(0, tpo.trend.completedPrev30)
-        assertEquals(65, tpo.trend.averageScoreLast30)
+        assertEquals(55, tpo.trend.averageScoreLast30)
         assertNull(tpo.trend.averageScorePrev30)
         assertEquals(8, tpo.trend.weekly.size)
         assertEquals(4, tpo.trend.weekly.sumOf { it.completed })
@@ -340,10 +340,10 @@ class CampusReadinessDatabaseIntegrationTest {
         assertEquals(2, faculty.pipeline.invited, "CSE's open and lapsed invites, not ECE's")
         assertEquals(3, faculty.pipeline.joined)
         assertEquals(3, faculty.pipeline.completed)
-        assertEquals(ComponentAverage(average = 80, students = 3), faculty.componentAverages.technicalInterview)
-        assertEquals(emptyList(), faculty.topGaps, "CSE alone averages 80 on DBMS")
+        assertEquals(ComponentAverage(average = 67, students = 3), faculty.componentAverages.technicalInterview)
+        assertEquals(emptyList(), faculty.topGaps, "CSE alone averages 67 on DBMS, which clears a round")
         assertEquals(3, faculty.trend.completedLast30)
-        assertEquals(80, faculty.trend.averageScoreLast30)
+        assertEquals(67, faculty.trend.averageScoreLast30)
         assertEquals(listOf(cseBatch.id), faculty.batches.map { it.batchId })
 
         // B's own staff see only B.

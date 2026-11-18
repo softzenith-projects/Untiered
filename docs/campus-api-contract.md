@@ -496,9 +496,10 @@ student's own practice never enters it.
 - **Overall**: the weighted mean over the components that have a score, with the weights
   rescaled to sum to 100 over those components.
 - **Band**: given only when the student has at least 2 evidence items; otherwise
-  `"not_enough_evidence"`. `strong` is ≥ 85, `interview_ready` is 70–84,
-  `needs_improvement` is 50–69, and `needs_structured_prep` is < 50, on the overall score
-  rounded to an integer.
+  `"not_enough_evidence"`. `strong` is ≥ 70, `interview_ready` is 60–69,
+  `needs_improvement` is 50–59, and `needs_structured_prep` is < 50, on the overall score
+  rounded to an integer. These are the interview report's lines (owner, 18 November 2026):
+  60% would likely clear a round of this kind and 70% is a clear pass.
 - **Overall is `null` whenever the band is `not_enough_evidence`**: below 2 items, and also
   when the only scored components carry weight 0. Components are still shown.
 - **Integers all the way up.** An item's score is rounded half up; a component is the mean of
@@ -558,8 +559,8 @@ interface StaffStudentDetail {
 }
 ```
 
-`suggestedTopics` is derived without AI: one entry for each component scoring below 70,
-and one for each topic whose latest 3 items average below 70 (listed under the component of
+`suggestedTopics` is derived without AI: one entry for each component scoring below 60,
+and one for each topic whose latest 3 items average below 60 (listed under the component of
 that topic's latest item), each group lowest first. Each `reason` is a plain sentence
 built from the numbers, e.g. "Average 58 across 2 DBMS assignments." The web maps
 components and topics to existing course and Arena links. Topics with no course get no
@@ -919,7 +920,7 @@ interface DashboardView {
   };
   componentAverages: Record<"coding" | "coreCs" | "technicalInterview" | "communication" | "aptitude",
     { average: number | null; students: number }>;   // the mean of student component scores; null when fewer than 3 students have one
-  topGaps: { topic: CampusTopic; average: number; students: number }[];  // up to 3 weakest topics with ≥ 3 students and an average < 70, weakest first
+  topGaps: { topic: CampusTopic; average: number; students: number }[];  // up to 3 weakest topics with ≥ 3 students and an average < 60, weakest first
   trend: {
     completedLast30: number;          // assignment completions in the last 30 days
     completedPrev30: number;          // the 30 days before that

@@ -35,9 +35,9 @@ export function percent(numerator: number, denominator: number): number {
 
 export type ScoreTone = "positive" | "highlight" | "danger";
 
-/** Green from 70, amber from 50, red below: the readiness bands' own lines. */
+/** Green from 60, amber from 50, red below: the readiness bands' own lines, which are the report's. */
 export function scoreTone(score: number): ScoreTone {
-  if (score >= 70) return "positive";
+  if (score >= 60) return "positive";
   if (score >= 50) return "highlight";
   return "danger";
 }

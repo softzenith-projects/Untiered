@@ -36,36 +36,50 @@ describe("overallScore", () => {
 });
 
 describe("bandFor", () => {
-  /** The anchored scale the report prompt marks against. 40 is the default, not a fail. */
+  /** The anchored scale the report prompt marks against, named for what it would do in a round. */
   it("names the band the way the marking scale does", () => {
-    expect(bandFor(20).name).toBe("Under par");
-    expect(bandFor(40).name).toBe("Ordinary");
-    expect(bandFor(49.9).name).toBe("Ordinary");
-    expect(bandFor(50).name).toBe("Good");
-    expect(bandFor(60).name).toBe("Strong");
-    expect(bandFor(70).name).toBe("Exceptional");
+    expect(bandFor(0).name).toBe("Start from the basics");
+    expect(bandFor(19.9).name).toBe("Start from the basics");
+    expect(bandFor(20).name).toBe("Not passed");
+    expect(bandFor(30).name).toBe("Needs a lot of work");
+    expect(bandFor(40).name).toBe("Not clearing yet");
+    expect(bandFor(49.9).name).toBe("Not clearing yet");
+    expect(bandFor(50).name).toBe("Average");
+    expect(bandFor(60).name).toBe("Good enough");
+    expect(bandFor(69.9).name).toBe("Good enough");
+    expect(bandFor(70).name).toBe("Strong");
+    expect(bandFor(100).name).toBe("Strong");
+  });
+
+  /** The report of 18 November 2026: 60% was named "Strong" and coloured "Getting there". */
+  it("never names a score with a word its colour contradicts", () => {
+    for (let percent = 0; percent <= 100; percent += 0.5) {
+      const name = bandFor(percent).name;
+      const tone = scoreToneForPercent(percent);
+      if (name === "Strong" || name === "Good enough") expect(tone, `${percent}%`).toBe("positive");
+      if (name === "Average") expect(tone, `${percent}%`).toBe("warning");
+      if (percent < 50) expect(tone, `${percent}%`).toBe("danger");
+    }
   });
 
   it("clamps rather than falling off either end", () => {
-    expect(bandFor(-5).name).toBe("Under par");
+    expect(bandFor(-5).name).toBe("Start from the basics");
     expect(bandFor(140).name).toBe(bandFor(100).name);
   });
 });
 
 describe("scoreToneForPercent", () => {
-  it("uses red below 50, amber from 50 through 70, and green above 70", () => {
+  it("uses red below 50, amber from 50 to 60, and green from the clearing mark at 60", () => {
     expect(scoreToneForPercent(49.9)).toBe("danger");
     expect(scoreToneForPercent(50)).toBe("warning");
-    expect(scoreToneForPercent(70)).toBe("warning");
-    expect(scoreToneForPercent(70.1)).toBe("positive");
+    expect(scoreToneForPercent(59.9)).toBe("warning");
+    expect(scoreToneForPercent(60)).toBe("positive");
   });
 });
 
 /**
- * The reason this graphic exists. Scoring was recalibrated so that an ordinary round comes
- * out at 40%, and a candidate who has only ever seen a percentage on a school paper reads
- * 40% as a fail. Everything here is about the number never being announced — to the eye or
- * to a screen reader — without the word for what it means.
+ * The number is never announced — to the eye or to a screen reader — without the word for
+ * what it would mean in a real round.
  */
 describe("OverallScore", () => {
   it("never announces the number without the band it falls in", () => {
@@ -73,22 +87,22 @@ describe("OverallScore", () => {
 
     const meter = screen.getByRole("meter", { name: /overall score/i });
     expect(meter).toHaveAttribute("aria-valuenow", "40");
-    expect(meter.getAttribute("aria-valuetext")).toMatch(/ordinary/i);
+    expect(meter.getAttribute("aria-valuetext")).toMatch(/not clearing yet/i);
   });
 
-  /** A screen-reader user must be told the scale is hard, not left to assume 40 is a fail. */
+  /** A screen-reader user must be told where clearing sits, not left to guess. */
   it("tells a screen reader where the scale sits, not just where they sit", () => {
     render(<OverallScore competencies={[competency("a", 2)]} />);
 
     expect(screen.getByRole("meter", { name: /overall score/i }).getAttribute("aria-valuetext")).toMatch(
-      /50% good/i,
+      /60% would likely clear a round/i,
     );
   });
 
   it("shows the band name beside the number", () => {
     render(<OverallScore competencies={[competency("a", 3)]} />);
 
-    expect(screen.getByText(/^Strong$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Good enough$/)).toBeInTheDocument();
   });
 
   /** No score is not a score of nothing, so no instrument is drawn at all. */
@@ -133,7 +147,7 @@ describe("OverallScore's score-scale disclosure", () => {
 
     const summary = screen.getByText(/how this is scored/i);
     expect(summary.closest("details")).not.toHaveAttribute("open");
-    expect(screen.getByText(/scale is set deliberately hard/i)).not.toBeVisible();
+    expect(screen.getByText(/each score is named for what it would do in a real round/i)).not.toBeVisible();
   });
 
   it("opens on click, and the summary is reachable as a label", async () => {
@@ -142,7 +156,7 @@ describe("OverallScore's score-scale disclosure", () => {
 
     await user.click(screen.getByText(/how this is scored/i));
 
-    expect(screen.getByText(/scale is set deliberately hard/i)).toBeVisible();
+    expect(screen.getByText(/each score is named for what it would do in a real round/i)).toBeVisible();
   });
 
   /**

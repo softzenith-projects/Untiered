@@ -81,35 +81,35 @@ class TpoOverviewTest {
     // -- top gaps -----------------------------------------------------------------------
 
     @Test
-    fun `gaps are the weakest topics below 70 with three students, weakest first, at most three`() {
+    fun `gaps are the weakest topics below 60 with three students, weakest first, at most three`() {
         val students =
             listOf(
-                facts(topics = mapOf("dsa" to 50, "dbms" to 40, "os" to 90, "cn" to 30, "oops" to 65, "aptitude" to 20)),
-                facts(topics = mapOf("dsa" to 60, "dbms" to 50, "os" to 80, "cn" to 40, "oops" to 64)),
-                facts(topics = mapOf("dsa" to 70, "dbms" to 60, "os" to 70, "cn" to 50, "oops" to 66, "aptitude" to 10)),
+                facts(topics = mapOf("dsa" to 45, "dbms" to 40, "os" to 90, "cn" to 30, "oops" to 65, "aptitude" to 20)),
+                facts(topics = mapOf("dsa" to 55, "dbms" to 50, "os" to 80, "cn" to 40, "oops" to 64)),
+                facts(topics = mapOf("dsa" to 65, "dbms" to 60, "os" to 70, "cn" to 50, "oops" to 66, "aptitude" to 10)),
             )
 
         val gaps = TpoOverview.topGaps(students)
 
-        // cn 40, dbms 50, dsa 60, oops 65; os (80) is no gap; aptitude has only two students.
+        // cn 40, dbms 50, dsa 55; oops (65) and os (80) clear a round, so are no gap; aptitude has only two students.
         assertEquals(listOf("cn", "dbms", "dsa"), gaps.map { it.topic })
-        assertEquals(listOf(40, 50, 60), gaps.map { it.average })
+        assertEquals(listOf(40, 50, 55), gaps.map { it.average })
         assertEquals(listOf(3, 3, 3), gaps.map { it.students })
     }
 
     @Test
-    fun `a gap averages each student's latest item for the topic, and 70 is not a gap`() {
+    fun `a gap averages each student's latest item for the topic, and 60 is not a gap`() {
         val student = UUID.randomUUID()
         val older = evidence(ReadinessComponent.CORE_CS, "dbms", 10, now.minus(Duration.ofDays(5)))
-        val newer = evidence(ReadinessComponent.CORE_CS, "dbms", 70, now.minus(Duration.ofDays(1)))
+        val newer = evidence(ReadinessComponent.CORE_CS, "dbms", 60, now.minus(Duration.ofDays(1)))
         val students =
             listOf(
                 facts(memberId = student, evidence = listOf(older, newer)),
-                facts(topics = mapOf("dbms" to 70)),
-                facts(topics = mapOf("dbms" to 70)),
+                facts(topics = mapOf("dbms" to 60)),
+                facts(topics = mapOf("dbms" to 60)),
             )
 
-        assertEquals(emptyList(), TpoOverview.topGaps(students), "the latest items average exactly 70")
+        assertEquals(emptyList(), TpoOverview.topGaps(students), "the latest items average exactly 60")
         assertEquals(emptyList(), TpoOverview.topGaps(emptyList()))
     }
 
