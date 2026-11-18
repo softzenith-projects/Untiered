@@ -185,5 +185,7 @@ jobs:
           if [ -f .vercel/.env.production.local ]; then sed -i '/^SENTRY_AUTH_TOKEN=/d' .vercel/.env.production.local; fi
           vercel build --prod --token="$VERCEL_TOKEN"
 
+      # One archive instead of one upload per file: Hobby allows 5,000 file uploads a day, and a
+      # build with source maps is thousands of files, so two deploys in a day hit the limit.
       - name: Deploy to production
-        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" --meta githubCommitSha="$GITHUB_SHA"
+        run: vercel deploy --prebuilt --prod --archive=tgz --token="$VERCEL_TOKEN" --meta githubCommitSha="$GITHUB_SHA"
