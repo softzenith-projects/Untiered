@@ -175,8 +175,15 @@ jobs:
       - name: Fetch project settings and Production environment
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
+      # Vercel stores SENTRY_AUTH_TOKEN as a write-only Secret, which `vercel pull` cannot read
+      # back, so source maps failed to upload with a 401. The build takes GitHub's copy instead,
+      # and whatever pull wrote for it is removed so it cannot shadow that copy.
       - name: Build
-        run: vercel build --prod --token="$VERCEL_TOKEN"
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          if [ -f .vercel/.env.production.local ]; then sed -i '/^SENTRY_AUTH_TOKEN=/d' .vercel/.env.production.local; fi
+          vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy to production
         run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" --meta githubCommitSha="$GITHUB_SHA"
