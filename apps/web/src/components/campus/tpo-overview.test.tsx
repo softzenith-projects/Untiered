@@ -120,6 +120,13 @@ describe("overview helpers", () => {
 });
 
 describe("KPI cards", () => {
+  it("never claims more joined than invited when students joined without an invite", () => {
+    render(<KpiRow view={view({ joined: 61, pipeline: pipeline({ invited: 5, joined: 61 }) })} />);
+    const first = within(screen.getByRole("list", { name: "Key figures" })).getAllByRole("listitem")[0]!;
+    expect(within(first).queryByText(/invited/)).not.toBeInTheDocument();
+    expect(within(first).getByText("students who have joined")).toBeInTheDocument();
+  });
+
   it("shows the five figures, with change chips against the previous 30 days", () => {
     render(<KpiRow view={view()} />);
     const cards = within(screen.getByRole("list", { name: "Key figures" })).getAllByRole("listitem");

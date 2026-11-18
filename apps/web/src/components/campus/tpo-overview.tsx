@@ -232,7 +232,9 @@ export function KpiRow({ view }: { view: DashboardView }) {
         icon="people"
         label="Joined students"
         value={String(view.joined)}
-        detail={pipeline ? `of ${pipeline.invited} invited` : "students who have joined"}
+        // Students can join without an invite, so invited can be below joined (contract Module 7b):
+        // "61 of 5 invited" would be false, so the comparison is shown only when it reads true.
+        detail={pipeline && pipeline.invited >= view.joined ? `of ${pipeline.invited} invited` : "students who have joined"}
       />
       <KpiCard
         icon="pulse"
