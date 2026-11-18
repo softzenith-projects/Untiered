@@ -43,14 +43,24 @@ enum class PackageReminderKind(
  * Which package statuses fund an interview (`interviewos.campus.billing.funding-statuses`).
  * Both invoiced and paid by default, so a college is not blocked while its bank transfer
  * clears; `paid` alone makes payment a precondition. Draft and void never fund anything,
- * whatever this says.
+ * whatever this says. A value naming neither invoiced nor paid (an empty environment variable,
+ * a typo) falls back to the default rather than blocking every college on packages.
  */
 @ConfigurationProperties(prefix = "interviewos.campus.billing")
 data class CollegeBillingProperties(
-    val fundingStatuses: List<String> = listOf(PackageStatus.INVOICED.wireValue, PackageStatus.PAID.wireValue),
+    val fundingStatuses: List<String> = DEFAULT_FUNDING.map { it.wireValue },
 ) {
     val funding: Set<PackageStatus>
-        get() = fundingStatuses.mapNotNull { PackageStatus.fromWireValue(it.trim()) }.filter { it.issued }.toSet()
+        get() =
+            fundingStatuses
+                .mapNotNull { PackageStatus.fromWireValue(it.trim()) }
+                .filter { it.issued }
+                .toSet()
+                .ifEmpty { DEFAULT_FUNDING }
+
+    private companion object {
+        val DEFAULT_FUNDING = setOf(PackageStatus.INVOICED, PackageStatus.PAID)
+    }
 }
 
 /** One issued package and how much of it is spent, as admission reads it under the org lock. */

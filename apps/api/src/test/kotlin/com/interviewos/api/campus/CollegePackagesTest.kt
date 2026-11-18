@@ -51,6 +51,9 @@ class CollegePackagesTest {
     fun `invoiced and paid both fund interviews by default, draft and void never do`() {
         assertEquals(setOf(PackageStatus.INVOICED, PackageStatus.PAID), funding)
         assertEquals(setOf(PackageStatus.PAID), CollegeBillingProperties(listOf("paid", "draft", "void", "nonsense")).funding)
+        // An empty or useless setting falls back to the default instead of blocking every college.
+        assertEquals(funding, CollegeBillingProperties(listOf("")).funding)
+        assertEquals(funding, CollegeBillingProperties(listOf("draft")).funding)
     }
 
     @Test
