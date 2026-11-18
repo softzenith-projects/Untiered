@@ -43,7 +43,7 @@ export function WeeksSection({ weeks }: { weeks: ProgrammeWeekView[] }) {
                 Week {week.week}
                 <span className="block text-caption font-normal text-ink-muted">{week.assignments.map((a) => a.title).join(", ")}</span>
               </p>
-              {week.opened ? <Badge tone="positive">Open</Badge> : <Badge tone="navy">Locked</Badge>}
+              {week.opened ? <Badge tone="positive">Open</Badge> : <Badge tone="neutral">Locked</Badge>}
             </div>
             {week.opened ? (
               week.completionRate === null ? (

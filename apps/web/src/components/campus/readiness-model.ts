@@ -17,12 +17,12 @@ export const BAND_LABEL: Record<ReadinessBand, string> = {
   not_enough_evidence: "Not enough evidence",
 };
 
-export const BAND_TONE: Record<ReadinessBand, "positive" | "accent" | "highlight" | "danger" | "navy"> = {
+export const BAND_TONE: Record<ReadinessBand, "positive" | "accent" | "highlight" | "danger" | "neutral"> = {
   strong: "positive",
   interview_ready: "accent",
   needs_improvement: "highlight",
   needs_structured_prep: "danger",
-  not_enough_evidence: "navy",
+  not_enough_evidence: "neutral",
 };
 
 /** Best to worst, the order bands are drawn and listed in. */

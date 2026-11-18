@@ -23,9 +23,9 @@ export const REASON_LABEL: Record<AttentionReason, string> = {
   overdue: "Overdue work",
 };
 
-const REASON_TONE: Record<AttentionReason, "danger" | "navy" | "highlight"> = {
+const REASON_TONE: Record<AttentionReason, "danger" | "neutral" | "highlight"> = {
   low_score: "danger",
-  inactive: "navy",
+  inactive: "neutral",
   overdue: "highlight",
 };
 

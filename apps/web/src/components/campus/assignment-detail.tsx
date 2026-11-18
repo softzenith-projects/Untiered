@@ -201,7 +201,7 @@ function Summary({ view }: { view: AssignmentView }) {
         <h2 id="assignment-heading" className="text-heading text-ink">
           {view.title}
         </h2>
-        <Badge tone={view.status === "published" ? "positive" : view.status === "draft" ? "info" : "navy"}>
+        <Badge tone={view.status === "published" ? "positive" : view.status === "draft" ? "info" : "neutral"}>
           {ASSIGNMENT_STATUS_LABEL[view.status]}
         </Badge>
       </div>

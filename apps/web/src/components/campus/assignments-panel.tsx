@@ -21,7 +21,7 @@ export const ASSIGNMENT_STATUS_LABEL: Record<AssignmentStatus, string> = {
   published: "Published",
   archived: "Archived",
 };
-const STATUS_TONE = { draft: "info", published: "positive", archived: "navy" } as const;
+const STATUS_TONE = { draft: "info", published: "positive", archived: "neutral" } as const;
 
 export function assignmentSummary(a: {
   kind: string;
