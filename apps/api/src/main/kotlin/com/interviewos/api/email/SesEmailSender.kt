@@ -185,13 +185,7 @@ class SesEmailSender(
         }
 
     private fun accountLabel(category: String): String =
-        if (category == "campus_weekly" ||
-            category == "campus_billing"
-        ) {
-            "Open Untiered Campus"
-        } else {
-            "Visit your account"
-        }
+        if (accountPath(category) == "campus") "Open Untiered Campus" else "Visit your account"
 
     private fun deliver(
         mime: MimeMessage,
