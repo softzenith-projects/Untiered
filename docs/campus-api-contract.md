@@ -791,6 +791,18 @@ interface CertificateView {
 }
 ```
 
+```ts
+interface ProgrammeWeekView {
+  week: number;                     // only weeks that have at least one assignment, ascending
+  opensAt: string; dueAt: string;   // 09:00 IST on startsOn + 7(n−1) days, and 7 days later
+  opened: boolean;                  // false while the week is locked
+  assignments: { id: string; title: string }[];   // archived ones included: a module is a module
+  students: number;                 // students the week's assignments were set for, inside the caller's scope
+  completedStudents: number;        // of those, students who completed every assignment of the week
+  completionRate: number | null;    // completedStudents ÷ students, 0–1; null while locked or when nobody is set it
+}
+```
+
 **Weekly unlock.** Week *n*'s assignment opens at `startsOn + 7(n−1)` days, 09:00 IST, and
 is due 7 days later. Cloning creates published assignments that belong to the programme.
 A student earns the certificate once every module is completed. The certificate is a
@@ -804,6 +816,7 @@ college names and the college logo, never a score.
 | `POST /campus/orgs/{org}/programmes` | college_admin, tpo | `{ templateId, title?, startsOn, batchIds }` → `201 ProgrammeView` |
 | `GET /campus/orgs/{org}/programmes` and `/{id}` | any staff (faculty: scoped) | → `ProgrammeView[]` / `ProgrammeView` |
 | `GET /campus/orgs/{org}/programmes/{id}/progress` | any staff (faculty: scoped) | → `ProgrammeProgress[]` |
+| `GET /campus/orgs/{org}/programmes/{id}/weeks` | any staff (faculty: scoped) | → `ProgrammeWeekView[]`, the programme week by week |
 | `POST /campus/orgs/{org}/programmes/{id}/archive` | college_admin, tpo | → `ProgrammeView`; also archives its assignments that have not opened yet |
 | `GET /me/programmes` | student | → `(ProgrammeView & { completedModules: number; totalModules: number; certificateId: string \| null })[]` |
 | `GET /me/programmes/{id}/certificate` | student | → `CertificateView`; `404` until every module is completed |

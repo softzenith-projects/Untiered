@@ -727,6 +727,19 @@ export interface MyProgrammeView extends ProgrammeView {
   certificateId: string | null;
 }
 
+/** One week of a programme: when it unlocks and how many of its students finished it. */
+export interface ProgrammeWeekView {
+  week: number;
+  opensAt: string;
+  dueAt: string;
+  opened: boolean;
+  assignments: { id: string; title: string }[];
+  students: number;
+  completedStudents: number;
+  /** 0–1; null while the week is locked or nobody is set it. */
+  completionRate: number | null;
+}
+
 export interface ProgrammeProgress {
   memberId: string;
   name: string | null;

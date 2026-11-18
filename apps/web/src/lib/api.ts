@@ -69,6 +69,7 @@ import type {
   ProgrammeTemplate,
   ProgrammeTemplateInput,
   ProgrammeView,
+  ProgrammeWeekView,
   StartProgrammeRequest,
   ReadinessWeights,
   StudentReadiness,
@@ -1325,6 +1326,11 @@ export function startProgramme(accessToken: string, orgId: string, body: StartPr
 
 export function fetchProgramme(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeView> {
   return apiGet<ProgrammeView>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}`, options);
+}
+
+/** The programme week by week: unlock date, open or locked, and how many of its students finished it. */
+export function fetchProgrammeWeeks(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeWeekView[]> {
+  return apiGet<ProgrammeWeekView[]>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}/weeks`, options);
 }
 
 export function fetchProgrammeProgress(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeProgress[]> {

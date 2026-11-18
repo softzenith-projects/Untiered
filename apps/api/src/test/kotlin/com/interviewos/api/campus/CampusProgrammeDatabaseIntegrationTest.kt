@@ -248,6 +248,8 @@ class CampusProgrammeDatabaseIntegrationTest {
         assertNotFound { service.get(adminA, orgA, programmeB.id) }
         assertNotFound { service.get(adminA, orgB, programmeB.id) }
         assertNotFound { service.progress(adminA, orgA, programmeB.id) }
+        assertNotFound { service.weeks(adminA, orgA, programmeB.id) }
+        assertNotFound { service.weeks(adminA, orgB, programmeB.id) }
         assertNotFound { service.archive(adminA, orgA, programmeB.id) }
         assertEquals(emptyList(), service.list(adminA, orgA))
         assertEquals(0L, count("select count(*) from public.programmes where org_id = :o"))
@@ -270,6 +272,9 @@ class CampusProgrammeDatabaseIntegrationTest {
             }
         assertEquals(HttpStatus.FORBIDDEN, error.status)
         assertEquals(listOf(cse1Member), service.progress(facultyA, orgA, forCse.id).map { it.memberId })
+        // The week-by-week view counts the same students and no others, and a programme outside the scope is a 404.
+        assertEquals(setOf(1), service.weeks(facultyA, orgA, forCse.id).map { it.students }.toSet())
+        assertNotFound { service.weeks(facultyA, orgA, forEce.id) }
     }
 
     @Test
