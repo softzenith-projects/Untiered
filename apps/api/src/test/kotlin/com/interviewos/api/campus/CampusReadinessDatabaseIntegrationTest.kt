@@ -194,7 +194,13 @@ class CampusReadinessDatabaseIntegrationTest {
         completedSession(cse1, score = 5)
 
         val after = readiness.student(adminA, orgA, cse1Member)
-        assertEquals(before, after)
+        // Last active is the one thing personal practice is meant to move: the join consent says the
+        // college sees *whether* the student practised in the last 14 days. Everything else is unchanged.
+        assertNotNull(after.staff?.lastActiveAt)
+        assertEquals(
+            before.copy(staff = before.staff?.copy(lastActiveAt = null)),
+            after.copy(staff = after.staff?.copy(lastActiveAt = null)),
+        )
         assertEquals(50, after.overall)
         assertEquals(listOf(60, 40), after.evidence.map { it.score })
         assertEquals(mineBefore, readiness.mine(cse1))
