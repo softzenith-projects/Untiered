@@ -1,6 +1,6 @@
 # Public launch runbook — `untiered.tech`
 
-Use this with [the audited hosting decision](../docs/audits/launch-day-plan-2026-10-17.md). It prepares the existing Next.js web app for Vercel and the existing Spring Boot API for one VM. No interview logic moves to Vercel. The release source is a **green `develop` commit**; the owner alone advances `main`.
+Use this with [the audited hosting decision](../docs/audits/launch-day-plan-2026-10-17.md). It prepares the existing Next.js web app for Vercel (see "Web on Vercel (current)" for what is live) and the existing Spring Boot API for one VM. No interview logic moves to Vercel. The release source is a **green `develop` commit**; the owner alone advances `main`.
 
 ## Accounts and cost gate
 
@@ -52,22 +52,28 @@ Upstream publishes Piston and its packages for x86 only, so this runner is built
 
 `PISTON_RUN_TIMEOUT=5000` must not drop below the API's `run-timeout-millis`; Piston's default of 3000 ms refuses the API's requests. The API looks the Java version up from `/runtimes`, so a newer JDK package needs no API change.
 
-## Web on Netlify (current)
+## Web on Vercel (current)
 
-The site is served by Netlify, not the Vercel plan below. Netlify's free plan refuses to build
-a private repository owned by a GitHub organisation, so the `deploy-web` job in
-`.github/workflows/ci.yml` builds and deploys it with the Netlify CLI after CI is green.
+The site is served by Vercel on the **Hobby** plan (owner, 18 November 2026), replacing Netlify,
+whose free credits ran out: every deploy from 17 November 14:35 UTC returned `Forbidden`.
+Hobby is for non-commercial use under Vercel's terms, and Untiered sells credits, so move to Pro
+before paid traffic matters; that is the owner's call. The `deploy-web` job in
+`.github/workflows/ci.yml` builds and deploys with the Vercel CLI, only after CI is green.
+`apps/web/vercel.json` turns off Vercel's own Git deployments, so a connected repository cannot
+deploy a red commit behind CI's back.
 
-1. In Netlify, create a personal access token (User settings → Applications) and copy the
-   site's Project ID (Project configuration → General).
-2. In GitHub (Settings → Secrets and variables → Actions), add the secrets `NETLIFY_AUTH_TOKEN`
-   and `NETLIFY_SITE_ID`, and the variable `NETLIFY_PRODUCTION_BRANCH` set to the branch that
-   should go live. Until the variable is set, nothing deploys.
-3. In Netlify, under Build & deploy → Continuous deployment, stop builds or unlink the
-   repository, so the failing Git-triggered builds stop.
+1. In Vercel, create a project for this repository with Root Directory `apps/web` and Node.js
+   24.x, and enable "Include source files outside of the Root Directory". Add the Production
+   environment variables in the table under step 4 (copy the values from the Netlify site).
+2. Create an access token (Account Settings → Tokens). Run `npx vercel@65.10.0 link` in the
+   repository root, or read the project's Settings → General, for the team (org) ID and project ID.
+3. In GitHub (Settings → Secrets and variables → Actions), add the secrets `VERCEL_TOKEN`,
+   `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`, and the variable `VERCEL_PRODUCTION_BRANCH` set to
+   the branch that should go live (`main`). Until the variable is set, nothing deploys.
+4. Add `untiered.tech` under the project's Domains and change DNS to the records Vercel shows.
+   Check Supabase Auth's Site URL and redirect allow-list still match the domain.
 
-Environment variables stay in Netlify's dashboard: the CLI fetches the Production values for
-the build. To redeploy without a new commit, re-run the `deploy web (Netlify)` job.
+To redeploy without a new commit, re-run the `deploy web (Vercel)` job.
 
 ## 4. Configure Vercel web
 
