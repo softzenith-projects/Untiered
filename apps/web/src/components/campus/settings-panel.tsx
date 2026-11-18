@@ -124,6 +124,16 @@ const ACTOR_KIND: Record<AuditEntryView["actorKind"], string> = {
   system: "System",
 };
 
+/**
+ * An Untiered admin is not a member of the college, so the server has no member name to give;
+ * "Deleted account" would wrongly say someone's account was removed.
+ */
+export function actorFallback(kind: AuditEntryView["actorKind"]): string {
+  if (kind === "platform_admin") return "Untiered team";
+  if (kind === "system") return "Untiered";
+  return "Deleted account";
+}
+
 function AuditLog() {
   const { orgId, accessToken } = useCampusOrg();
   const loadFirst = useCallback((signal: AbortSignal) => fetchAuditLog(orgId, { accessToken, signal }), [orgId, accessToken]);
@@ -178,7 +188,7 @@ function AuditLog() {
                     <time dateTime={entry.occurredAt}>{new Date(entry.occurredAt).toLocaleString()}</time>
                   </td>
                   <td className="px-4 py-3">
-                    {entry.actorName ?? "Deleted account"}
+                    {entry.actorName ?? actorFallback(entry.actorKind)}
                     <span className="block text-ink-subtle">{ACTOR_KIND[entry.actorKind]}</span>
                   </td>
                   <td className="px-4 py-3 font-mono">{entry.action}</td>

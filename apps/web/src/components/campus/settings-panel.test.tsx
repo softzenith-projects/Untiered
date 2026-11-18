@@ -115,3 +115,12 @@ describe("SettingsPanel", () => {
     expect(await screen.findByText("Weights saved.")).toBeInTheDocument();
   });
 });
+
+describe("audit log actor names", () => {
+  it("names the Untiered team, not a deleted account, when an admin outside the college acted", async () => {
+    const { actorFallback } = await import("./settings-panel");
+    expect(actorFallback("platform_admin")).toBe("Untiered team");
+    expect(actorFallback("system")).toBe("Untiered");
+    expect(actorFallback("member")).toBe("Deleted account");
+  });
+});
