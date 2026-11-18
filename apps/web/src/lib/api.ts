@@ -104,6 +104,15 @@ import type {
   OrgView,
 } from "@untiered/shared";
 
+import type {
+  AdminPackageView,
+  CollegeBillingRow,
+  CollegePackagesView,
+  InvoicePackageRequest,
+  PackageRequest,
+  PayPackageRequest,
+} from "@untiered/shared";
+
 import { env } from "@/lib/env";
 import type { AnswerTiming } from "@/lib/speech-timing";
 
@@ -1173,6 +1182,60 @@ export function fetchCampusUsage(params: { from?: string; to?: string }, options
   if (params.to) query.set("to", params.to);
   const suffix = query.size > 0 ? `?${query.toString()}` : "";
   return apiGet<OrgUsageRow[]>(`/api/v1/admin/campus/usage${suffix}`, options);
+}
+
+// -- Module 14: college packages and payments -------------------------------------------
+
+const adminPackages = (orgId: string) => `${adminOrg(orgId)}/packages`;
+const adminPackage = (orgId: string, packageId: string) => `${adminPackages(orgId)}/${encodeURIComponent(packageId)}`;
+
+/** Platform admin: every package of one college. */
+export function fetchAdminPackages(orgId: string, options: ApiGetOptions): Promise<AdminPackageView[]> {
+  return apiGet<AdminPackageView[]>(adminPackages(orgId), options);
+}
+
+export function createAdminPackage(accessToken: string, orgId: string, body: PackageRequest): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(adminPackages(orgId), "POST", accessToken, body);
+}
+
+export function updateAdminPackage(
+  accessToken: string,
+  orgId: string,
+  packageId: string,
+  body: PackageRequest,
+): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(adminPackage(orgId, packageId), "PATCH", accessToken, body);
+}
+
+export function invoiceAdminPackage(
+  accessToken: string,
+  orgId: string,
+  packageId: string,
+  body: InvoicePackageRequest,
+): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(`${adminPackage(orgId, packageId)}/invoice`, "POST", accessToken, body);
+}
+
+export function payAdminPackage(accessToken: string, orgId: string, packageId: string, body: PayPackageRequest): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(`${adminPackage(orgId, packageId)}/paid`, "POST", accessToken, body);
+}
+
+export function voidAdminPackage(accessToken: string, orgId: string, packageId: string): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(`${adminPackage(orgId, packageId)}/void`, "POST", accessToken);
+}
+
+export async function deleteAdminPackage(accessToken: string, orgId: string, packageId: string): Promise<void> {
+  await apiSend<void>(adminPackage(orgId, packageId), "DELETE", accessToken);
+}
+
+/** Platform admin: every college's current package, payments and cost. */
+export function fetchCampusBilling(options: ApiGetOptions): Promise<CollegeBillingRow[]> {
+  return apiGet<CollegeBillingRow[]>("/api/v1/admin/campus/billing", options);
+}
+
+/** College staff: the college's packages, as much as the caller's role may see. */
+export function fetchCollegePackages(orgId: string, options: ApiGetOptions): Promise<CollegePackagesView> {
+  return apiGet<CollegePackagesView>(`${campusOrg(orgId)}/packages`, options);
 }
 
 export function fetchMyLeaderboard(scope: LeaderboardScope, options: ApiGetOptions): Promise<LeaderboardView> {

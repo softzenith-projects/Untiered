@@ -115,7 +115,7 @@ class LifecycleEmailJob(
                            (d.category = 'welcome'
                              or (d.category = 'daily_question' and p.daily_question)
                              or (d.category in ('announcement', 'informative') and p.announcements)
-                             or d.category = 'campus_assignment'
+                             or d.category in ('campus_assignment', 'campus_billing')
                              or (d.category in ('campus_reminder', 'campus_report_ready', 'campus_weekly') and p.campus_reminders)
                              or (d.category = 'reengagement' and p.reengagement)) as allowed,
                            (d.category <> 'reengagement'

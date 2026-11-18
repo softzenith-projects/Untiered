@@ -185,7 +185,9 @@ describe("CampusGate", () => {
     const nav_ = screen.getByRole("navigation", { name: "College portal" });
     expect(within(nav_).getByRole("link", { name: "Overview" })).toBeInTheDocument();
     expect(within(nav_).queryByRole("link", { name: "Staff" })).not.toBeInTheDocument();
-    expect(within(nav_).queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
+    expect(within(nav_).queryByRole("link", { name: "Departments and batches" })).not.toBeInTheDocument();
+    // Settings is open to faculty since contract Module 14, for the interview package only.
+    expect(within(nav_).getByRole("link", { name: "Settings" })).toBeInTheDocument();
   });
 
   it("does not render a page the role cannot use", async () => {

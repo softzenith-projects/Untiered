@@ -33,7 +33,8 @@ data class AssignedRound(
  * its admission transaction, to take the round's configuration, and [admit] inside it. Inside,
  * the organisation row is locked first, so every assigned start in one college queues behind
  * the one before it and reads its attempt; the caps are then checked by [AssignmentGate], the
- * session is inserted, and the attempt is written with `org_funded = true`. The student's free
+ * session is inserted, and the attempt is written with `org_funded = true` and, when the
+ * college has packages, the `package_id` that pays for it. The student's free
  * rounds and credits are never touched on this path: no `practice_usage` row, no charge.
  *
  * Every refusal for "this is not your assignment" — no joined student membership, a suspended
@@ -48,6 +49,7 @@ class AssignedRoundAdmission internal constructor(
     private val features: ProductFeatureProperties,
     private val notifications: CampusNotifications,
     private val clock: Clock,
+    private val billing: CollegeBillingProperties = CollegeBillingProperties(),
 ) {
     @Autowired
     constructor(
@@ -55,7 +57,8 @@ class AssignedRoundAdmission internal constructor(
         assignments: AssignmentRepository,
         features: ProductFeatureProperties,
         notifications: CampusNotifications,
-    ) : this(access, assignments, features, notifications, Clock.systemUTC())
+        billing: CollegeBillingProperties = CollegeBillingProperties(),
+    ) : this(access, assignments, features, notifications, Clock.systemUTC(), billing)
 
     /**
      * A round has completed: if it was a college assignment, tell the student its report is
@@ -85,12 +88,16 @@ class AssignedRoundAdmission internal constructor(
         val memberId = checkNotNull(scope.memberId)
         // 2. Serialise every assigned start in this college until the transaction ends.
         val allowance = assignments.lockOrgForAdmission(scope) ?: throw notFound()
-        // 3. The caps, in the contract's order.
+        // 3. The caps, in the contract's order. With an issued package, the package that pays
+        //    is chosen here too, from counts read under the same lock (contract "Module 14").
         val counts = assignments.admissionCounts(scope, row.id, memberId)
+        val now = clock.instant()
+        val packages =
+            CollegePackages.choose(assignments.packageUsage(scope, memberId), CollegePackages.today(now), billing.funding)
         AssignmentGate
             .evaluate(
                 kind = row.kind,
-                now = clock.instant(),
+                now = now,
                 opensAt = row.opensAt,
                 dueAt = row.dueAt,
                 allowLate = row.allowLate,
@@ -100,10 +107,11 @@ class AssignedRoundAdmission internal constructor(
                 interviewCap = row.interviewCap,
                 collegeUsed = counts.collegeUsed,
                 collegeAllowance = allowance,
+                packages = packages,
             )?.let { throw it.toException() }
-        // 4. The session, then the attempt that the college pays for.
+        // 4. The session, then the attempt that the college pays for, charged to its package.
         val sessionId = insertSession()
-        assignments.insertAttempt(scope, row.id, memberId, sessionId)
+        assignments.insertAttempt(scope, row.id, memberId, sessionId, packages?.packageId)
         return sessionId
     }
 

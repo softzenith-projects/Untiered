@@ -410,7 +410,8 @@ interface AssignedItem {
   attemptsUsed: number;
   attemptLimit: number;
   canStart: boolean;
-  blockedReason: null | "not_open" | "past_due" | "attempt_limit" | "student_cap" | "college_allowance";
+  blockedReason: null | "not_open" | "past_due" | "attempt_limit" | "student_cap" | "college_allowance"
+    | "no_active_package" | "package_student_limit";   // the last two: Module 14
   sessionIds: string[];
 }
 ```
@@ -449,7 +450,7 @@ assignment.
 | Method · path | Body → response |
 |---|---|
 | `GET /me/assignments` | → `AssignedItem[]` for published assignments, ordered by `dueAt`. A caller with no joined student membership gets `[]`. This route is **not** behind the `campus` switch's 404, so the dashboard can call it unconditionally; with the switch off it answers `[]`. |
-| `POST /sessions` (existing) | gains the optional field `assignmentId`. When it is present, the server takes `roundType`, `durationMinutes`, `companyName`, `roleTitle`, `candidateStage`, `language` and `focusTopic` from the assignment and ignores the client's values for those fields, including an empty `companyName` or `roleTitle`. Audio consent is still required. On success the response is unchanged, and the student's free rounds and credits are not touched. New errors: `404 assignment_not_found`; `409 assignment_not_open`; `409 assignment_past_due`; `409 assignment_attempt_limit`; `409 assignment_student_cap`; `402 college_allowance_exhausted`; and the existing `409 session_in_progress`. |
+| `POST /sessions` (existing) | gains the optional field `assignmentId`. When it is present, the server takes `roundType`, `durationMinutes`, `companyName`, `roleTitle`, `candidateStage`, `language` and `focusTopic` from the assignment and ignores the client's values for those fields, including an empty `companyName` or `roleTitle`. Audio consent is still required. On success the response is unchanged, and the student's free rounds and credits are not touched. New errors: `404 assignment_not_found`; `409 assignment_not_open`; `409 assignment_past_due`; `409 assignment_attempt_limit`; `409 assignment_student_cap`; `402 college_allowance_exhausted`; `402 college_package_inactive` and `409 package_student_limit` (Module 14); and the existing `409 session_in_progress`. |
 
 A scenario assignment needs no new student route. The student plays the scenarios through
 the existing Arena (`/arena`), and completion is derived as described above.
@@ -461,9 +462,11 @@ the existing Arena (`/arena`), and completion is derived as described above.
 2. Lock the organisation row with `select … for update`.
 3. Check, in this order: `opensAt`; `dueAt` / `allowLate`; the student's attempts against
    `attemptLimit`; the student's org-funded attempts against `interviewCap`; the college's
-   org-funded attempts that are not `failed` against `interview_allowance`.
-4. Insert the session, then `assignment_attempts` with `org_funded = true`. Write no
-   `practice_usage` row and make no credit charge.
+   org-funded attempts that are not `failed` against `interview_allowance`, or, once the
+   college has an issued package, the package rule of Module 14 instead.
+4. Insert the session, then `assignment_attempts` with `org_funded = true` (and the
+   `package_id` that pays for it, Module 14). Write no `practice_usage` row and make no
+   credit charge.
 5. A session that ends `failed` marks its attempt `failed`, which hands back the
    allowance. An `abandoned` session still counts.
 
@@ -1103,3 +1106,128 @@ The student routes sit under the campus switch's 404, although `GET /me/assignme
 `mcq_test` assignments, and `attemptsUsed` counts the student's MCQ attempts. `AssignedItem`
 carries `mcqScore`, `mcq` (the test's shape, else null), `mcqOpenAttemptId: string | null`
 (the attempt to resume) and `mcqLatestAttemptId: string | null` (the latest submitted one).
+
+---
+
+## Module 14: college packages and payments
+
+A college buys a **package**: a pool of interviews for a term (`startsOn` to `endsOn`), with an
+optional limit per student, at a price entered per package. Colleges pay by invoice (bank
+transfer or cheque); there is no payment gateway. A platform admin records the package, marks
+it invoiced, and later paid. All dates are India calendar dates (`YYYY-MM-DD`); money is in
+paise (`amountPaise`, tax inclusive, as invoiced).
+
+```ts
+type PackageStatus = "draft" | "invoiced" | "paid" | "void";
+
+interface AdminPackageView {              // platform admin only
+  id: string; orgId: string;
+  interviews: number;                    // the pool, 1..1,000,000
+  interviewsUsed: number;                // attempts charged to it that did not fail
+  interviewsRemaining: number;           // max(0, interviews - interviewsUsed)
+  perStudentLimit: number | null;        // null: no limit
+  startsOn: string; endsOn: string;
+  graceDays: number;                     // default 14, 0..90
+  lastUsableOn: string;                  // endsOn + graceDays
+  amountPaise: number; invoiceNumber: string | null;
+  status: PackageStatus; invoicedOn: string | null; paidOn: string | null;
+  paymentReference: string | null;       // the bank transfer or cheque number
+  notes: string | null;                  // private to platform admins
+  inWindow: boolean;                     // a funding status, and today inside startsOn..lastUsableOn
+  remindersSent: ("ends_in_30" | "ends_in_7")[];
+  createdAt: string; updatedAt: string;
+}
+
+interface PackageRequest {               // POST: interviews, startsOn, endsOn, amountPaise required
+  interviews?: number; perStudentLimit?: number | null;   // 0 (or null on POST): no limit
+  startsOn?: string; endsOn?: string; graceDays?: number;
+  amountPaise?: number; invoiceNumber?: string; notes?: string;  // "" clears a text field
+}
+interface InvoicePackageRequest { invoiceNumber?: string; invoicedOn?: string }   // date defaults to today
+interface PayPackageRequest { paidOn?: string; paymentReference?: string }        // date defaults to today
+
+interface CollegePackageView {            // a college admin (and a platform admin on the college route)
+  id: string; interviews: number; interviewsUsed: number; interviewsRemaining: number;
+  perStudentLimit: number | null; startsOn: string; endsOn: string; lastUsableOn: string;
+  status: "invoiced" | "paid" | "void"; amountPaise: number;
+  invoiceNumber: string | null; invoicedOn: string | null; paidOn: string | null;
+}
+interface PackageBalanceView { interviewsRemaining: number; perStudentLimit: number | null; endsOn: string }
+interface CollegePackagesView {
+  fundedByPackages: boolean;             // false: the interview allowance applies
+  current: PackageBalanceView | null;    // the package the next interview comes from
+  packages: CollegePackageView[] | null; // null for TPO and faculty
+}
+
+interface CollegeBillingRow {             // GET /admin/campus/billing
+  orgId: string; orgName: string; orgStatus: "active" | "suspended";
+  fundedByPackages: boolean;
+  current: {
+    id: string; status: PackageStatus; interviews: number; interviewsUsed: number;
+    interviewsRemaining: number; perStudentLimit: number | null;
+    startsOn: string; endsOn: string; lastUsableOn: string;
+    daysLeft: number;                    // endsOn - today; negative in the grace period
+  } | null;
+  outstandingInvoices: number; outstandingPaise: number;   // invoiced, not yet paid
+  totalPaidPaise: number;
+  aiCostUsd: number | null;              // ai_calls of the college's attempts, startsOn..lastUsableOn (IST); null with no current package
+  nextReminderOn: string | null;
+}
+```
+
+| Method · path | Who | Body → response |
+|---|---|---|
+| `GET /admin/campus/orgs/{org}/packages` | platform admin | → `AdminPackageView[]`, newest term first; audited as `packages.viewed` |
+| `POST /admin/campus/orgs/{org}/packages` | platform admin | `PackageRequest` → `201 AdminPackageView` (a `draft`). `400 invalid_interviews`, `invalid_per_student_limit`, `invalid_date`, `invalid_term` (ends before it starts), `invalid_grace_days`, `invalid_amount`, `invalid_invoice_number`, `invalid_notes` |
+| `PATCH /admin/campus/orgs/{org}/packages/{id}` | platform admin | `PackageRequest` → `AdminPackageView`. `409 package_void`; `409 package_below_used` (fewer interviews than already started); an issued package keeps its invoice number (`400 invalid_invoice_number`) |
+| `POST /admin/campus/orgs/{org}/packages/{id}/invoice` | platform admin | `InvoicePackageRequest` → `AdminPackageView`, `draft` → `invoiced`. `409 package_status_conflict`; `400 invalid_invoice_number` when it has none |
+| `POST /admin/campus/orgs/{org}/packages/{id}/paid` | platform admin | `PayPackageRequest` → `AdminPackageView`, `draft` or `invoiced` → `paid`. `409 package_status_conflict`; `400 invalid_invoice_number` when it has none |
+| `POST /admin/campus/orgs/{org}/packages/{id}/void` | platform admin | → `AdminPackageView`, any status but `void` → `void`. `409 package_in_use` once an interview has been charged to it (edit it instead) |
+| `DELETE /admin/campus/orgs/{org}/packages/{id}` | platform admin | `204`, a `draft` only; otherwise `409 package_not_draft` |
+| `GET /admin/campus/billing` | platform admin | → `CollegeBillingRow[]`, every college by name. Not written to each college's audit log, like the college index |
+| `GET /campus/orgs/{org}/packages` | any staff, platform admin | → `CollegePackagesView`. `packages` lists issued and voided packages (never drafts) for a college admin or a platform admin, and is `null` for TPO and faculty, who see no money. Platform-admin reads are audited |
+
+Everyone off the platform-admin allow-list gets `404` on the `/admin` routes; a package id of
+another college is `404`. Every write takes the organisation row lock (the one admission takes)
+and is audited on the college's log as `platform_admin`: `package.created`, `package.updated`
+(field names only), `package.invoiced`, `package.paid`, `package.voided`, `package.deleted`.
+No amount is written to the audit log.
+
+**Admission.** A college is *on packages* once it has at least one package that is `invoiced`
+or `paid` (a draft or a voided package does not count). A college that is not keeps
+`interview_allowance` exactly as before. For a college on packages, step 3 of Module 4's
+admission replaces the allowance check with this, read under the same organisation lock:
+
+1. Usable packages: status in `interviewos.campus.billing.funding-statuses` (default
+   `invoiced,paid`, so a college is not blocked while a transfer clears; `paid` alone makes
+   payment a precondition), and today in India between `startsOn` and `endsOn + graceDays`
+   inclusive. None → `402 college_package_inactive` (`blockedReason: "no_active_package"`).
+2. Of those, the ones with interviews remaining (attempts charged to the package that are not
+   `failed`, against `interviews`). None → `402 college_allowance_exhausted`
+   (`"college_allowance"`, the existing wording).
+3. Of those, the ones where the student's charged attempts (not `failed`) are under
+   `perStudentLimit`. None → `409 package_student_limit` (`"package_student_limit"`).
+4. Otherwise the one with the earliest `endsOn` (then `lastUsableOn`, `startsOn`, id) pays: its
+   id is written to `assignment_attempts.package_id` in the admission transaction.
+
+A failed attempt hands its interview back, as for the allowance. Unused interviews lapse after
+`lastUsableOn`; a renewal carries nothing over. `GET /me/assignments` applies the same rule.
+The student's own free rounds and credits are never involved.
+
+**Renewal reminders.** Daily at 09:30 India time, an issued package of an active college gets
+an email to the college's joined `college_admin` and `tpo` members: the 30-day reminder while
+its end date is 8 to 30 days away, the 7-day one while it is 0 to 7 days away (inside 7 days
+only the 7-day one goes out). None is sent when a later package (`invoiced` or `paid`, ending
+after it) is already recorded. Each is sent once per package per kind
+(`college_package_reminders`); one for a college with no admin or TPO yet waits for a later
+run. Category `campus_billing`: transactional, not turned off by `campusReminders`. It names
+the interviews remaining, the per-student limit and the dates; never a price.
+
+**Data handling.** `college_packages` and `college_package_reminders` have RLS on and no
+policies for `authenticated`. A package survives the deletion of the admin who recorded it
+(`created_by` is set null).
+
+**Internal notes.** The billing page (`/admin/campus/billing`) is linked from `/admin/campus`
+beside usage and programmes; the college detail page has a "Packages and payments" section.
+College staff see the package on `/campus/settings`, now open to every staff role: a TPO or
+faculty member sees only the package there.

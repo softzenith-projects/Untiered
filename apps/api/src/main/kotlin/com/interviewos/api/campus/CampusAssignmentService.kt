@@ -33,6 +33,7 @@ class CampusAssignmentService internal constructor(
     private val features: ProductFeatureProperties,
     private val notifications: CampusNotifications,
     private val clock: Clock,
+    private val billing: CollegeBillingProperties = CollegeBillingProperties(),
 ) {
     @Autowired
     constructor(
@@ -41,7 +42,8 @@ class CampusAssignmentService internal constructor(
         audit: CampusAudit,
         features: ProductFeatureProperties,
         notifications: CampusNotifications,
-    ) : this(access, assignments, audit, features, notifications, Clock.systemUTC())
+        billing: CollegeBillingProperties = CollegeBillingProperties(),
+    ) : this(access, assignments, audit, features, notifications, Clock.systemUTC(), billing)
 
     // -- the scenario catalogue ------------------------------------------------------
 
@@ -263,11 +265,19 @@ class CampusAssignmentService internal constructor(
 
         val facts = assignments.recipientFacts(scope, rows.map { it.id }, memberId = memberId).associateBy { it.assignmentId }
         val allowance = org.interviewAllowance
-        val collegeUsed = if (rows.any { it.kind == AssignmentKind.INTERVIEW }) assignments.collegeUsage(scope) else 0
+        val anyInterview = rows.any { it.kind == AssignmentKind.INTERVIEW }
+        val collegeUsed = if (anyInterview) assignments.collegeUsage(scope) else 0
         val scenarioIds = rows.flatMap { it.scenarioIds.orEmpty() }.distinct()
         val scenarios = assignments.scenarios(scenarioIds).associateBy { it.id }
         val progress = assignments.scenarioProgress(identity.id, scenarioIds)
         val now = clock.instant()
+        // The same package choice admission makes; it is per student, not per assignment.
+        val packages =
+            if (anyInterview) {
+                CollegePackages.choose(assignments.packageUsage(scope, memberId), CollegePackages.today(now), billing.funding)
+            } else {
+                null
+            }
 
         return rows.map { row ->
             val mine = facts[row.id]
@@ -288,6 +298,7 @@ class CampusAssignmentService internal constructor(
                     interviewCap = row.interviewCap,
                     collegeUsed = collegeUsed,
                     collegeAllowance = allowance,
+                    packages = packages,
                 )
             AssignedItem(
                 id = row.id,

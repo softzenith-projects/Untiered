@@ -21,6 +21,9 @@ export default function AdminCampusPage() {
             Usage and AI cost per college
           </Link>
         </p>
+        <Link href="/admin/campus/billing" className="w-fit text-caption font-semibold text-accent underline">
+          Packages and payments per college
+        </Link>
         <Link href="/admin/campus/programmes" className="w-fit text-caption font-semibold text-accent underline">
           Programme templates
         </Link>

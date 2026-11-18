@@ -1054,6 +1054,10 @@ export function assignmentStartError(cause: unknown): string {
       return BLOCKED_REASON_TEXT.student_cap ?? cause.message;
     case "college_allowance_exhausted":
       return BLOCKED_REASON_TEXT.college_allowance ?? cause.message;
+    case "college_package_inactive":
+      return BLOCKED_REASON_TEXT.no_active_package ?? cause.message;
+    case "package_student_limit":
+      return BLOCKED_REASON_TEXT.package_student_limit ?? cause.message;
     case "session_in_progress":
       return "You already have an interview in progress. Finish or leave it from your dashboard first.";
     default:

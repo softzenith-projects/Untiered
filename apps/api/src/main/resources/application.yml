@@ -98,6 +98,11 @@ interviewos:
     # Salt for the hashed IP and email in the lead form's rate-limit buckets. Empty draws a
     # random one per process, so the limits reset on restart.
     lead-hash-salt: ${CAMPUS_LEADS_HASH_SALT:}
+    billing:
+      # Which college package statuses fund an assigned interview (campus contract Module 14).
+      # Invoiced and paid by default, so a college is not blocked while a bank transfer clears;
+      # "paid" alone makes payment a precondition. Draft and void never fund anything.
+      funding-statuses: ${CAMPUS_PACKAGE_FUNDING_STATUSES:invoiced,paid}
   turnstile:
     # Cloudflare Turnstile secret for the API's own captcha checks (the lead form). Empty
     # skips verification, which is logged at startup; set it everywhere but local development.

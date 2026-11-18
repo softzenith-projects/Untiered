@@ -133,8 +133,9 @@ object AssignmentRules {
  * Checked in this order, and the order is the reason the student is given:
  * 1. not yet open; 2. past the deadline with no late attempts; 3. the student's attempts
  * (not handed back) against `attemptLimit`; 4. the student's org-funded attempts against
- * `interviewCap`; 5. the college's org-funded attempts (not handed back) against its
- * allowance. A scenario set is only ever refused for 1 and 2: it has no attempts, and costs
+ * `interviewCap`; 5. the college's funding: with no issued package, its org-funded attempts
+ * (not handed back) against its allowance; with one, [CollegePackages.choose] (contract
+ * "Module 14"). A scenario set is only ever refused for 1 and 2: it has no attempts, and costs
  * the college nothing. An MCQ test is refused for 1, 2 and 3: each start is an attempt, but it
  * costs no AI, so neither the interview cap nor the college's allowance applies.
  */
@@ -170,6 +171,18 @@ object AssignmentGate {
             "college_allowance_exhausted",
             "Your college has used up its interview allowance for now. Ask your placement office.",
         ),
+        NO_ACTIVE_PACKAGE(
+            "no_active_package",
+            HttpStatus.PAYMENT_REQUIRED,
+            "college_package_inactive",
+            "Your college does not have an active interview package right now. Ask your placement office.",
+        ),
+        PACKAGE_STUDENT_LIMIT(
+            "package_student_limit",
+            HttpStatus.CONFLICT,
+            "package_student_limit",
+            "You have used all the interviews your college's package allows each student. Ask your placement office.",
+        ),
         ;
 
         fun toException(): ApiException = ApiException(status, code, message)
@@ -180,6 +193,8 @@ object AssignmentGate {
      * @param orgFundedUsed the student's org-funded attempts at this assignment not handed back.
      * @param interviewCap null means the cap is [attemptLimit].
      * @param collegeUsed the college's org-funded attempts, across every assignment, not handed back.
+     * @param packages the package choice for this student; null when the college has no issued
+     *   package, and then [collegeUsed] against [collegeAllowance] decides, as before packages.
      */
     fun evaluate(
         kind: AssignmentKind,
@@ -193,6 +208,7 @@ object AssignmentGate {
         interviewCap: Int?,
         collegeUsed: Int,
         collegeAllowance: Int,
+        packages: PackageChoice? = null,
     ): Blocked? {
         if (now.isBefore(opensAt)) return Blocked.NOT_OPEN
         if (!allowLate && !now.isBefore(dueAt)) return Blocked.PAST_DUE
@@ -200,6 +216,7 @@ object AssignmentGate {
         if (attemptsUsed >= attemptLimit) return Blocked.ATTEMPT_LIMIT
         if (kind == AssignmentKind.MCQ_TEST) return null
         if (orgFundedUsed >= (interviewCap ?: attemptLimit)) return Blocked.STUDENT_CAP
+        if (packages != null) return packages.blocked
         if (collegeUsed >= collegeAllowance) return Blocked.COLLEGE_ALLOWANCE
         return null
     }

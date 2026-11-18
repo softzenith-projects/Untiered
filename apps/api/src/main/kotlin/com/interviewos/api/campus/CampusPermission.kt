@@ -95,6 +95,12 @@ enum class CampusPermission(
     /** Read the college's audit log. */
     AUDIT_LOG_VIEW(setOf(CampusRole.COLLEGE_ADMIN), platformAdmin = true),
 
+    /** See the current package's interviews remaining, per-student limit and end date (module 14). No money. */
+    PACKAGES_VIEW(CampusRole.STAFF, platformAdmin = true),
+
+    /** See what the college bought and was billed: every package, its amount and invoice status (module 14). */
+    PACKAGE_PAYMENTS_VIEW(setOf(CampusRole.COLLEGE_ADMIN), platformAdmin = true),
+
     /** See and start one's own assignments, and leave the college. */
     OWN_MEMBERSHIP(setOf(CampusRole.STUDENT), platformAdmin = false),
     ;
