@@ -214,10 +214,14 @@ object ReadinessCalculator {
                 }.sortedBy { it.first }
                 .map { it.second }
 
+        // "communication" and "aptitude" are both a component and a topic; a topic suggestion that
+        // repeats a component already suggested says the same thing twice, so it is left out.
+        val alreadySuggested = forComponents.map { it.component.wireValue }.toSet()
         val byTopic = newestFirst.filter { it.topic != null }.groupBy { it.topic!! }
         val forTopics =
             TOPIC_LABELS.keys
                 .mapNotNull { topic ->
+                    if (topic in alreadySuggested) return@mapNotNull null
                     val all = byTopic[topic] ?: return@mapNotNull null
                     val score = mean(all.take(LATEST_PER_COMPONENT))
                     if (score >= SUGGEST_BELOW) return@mapNotNull null
