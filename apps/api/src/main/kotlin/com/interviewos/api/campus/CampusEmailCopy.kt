@@ -43,6 +43,9 @@ object CampusEmailCopy {
     const val CATEGORY_REPORT = "campus_report_ready"
     const val CATEGORY_WEEKLY = "campus_weekly"
 
+    /** A renewal notice to a college's admins and placement officers. Not optional: a billing notice. */
+    const val CATEGORY_BILLING = "campus_billing"
+
     /** Categories a student or staff member can switch off with `campusReminders`. */
     val OPTIONAL_CATEGORIES = listOf(CATEGORY_REMINDER, CATEGORY_REPORT, CATEGORY_WEEKLY)
 
@@ -132,6 +135,43 @@ object CampusEmailCopy {
                 appendLine("Student assignments now overdue: ${counts.overdue}")
                 appendLine()
                 append("Open Untiered Campus for the detail. You can turn this summary off in your email preferences.")
+            },
+        )
+    }
+
+    fun packageReminderKey(
+        packageId: UUID,
+        kind: PackageReminderKind,
+    ) = "campus-package-$packageId-${kind.dbValue}"
+
+    /**
+     * The renewal reminder (contract "Module 14"), 30 or 7 days before a package ends. Counts
+     * and dates only: no price, which a placement officer does not see either.
+     */
+    fun packageReminder(
+        college: String,
+        pkg: PackageUsage,
+        kind: PackageReminderKind,
+    ): CampusEmail {
+        val ends = DAY.format(pkg.endsOn)
+        val subject =
+            when (kind) {
+                PackageReminderKind.ENDS_IN_30 -> "$college's Untiered interview package ends on $ends"
+                PackageReminderKind.ENDS_IN_7 -> "One week left on $college's Untiered interview package"
+            }
+        return CampusEmail(
+            CATEGORY_BILLING,
+            packageReminderKey(pkg.id, kind),
+            subject,
+            buildString {
+                appendLine("$college's interview package on Untiered ends on $ends.")
+                appendLine()
+                appendLine("Interviews remaining: ${pkg.remaining} of ${pkg.interviews}")
+                pkg.perStudentLimit?.let { appendLine("Interviews each student may take: $it") }
+                appendLine("Students can still start interviews from it until ${DAY.format(pkg.lastUsableOn)}.")
+                appendLine()
+                appendLine("After that, unused interviews lapse; a renewal does not carry them over.")
+                append("To renew, reply to this email and we will send the next invoice.")
             },
         )
     }

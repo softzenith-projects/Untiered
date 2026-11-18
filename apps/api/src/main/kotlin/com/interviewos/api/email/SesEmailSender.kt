@@ -63,7 +63,8 @@ class SesEmailSender(
         val accountLink = "${properties.publicBaseUrl.trimEnd('/')}/${accountPath(category)}"
         // A new-assignment email is an instruction from the student's college, not a
         // subscription: it has no unsubscribe, only a link to the preferences that govern the rest.
-        val transactional = isWelcome || category == "campus_assignment"
+        // Nor is a college's billing notice to its own staff (campus contract Module 14).
+        val transactional = isWelcome || category == "campus_assignment" || category == "campus_billing"
         val safeAccountLink = escapeHtml(accountLink)
         val preferencesLink = "${properties.publicBaseUrl.trimEnd('/')}/profile#account"
         val unsubscribePage = "${properties.publicBaseUrl.trimEnd('/')}/unsubscribe?token=$unsubscribeToken"
@@ -78,7 +79,7 @@ class SesEmailSender(
         val footer =
             if (isWelcome) {
                 BRAND_FOOTER
-            } else if (category == "campus_assignment") {
+            } else if (category == "campus_assignment" || category == "campus_billing") {
                 "<a href=\"${escapeHtml(preferencesLink)}\">Manage email preferences</a>"
             } else {
                 "<a href=\"${escapeHtml(preferencesLink)}\">Manage email preferences</a> · " +
@@ -179,11 +180,18 @@ class SesEmailSender(
     private fun accountPath(category: String): String =
         when (category) {
             "daily_question" -> "daily-challenge"
-            "campus_weekly" -> "campus"
+            "campus_weekly", "campus_billing" -> "campus"
             else -> "dashboard"
         }
 
-    private fun accountLabel(category: String): String = if (category == "campus_weekly") "Open Untiered Campus" else "Visit your account"
+    private fun accountLabel(category: String): String =
+        if (category == "campus_weekly" ||
+            category == "campus_billing"
+        ) {
+            "Open Untiered Campus"
+        } else {
+            "Visit your account"
+        }
 
     private fun deliver(
         mime: MimeMessage,

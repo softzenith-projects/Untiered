@@ -136,7 +136,7 @@ class EmailService(
             .sql(
                 """
                 update public.email_deliveries d set status = 'cancelled'
-                 where d.user_id = :id and d.status = 'pending' and d.category not in ('welcome', 'campus_assignment')
+                 where d.user_id = :id and d.status = 'pending' and d.category not in ('welcome', 'campus_assignment', 'campus_billing')
                    and not exists (
                      select 1 from public.email_preferences p where p.user_id = d.user_id
                        and ((d.category = 'daily_question' and p.daily_question)
