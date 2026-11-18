@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, EmptyState, Skeleton } from "@/components/ui/feedback";
 import { FieldHint, FieldLabel, Input } from "@/components/ui/field";
+import { ProgressBar } from "@/components/ui/progress";
 import { Table, TableScroll } from "@/components/ui/table";
 import { createAdminOrg, fetchAdminOrgs } from "@/lib/api";
 import { useAccessToken } from "@/lib/use-access-token";
@@ -88,8 +89,20 @@ export function AdminColleges() {
                     </td>
                     <td className="px-4 py-3">{org.staffCount}</td>
                     <td className="px-4 py-3">{org.studentCount}</td>
-                    <td className="px-4 py-3">
-                      {org.interviewsUsed} of {org.interviewAllowance}
+                    <td className="min-w-48 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        {org.interviewAllowance > 0 ? (
+                          <ProgressBar
+                            className="flex-1"
+                            value={org.interviewsUsed}
+                            max={org.interviewAllowance}
+                            label={`${org.name}: ${org.interviewsUsed} of ${org.interviewAllowance} interviews used`}
+                          />
+                        ) : null}
+                        <span className="whitespace-nowrap">
+                          {org.interviewsUsed} of {org.interviewAllowance}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))}
