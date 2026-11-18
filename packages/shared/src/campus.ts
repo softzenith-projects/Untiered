@@ -85,6 +85,7 @@ export interface MemberView {
   rollNumber: string | null;
   joinedAt: string;
   active: boolean;
+  lastActiveAt?: string | null;
 }
 
 export interface FacultyScopesView {
@@ -301,6 +302,8 @@ export interface RecipientProgress {
   attemptsUsed: number;
   lastActivityAt: string | null;
   sessionIds: string[];
+  /** interview: the first completed attempt's session, whose report staff open. */
+  completedSessionId?: string | null;
   scenarioScore: number | null;
   /** mcq_test: the best submitted score, 0–100. */
   mcqScore: number | null;
@@ -314,7 +317,14 @@ export interface CampusScenarioOption {
   estimatedMinutes: number;
 }
 
-export type AssignmentBlockedReason = "not_open" | "past_due" | "attempt_limit" | "student_cap" | "college_allowance";
+export type AssignmentBlockedReason =
+  | "not_open"
+  | "past_due"
+  | "attempt_limit"
+  | "student_cap"
+  | "college_allowance"
+  | "no_active_package"
+  | "package_student_limit";
 
 export interface AssignedItem {
   id: string;
@@ -447,6 +457,40 @@ export interface StudentReadiness {
   weights: ReadinessWeights;
   evidence: EvidenceItem[];
   suggestedTopics: SuggestedTopic[];
+  /** Only on the staff read of one student; never on the student's own. */
+  staff?: StaffStudentDetail | null;
+}
+
+export interface AssignedWorkRow {
+  assignmentId: string;
+  title: string;
+  kind: AssignmentKind;
+  status: CompletionStatus;
+  dueAt: string;
+  /** Interviews: the first completed attempt's session, whose report staff open. */
+  sessionId?: string | null;
+  /** MCQ tests: the latest submitted attempt. */
+  mcqAttemptId?: string | null;
+}
+
+export interface StaffStudentDetail {
+  lastActiveAt: string | null;
+  /** In the order low_score, inactive, overdue; empty when the student needs none. */
+  attention: AttentionReason[];
+  /** Every published assignment the student is set, soonest deadline first. */
+  assignedWork: AssignedWorkRow[];
+}
+
+/** Counts of all of one student's assigned rounds added together. Counts, never a verdict. */
+export interface StudentIntegrityTotals {
+  rounds: number;
+  /** tabHidden + windowBlur. */
+  windowSwitches: number;
+  tabHidden: number;
+  windowBlur: number;
+  pastes: number;
+  fastAnswers: number;
+  longPauses: number;
 }
 
 export interface HeatmapCell {
@@ -555,6 +599,8 @@ export interface AttentionRow {
   band: ReadinessBand;
   overdue: number;
   lastActiveAt: string | null;
+  /** True when staff kept a private note on this student; the note itself is never sent here. */
+  hasStaffNote?: boolean;
 }
 
 /** A private staff note about a student. Never returned on a student route. */
@@ -605,6 +651,8 @@ export interface IntegritySummary {
 
 /** Module 11 (platform admin): one college's usage and estimated AI cost over a date range. */
 export interface OrgUsageRow {
+  /** Org-funded interviews that did not fail and started in the range, by round type, most first. */
+  interviewsByRound?: { roundType: AssignableRoundType; interviews: number }[];
   orgId: string;
   orgName: string;
   interviewAllowance: number;
@@ -686,6 +734,19 @@ export interface MyProgrammeView extends ProgrammeView {
   completedModules: number;
   totalModules: number;
   certificateId: string | null;
+}
+
+/** One week of a programme: when it unlocks and how many of its students finished it. */
+export interface ProgrammeWeekView {
+  week: number;
+  opensAt: string;
+  dueAt: string;
+  opened: boolean;
+  assignments: { id: string; title: string }[];
+  students: number;
+  completedStudents: number;
+  /** 0–1; null while the week is locked or nobody is set it. */
+  completionRate: number | null;
 }
 
 export interface ProgrammeProgress {

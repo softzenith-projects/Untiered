@@ -52,7 +52,7 @@ const PORTAL_LINKS: PortalLink[] = [
   { href: "/campus/attention", label: "Needs attention", roles: ["college_admin", "tpo", "faculty"] },
   { href: "/campus/programmes", label: "Programmes", roles: ["college_admin", "tpo", "faculty"] },
   { href: "/campus/staff", label: "Staff", roles: ["college_admin"] },
-  { href: "/campus/settings", label: "Settings", roles: ["college_admin"] },
+  { href: "/campus/settings", label: "Settings", roles: ["college_admin", "tpo", "faculty"] },
 ];
 
 export function campusHref(path: string, orgId: string): Route {

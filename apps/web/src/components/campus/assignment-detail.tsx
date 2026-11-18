@@ -19,6 +19,7 @@ import {
 import type { AssignmentView, CompletionStatus, RecipientProgress } from "@untiered/shared";
 
 import { ASSIGNMENT_STATUS_LABEL, assignmentSummary } from "./assignments-panel";
+import { StatTile, StatTiles } from "./stat-tile";
 import { AssignmentFormView } from "./assignment-form";
 import {
   COMPONENT_LABEL,
@@ -146,8 +147,25 @@ export function AssignmentDetail({ id }: { id: string }) {
         <Summary view={view} />
       )}
 
+      {view.status !== "draft" ? <CompletionTiles counts={view.counts} dueAt={view.dueAt} /> : null}
       {view.status !== "draft" ? <ProgressTable assignment={view} /> : null}
     </div>
+  );
+}
+
+/** Completed, in progress, not started and overdue, as the server counted them. */
+export function CompletionTiles({ counts, dueAt }: { counts: AssignmentView["counts"]; dueAt: string }) {
+  return (
+    <StatTiles label="Completion" columns={4}>
+      <StatTile
+        label="Completed"
+        value={counts.completed}
+        detail={counts.recipients > 0 ? `${Math.round((counts.completed / counts.recipients) * 100)}% of ${counts.recipients} students` : "No students yet"}
+      />
+      <StatTile label="In progress" value={counts.inProgress} detail="Started, not finished" />
+      <StatTile label="Not started" value={counts.notStarted} detail="Students get a reminder email before the deadline" />
+      <StatTile label="Overdue" value={counts.overdue} detail={`Past ${formatDue(dueAt)}`} />
+    </StatTiles>
   );
 }
 
@@ -183,7 +201,7 @@ function Summary({ view }: { view: AssignmentView }) {
         <h2 id="assignment-heading" className="text-heading text-ink">
           {view.title}
         </h2>
-        <Badge tone={view.status === "published" ? "positive" : view.status === "draft" ? "info" : "navy"}>
+        <Badge tone={view.status === "published" ? "positive" : view.status === "draft" ? "info" : "neutral"}>
           {ASSIGNMENT_STATUS_LABEL[view.status]}
         </Badge>
       </div>
@@ -360,6 +378,9 @@ function ProgressTable({ assignment }: { assignment: AssignmentView }) {
                   <th scope="col" className="p-3">Scenario score</th>
                 )}
                 {header("lastActivity", "Last activity")}
+                <th scope="col" className="p-3">
+                  <span className="sr-only">Open</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -385,6 +406,20 @@ function ProgressTable({ assignment }: { assignment: AssignmentView }) {
                         : `${Math.round(row.scenarioScore * 100)}%`}
                   </td>
                   <td className="p-3">{row.lastActivityAt ? formatDue(row.lastActivityAt) : "No activity yet"}</td>
+                  <td className="p-3">
+                    {isInterview && row.status === "completed" && row.completedSessionId ? (
+                      <Link
+                        href={campusHref(`/campus/readiness/${row.memberId}/reports/${row.completedSessionId}`, orgId)}
+                        className="font-semibold text-accent underline"
+                      >
+                        Report <span className="sr-only">for {row.name ?? row.email}</span>
+                      </Link>
+                    ) : (
+                      <Link href={campusHref(`/campus/readiness/${row.memberId}`, orgId)} className="font-semibold text-accent underline">
+                        Student<span className="sr-only">: {row.name ?? row.email}</span>
+                      </Link>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

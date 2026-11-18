@@ -562,11 +562,18 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
    * Read the question out locally, once per turn, and hand the floor over when the voice
    * actually stops — which the browser tells us, rather than being inferred from a
    * recording's duration or a reading-speed guess.
+   *
+   * "Once" is per turn, not per wording. The interviewer does ask the same question twice
+   * in a row, word for word, when an answer missed it (seen live on 18 November 2026).
+   * Keyed on the text, the second asking looked already read, the voice never started,
+   * the floor was never handed over, and the candidate sat in front of a closed microphone.
    */
+  const voicedTurn = useRef<number | null>(null);
   useEffect(() => {
-    if (phase !== "asking" || !speaksLocally || !questionText) return;
-    // Already reading it, or already read it. Neither is a reason to start again.
-    if (browserVoice.saying === questionText || browserVoice.said === questionText) return;
+    if (phase !== "asking" || !speaksLocally || !questionText || turnIndex === null) return;
+    // Already reading this turn, or already read it. Neither is a reason to start again.
+    if (voicedTurn.current === turnIndex) return;
+    voicedTurn.current = turnIndex;
     const startedAt = Date.now();
     browserVoice.say(questionText, (reason) => {
       if (turnIndex !== null && reason !== "finished") {

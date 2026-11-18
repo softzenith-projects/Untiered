@@ -114,21 +114,31 @@ describe("overview helpers", () => {
     expect(parts.reduce((sum, part) => sum + part.count, 0)).toBe(30);
   });
 
-  it("colours scores green from 70, amber from 50, red below", () => {
-    expect([scoreTone(70), scoreTone(69), scoreTone(50), scoreTone(49)]).toEqual(["positive", "highlight", "highlight", "danger"]);
+  it("colours scores green from 60, amber from 50, red below", () => {
+    expect([scoreTone(60), scoreTone(59), scoreTone(50), scoreTone(49)]).toEqual(["positive", "highlight", "highlight", "danger"]);
   });
 });
 
 describe("KPI cards", () => {
-  it("shows the four figures, with change chips against the previous 30 days", () => {
+  it("never claims more joined than invited when students joined without an invite", () => {
+    render(<KpiRow view={view({ joined: 61, pipeline: pipeline({ invited: 5, joined: 61 }) })} />);
+    const first = within(screen.getByRole("list", { name: "Key figures" })).getAllByRole("listitem")[0]!;
+    expect(within(first).queryByText(/invited/)).not.toBeInTheDocument();
+    expect(within(first).getByText("students who have joined")).toBeInTheDocument();
+  });
+
+  it("shows the five figures, with change chips against the previous 30 days", () => {
     render(<KpiRow view={view()} />);
     const cards = within(screen.getByRole("list", { name: "Key figures" })).getAllByRole("listitem");
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(5);
     expect(within(cards[0]!).getByText("of 40 invited")).toBeInTheDocument();
     expect(within(cards[2]!).getByText("+3")).toBeInTheDocument();
     expect(within(cards[2]!).getByText(/oldest first: 0, 1, 2, 3, 4, 5, 6, 7/)).toBeInTheDocument();
     expect(within(cards[3]!).getByText("63")).toBeInTheDocument();
     expect(within(cards[3]!).getByText("+4 pts")).toBeInTheDocument();
+    // The prototype's fourth headline tile: students whose band is Strong or Interview-ready.
+    expect(within(cards[4]!).getByText("Interview-ready or strong")).toBeInTheDocument();
+    expect(within(cards[4]!).getByText(String(view().pipeline!.interviewReady))).toBeInTheDocument();
   });
 
   it("hides the change chip when a period has no average, and says when there is not enough data", () => {

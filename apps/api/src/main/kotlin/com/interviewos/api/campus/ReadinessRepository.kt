@@ -71,6 +71,12 @@ data class ReadinessAssignmentRow(
     val opensAt: Instant? = null,
 )
 
+/** An interview session started from an assignment, and whose it is. */
+data class AttemptSessionRow(
+    val sessionId: UUID,
+    val userId: UUID,
+)
+
 /** A batch in scope, as the overview's per-batch rows name it. */
 data class ReadinessBatchRow(
     val id: UUID,
@@ -437,6 +443,57 @@ class ReadinessRepository(
                 .param("sessionId", sessionId)
         if (visible != null) statement.param("visible", visible.toList())
         return statement.query(UUID::class.java).optional().orElse(null)
+    }
+
+    /** True when [memberId] is a joined student of this college inside the caller's scope. */
+    fun studentInScope(
+        scope: OrgScope,
+        memberId: UUID,
+    ): Boolean {
+        val visible = scope.visibleBatchIds
+        if (visible != null && visible.isEmpty()) return false
+        val statement =
+            jdbc
+                .sql(
+                    """
+                    select count(*) from public.org_members m
+                     where m.org_id = :orgId and m.id = :memberId and m.role = 'student'
+                       and m.status = 'joined'${if (visible != null) " and m.batch_id in (:visible)" else ""}
+                    """.trimIndent(),
+                ).param("orgId", scope.orgId)
+                .param("memberId", memberId)
+        if (visible != null) statement.param("visible", visible.toList())
+        return statement.query(Long::class.java).single() > 0
+    }
+
+    /**
+     * Every session this student started from one of this college's assignments, with its owner.
+     * A personal round is never an attempt, so it can never appear here.
+     */
+    fun attemptSessions(
+        scope: OrgScope,
+        memberId: UUID,
+    ): List<AttemptSessionRow> {
+        val visible = scope.visibleBatchIds
+        if (visible != null && visible.isEmpty()) return emptyList()
+        val statement =
+            jdbc
+                .sql(
+                    """
+                    select distinct a.session_id, m.user_id
+                      from public.assignment_attempts a
+                      join public.assignments x on x.org_id = a.org_id and x.id = a.assignment_id
+                      join public.org_members m on m.org_id = a.org_id and m.id = a.member_id
+                      join public.sessions s on s.id = a.session_id and s.user_id = m.user_id
+                     where a.org_id = :orgId and a.member_id = :memberId and a.session_id is not null
+                       and m.role = 'student' and m.status = 'joined'${if (visible != null) " and m.batch_id in (:visible)" else ""}
+                    """.trimIndent(),
+                ).param("orgId", scope.orgId)
+                .param("memberId", memberId)
+        if (visible != null) statement.param("visible", visible.toList())
+        return statement
+            .query { rs, _ -> AttemptSessionRow(UUID.fromString(rs.getString("session_id")), UUID.fromString(rs.getString("user_id"))) }
+            .list()
     }
 
     // -- helpers -------------------------------------------------------------------------

@@ -64,6 +64,7 @@ describe("what an assigned round counts, said before consent", () => {
     expect(notice).toHaveTextContent(
       "Because your college assigned this interview, it will see how many times you switched tabs or windows or pasted text, and how your answer timing looked. Nothing else about your screen is recorded.",
     );
+    expect(notice).toHaveTextContent("They are counts, never a verdict, and nobody is failed automatically.");
     const consent = screen.getByRole("checkbox", { name: /Record my voice/ });
     // Earlier in the document than the consent it qualifies.
     expect(notice.compareDocumentPosition(consent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

@@ -26,6 +26,7 @@ import type { BatchView, DepartmentView, InviteView, MemberView } from "@untiere
 import { campusHref, useCampusOrg } from "./campus-context";
 import { InviteForm } from "./invite-form";
 import { INVITE_STATUSES, InviteList, inviteErrorText, inviteStatusLabel, replaceInvite } from "./invite-list";
+import { lastActiveText } from "./readiness-model";
 import { errorText, useLoad } from "./use-load";
 
 interface Structure {
@@ -67,6 +68,11 @@ export function StudentsPanel() {
             Import students from CSV
           </Link>
         </div>
+      ) : null}
+      {canManage ? (
+        <p className="text-caption text-ink-muted">
+          Each invite link works once and lapses after 14 days. Resend reminds the student without making a new account.
+        </p>
       ) : null}
       {canManage ? (
         <Tabs tabs={TABS} active={tab} onChange={setTab} label="Students and invites" idPrefix="students" />
@@ -251,7 +257,8 @@ function JoinedStudents({ structure, canManage }: { structure: Structure; canMan
                 <th scope="col" className="px-4 py-3">Roll number</th>
                 <th scope="col" className="px-4 py-3">Batch</th>
                 <th scope="col" className="px-4 py-3">Activity</th>
-                {canManage ? <th scope="col" className="px-4 py-3">Actions</th> : null}
+                <th scope="col" className="px-4 py-3">Last active</th>
+                <th scope="col" className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -266,18 +273,27 @@ function JoinedStudents({ structure, canManage }: { structure: Structure; canMan
                   <td className="px-4 py-3">
                     <Badge tone={member.active ? "positive" : "highlight"}>{member.active ? "Active" : "Quiet"}</Badge>
                   </td>
-                  {canManage ? (
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="secondary" size="sm" aria-label={`Edit ${who(member)}`} onClick={() => setEditing(member)}>
-                          Edit
-                        </Button>
-                        <Button variant="quiet" size="sm" aria-label={`Remove ${who(member)}`} onClick={() => setRemoving(member)}>
-                          Remove
-                        </Button>
-                      </div>
-                    </td>
-                  ) : null}
+                  <td className="px-4 py-3 text-ink-muted">{lastActiveText(member.lastActiveAt)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={campusHref(`/campus/readiness/${member.id}`, orgId)}
+                        className={buttonStyles({ variant: "secondary", size: "sm" })}
+                      >
+                        View readiness <span className="sr-only">for {who(member)}</span>
+                      </Link>
+                      {canManage ? (
+                        <>
+                          <Button variant="secondary" size="sm" aria-label={`Edit ${who(member)}`} onClick={() => setEditing(member)}>
+                            Edit
+                          </Button>
+                          <Button variant="quiet" size="sm" aria-label={`Remove ${who(member)}`} onClick={() => setRemoving(member)}>
+                            Remove
+                          </Button>
+                        </>
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

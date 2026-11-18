@@ -81,7 +81,7 @@ export function ProgrammesPanel() {
 }
 
 export function ProgrammeStatus({ view }: { view: ProgrammeView }) {
-  return view.status === "active" ? <Badge tone="positive">Active</Badge> : <Badge tone="navy">Archived</Badge>;
+  return view.status === "active" ? <Badge tone="positive">Active</Badge> : <Badge tone="neutral">Archived</Badge>;
 }
 
 function StartProgramme({ onStarted }: { onStarted: (view: ProgrammeView) => void }) {

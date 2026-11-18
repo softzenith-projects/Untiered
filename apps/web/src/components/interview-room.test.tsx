@@ -21,6 +21,17 @@ const fetchReport = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(() => ({ token: "token-abc" }));
 const questionAudio = vi.hoisted(() => ({ current: { url: null as string | null, status: "unavailable" } }));
 const transcript = vi.hoisted(() => ({ supported: false, start: vi.fn() }));
+const silentVoice = vi.hoisted(() => () => ({
+  available: false,
+  settled: true,
+  spokenChars: 0,
+  speaking: false,
+  saying: null as string | null,
+  said: null as string | null,
+  say: vi.fn() as (text: string, onDone?: (reason: "finished") => void) => void,
+  cancel: vi.fn(),
+}));
+const browserVoice = vi.hoisted(() => ({ current: silentVoice() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/api", () => ({
@@ -97,16 +108,7 @@ vi.mock("@/lib/use-interview-capture", () => ({
   }),
 }));
 vi.mock("@/lib/use-browser-voice", () => ({
-  useBrowserVoice: () => ({
-    available: false,
-    settled: true,
-    spokenChars: 0,
-    speaking: false,
-    saying: null,
-    said: null,
-    say: vi.fn(),
-    cancel: vi.fn(),
-  }),
+  useBrowserVoice: () => browserVoice.current,
 }));
 vi.mock("@/lib/use-live-transcript", () => ({
   useLiveTranscript: () => ({ supported: transcript.supported, text: "Recognised answer", start: transcript.start, stop: vi.fn(), reset: vi.fn() }),
@@ -632,6 +634,69 @@ describe("InterviewRoom operational telemetry", () => {
     expect(second[2]).toBe(first[2]);
     // A new take is a new request, not a replay of the one the server refused.
     expect(second[4]).not.toBe(first[4]);
+  });
+});
+
+describe("InterviewRoom with the browser reading questions aloud", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    auth.token = "token-abc";
+    captureLevel.current = 0;
+    questionAudio.current = { url: null, status: "unavailable" };
+    captureStart.mockResolvedValue(true);
+    captureStop.mockResolvedValue({ audio: new Blob(["voice"], { type: "audio/webm" }), timing: null });
+    browserVoice.current = {
+      ...silentVoice(),
+      available: true,
+      // Like the real hook, the voice remembers the last text it read to the end.
+      say: vi.fn((text: string, onDone?: (reason: "finished") => void) => {
+        browserVoice.current = { ...browserVoice.current, said: text };
+        onDone?.("finished");
+      }),
+    };
+  });
+
+  afterEach(() => {
+    browserVoice.current = silentVoice();
+    vi.useRealTimers();
+  });
+
+  it("reads a question asked again word for word, and opens the microphone for it", async () => {
+    // Seen live on 18 November 2026: after an answer that missed the question, the next
+    // turn carried exactly the same text, and the room never handed the floor over.
+    const repeated = baseSession.currentTurn!.questionText;
+    submitAnswer.mockResolvedValueOnce({
+      sessionComplete: false,
+      turnsCompleted: 1,
+      nextTurn: { turnIndex: 1, questionText: repeated, questionAudioStatus: "unavailable" },
+    });
+    submitAnswer.mockReturnValue(new Promise(() => undefined));
+    fetchSession.mockResolvedValue(baseSession);
+    beginSession.mockResolvedValue({
+      startedAt: new Date().toISOString(),
+      scheduledEndAt: new Date(Date.now() + 30 * 60_000).toISOString(),
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { rerender } = render(<InterviewRoom sessionId={baseSession.id} />);
+
+    await user.click(await screen.findByRole("button", { name: "Enter the room" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
+    expect(browserVoice.current.say).toHaveBeenCalledTimes(1);
+    expect(captureStart).toHaveBeenCalledTimes(1);
+
+    captureLevel.current = 0.4;
+    rerender(<InterviewRoom sessionId={baseSession.id} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_500); });
+    captureLevel.current = 0;
+    rerender(<InterviewRoom sessionId={baseSession.id} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+    expect(submitAnswer).toHaveBeenCalledTimes(1);
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
+    expect(browserVoice.current.say).toHaveBeenCalledTimes(2);
+    expect(browserVoice.current.say).toHaveBeenLastCalledWith(repeated, expect.any(Function));
+    expect(captureStart).toHaveBeenCalledTimes(2);
   });
 });
 

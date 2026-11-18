@@ -10,10 +10,21 @@ import { fetchAuditLog, fetchCampusOrg, updateCampusOrg } from "@/lib/api";
 import type { AuditEntryView, OrgView } from "@untiered/shared";
 
 import { useCampusOrg } from "./campus-context";
+import { CollegePackagesPanel } from "./college-packages";
 import { errorText, useLoad } from "./use-load";
 import { WeightsEditor } from "./weights-editor";
 
+/**
+ * The settings page. A placement officer or faculty member sees only the interview package
+ * (what is left, the per-student limit, the end date); the rest is a college admin's.
+ */
 export function SettingsPanel() {
+  const { role } = useCampusOrg();
+  if (role !== "college_admin") return <CollegePackagesPanel />;
+  return <AdminSettings />;
+}
+
+function AdminSettings() {
   const { orgId, accessToken } = useCampusOrg();
   const load = useCallback((signal: AbortSignal) => fetchCampusOrg(orgId, { accessToken, signal }), [orgId, accessToken]);
   const { data, error, loading } = useLoad(load);
@@ -23,6 +34,7 @@ export function SettingsPanel() {
       {error ? <Alert tone="error">{error.message}</Alert> : null}
       {loading && !data ? <Skeleton className="h-48 w-full" /> : null}
       {data ? <ContactForm org={data} /> : null}
+      <CollegePackagesPanel />
       <WeightsEditor />
       <AuditLog />
     </div>
@@ -112,6 +124,16 @@ const ACTOR_KIND: Record<AuditEntryView["actorKind"], string> = {
   system: "System",
 };
 
+/**
+ * An Untiered admin is not a member of the college, so the server has no member name to give;
+ * "Deleted account" would wrongly say someone's account was removed.
+ */
+export function actorFallback(kind: AuditEntryView["actorKind"]): string {
+  if (kind === "platform_admin") return "Untiered team";
+  if (kind === "system") return "Untiered";
+  return "Deleted account";
+}
+
 function AuditLog() {
   const { orgId, accessToken } = useCampusOrg();
   const loadFirst = useCallback((signal: AbortSignal) => fetchAuditLog(orgId, { accessToken, signal }), [orgId, accessToken]);
@@ -166,7 +188,7 @@ function AuditLog() {
                     <time dateTime={entry.occurredAt}>{new Date(entry.occurredAt).toLocaleString()}</time>
                   </td>
                   <td className="px-4 py-3">
-                    {entry.actorName ?? "Deleted account"}
+                    {entry.actorName ?? actorFallback(entry.actorKind)}
                     <span className="block text-ink-subtle">{ACTOR_KIND[entry.actorKind]}</span>
                   </td>
                   <td className="px-4 py-3 font-mono">{entry.action}</td>

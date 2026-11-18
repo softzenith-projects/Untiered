@@ -91,6 +91,13 @@ class CampusProgrammeController(
         @PathVariable id: UUID,
     ): List<ProgrammeProgress> = service.progress(SupabaseIdentity.from(jwt), orgId, id)
 
+    @GetMapping("/programmes/{id}/weeks")
+    fun weeks(
+        @AuthenticationPrincipal jwt: Jwt,
+        @PathVariable orgId: UUID,
+        @PathVariable id: UUID,
+    ): List<ProgrammeWeekView> = service.weeks(SupabaseIdentity.from(jwt), orgId, id)
+
     @PostMapping("/programmes/{id}/archive")
     fun archive(
         @AuthenticationPrincipal jwt: Jwt,

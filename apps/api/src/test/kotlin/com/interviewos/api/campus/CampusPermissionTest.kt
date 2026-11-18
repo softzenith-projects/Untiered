@@ -34,6 +34,8 @@ class CampusPermissionTest {
             CampusPermission.STAFF_NOTES_MODERATE to (setOf(admin) to false),
             CampusPermission.PROGRAMMES_MANAGE to (setOf(admin, tpo) to false),
             CampusPermission.AUDIT_LOG_VIEW to (setOf(admin) to true),
+            CampusPermission.PACKAGES_VIEW to (setOf(admin, tpo, faculty) to true),
+            CampusPermission.PACKAGE_PAYMENTS_VIEW to (setOf(admin) to true),
             CampusPermission.OWN_MEMBERSHIP to (setOf(student) to false),
         )
 

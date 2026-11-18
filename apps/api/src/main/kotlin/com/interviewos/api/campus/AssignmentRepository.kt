@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 import java.time.Instant
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
@@ -706,23 +707,65 @@ class AssignmentRepository(
             .query(Int::class.java)
             .single()
 
+    /**
+     * The college's issued (invoiced or paid) packages, each with what is spent of it: the
+     * attempts charged to it that did not fail, across the college and for [memberId]. Read
+     * under the organisation lock at admission, so the counts cannot move before the attempt
+     * is written. Empty when the college has none: the allowance then applies (contract
+     * "Module 14").
+     */
+    fun packageUsage(
+        scope: OrgScope,
+        memberId: UUID?,
+    ): List<PackageUsage> =
+        jdbc
+            .sql(
+                """
+                select p.id, p.status, p.interviews, p.per_student_limit, p.starts_on, p.ends_on, p.grace_days,
+                       count(a.id) filter (where a.status <> 'failed') as used,
+                       count(a.id) filter (where a.status <> 'failed' and a.member_id = cast(:memberId as uuid)) as used_by_student
+                  from public.college_packages p
+                  left join public.assignment_attempts a on a.org_id = p.org_id and a.package_id = p.id
+                 where p.org_id = :orgId and p.status in ('invoiced', 'paid')
+                 group by p.id
+                 order by p.ends_on, p.id
+                """.trimIndent(),
+            ).param("orgId", scope.orgId)
+            .param("memberId", memberId)
+            .query { rs, _ ->
+                PackageUsage(
+                    id = UUID.fromString(rs.getString("id")),
+                    status = checkNotNull(PackageStatus.fromWireValue(rs.getString("status"))),
+                    interviews = rs.getInt("interviews"),
+                    perStudentLimit = rs.getObject("per_student_limit")?.let { (it as Number).toInt() },
+                    startsOn = rs.getObject("starts_on", LocalDate::class.java),
+                    endsOn = rs.getObject("ends_on", LocalDate::class.java),
+                    graceDays = rs.getInt("grace_days"),
+                    used = rs.getInt("used"),
+                    usedByStudent = rs.getInt("used_by_student"),
+                )
+            }.list()
+
+    /** [packageId] is the package that pays for it, or null when the allowance does. */
     fun insertAttempt(
         scope: OrgScope,
         assignmentId: UUID,
         memberId: UUID,
         sessionId: UUID,
+        packageId: UUID? = null,
     ): UUID =
         jdbc
             .sql(
                 """
-                insert into public.assignment_attempts (org_id, assignment_id, member_id, session_id, org_funded)
-                values (:orgId, :id, :memberId, :sessionId, true)
+                insert into public.assignment_attempts (org_id, assignment_id, member_id, session_id, org_funded, package_id)
+                values (:orgId, :id, :memberId, :sessionId, true, cast(:packageId as uuid))
                 returning id
                 """.trimIndent(),
             ).param("orgId", scope.orgId)
             .param("id", assignmentId)
             .param("memberId", memberId)
             .param("sessionId", sessionId)
+            .param("packageId", packageId)
             .query(UUID::class.java)
             .single()
 

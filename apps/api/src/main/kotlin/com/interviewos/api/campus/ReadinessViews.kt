@@ -69,6 +69,31 @@ data class StudentReadiness(
     val weights: ReadinessWeights,
     val evidence: List<EvidenceItem>,
     val suggestedTopics: List<SuggestedTopic>,
+    /** Only on the staff read of one student (never on `GET /me/campus/readiness`): what a college sees beside the score. */
+    val staff: StaffStudentDetail? = null,
+)
+
+/** Staff-only context for one student (contract "Module 6", `StudentReadiness.staff`). */
+data class StaffStudentDetail(
+    /** The latest round, scenario answer or Arena review; null when there is none. */
+    val lastActiveAt: String?,
+    /** `AttentionReason` values in the order low_score, inactive, overdue; empty when the student needs none. */
+    val attention: List<String>,
+    /** Every published assignment the student is set, soonest deadline first. */
+    val assignedWork: List<AssignedWorkRow>,
+)
+
+data class AssignedWorkRow(
+    val assignmentId: UUID,
+    val title: String,
+    val kind: String,
+    /** `CompletionStatus` wire value. */
+    val status: String,
+    val dueAt: String,
+    /** Interviews: the first completed attempt's session, whose report staff open. */
+    val sessionId: UUID? = null,
+    /** MCQ tests: the latest submitted attempt, which staff open. */
+    val mcqAttemptId: UUID? = null,
 )
 
 data class DashboardFilters(

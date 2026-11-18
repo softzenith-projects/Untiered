@@ -14,7 +14,7 @@ export default function CampusSettingsPage() {
     <AppShell>
       {/* `CampusGate` reads the `?org=` search param, which needs a Suspense boundary. */}
       <Suspense>
-        <CampusGate title="Settings" allowedRoles={["college_admin"]}>
+        <CampusGate title="Settings" allowedRoles={["college_admin", "tpo", "faculty"]}>
           <SettingsPanel />
         </CampusGate>
       </Suspense>

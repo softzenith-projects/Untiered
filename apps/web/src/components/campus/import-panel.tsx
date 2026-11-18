@@ -153,6 +153,10 @@ export function ImportPanel() {
             A CSV with the columns <code>{CSV_HEADER}</code>. Department is the department code and batch is the batch name, both as set up under
             Departments and batches. You review every row before anyone is invited.
           </p>
+          <p className="max-w-prose text-caption text-ink-muted">
+            <strong className="font-semibold text-ink">No accounts are created at import.</strong> Each student gets a single-use invite link,
+            and a student who already uses Untiered keeps their own account.
+          </p>
           <div>
             <a href={templateHref} download="untiered-students-template.csv" className={buttonStyles({ variant: "secondary" })}>
               Download a template

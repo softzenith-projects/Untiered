@@ -18,3 +18,4 @@ export * from "./course-progress.js";
 export * from "./arena.js";
 export * from "./billing.js";
 export * from "./campus.js";
+export * from "./college-packages.js";

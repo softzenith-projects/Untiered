@@ -47,6 +47,7 @@ import type {
   AssignmentInput,
   IntegrityEventBatch,
   IntegritySummary,
+  StudentIntegrityTotals,
   AssignmentPublishedPatch,
   AssignmentStatus,
   AssignmentView,
@@ -68,6 +69,7 @@ import type {
   ProgrammeTemplate,
   ProgrammeTemplateInput,
   ProgrammeView,
+  ProgrammeWeekView,
   StartProgrammeRequest,
   ReadinessWeights,
   StudentReadiness,
@@ -100,6 +102,15 @@ import type {
   MemberView,
   OrgUsageRow,
   OrgView,
+} from "@untiered/shared";
+
+import type {
+  AdminPackageView,
+  CollegeBillingRow,
+  CollegePackagesView,
+  InvoicePackageRequest,
+  PackageRequest,
+  PayPackageRequest,
 } from "@untiered/shared";
 
 import { env } from "@/lib/env";
@@ -1173,6 +1184,60 @@ export function fetchCampusUsage(params: { from?: string; to?: string }, options
   return apiGet<OrgUsageRow[]>(`/api/v1/admin/campus/usage${suffix}`, options);
 }
 
+// -- Module 14: college packages and payments -------------------------------------------
+
+const adminPackages = (orgId: string) => `${adminOrg(orgId)}/packages`;
+const adminPackage = (orgId: string, packageId: string) => `${adminPackages(orgId)}/${encodeURIComponent(packageId)}`;
+
+/** Platform admin: every package of one college. */
+export function fetchAdminPackages(orgId: string, options: ApiGetOptions): Promise<AdminPackageView[]> {
+  return apiGet<AdminPackageView[]>(adminPackages(orgId), options);
+}
+
+export function createAdminPackage(accessToken: string, orgId: string, body: PackageRequest): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(adminPackages(orgId), "POST", accessToken, body);
+}
+
+export function updateAdminPackage(
+  accessToken: string,
+  orgId: string,
+  packageId: string,
+  body: PackageRequest,
+): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(adminPackage(orgId, packageId), "PATCH", accessToken, body);
+}
+
+export function invoiceAdminPackage(
+  accessToken: string,
+  orgId: string,
+  packageId: string,
+  body: InvoicePackageRequest,
+): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(`${adminPackage(orgId, packageId)}/invoice`, "POST", accessToken, body);
+}
+
+export function payAdminPackage(accessToken: string, orgId: string, packageId: string, body: PayPackageRequest): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(`${adminPackage(orgId, packageId)}/paid`, "POST", accessToken, body);
+}
+
+export function voidAdminPackage(accessToken: string, orgId: string, packageId: string): Promise<AdminPackageView> {
+  return apiSend<AdminPackageView>(`${adminPackage(orgId, packageId)}/void`, "POST", accessToken);
+}
+
+export async function deleteAdminPackage(accessToken: string, orgId: string, packageId: string): Promise<void> {
+  await apiSend<void>(adminPackage(orgId, packageId), "DELETE", accessToken);
+}
+
+/** Platform admin: every college's current package, payments and cost. */
+export function fetchCampusBilling(options: ApiGetOptions): Promise<CollegeBillingRow[]> {
+  return apiGet<CollegeBillingRow[]>("/api/v1/admin/campus/billing", options);
+}
+
+/** College staff: the college's packages, as much as the caller's role may see. */
+export function fetchCollegePackages(orgId: string, options: ApiGetOptions): Promise<CollegePackagesView> {
+  return apiGet<CollegePackagesView>(`${campusOrg(orgId)}/packages`, options);
+}
+
 export function fetchMyLeaderboard(scope: LeaderboardScope, options: ApiGetOptions): Promise<LeaderboardView> {
   return apiGet<LeaderboardView>(`/api/v1/me/campus/leaderboard?scope=${scope}`, options);
 }
@@ -1209,6 +1274,11 @@ export function fetchStaffStudentIntegrity(
     `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/reports/${encodeURIComponent(sessionId)}/integrity`,
     options,
   );
+}
+
+/** The counts of every assigned round of one student, for the staff student page. */
+export function fetchStudentIntegrityTotals(orgId: string, memberId: string, options: ApiGetOptions): Promise<StudentIntegrityTotals> {
+  return apiGet<StudentIntegrityTotals>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/integrity`, options);
 }
 
 export function fetchReadinessWeights(orgId: string, options: ApiGetOptions): Promise<ReadinessWeights> {
@@ -1319,6 +1389,11 @@ export function startProgramme(accessToken: string, orgId: string, body: StartPr
 
 export function fetchProgramme(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeView> {
   return apiGet<ProgrammeView>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}`, options);
+}
+
+/** The programme week by week: unlock date, open or locked, and how many of its students finished it. */
+export function fetchProgrammeWeeks(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeWeekView[]> {
+  return apiGet<ProgrammeWeekView[]>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}/weeks`, options);
 }
 
 export function fetchProgrammeProgress(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeProgress[]> {

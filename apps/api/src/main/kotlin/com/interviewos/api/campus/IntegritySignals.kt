@@ -46,6 +46,22 @@ data class IntegritySummary(
     }
 }
 
+/**
+ * What staff read on a student's page: the counts of every assigned round added together. Counts,
+ * never a verdict, and nothing here moves a readiness score (contract "Module 5").
+ */
+data class StudentIntegrityTotals(
+    /** Assigned rounds the student has started. */
+    val rounds: Int,
+    /** `tabHidden + windowBlur`: how often the student left the interview window. */
+    val windowSwitches: Int,
+    val tabHidden: Int,
+    val windowBlur: Int,
+    val pastes: Int,
+    val fastAnswers: Int,
+    val longPauses: Int,
+)
+
 /** How much one batch adds to a session's counters, already clamped to the caps. */
 data class IntegrityIncrements(
     val tabHidden: Int,
@@ -173,6 +189,18 @@ object IntegrityRules {
             fastAnswers = timings.count(::isFastAnswer),
             longPauses = timings.count(::hasLongPause),
             measuredTurns = timings.size,
+        )
+
+    /** The counts of several assigned rounds added together. */
+    fun totals(rounds: List<Pair<IntegrityCounts, TimingSignals>>): StudentIntegrityTotals =
+        StudentIntegrityTotals(
+            rounds = rounds.size,
+            windowSwitches = rounds.sumOf { it.first.tabHidden + it.first.windowBlur },
+            tabHidden = rounds.sumOf { it.first.tabHidden },
+            windowBlur = rounds.sumOf { it.first.windowBlur },
+            pastes = rounds.sumOf { it.first.pastes },
+            fastAnswers = rounds.sumOf { it.second.fastAnswers },
+            longPauses = rounds.sumOf { it.second.longPauses },
         )
 
     /** The summary of an assigned round. */

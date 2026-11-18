@@ -50,6 +50,37 @@ describe("campus usage", () => {
     expect(currentMonthRange(new Date(2026, 10, 14))).toEqual({ from: "2026-11-01", to: "2026-11-30" });
   });
 
+  it("shows interviews by round type for each college, with the server's counts", async () => {
+    api.fetchCampusUsage.mockResolvedValue([
+      {
+        ...usageRows[0]!,
+        interviewsByRound: [
+          { roundType: "technical_fundamentals", interviews: 5 },
+          { roundType: "hr_fit_closing", interviews: 2 },
+        ],
+      },
+      usageRows[1]!,
+    ]);
+    render(<AdminUsage />);
+
+    const section = within((await screen.findByRole("heading", { name: "Interviews by round type" })).closest("section")!);
+    const a = within(section.getByRole("heading", { name: "College A, by round type" }).closest("li")!);
+    expect(a.getByText("Technical interview")).toBeInTheDocument();
+    expect(a.getByText("5")).toBeInTheDocument();
+    expect(a.getByText("HR interview")).toBeInTheDocument();
+    expect(a.getByText("2")).toBeInTheDocument();
+    expect(within(section.getByRole("heading", { name: "College B, by round type" }).closest("li")!).getByText("No interviews in this range.")).toBeInTheDocument();
+  });
+
+  it("shows how much of the allowance is left, and never less than zero", async () => {
+    api.fetchCampusUsage.mockResolvedValue([usageRows[0]!, { ...usageRows[1]!, interviewAllowance: 2, interviewsUsed: 3 }]);
+    render(<AdminUsage />);
+    const table = await screen.findByRole("table");
+    expect(within(table).getByRole("columnheader", { name: "Left" })).toBeInTheDocument();
+    expect(within(within(table).getByText("College A").closest("tr")!).getByText("93")).toBeInTheDocument();
+    expect(within(within(table).getByText("College B").closest("tr")!).getAllByText("0").length).toBeGreaterThan(0);
+  });
+
   it("shows cost in dollars, a clear cell when there are no interviews, and the estimate note", async () => {
     api.fetchCampusUsage.mockResolvedValue(usageRows);
     render(<AdminUsage />);

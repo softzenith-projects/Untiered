@@ -10,6 +10,7 @@ import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers
 import org.mockito.BDDMockito.given
+import org.mockito.BDDMockito.willReturn
 import org.mockito.Mockito.mockingDetails
 import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
@@ -108,6 +109,7 @@ class CampusProgrammeControllerTest {
         mockMvc.perform(get("$base/programmes")).andExpect(status().isUnauthorized)
         mockMvc.perform(post("$base/programmes").json("{}")).andExpect(status().isUnauthorized)
         mockMvc.perform(get("$base/programmes/$programmeId/progress")).andExpect(status().isUnauthorized)
+        mockMvc.perform(get("$base/programmes/$programmeId/weeks")).andExpect(status().isUnauthorized)
         mockMvc.perform(post("$base/programmes/$programmeId/archive")).andExpect(status().isUnauthorized)
         mockMvc.perform(get("/api/v1/me/programmes")).andExpect(status().isUnauthorized)
         mockMvc.perform(get("/api/v1/me/programmes/$programmeId/certificate")).andExpect(status().isUnauthorized)
@@ -255,6 +257,68 @@ class CampusProgrammeControllerTest {
             .andExpect(jsonPath("$[0].title").value("Placement Accelerator"))
             .andExpect(jsonPath("$[0].weeks").value(6))
             .andExpect(jsonPath("$[0].modules[0].week").value(1))
+    }
+
+    @Test
+    fun `the week-by-week view is a 404 for a non-member, a programme outside the college, and a student role is refused`() {
+        given(access.resolve(identity, orgId)).willThrow(ApiException.notFound())
+        mockMvc.perform(get("$base/programmes/$programmeId/weeks").with(signedIn())).andExpect(status().isNotFound)
+
+        val staff = scope(CampusRole.TPO)
+        willReturn(staff).given(access).resolve(identity, orgId)
+        given(programmes.find(staff, programmeId)).willReturn(null)
+        mockMvc.perform(get("$base/programmes/$programmeId/weeks").with(signedIn())).andExpect(status().isNotFound)
+
+        willReturn(scope(CampusRole.STUDENT)).given(access).resolve(identity, orgId)
+        mockMvc
+            .perform(get("$base/programmes/$programmeId/weeks").with(signedIn()))
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.error").value("campus_forbidden"))
+
+        verifyNoInteractions(assignments)
+    }
+
+    @Test
+    fun `the week-by-week view says which weeks are open and how many of their students finished`() {
+        val staff = scope(CampusRole.FACULTY)
+        given(access.resolve(identity, orgId)).willReturn(staff)
+        val row = ProgrammeRow(programmeId, templateId, "Placement Accelerator", LocalDate.now().minusDays(3), 6, "active")
+        given(programmes.find(staff, programmeId)).willReturn(row)
+        val weekOne = UUID.randomUUID()
+        val weekTwo = UUID.randomUUID()
+        given(programmes.assignments(staff, listOf(programmeId))).willReturn(
+            mapOf(
+                programmeId to
+                    listOf(
+                        ProgrammeAssignmentRow(weekOne, programmeId, 1, AssignmentKind.INTERVIEW, "DBMS round"),
+                        ProgrammeAssignmentRow(weekTwo, programmeId, 2, AssignmentKind.INTERVIEW, "OS round"),
+                    ),
+            ),
+        )
+        val other = UUID.randomUUID()
+        given(assignments.recipientFacts(staff, setOf(weekOne, weekTwo))).willReturn(
+            listOf(
+                facts(weekOne, completed = true),
+                facts(weekOne, completed = false).copy(memberId = other),
+                facts(weekTwo, completed = true),
+                facts(weekTwo, completed = false).copy(memberId = other),
+            ),
+        )
+
+        mockMvc
+            .perform(get("$base/programmes/$programmeId/weeks").with(signedIn()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].week").value(1))
+            .andExpect(jsonPath("$[0].opened").value(true))
+            .andExpect(jsonPath("$[0].assignments[0].title").value("DBMS round"))
+            .andExpect(jsonPath("$[0].students").value(2))
+            .andExpect(jsonPath("$[0].completedStudents").value(1))
+            .andExpect(jsonPath("$[0].completionRate").value(0.5))
+            // Week 2 is still locked: nothing to report yet, whatever a student did early.
+            .andExpect(jsonPath("$[1].week").value(2))
+            .andExpect(jsonPath("$[1].opened").value(false))
+            .andExpect(jsonPath("$[1].completionRate").doesNotExist())
     }
 
     @Test

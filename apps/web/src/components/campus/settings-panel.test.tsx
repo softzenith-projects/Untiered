@@ -15,6 +15,8 @@ const api = vi.hoisted(() => ({
   // The settings page also holds the readiness weights editor (campus spec §6).
   fetchReadinessWeights: vi.fn(),
   updateReadinessWeights: vi.fn(),
+  // ...and the college's interview package (contract Module 14).
+  fetchCollegePackages: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({ ...api, ApiRequestError: class ApiRequestError extends Error {} }));
@@ -38,6 +40,7 @@ const entry = (id: number, action: string): AuditEntryView => ({
 describe("SettingsPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    api.fetchCollegePackages.mockResolvedValue({ fundedByPackages: false, current: null, packages: null });
     api.fetchReadinessWeights.mockResolvedValue({ coding: 30, coreCs: 25, technicalInterview: 25, communication: 10, aptitude: 10 });
     api.fetchMeCampus.mockResolvedValue({
       student: null,
@@ -110,5 +113,14 @@ describe("SettingsPanel", () => {
       aptitude: 0,
     });
     expect(await screen.findByText("Weights saved.")).toBeInTheDocument();
+  });
+});
+
+describe("audit log actor names", () => {
+  it("names the Untiered team, not a deleted account, when an admin outside the college acted", async () => {
+    const { actorFallback } = await import("./settings-panel");
+    expect(actorFallback("platform_admin")).toBe("Untiered team");
+    expect(actorFallback("system")).toBe("Untiered");
+    expect(actorFallback("member")).toBe("Deleted account");
   });
 });

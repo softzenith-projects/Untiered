@@ -3,7 +3,7 @@
 import type { ReportCompetency, ReportSpokenEnglish, SessionReport } from "@untiered/shared";
 import { useState } from "react";
 
-import { ORDINARY_MARK, TONE_STYLES, ToneLegend, bandFor, scoreToneForPercent, toneFor, type ScoreTone } from "@/components/report-charts";
+import { CLEARING_MARK, TONE_STYLES, ToneLegend, bandFor, scoreToneForPercent, toneFor, type ScoreTone } from "@/components/report-charts";
 
 /**
  * The report at a glance, drawn: the shape of the candidate's skills, how much of the round
@@ -99,8 +99,8 @@ function labelLines(name: string, width = 20): string[] {
 
 /**
  * Every competency as one spoke, so the candidate sees the shape of the round — which way
- * it leans — rather than a list. The ring at the ordinary mark is the reference: a point
- * on it did what the question asked, and a point outside it went further.
+ * it leans — rather than a list. The ring at the clearing mark is the reference: a point
+ * on it would likely clear a round of this kind, and a point inside it fell short.
  */
 export function SkillRadar({ competencies }: { competencies: ReportCompetency[] }) {
   const [active, setActive] = useState<number | null>(null);
@@ -132,7 +132,7 @@ export function SkillRadar({ competencies }: { competencies: ReportCompetency[] 
       <figcaption className="flex flex-col gap-1">
         <span className={CARD_TITLE}>Skill shape</span>
         <span className="text-caption text-ink-muted">
-          Each spoke is one competency, scored against its own maximum. The colour of each dot is how it scored; the darker ring is an ordinary answer.
+          Each spoke is one competency, scored against its own maximum. The colour of each dot is how it scored; the darker ring is the level that would clear a round.
         </span>
       </figcaption>
 
@@ -146,7 +146,7 @@ export function SkillRadar({ competencies }: { competencies: ReportCompetency[] 
           {[0.2, 0.6, 0.8, 1].map((fraction) => (
             <polygon key={fraction} points={ring(fraction)} className="fill-none stroke-line" strokeWidth={1} />
           ))}
-          <polygon points={ring(ORDINARY_MARK / 100)} className="fill-none stroke-ink-subtle" strokeWidth={1.5} />
+          <polygon points={ring(CLEARING_MARK / 100)} className="fill-none stroke-ink-subtle" strokeWidth={1.5} />
           {competencies.map((item, index) => {
             const end = point(index, 1);
             return <line key={item.competency} x1={centre} y1={centre} x2={end.x} y2={end.y} className="stroke-line" strokeWidth={1} />;

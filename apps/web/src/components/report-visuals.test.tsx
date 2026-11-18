@@ -118,8 +118,8 @@ describe("Spotlight", () => {
   it("names the strongest and weakest competency, each with its colour's word", () => {
     render(<Spotlight competencies={competencies} />);
 
-    expect(screen.getByText("Your strongest").parentElement).toHaveTextContent("System design trade-offs4/5 · The ceiling");
-    expect(screen.getByText("Needs most work").parentElement).toHaveTextContent("Communication2/5 · Ordinary");
+    expect(screen.getByText("Your strongest").parentElement).toHaveTextContent("System design trade-offs4/5 · Strong");
+    expect(screen.getByText("Needs most work").parentElement).toHaveTextContent("Communication2/5 · Not clearing yet");
   });
 
   it("is left out when every competency is the same one", () => {
@@ -133,13 +133,13 @@ describe("tone labels", () => {
   it("says in words what a ring's colour means", () => {
     render(<RingMeter title="Answered without help" value={1} total={4} caption="1 of 4" />);
 
-    expect(screen.getByText("Needs work")).toBeInTheDocument();
+    expect(screen.getByText("Below the bar")).toBeInTheDocument();
   });
 
   it("never marks a pace outside the range as needing work", () => {
     render(<PaceGauge wordsPerMinute={200} />);
 
     expect(screen.getByText("A little fast")).toBeInTheDocument();
-    expect(screen.queryByText("Needs work")).not.toBeInTheDocument();
+    expect(screen.queryByText("Below the bar")).not.toBeInTheDocument();
   });
 });

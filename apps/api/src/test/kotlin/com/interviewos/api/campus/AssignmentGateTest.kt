@@ -150,7 +150,15 @@ class AssignmentGateTest {
             Blocked.COLLEGE_ALLOWANCE.toException().let { it.code to it.status },
         )
         assertEquals(
-            listOf("not_open", "past_due", "attempt_limit", "student_cap", "college_allowance"),
+            listOf(
+                "not_open",
+                "past_due",
+                "attempt_limit",
+                "student_cap",
+                "college_allowance",
+                "no_active_package",
+                "package_student_limit",
+            ),
             Blocked.entries.map { it.wireValue },
         )
     }

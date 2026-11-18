@@ -99,6 +99,22 @@ describe("students needing attention", () => {
     expect(screen.getByLabelText("Reason")).toHaveAccessibleDescription(/14 days/);
   });
 
+  it("marks a student who has a staff note, and only that student", async () => {
+    api.fetchAttention.mockResolvedValueOnce([
+      attention({ hasStaffNote: true }),
+      attention({ memberId: "m2", name: "Bilal", reasons: ["inactive"], hasStaffNote: false }),
+    ]);
+    render(
+      <CampusGate title="Students needing attention">
+        <AttentionPanel />
+      </CampusGate>,
+    );
+
+    const table = await screen.findByRole("table", { name: "Students needing attention" });
+    expect(within(within(table).getByRole("row", { name: /Asha/ })).getByText("Has a staff note")).toBeInTheDocument();
+    expect(within(within(table).getByRole("row", { name: /Bilal/ })).queryByText("Has a staff note")).not.toBeInTheDocument();
+  });
+
   it("is in the portal navigation for every staff role", async () => {
     api.fetchAttention.mockResolvedValue([]);
     render(

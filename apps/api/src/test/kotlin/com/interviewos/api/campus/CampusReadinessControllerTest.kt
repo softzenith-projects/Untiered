@@ -232,6 +232,25 @@ class CampusReadinessControllerTest {
     }
 
     @Test
+    fun `the staff read carries the staff-only block with last active, attention reasons and the assigned work`() {
+        val scope = scope(CampusRole.TPO)
+        given(access.resolve(identity, orgId)).willReturn(scope)
+        stubOneStudent(scope, ReadinessFilter(memberId = studentMember), interviewScores = listOf(4))
+
+        mockMvc
+            .perform(get("$base/students/$studentMember/readiness").with(signedIn()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.staff.lastActiveAt").isNotEmpty)
+            .andExpect(jsonPath("$.staff.attention.length()").value(0))
+            .andExpect(jsonPath("$.staff.assignedWork.length()").value(1))
+            .andExpect(jsonPath("$.staff.assignedWork[0].assignmentId").value(assignmentId.toString()))
+            .andExpect(jsonPath("$.staff.assignedWork[0].title").value("Technical round"))
+            .andExpect(jsonPath("$.staff.assignedWork[0].kind").value("interview"))
+            .andExpect(jsonPath("$.staff.assignedWork[0].status").value("completed"))
+            .andExpect(jsonPath("$.staff.assignedWork[0].sessionId").value(sessionId.toString()))
+    }
+
+    @Test
     fun `a student outside the faculty member's scope is a 404 and nothing is audited`() {
         val scope = scope(CampusRole.FACULTY, setOf(batchId))
         given(access.resolve(identity, orgId)).willReturn(scope)

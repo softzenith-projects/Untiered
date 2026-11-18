@@ -122,6 +122,21 @@ describe("AdminColleges", () => {
     expect(await screen.findByRole("link", { name: "Beta Institute" })).toBeInTheDocument();
   });
 
+  it("draws the interview allowance as a bar with its numbers, and no bar for an allowance of zero", async () => {
+    api.fetchAdminOrgs.mockResolvedValue([
+      org({ interviewAllowance: 200, interviewsUsed: 50 }),
+      org({ id: "o2", name: "Beta Institute", slug: "beta", interviewAllowance: 0, interviewsUsed: 0 }),
+    ]);
+    render(<AdminColleges />);
+
+    const bar = await screen.findByRole("progressbar", { name: "Alpha College: 50 of 200 interviews used" });
+    expect(bar).toHaveAttribute("aria-valuenow", "50");
+    expect(bar).toHaveAttribute("aria-valuemax", "200");
+    expect(screen.getByText("50 of 200")).toBeInTheDocument();
+    expect(screen.getByText("0 of 0")).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar", { name: /Beta Institute/ })).not.toBeInTheDocument();
+  });
+
   it("shows not found when the API 404s a non-admin", async () => {
     api.fetchAdminOrgs.mockRejectedValue(new ApiRequestError(404, "not_found", "Not found"));
     render(<AdminColleges />);
@@ -170,7 +185,9 @@ describe("CampusGate", () => {
     const nav_ = screen.getByRole("navigation", { name: "College portal" });
     expect(within(nav_).getByRole("link", { name: "Overview" })).toBeInTheDocument();
     expect(within(nav_).queryByRole("link", { name: "Staff" })).not.toBeInTheDocument();
-    expect(within(nav_).queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
+    expect(within(nav_).queryByRole("link", { name: "Departments and batches" })).not.toBeInTheDocument();
+    // Settings is open to faculty since contract Module 14, for the interview package only.
+    expect(within(nav_).getByRole("link", { name: "Settings" })).toBeInTheDocument();
   });
 
   it("does not render a page the role cannot use", async () => {

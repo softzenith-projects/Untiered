@@ -1037,7 +1037,7 @@ function Consent({
  * assigned start screen only, before the consent step; a personal round counts none of it.
  */
 export const ASSIGNED_INTEGRITY_NOTICE =
-  "Because your college assigned this interview, it will see how many times you switched tabs or windows or pasted text, and how your answer timing looked. Nothing else about your screen is recorded.";
+  "Because your college assigned this interview, it will see how many times you switched tabs or windows or pasted text, and how your answer timing looked. Nothing else about your screen is recorded. You see the same counts on your report. They are counts, never a verdict, and nobody is failed automatically.";
 
 export function assignmentStartError(cause: unknown): string {
   if (!(cause instanceof ApiRequestError)) return "The interview could not be started. Please try again.";
@@ -1054,6 +1054,10 @@ export function assignmentStartError(cause: unknown): string {
       return BLOCKED_REASON_TEXT.student_cap ?? cause.message;
     case "college_allowance_exhausted":
       return BLOCKED_REASON_TEXT.college_allowance ?? cause.message;
+    case "college_package_inactive":
+      return BLOCKED_REASON_TEXT.no_active_package ?? cause.message;
+    case "package_student_limit":
+      return BLOCKED_REASON_TEXT.package_student_limit ?? cause.message;
     case "session_in_progress":
       return "You already have an interview in progress. Finish or leave it from your dashboard first.";
     default:

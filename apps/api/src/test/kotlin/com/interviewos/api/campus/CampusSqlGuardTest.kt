@@ -39,6 +39,8 @@ class CampusSqlGuardTest {
             "programme_templates",
             "programmes",
             "programme_targets",
+            "college_packages",
+            "college_package_reminders",
         )
 
     /** reason to (file it may appear in to how many statements there) */
@@ -64,7 +66,8 @@ class CampusSqlGuardTest {
             // Notification discovery: assignments inside their reminder window, the session a round
             // came from, and colleges with students, each across colleges. Every email written from
             // what they find binds that one college org_id.
-            "notification-discovery" to mapOf("CampusNotificationRepository.kt" to 4),
+            // ...and packages ending within 30 days, for the renewal reminders (module 14).
+            "notification-discovery" to mapOf("CampusNotificationRepository.kt" to 4, "CollegePackageRepository.kt" to 1),
             // Integrity signals (module 5): whether the caller's own session, bound by the verified
             // user id, was started from an assignment. Reads the attempt by session id only; no
             // college's data is returned.
@@ -72,6 +75,9 @@ class CampusSqlGuardTest {
             // Usage and AI cost for every college, for the platform operator (module 11); the
             // method requires a PlatformAdmin proof, and each college's figures join on its own org_id.
             "platform-admin-usage" to mapOf("UsageRepository.kt" to 1),
+            // Packages, payments and cost of every college for the operator's billing page (module
+            // 14); each method requires a PlatformAdmin proof.
+            "platform-admin-billing" to mapOf("CollegePackageRepository.kt" to 3),
             // Programme templates (module 10) are a global catalogue that belongs to no college: every
             // college reads the same list, and only a platform admin writes it (a PlatformAdmin proof).
             "programme-templates" to mapOf("ProgrammeRepository.kt" to 5),
@@ -87,6 +93,7 @@ class CampusSqlGuardTest {
             "AssignmentRepository.kt" to listOf("ASSIGNMENT_SELECT"),
             "InviteRepository.kt" to listOf("INVITE_SELECT"),
             "McqRepository.kt" to listOf("ATTEMPT_SELECT"),
+            "CollegePackageRepository.kt" to listOf("PACKAGE_SELECT"),
         )
 
     private val source = File("src/main/kotlin/com/interviewos/api/campus")
@@ -193,7 +200,8 @@ class CampusSqlGuardTest {
                     "(organisations|org_departments|org_batches|org_members|org_faculty_scopes|org_audit_log" +
                     "|campus_imports|campus_import_rows|campus_invites|campus_staff_comments" +
                     "|programme_templates|programmes|programme_targets" +
-                    "|assignments|assignment_targets|assignment_attempts|mcq_attempts)\\b",
+                    "|assignments|assignment_targets|assignment_attempts|mcq_attempts" +
+                    "|college_packages|college_package_reminders)\\b",
             )
     }
 }

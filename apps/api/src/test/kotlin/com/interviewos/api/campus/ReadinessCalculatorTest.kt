@@ -42,7 +42,7 @@ class ReadinessCalculatorTest {
         assertNull(result.components[ReadinessComponent.TECHNICAL_INTERVIEW])
         assertNull(result.components[ReadinessComponent.COMMUNICATION])
         assertEquals(75, result.overall)
-        assertEquals(ReadinessBand.INTERVIEW_READY, result.band)
+        assertEquals(ReadinessBand.STRONG, result.band)
     }
 
     @Test
@@ -122,14 +122,14 @@ class ReadinessCalculatorTest {
     }
 
     @Test
-    fun `band edges fall on the rounded overall`() {
+    fun `band edges fall on the rounded overall, on the interview report's lines`() {
         assertEquals(ReadinessBand.NEEDS_STRUCTURED_PREP, ReadinessCalculator.band(0, 2))
         assertEquals(ReadinessBand.NEEDS_STRUCTURED_PREP, ReadinessCalculator.band(49, 2))
         assertEquals(ReadinessBand.NEEDS_IMPROVEMENT, ReadinessCalculator.band(50, 2))
-        assertEquals(ReadinessBand.NEEDS_IMPROVEMENT, ReadinessCalculator.band(69, 2))
-        assertEquals(ReadinessBand.INTERVIEW_READY, ReadinessCalculator.band(70, 2))
-        assertEquals(ReadinessBand.INTERVIEW_READY, ReadinessCalculator.band(84, 2))
-        assertEquals(ReadinessBand.STRONG, ReadinessCalculator.band(85, 2))
+        assertEquals(ReadinessBand.NEEDS_IMPROVEMENT, ReadinessCalculator.band(59, 2))
+        assertEquals(ReadinessBand.INTERVIEW_READY, ReadinessCalculator.band(60, 2))
+        assertEquals(ReadinessBand.INTERVIEW_READY, ReadinessCalculator.band(69, 2))
+        assertEquals(ReadinessBand.STRONG, ReadinessCalculator.band(70, 2))
         assertEquals(ReadinessBand.STRONG, ReadinessCalculator.band(100, 2))
         assertEquals(ReadinessBand.NOT_ENOUGH_EVIDENCE, ReadinessCalculator.band(100, 1))
         assertEquals(ReadinessBand.NOT_ENOUGH_EVIDENCE, ReadinessCalculator.band(null, 5))
@@ -146,10 +146,10 @@ class ReadinessCalculatorTest {
         assertEquals(50, bandOf(49, 50).overall)
         assertEquals(ReadinessBand.NEEDS_IMPROVEMENT, bandOf(49, 50).band)
         assertEquals(ReadinessBand.NEEDS_STRUCTURED_PREP, bandOf(49, 49).band)
-        assertEquals(ReadinessBand.NEEDS_IMPROVEMENT, bandOf(69, 69).band)
-        assertEquals(ReadinessBand.INTERVIEW_READY, bandOf(69, 70).band)
-        assertEquals(ReadinessBand.INTERVIEW_READY, bandOf(84, 84).band)
-        assertEquals(ReadinessBand.STRONG, bandOf(84, 85).band)
+        assertEquals(ReadinessBand.NEEDS_IMPROVEMENT, bandOf(59, 59).band)
+        assertEquals(ReadinessBand.INTERVIEW_READY, bandOf(59, 60).band)
+        assertEquals(ReadinessBand.INTERVIEW_READY, bandOf(69, 69).band)
+        assertEquals(ReadinessBand.STRONG, bandOf(69, 70).band)
     }
 
     @Test
@@ -161,7 +161,7 @@ class ReadinessCalculatorTest {
     }
 
     @Test
-    fun `suggestions come from components and topics below 70, with sentences built from the numbers`() {
+    fun `suggestions come from components and topics below 60, with sentences built from the numbers`() {
         val dbms1 = UUID.randomUUID()
         val dbms2 = UUID.randomUUID()
         val items =
@@ -169,7 +169,7 @@ class ReadinessCalculatorTest {
                 item(ReadinessComponent.CORE_CS, 50, day = 0, topic = "dbms", assignment = dbms1),
                 item(ReadinessComponent.CORE_CS, 66, day = 1, topic = "dbms", assignment = dbms2),
                 item(ReadinessComponent.CODING, 90, day = 2, topic = "dsa"),
-                item(ReadinessComponent.COMMUNICATION, 69, day = 3),
+                item(ReadinessComponent.COMMUNICATION, 59, day = 3),
             )
 
         val result = ReadinessCalculator.compute(items, weights)
@@ -177,7 +177,7 @@ class ReadinessCalculatorTest {
         assertEquals(
             listOf(
                 ReadinessSuggestion(ReadinessComponent.CORE_CS, null, "Average 58 across 2 core CS assignments."),
-                ReadinessSuggestion(ReadinessComponent.COMMUNICATION, null, "Scored 69 on 1 communication assignment."),
+                ReadinessSuggestion(ReadinessComponent.COMMUNICATION, null, "Scored 59 on 1 communication assignment."),
                 ReadinessSuggestion(ReadinessComponent.CORE_CS, "dbms", "Average 58 across 2 DBMS assignments."),
             ),
             result.suggestions,
@@ -185,10 +185,10 @@ class ReadinessCalculatorTest {
     }
 
     @Test
-    fun `a component at exactly 70 is not suggested, and no suggestion is invented for a component never attempted`() {
+    fun `a component at exactly 60 is not suggested, and no suggestion is invented for a component never attempted`() {
         val result =
             ReadinessCalculator.compute(
-                listOf(item(ReadinessComponent.CODING, 70), item(ReadinessComponent.CODING, 70, day = 1)),
+                listOf(item(ReadinessComponent.CODING, 60), item(ReadinessComponent.CODING, 60, day = 1)),
                 weights,
             )
 
@@ -207,6 +207,26 @@ class ReadinessCalculatorTest {
 
         val many = (0..4).map { item(ReadinessComponent.CODING, 40, day = 10L - it) }
         assertEquals("Average 40 across the latest 3 coding assignments.", ReadinessCalculator.reason(40, many, "coding"))
+    }
+
+    @Test
+    fun `a topic named like a suggested component is not suggested twice`() {
+        val items =
+            listOf(
+                item(ReadinessComponent.COMMUNICATION, 64, day = 0, topic = "communication"),
+                item(ReadinessComponent.CORE_CS, 60, day = 1, topic = "dbms"),
+            )
+
+        val result = ReadinessCalculator.compute(items, weights)
+
+        assertEquals(
+            listOf(
+                ReadinessSuggestion(ReadinessComponent.CORE_CS, null, "Scored 60 on 1 core CS assignment."),
+                ReadinessSuggestion(ReadinessComponent.COMMUNICATION, null, "Scored 64 on 1 communication assignment."),
+                ReadinessSuggestion(ReadinessComponent.CORE_CS, "dbms", "Scored 60 on 1 DBMS assignment."),
+            ),
+            result.suggestions,
+        )
     }
 
     @Test
