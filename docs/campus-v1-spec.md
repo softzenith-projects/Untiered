@@ -116,8 +116,9 @@ types, `CampusRounds`) and the existing practice content. Do not rebuild or dupl
 - Scores: overall, coding, core CS, technical interview, communication, aptitude.
 - Default weights are 30 / 25 / 25 / 10 / 10, configurable per college.
 - A missing component is left out and shown as "Not attempted". It is never counted as 0.
-- Bands: Strong (85+), Interview-ready (70–84), Needs improvement (50–69), Needs
-  structured prep (under 50).
+- Bands: Strong (70+), Interview-ready (60–69), Needs improvement (50–59), Needs
+  structured prep (under 50). The same lines as the interview report: 60% would likely
+  clear a round, 70% is a clear pass (owner, 18 November 2026).
 - Each interview's detail shows the questions, an answer summary, strengths, missing
   concepts and suggested topics. The existing report already holds these.
 - Recommended practice links to relevant Arena and course content.
