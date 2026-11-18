@@ -114,7 +114,9 @@ class StudentIntegrityTotalsControllerTest {
         given(integrity.counts(first, studentUser)).willReturn(IntegrityCounts(tabHidden = 2, windowBlur = 1, pastes = 1, pastedChars = 80))
         given(integrity.counts(second, studentUser)).willReturn(IntegrityCounts(tabHidden = 0, windowBlur = 3, pastes = 0, pastedChars = 0))
         given(integrity.answerTimings(first, studentUser)).willReturn(
-            listOf("""{"recordedMs":60000,"firstSoundMs":400,"speakingMs":40000,"pauseCount":1,"longestPauseMs":22000,"totalPauseMs":22000}"""),
+            listOf(
+                """{"recordedMs":60000,"firstSoundMs":400,"speakingMs":40000,"pauseCount":1,"longestPauseMs":22000,"totalPauseMs":22000}""",
+            ),
         )
         given(integrity.answerTimings(second, studentUser)).willReturn(emptyList())
 

@@ -19,7 +19,18 @@ class IntegrityRulesTest {
                 ),
             )
 
-        assertEquals(StudentIntegrityTotals(rounds = 2, windowSwitches = 6, tabHidden = 2, windowBlur = 4, pastes = 1, fastAnswers = 1, longPauses = 2), totals)
+        assertEquals(
+            StudentIntegrityTotals(
+                rounds = 2,
+                windowSwitches = 6,
+                tabHidden = 2,
+                windowBlur = 4,
+                pastes = 1,
+                fastAnswers = 1,
+                longPauses = 2,
+            ),
+            totals,
+        )
         assertEquals(StudentIntegrityTotals(0, 0, 0, 0, 0, 0, 0), IntegrityRules.totals(emptyList()))
     }
 

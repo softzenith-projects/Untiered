@@ -22,7 +22,12 @@ class StaffStudentRulesTest {
         val detail = StaffStudentRules.detail(facts, now)
 
         assertEquals(listOf("low_score", "inactive", "overdue"), detail.attention)
-        assertEquals(AttentionRules.reasons(facts.result.band, facts.overdue, facts.student.lastActiveAt, now).map { it.wireValue }, detail.attention)
+        assertEquals(
+            AttentionRules.reasons(facts.result.band, facts.overdue, facts.student.lastActiveAt, now).map {
+                it.wireValue
+            },
+            detail.attention,
+        )
         assertEquals(now.minus(Duration.ofDays(30)).toString(), detail.lastActiveAt)
     }
 
@@ -41,7 +46,15 @@ class StaffStudentRulesTest {
         val work =
             listOf(
                 AssignedWorkFact(interviewId, "Technical round", AssignmentKind.INTERVIEW, CompletionStatus.COMPLETED, now, session, null),
-                AssignedWorkFact(mcqId, "Core CS test", AssignmentKind.MCQ_TEST, CompletionStatus.OVERDUE, now.plusSeconds(60), null, attempt),
+                AssignedWorkFact(
+                    mcqId,
+                    "Core CS test",
+                    AssignmentKind.MCQ_TEST,
+                    CompletionStatus.OVERDUE,
+                    now.plusSeconds(60),
+                    null,
+                    attempt,
+                ),
             )
 
         val rows = StaffStudentRules.detail(facts(ReadinessBand.STRONG, 0, now, work), now).assignedWork
