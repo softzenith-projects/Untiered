@@ -150,6 +150,7 @@ const ICONS = {
       <path d="m8 12.5 2.8 2.8L16.5 9" />
     </>
   ),
+  star: <path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z" />,
   gauge: (
     <>
       <path d="M4 17a8 8 0 1 1 16 0" />
@@ -226,7 +227,7 @@ export function KpiRow({ view }: { view: DashboardView }) {
   const trend = view.trend;
   const weeklyText = trend ? trend.weekly.map((week) => week.completed).join(", ") : "";
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Key figures">
+    <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Key figures">
       <KpiCard
         icon="people"
         label="Joined students"
@@ -263,6 +264,14 @@ export function KpiRow({ view }: { view: DashboardView }) {
           }
           change={pointsChange(trend.averageScoreLast30, trend.averageScorePrev30)}
           changeLabel="compared with the previous 30 days"
+        />
+      ) : null}
+      {pipeline ? (
+        <KpiCard
+          icon="star"
+          label="Interview-ready or strong"
+          value={String(pipeline.interviewReady)}
+          detail={view.joined > 0 ? `${percent(pipeline.interviewReady, view.joined)}% of joined students` : "No students have joined yet"}
         />
       ) : null}
     </ul>

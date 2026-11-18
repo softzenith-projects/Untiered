@@ -120,15 +120,18 @@ describe("overview helpers", () => {
 });
 
 describe("KPI cards", () => {
-  it("shows the four figures, with change chips against the previous 30 days", () => {
+  it("shows the five figures, with change chips against the previous 30 days", () => {
     render(<KpiRow view={view()} />);
     const cards = within(screen.getByRole("list", { name: "Key figures" })).getAllByRole("listitem");
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(5);
     expect(within(cards[0]!).getByText("of 40 invited")).toBeInTheDocument();
     expect(within(cards[2]!).getByText("+3")).toBeInTheDocument();
     expect(within(cards[2]!).getByText(/oldest first: 0, 1, 2, 3, 4, 5, 6, 7/)).toBeInTheDocument();
     expect(within(cards[3]!).getByText("63")).toBeInTheDocument();
     expect(within(cards[3]!).getByText("+4 pts")).toBeInTheDocument();
+    // The prototype's fourth headline tile: students whose band is Strong or Interview-ready.
+    expect(within(cards[4]!).getByText("Interview-ready or strong")).toBeInTheDocument();
+    expect(within(cards[4]!).getByText(String(view().pipeline!.interviewReady))).toBeInTheDocument();
   });
 
   it("hides the change chip when a period has no average, and says when there is not enough data", () => {
