@@ -145,19 +145,23 @@ jobs:
           docker logs web
           exit 1
 
-  # The website, deployed to Netlify from here because Netlify's free plan will not build a
-  # private repository owned by a GitHub organisation. Only a push to the branch named in the
-  # NETLIFY_PRODUCTION_BRANCH repository variable deploys, and only after every job above is
-  # green; with the variable unset, nothing deploys. The build runs here with the site's
-  # Netlify settings and Production environment variables, which the CLI fetches with the token.
+  # The website, deployed to Vercel from here rather than by Vercel's Git integration, so a
+  # deploy only ever follows a green run of every job above. Only a push to the branch named
+  # in the VERCEL_PRODUCTION_BRANCH repository variable deploys; with the variable unset,
+  # nothing deploys. `vercel pull` fetches the project's settings (Root Directory `apps/web`)
+  # and its Production environment variables, so those stay in Vercel's dashboard.
   deploy-web:
-    name: deploy web (Netlify)
+    name: deploy web (Vercel)
     needs: [web, api, database, images]
-    if: github.event_name == 'push' && vars.NETLIFY_PRODUCTION_BRANCH != '' && github.ref_name == vars.NETLIFY_PRODUCTION_BRANCH
+    if: github.event_name == 'push' && vars.VERCEL_PRODUCTION_BRANCH != '' && github.ref_name == vars.VERCEL_PRODUCTION_BRANCH
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-web
       cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v7
 
@@ -166,11 +170,13 @@ jobs:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      - run: npm install --global vercel@65.10.0
 
-      - name: Build and deploy to production
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          DEPLOY_MESSAGE: ${{ github.ref_name }} ${{ github.sha }}
-        run: npx --yes netlify-cli@27.16.1 deploy --prod --filter @untiered/web --message "$DEPLOY_MESSAGE"
+      - name: Fetch project settings and Production environment
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy to production
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" --meta githubCommitSha="$GITHUB_SHA"
