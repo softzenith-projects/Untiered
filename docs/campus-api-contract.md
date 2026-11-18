@@ -862,6 +862,7 @@ interface OrgUsageRow {
   interviewsThisMonth: number;
   aiCostUsd: number;                // sum of ai_calls.micro_usd for sessions of this org's attempts ÷ 1e6
   aiCostPerInterviewUsd: number | null;  // null when there are no interviews
+  interviewsByRound: { roundType: AssignableRoundType; interviews: number }[];  // org-funded interviews that did not fail and started in the range, most first
 }
 ```
 

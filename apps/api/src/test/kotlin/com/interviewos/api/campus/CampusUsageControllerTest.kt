@@ -98,6 +98,51 @@ class CampusUsageControllerTest {
     }
 
     @Test
+    fun `interviews come back by round type, most first, from the same range as the cost`() {
+        val admin = PlatformAdmin(userId)
+        given(access.requirePlatformAdmin(identity)).willReturn(admin)
+        given(
+            usage.usage(ArgumentMatchers.eq(admin) ?: admin, anyInstant(), anyInstant(), anyInstant(), anyInstant()),
+        ).willReturn(
+            listOf(
+                OrgUsageFacts(
+                    orgId,
+                    "College A",
+                    100,
+                    9,
+                    9,
+                    9,
+                    0,
+                    listOf(RoundUsage("hr_fit_closing", 2), RoundUsage("technical_fundamentals", 5), RoundUsage("coding_practical", 2)),
+                ),
+                OrgUsageFacts(UUID.randomUUID(), "College B", 10, 0, 0, 0, 0),
+            ),
+        )
+
+        mockMvc
+            .perform(get("/api/v1/admin/campus/usage").with(signedIn()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$[0].interviewsByRound.length()").value(3))
+            .andExpect(jsonPath("$[0].interviewsByRound[0].roundType").value("technical_fundamentals"))
+            .andExpect(jsonPath("$[0].interviewsByRound[0].interviews").value(5))
+            // Ties break by round type, so the order never wobbles between reads.
+            .andExpect(jsonPath("$[0].interviewsByRound[1].roundType").value("coding_practical"))
+            .andExpect(jsonPath("$[0].interviewsByRound[2].roundType").value("hr_fit_closing"))
+            .andExpect(jsonPath("$[1].interviewsByRound.length()").value(0))
+    }
+
+    @Test
+    fun `the per-round counts are read from the aggregated column, and a malformed one is skipped`() {
+        assertEquals(
+            listOf(RoundUsage("technical_fundamentals", 3), RoundUsage("hr_fit_closing", 1)),
+            UsageRepository.parseRounds("technical_fundamentals:3,hr_fit_closing:1"),
+        )
+        assertEquals(emptyList(), UsageRepository.parseRounds(""))
+        assertEquals(emptyList(), UsageRepository.parseRounds(null))
+        assertEquals(listOf(RoundUsage("aptitude", 2)), UsageRepository.parseRounds("garbage,aptitude:2,:4,x:y"))
+    }
+
+    @Test
     fun `cost math divides by interviews in range and is null with none`() {
         val some = CampusUsageService.row(OrgUsageFacts(orgId, "A", 5, 2, 2, 4, 1_000_000))
         assertEquals(1.0, some.aiCostUsd)

@@ -644,6 +644,8 @@ export interface IntegritySummary {
 
 /** Module 11 (platform admin): one college's usage and estimated AI cost over a date range. */
 export interface OrgUsageRow {
+  /** Org-funded interviews that did not fail and started in the range, by round type, most first. */
+  interviewsByRound?: { roundType: AssignableRoundType; interviews: number }[];
   orgId: string;
   orgName: string;
   interviewAllowance: number;
