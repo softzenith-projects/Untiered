@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 
-type Tone = "accent" | "positive" | "highlight" | "navy" | "danger" | "info";
+type Tone = "accent" | "positive" | "highlight" | "navy" | "neutral" | "danger" | "info";
 
 export function Badge({
   tone = "accent",

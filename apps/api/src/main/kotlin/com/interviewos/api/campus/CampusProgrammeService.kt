@@ -234,6 +234,22 @@ class CampusProgrammeService internal constructor(
             }.sortedWith(compareBy<ProgrammeProgress, String?>(nullsLast()) { it.name?.lowercase() }.thenBy { it.memberId })
     }
 
+    /** The programme week by week: unlock date, locked or open, and how many of its students finished it. */
+    @Transactional
+    fun weeks(
+        identity: SupabaseIdentity,
+        orgId: UUID,
+        id: UUID,
+    ): List<ProgrammeWeekView> {
+        val scope = access.resolve(identity, orgId)
+        scope.require(CampusPermission.ASSIGNMENT_PROGRESS_VIEW)
+        val row = programmes.find(scope, id) ?: throw ApiException.notFound()
+        val modules = programmes.assignments(scope, listOf(id))[id].orEmpty()
+        val facts = if (modules.isEmpty()) emptyList() else assignments.recipientFacts(scope, modules.map { it.id }.toSet())
+        audit.recordPlatformAdminRead(scope, "programme_weeks.viewed", TARGET_PROGRAMME, id)
+        return ProgrammeWeeks.rows(row.startsOn, modules, facts, clock.instant())
+    }
+
     /** Archives the programme and its assignments that have not opened yet. Asking twice is not an error. */
     @Transactional
     fun archive(

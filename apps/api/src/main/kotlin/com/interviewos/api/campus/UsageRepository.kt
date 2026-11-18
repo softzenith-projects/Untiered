@@ -15,6 +15,19 @@ import java.util.UUID
 class UsageRepository(
     private val jdbc: JdbcClient,
 ) {
+    internal companion object {
+        /** `"technical_fundamentals:3,hr_fit_closing:1"` (round types hold no ':' or ','). Anything malformed is skipped. */
+        fun parseRounds(value: String?): List<RoundUsage> =
+            value
+                .orEmpty()
+                .split(',')
+                .mapNotNull { part ->
+                    val roundType = part.substringBeforeLast(':', "")
+                    val count = part.substringAfterLast(':', "").toIntOrNull()
+                    if (roundType.isEmpty() || count == null) null else RoundUsage(roundType, count)
+                }
+    }
+
     /** [admin] is proof the caller passed the platform-admin gate; nothing here is scoped to one college. */
     @Suppress("UNUSED_PARAMETER")
     fun usage(
@@ -32,7 +45,8 @@ class UsageRepository(
                        coalesce(att.used, 0) as used,
                        coalesce(att.this_month, 0) as this_month,
                        coalesce(att.in_range, 0) as in_range,
-                       coalesce(cost.micro_usd, 0) as micro_usd
+                       coalesce(cost.micro_usd, 0) as micro_usd,
+                       coalesce(rounds.by_round, '') as by_round
                   from public.organisations o
                   left join lateral (
                         select count(*) filter (where a.org_funded and a.status <> 'failed') as used,
@@ -45,6 +59,16 @@ class UsageRepository(
                           from public.assignment_attempts a
                          where a.org_id = o.id
                   ) att on true
+                  left join lateral (
+                        select string_agg(t.round_type || ':' || t.n, ',') as by_round
+                          from (select x.round_type, count(*) as n
+                                  from public.assignment_attempts a
+                                  join public.assignments x on x.org_id = a.org_id and x.id = a.assignment_id
+                                 where a.org_id = o.id and a.org_funded and a.status <> 'failed' and x.round_type is not null
+                                   and a.started_at >= cast(:from as timestamptz)
+                                   and a.started_at < cast(:to as timestamptz)
+                                 group by x.round_type) t
+                  ) rounds on true
                   left join lateral (
                         select sum(c.micro_usd) as micro_usd
                           from public.assignment_attempts a
@@ -68,6 +92,7 @@ class UsageRepository(
                     interviewsThisMonth = rs.getInt("this_month"),
                     interviewsInRange = rs.getInt("in_range"),
                     microUsd = rs.getLong("micro_usd"),
+                    interviewsByRound = parseRounds(rs.getString("by_round")),
                 )
             }.list()
 }

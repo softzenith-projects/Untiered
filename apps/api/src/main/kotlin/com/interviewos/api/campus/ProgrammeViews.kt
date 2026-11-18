@@ -85,6 +85,32 @@ data class MyProgrammeView(
     val certificateId: String?,
 )
 
+/** One assignment of a programme week. */
+data class ProgrammeWeekAssignment(
+    val id: UUID,
+    val title: String,
+)
+
+/**
+ * One week of a programme (contract "Module 10", `GET …/programmes/{id}/weeks`): when it opens,
+ * whether it has, and how many of the students it was set for have finished all of it.
+ */
+data class ProgrammeWeekView(
+    val week: Int,
+    /** Opens at 09:00 IST on `startsOn + 7(n − 1)` days. */
+    val opensAt: String,
+    val dueAt: String,
+    /** False while the week is still locked. */
+    val opened: Boolean,
+    val assignments: List<ProgrammeWeekAssignment>,
+    /** Students the week's assignments were set for, inside the caller's scope. */
+    val students: Int,
+    /** Of those, students who completed every assignment of the week. */
+    val completedStudents: Int,
+    /** `completedStudents ÷ students`, 0–1; null while the week is locked or nobody is set it. */
+    val completionRate: Double?,
+)
+
 data class ProgrammeProgress(
     val memberId: UUID,
     val name: String?,

@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({
   updateAssignment: vi.fn(),
   fetchAssignment: vi.fn(),
   fetchAssignmentProgress: vi.fn(),
+  fetchCampusOrg: vi.fn(),
 }));
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
 
@@ -107,6 +108,7 @@ beforeEach(() => {
     { id: "b1", departmentId: "d1", departmentCode: "CSE", graduationYear: 2027, name: "CSE 2027", studentCount: 40 },
   ]);
   api.fetchMembers.mockResolvedValue({ items: [], nextCursor: null });
+  api.fetchCampusOrg.mockResolvedValue({ id: "o1", name: "Alpha College", interviewAllowance: 200, interviewsUsed: 37 });
 });
 
 describe("assignment model", () => {
@@ -232,7 +234,66 @@ describe("assignments list", () => {
   });
 });
 
+describe("assignments header tiles", () => {
+  it("shows the college's allowance, published and draft counts and overdue tasks to any staff role", async () => {
+    api.fetchMeCampus.mockResolvedValue({
+      student: null,
+      staff: [{ orgId: "o1", orgName: "Alpha College", logoUrl: null, role: "faculty" }],
+    });
+    api.fetchAssignments.mockResolvedValue([
+      view({ id: "a1", status: "published", counts: { recipients: 5, notStarted: 1, inProgress: 1, completed: 1, overdue: 2 } }),
+      view({ id: "a2", status: "published", counts: { recipients: 2, notStarted: 0, inProgress: 0, completed: 1, overdue: 1 } }),
+      view({ id: "a3", status: "draft", counts: { recipients: 0, notStarted: 0, inProgress: 0, completed: 0, overdue: 0 } }),
+    ]);
+    gated(<AssignmentsPanel />);
+
+    const tiles = within(await screen.findByRole("list", { name: "Assignment totals" }));
+    const used = within(tiles.getByRole("heading", { name: "College interviews used" }).closest("li")!);
+    expect(used.getByText("37")).toBeInTheDocument();
+    expect(used.getByText(/of 200 in the allowance/)).toBeInTheDocument();
+    const published = within(tiles.getByRole("heading", { name: "Published assignments" }).closest("li")!);
+    expect(published.getByText("2")).toBeInTheDocument();
+    expect(published.getByText("1 draft")).toBeInTheDocument();
+    expect(within(tiles.getByRole("heading", { name: "Overdue student tasks" }).closest("li")!).getByText("3")).toBeInTheDocument();
+    expect(api.fetchCampusOrg).toHaveBeenCalledWith("o1", expect.anything());
+  });
+
+  it("leaves out the allowance tile when the college could not be read, and keeps the rest", async () => {
+    api.fetchCampusOrg.mockRejectedValue(new Error("nope"));
+    api.fetchAssignments.mockResolvedValue([view({ status: "published" })]);
+    gated(<AssignmentsPanel />);
+    const tiles = within(await screen.findByRole("list", { name: "Assignment totals" }));
+    expect(tiles.queryByRole("heading", { name: "College interviews used" })).not.toBeInTheDocument();
+    expect(tiles.getByRole("heading", { name: "Published assignments" })).toBeInTheDocument();
+  });
+});
+
 describe("assignment detail", () => {
+  it("shows completed, in progress, not started and overdue tiles, and links a completed interview to its report", async () => {
+    api.fetchAssignment.mockResolvedValue(
+      view({ status: "published", counts: { recipients: 4, notStarted: 1, inProgress: 1, completed: 2, overdue: 0 } }),
+    );
+    api.fetchAssignmentProgress.mockResolvedValue([
+      progress({ memberId: "m1", name: "Asha", status: "completed", completedSessionId: "s9", sessionIds: ["s8", "s9"] }),
+      progress({ memberId: "m2", name: "Ben", status: "in_progress", sessionIds: ["s7"] }),
+    ]);
+    gated(<AssignmentDetail id="a1" />);
+
+    const tiles = within(await screen.findByRole("list", { name: "Completion" }));
+    expect(within(tiles.getByRole("heading", { name: "Completed" }).closest("li")!).getByText("50% of 4 students")).toBeInTheDocument();
+    expect(tiles.getByRole("heading", { name: "In progress" })).toBeInTheDocument();
+    expect(tiles.getByRole("heading", { name: "Not started" })).toBeInTheDocument();
+    expect(tiles.getByRole("heading", { name: "Overdue" })).toBeInTheDocument();
+
+    expect(await screen.findByRole("link", { name: "Report for Asha" })).toHaveAttribute(
+      "href",
+      "/campus/readiness/m1/reports/s9?org=o1",
+    );
+    // Not finished: no report to open, only the student.
+    expect(screen.queryByRole("link", { name: "Report for Ben" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Student: Ben" })).toHaveAttribute("href", "/campus/readiness/m2?org=o1");
+  });
+
   it("asks for confirmation before publishing a draft", async () => {
     api.fetchAssignment.mockResolvedValue(view());
     api.publishAssignment.mockResolvedValue(view({ status: "published" }));

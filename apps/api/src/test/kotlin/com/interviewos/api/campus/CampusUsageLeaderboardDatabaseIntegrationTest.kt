@@ -160,11 +160,15 @@ class CampusUsageLeaderboardDatabaseIntegrationTest {
         assertEquals(50, a.interviewAllowance)
         assertEquals(9.0, rows.getValue(orgB).aiCostUsd)
         assertEquals(9.0, rows.getValue(orgB).aiCostPerInterviewUsd)
+        // By round type, from this college's own attempts only: B's attempt and A's personal round never show up in A's counts.
+        assertEquals(listOf(RoundUsage("technical_fundamentals", 2)), a.interviewsByRound)
+        assertEquals(listOf(RoundUsage("technical_fundamentals", 1)), rows.getValue(orgB).interviewsByRound)
 
         // A range with no attempts started in it has no cost per interview, and an operator-only route.
         val empty = usage.usage(operator, today.plusDays(1).toString(), today.plusDays(2).toString()).associateBy { it.orgId }
         assertEquals(0.0, empty.getValue(orgA).aiCostUsd)
         assertNull(empty.getValue(orgA).aiCostPerInterviewUsd)
+        assertEquals(emptyList(), empty.getValue(orgA).interviewsByRound)
         assertNotFound { usage.usage(adminA, null, null) }
     }
 

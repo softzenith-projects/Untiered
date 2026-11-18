@@ -9,6 +9,31 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class IntegrityRulesTest {
+    @Test
+    fun `a student's rounds add up, window switches being tab and blur together`() {
+        val totals =
+            IntegrityRules.totals(
+                listOf(
+                    IntegrityCounts(tabHidden = 2, windowBlur = 1, pastes = 1, pastedChars = 50) to TimingSignals(1, 0, 5),
+                    IntegrityCounts(tabHidden = 0, windowBlur = 3, pastes = 0, pastedChars = 0) to TimingSignals(0, 2, 4),
+                ),
+            )
+
+        assertEquals(
+            StudentIntegrityTotals(
+                rounds = 2,
+                windowSwitches = 6,
+                tabHidden = 2,
+                windowBlur = 4,
+                pastes = 1,
+                fastAnswers = 1,
+                longPauses = 2,
+            ),
+            totals,
+        )
+        assertEquals(StudentIntegrityTotals(0, 0, 0, 0, 0, 0, 0), IntegrityRules.totals(emptyList()))
+    }
+
     private fun event(
         type: String,
         chars: Int? = null,

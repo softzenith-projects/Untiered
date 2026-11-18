@@ -176,6 +176,29 @@ class CampusFacultyControllerTest {
     }
 
     @Test
+    fun `an attention row says whether staff kept a note on the student, never what it says`() {
+        val scope = scope(CampusRole.FACULTY)
+        given(access.resolve(identity, orgId)).willReturn(scope)
+        given(readiness.weights(scope)).willReturn(ReadinessWeightSet.DEFAULT)
+        val idle = UUID.fromString("0a000000-0000-0000-0000-0000000000d2")
+        val quiet = UUID.fromString("0a000000-0000-0000-0000-0000000000d3")
+        given(readiness.students(scope, ReadinessFilter())).willReturn(
+            listOf(student(idle, "Bilal", lastActiveAt = null), student(quiet, "Chetan", lastActiveAt = null)),
+        )
+        given(readiness.assignments(scope)).willReturn(emptyList())
+        given(readiness.interviewEvidence(scope, ReadinessFilter())).willReturn(emptyList())
+        given(comments.membersWithNotes(scope, listOf(idle, quiet))).willReturn(setOf(quiet))
+
+        mockMvc
+            .perform(get("$base/attention").with(signedIn()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[?(@.memberId=='$idle')].hasStaffNote").value(false))
+            .andExpect(jsonPath("$[?(@.memberId=='$quiet')].hasStaffNote").value(true))
+            .andExpect(content().string(not(containsString("body"))))
+    }
+
+    @Test
     fun `a student outside the college or the caller's scope is a 404 for notes`() {
         val scope = scope(CampusRole.FACULTY)
         given(access.resolve(identity, orgId)).willReturn(scope)

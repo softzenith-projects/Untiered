@@ -89,6 +89,7 @@ interface MemberView {
   rollNumber: string | null;
   joinedAt: string;
   active: boolean;       // derived: a session or Arena answer in the last 14 days
+  lastActiveAt?: string | null;  // the latest of those signals (any time); null when there is none
 }
 
 interface FacultyScopesView {
@@ -381,6 +382,7 @@ interface RecipientProgress {
   attemptsUsed: number;                // interviews: attempts not handed back; scenarios: 0
   lastActivityAt: string | null;
   sessionIds: string[];                // interview kind: sessions started from this assignment
+  completedSessionId?: string | null;  // interview kind: the first completed attempt's session (the one whose report staff open); null until then
   scenarioScore: number | null;        // scenario kind: correct / total steps answered, 0–1
   mcqScore: number | null;             // mcq_test kind: best submitted score, 0–100 (module 4b)
 }
@@ -539,6 +541,17 @@ interface StudentReadiness {
   weights: ReadinessWeights;
   evidence: EvidenceItem[];      // newest first; this is also the score history
   suggestedTopics: { component: ReadinessComponent; topic: CampusTopic | null; reason: string }[];
+  staff?: StaffStudentDetail;    // only on the staff read below, never on `GET /me/campus/readiness`
+}
+
+interface StaffStudentDetail {
+  lastActiveAt: string | null;   // the latest round, scenario answer or Arena review
+  attention: AttentionReason[];  // the attention list's reasons for this student (module 8), same facts and order
+  assignedWork: {                // every published assignment the student is set, soonest deadline first
+    assignmentId: string; title: string; kind: AssignmentKind; status: CompletionStatus; dueAt: string;
+    sessionId?: string | null;   // interview: first completed attempt's session, whose report staff open
+    mcqAttemptId?: string | null; // mcq_test: the latest submitted attempt
+  }[];
 }
 ```
 
@@ -665,7 +678,17 @@ interface IntegritySummary {
 |---|---|---|
 | `POST /sessions/{id}/integrity-events` | the session's owner | `IntegrityEventBatch` → `204`. Ignored, but still `204`, for a round that was not assigned. `pastedChars` is capped at 100,000 per session and each counter at 10,000. |
 | `GET /sessions/{id}/integrity` | the session's owner | `IntegritySummary`; a student sees exactly what their college sees |
+| `GET /campus/orgs/{org}/students/{memberId}/integrity` | staff with report access (faculty: scoped) | `StudentIntegrityTotals`: the counts of all this student's assigned rounds added together, for the student page. Audited as `integrity_totals.viewed`. `404` for a student outside the college or the faculty member's batches. |
 | `GET /campus/orgs/{org}/students/{memberId}/reports/{sessionId}/integrity` | staff (scoped) | `IntegritySummary`; same rules as the staff report view |
+
+```ts
+interface StudentIntegrityTotals {
+  rounds: number;          // assigned rounds the student has started
+  windowSwitches: number;  // tabHidden + windowBlur
+  tabHidden: number; windowBlur: number; pastes: number;
+  fastAnswers: number; longPauses: number;
+}
+```
 
 The thresholds for `fastAnswers` and `longPauses` are server constants, documented next to
 their code (`IntegrityRules`).
@@ -690,6 +713,7 @@ interface AttentionRow {
   memberId: string; name: string | null; rollNumber: string | null; batchName: string;
   reasons: AttentionReason[];    // low_score: band is needs_structured_prep; inactive: no activity in 14 days; overdue: ≥ 1 overdue assignment
   overall: number | null; band: ReadinessBand; overdue: number; lastActiveAt: string | null;
+  hasStaffNote?: boolean;        // staff kept at least one private note on this student (the note itself is never sent), scoped like the notes
 }
 
 interface StaffComment {
@@ -767,6 +791,18 @@ interface CertificateView {
 }
 ```
 
+```ts
+interface ProgrammeWeekView {
+  week: number;                     // only weeks that have at least one assignment, ascending
+  opensAt: string; dueAt: string;   // 09:00 IST on startsOn + 7(n−1) days, and 7 days later
+  opened: boolean;                  // false while the week is locked
+  assignments: { id: string; title: string }[];   // archived ones included: a module is a module
+  students: number;                 // students the week's assignments were set for, inside the caller's scope
+  completedStudents: number;        // of those, students who completed every assignment of the week
+  completionRate: number | null;    // completedStudents ÷ students, 0–1; null while locked or when nobody is set it
+}
+```
+
 **Weekly unlock.** Week *n*'s assignment opens at `startsOn + 7(n−1)` days, 09:00 IST, and
 is due 7 days later. Cloning creates published assignments that belong to the programme.
 A student earns the certificate once every module is completed. The certificate is a
@@ -780,6 +816,7 @@ college names and the college logo, never a score.
 | `POST /campus/orgs/{org}/programmes` | college_admin, tpo | `{ templateId, title?, startsOn, batchIds }` → `201 ProgrammeView` |
 | `GET /campus/orgs/{org}/programmes` and `/{id}` | any staff (faculty: scoped) | → `ProgrammeView[]` / `ProgrammeView` |
 | `GET /campus/orgs/{org}/programmes/{id}/progress` | any staff (faculty: scoped) | → `ProgrammeProgress[]` |
+| `GET /campus/orgs/{org}/programmes/{id}/weeks` | any staff (faculty: scoped) | → `ProgrammeWeekView[]`, the programme week by week |
 | `POST /campus/orgs/{org}/programmes/{id}/archive` | college_admin, tpo | → `ProgrammeView`; also archives its assignments that have not opened yet |
 | `GET /me/programmes` | student | → `(ProgrammeView & { completedModules: number; totalModules: number; certificateId: string \| null })[]` |
 | `GET /me/programmes/{id}/certificate` | student | → `CertificateView`; `404` until every module is completed |
@@ -825,6 +862,7 @@ interface OrgUsageRow {
   interviewsThisMonth: number;
   aiCostUsd: number;                // sum of ai_calls.micro_usd for sessions of this org's attempts ÷ 1e6
   aiCostPerInterviewUsd: number | null;  // null when there are no interviews
+  interviewsByRound: { roundType: AssignableRoundType; interviews: number }[];  // org-funded interviews that did not fail and started in the range, most first
 }
 ```
 

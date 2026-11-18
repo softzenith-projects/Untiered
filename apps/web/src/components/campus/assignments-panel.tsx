@@ -8,11 +8,12 @@ import { buttonStyles } from "@/components/ui/button";
 import { Alert, EmptyState, Skeleton } from "@/components/ui/feedback";
 import { FieldLabel, Select } from "@/components/ui/field";
 import { Table, TableScroll } from "@/components/ui/table";
-import { fetchAssignments } from "@/lib/api";
-import type { AssignmentStatus } from "@untiered/shared";
+import { fetchAssignments, fetchCampusOrg } from "@/lib/api";
+import type { AssignmentStatus, AssignmentView } from "@untiered/shared";
 
 import { campusHref, useCampusOrg } from "./campus-context";
 import { formatDue, relativeTime, ROUND_LABEL } from "./assignment-model";
+import { StatTile, StatTiles } from "./stat-tile";
 import { useLoad } from "./use-load";
 
 export const ASSIGNMENT_STATUS_LABEL: Record<AssignmentStatus, string> = {
@@ -20,7 +21,7 @@ export const ASSIGNMENT_STATUS_LABEL: Record<AssignmentStatus, string> = {
   published: "Published",
   archived: "Archived",
 };
-const STATUS_TONE = { draft: "info", published: "positive", archived: "navy" } as const;
+const STATUS_TONE = { draft: "info", published: "positive", archived: "neutral" } as const;
 
 export function assignmentSummary(a: {
   kind: string;
@@ -33,6 +34,19 @@ export function assignmentSummary(a: {
   return `Interview, ${a.roundType ? ROUND_LABEL[a.roundType as keyof typeof ROUND_LABEL] ?? a.roundType : "round"}`;
 }
 
+/** What the header tiles count: published and draft assignments, and student tasks that are overdue. */
+export function assignmentTotals(list: Pick<AssignmentView, "status" | "counts">[]): {
+  published: number;
+  draft: number;
+  overdueTasks: number;
+} {
+  return {
+    published: list.filter((a) => a.status === "published").length,
+    draft: list.filter((a) => a.status === "draft").length,
+    overdueTasks: list.reduce((sum, a) => sum + (a.status === "published" ? a.counts.overdue : 0), 0),
+  };
+}
+
 export function AssignmentsPanel() {
   const { orgId, accessToken } = useCampusOrg();
   const [status, setStatus] = useState<AssignmentStatus | "">("");
@@ -41,6 +55,10 @@ export function AssignmentsPanel() {
     [orgId, accessToken, status],
   );
   const { data, error, loading } = useLoad(load);
+  // The allowance is the college's own figure, readable by every staff role (contract module 1).
+  const loadOrg = useCallback((signal: AbortSignal) => fetchCampusOrg(orgId, { accessToken, signal }), [orgId, accessToken]);
+  const { data: org } = useLoad(loadOrg);
+  const totals = data ? assignmentTotals(data) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,6 +77,23 @@ export function AssignmentsPanel() {
         </Link>
       </div>
       {error ? <Alert tone="error">{error.message}</Alert> : null}
+      {totals ? (
+        <StatTiles label="Assignment totals" columns={3}>
+          {org ? (
+            <StatTile
+              label="College interviews used"
+              value={org.interviewsUsed}
+              detail={`of ${org.interviewAllowance} in the allowance. Assigned interviews never use a student's own free rounds or credits.`}
+            />
+          ) : null}
+          <StatTile label="Published assignments" value={totals.published} detail={`${totals.draft} draft`} />
+          <StatTile
+            label="Overdue student tasks"
+            value={totals.overdueTasks}
+            detail="Across published assignments. Shown on the needs-attention list."
+          />
+        </StatTiles>
+      ) : null}
       {loading && !data ? <Skeleton className="h-40 w-full" /> : null}
       {data && data.length === 0 ? (
         <EmptyState title="No assignments yet" description="Assign an AI interview or a set of Arena scenarios to a batch or to chosen students." />

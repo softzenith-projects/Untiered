@@ -17,6 +17,8 @@ data class AttentionRow(
     val band: String,
     val overdue: Int,
     val lastActiveAt: String?,
+    /** True when staff have kept at least one private note on this student. The note itself is not sent. */
+    val hasStaffNote: Boolean = false,
 )
 
 data class StaffComment(

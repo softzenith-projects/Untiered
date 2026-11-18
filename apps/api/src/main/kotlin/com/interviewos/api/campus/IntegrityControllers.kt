@@ -40,6 +40,20 @@ class SessionIntegrityController(
     ): IntegritySummary = service.mine(SupabaseIdentity.from(jwt).id, sessionId)
 }
 
+/** The counts of all of one student's assigned rounds, for the staff student page. */
+@RestController
+@RequestMapping("/api/v1/campus/orgs/{orgId}/students/{memberId}/integrity")
+class CampusStudentIntegrityController(
+    private val service: IntegrityService,
+) {
+    @GetMapping
+    fun totals(
+        @AuthenticationPrincipal jwt: Jwt,
+        @PathVariable orgId: UUID,
+        @PathVariable memberId: UUID,
+    ): StudentIntegrityTotals = service.studentTotals(SupabaseIdentity.from(jwt), orgId, memberId)
+}
+
 /** The staff view of one assigned round's signals, under the campus switch's 404. */
 @RestController
 @RequestMapping("/api/v1/campus/orgs/{orgId}/students/{memberId}/reports/{sessionId}/integrity")

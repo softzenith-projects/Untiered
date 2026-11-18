@@ -17,12 +17,12 @@ export const BAND_LABEL: Record<ReadinessBand, string> = {
   not_enough_evidence: "Not enough evidence",
 };
 
-export const BAND_TONE: Record<ReadinessBand, "positive" | "accent" | "highlight" | "danger" | "navy"> = {
+export const BAND_TONE: Record<ReadinessBand, "positive" | "accent" | "highlight" | "danger" | "neutral"> = {
   strong: "positive",
   interview_ready: "accent",
   needs_improvement: "highlight",
   needs_structured_prep: "danger",
-  not_enough_evidence: "navy",
+  not_enough_evidence: "neutral",
 };
 
 /** Best to worst, the order bands are drawn and listed in. */
@@ -132,6 +132,18 @@ export function practiceLinks(component: ReadinessComponent, topic: CampusTopic 
 }
 
 export const NO_COURSE_TEXT = "No Untiered course for this topic yet";
+
+/** "Today", "1 day ago", "6 days ago", then the date; "Never" when there is no activity. */
+export function lastActiveText(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return "Never";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Never";
+  const days = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "1 day ago";
+  if (days < 30) return `${days} days ago`;
+  return formatDate(iso);
+}
 
 export function formatDate(iso: string | null): string {
   if (!iso) return "Never";

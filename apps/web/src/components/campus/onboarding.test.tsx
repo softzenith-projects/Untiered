@@ -92,6 +92,12 @@ beforeEach(() => {
 });
 
 describe("ImportPanel", () => {
+  it("says before upload that no accounts are created at import", async () => {
+    gate("tpo", <ImportPanel />);
+    expect(await screen.findByText("No accounts are created at import.")).toBeInTheDocument();
+    expect(screen.getByText(/single-use invite link/)).toBeInTheDocument();
+  });
+
   const preview: ImportPreview = {
     id: "imp1",
     status: "previewed",
@@ -222,6 +228,33 @@ describe("StudentsPanel", () => {
     expect(screen.queryByRole("tab", { name: "Invites" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Import students/ })).not.toBeInTheDocument();
     expect(api.fetchInvites).not.toHaveBeenCalled();
+  });
+
+  it("shows when each student was last active and links to their readiness, for faculty too", async () => {
+    const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
+    const row = { role: "student" as const, batchId: "b1", batchName: "CSE 2027", departmentCode: "CSE", joinedAt: "2026-11-01T00:00:00Z" };
+    api.fetchMembers.mockResolvedValue({
+      items: [
+        { ...row, id: "m1", name: "Ravi", email: "ravi@college.edu", rollNumber: "21CS002", active: true, lastActiveAt: hoursAgo(1) },
+        { ...row, id: "m2", name: "Sita", email: "sita@college.edu", rollNumber: "21CS003", active: false, lastActiveAt: hoursAgo(24 * 20) },
+        { ...row, id: "m3", name: "Omar", email: "omar@college.edu", rollNumber: "21CS004", active: false, lastActiveAt: null },
+      ],
+      nextCursor: null,
+    });
+    gate("faculty", <StudentsPanel />);
+
+    expect(await screen.findByText("Ravi")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Last active" })).toBeInTheDocument();
+    expect(screen.getByText("Today")).toBeInTheDocument();
+    expect(screen.getByText("20 days ago")).toBeInTheDocument();
+    expect(screen.getByText("Never")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View readiness for Ravi" })).toHaveAttribute("href", "/campus/readiness/m1?org=o1");
+    expect(screen.queryByRole("button", { name: /Edit|Remove/ })).not.toBeInTheDocument();
+  });
+
+  it("tells a college admin how an invite behaves", async () => {
+    gate("tpo", <StudentsPanel />);
+    expect(await screen.findByText(/works once and lapses after 14 days/)).toBeInTheDocument();
   });
 
   it("removes a student after confirmation", async () => {

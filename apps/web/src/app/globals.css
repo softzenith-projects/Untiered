@@ -533,6 +533,11 @@
     background-color: color-mix(in srgb, var(--on-navy) 14%, transparent);
     color: var(--on-navy);
   }
+  /* For light surfaces: a quiet state (locked, archived, no band yet). pill-navy is for navy bands only. */
+  .pill-neutral {
+    background-color: var(--surface-sunken);
+    color: var(--ink-muted);
+  }
   .pill-danger {
     background-color: var(--danger-wash);
     color: var(--danger);

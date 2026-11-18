@@ -23,9 +23,9 @@ export const REASON_LABEL: Record<AttentionReason, string> = {
   overdue: "Overdue work",
 };
 
-const REASON_TONE: Record<AttentionReason, "danger" | "navy" | "highlight"> = {
+const REASON_TONE: Record<AttentionReason, "danger" | "neutral" | "highlight"> = {
   low_score: "danger",
-  inactive: "navy",
+  inactive: "neutral",
   overdue: "highlight",
 };
 
@@ -129,6 +129,11 @@ export function AttentionPanel() {
                           <Badge tone={REASON_TONE[value]}>{REASON_LABEL[value]}</Badge>
                         </li>
                       ))}
+                      {row.hasStaffNote ? (
+                        <li>
+                          <Badge tone="highlight">Has a staff note</Badge>
+                        </li>
+                      ) : null}
                     </ul>
                   </td>
                   <td className="px-3 py-2 text-ink">{scoreText(row.overall)}</td>

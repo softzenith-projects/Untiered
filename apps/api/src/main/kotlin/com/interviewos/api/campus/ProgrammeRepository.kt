@@ -32,6 +32,7 @@ data class ProgrammeAssignmentRow(
     val programmeId: UUID,
     val week: Int,
     val kind: AssignmentKind,
+    val title: String = "",
 )
 
 /** What a certificate prints about the student and the college. */
@@ -255,7 +256,7 @@ class ProgrammeRepository(
         return jdbc
             .sql(
                 """
-                select x.id, x.programme_id, x.programme_week, x.kind
+                select x.id, x.programme_id, x.programme_week, x.kind, x.title
                   from public.assignments x
                  where x.org_id = :orgId and x.programme_id in (:ids)
                  order by x.programme_week, x.opens_at, x.id
@@ -268,6 +269,7 @@ class ProgrammeRepository(
                     programmeId = UUID.fromString(rs.getString("programme_id")),
                     week = rs.getInt("programme_week"),
                     kind = AssignmentKind.fromDbValue(rs.getString("kind")) ?: error("Unknown assignment kind"),
+                    title = rs.getString("title"),
                 )
             }.list()
             .groupBy { it.programmeId }

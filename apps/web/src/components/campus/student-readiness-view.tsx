@@ -18,6 +18,38 @@ import {
   topicLabel,
 } from "./readiness-model";
 
+const RING_FILL: Record<string, string> = {
+  strong: "var(--positive)",
+  interview_ready: "var(--accent)",
+  needs_improvement: "var(--highlight)",
+  needs_structured_prep: "var(--danger)",
+  not_enough_evidence: "var(--neutral-400)",
+};
+
+/** A ring filled to the overall score. Decorative: the score is in the text beside it. */
+export function ScoreRing({ score, band }: { score: number | null; band: StudentReadiness["band"] }) {
+  const radius = 34;
+  const circumference = 2 * Math.PI * radius;
+  const filled = score === null ? 0 : (Math.max(0, Math.min(100, score)) / 100) * circumference;
+  return (
+    <svg aria-hidden="true" viewBox="0 0 80 80" className="size-20 shrink-0 -rotate-90" data-testid="score-ring">
+      <circle cx="40" cy="40" r={radius} fill="none" stroke="var(--surface-sunken)" strokeWidth="8" />
+      {score === null ? null : (
+        <circle
+          cx="40"
+          cy="40"
+          r={radius}
+          fill="none"
+          stroke={RING_FILL[band]}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={`${filled} ${circumference}`}
+        />
+      )}
+    </svg>
+  );
+}
+
 export function BandPill({ band }: { band: StudentReadiness["band"] }) {
   return <Badge tone={BAND_TONE[band]}>{BAND_LABEL[band]}</Badge>;
 }
@@ -47,6 +79,7 @@ export function StudentReadinessView({
           </p>
         </div>
         <div className="flex items-center gap-4">
+          <ScoreRing score={readiness.overall} band={readiness.band} />
           <div className="text-right">
             <p className="text-caption text-ink-muted">Overall readiness</p>
             <p className="text-display text-ink">{readiness.overall === null ? "Not attempted" : `${Math.round(readiness.overall)} / 100`}</p>

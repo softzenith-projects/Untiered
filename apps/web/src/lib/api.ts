@@ -47,6 +47,7 @@ import type {
   AssignmentInput,
   IntegrityEventBatch,
   IntegritySummary,
+  StudentIntegrityTotals,
   AssignmentPublishedPatch,
   AssignmentStatus,
   AssignmentView,
@@ -68,6 +69,7 @@ import type {
   ProgrammeTemplate,
   ProgrammeTemplateInput,
   ProgrammeView,
+  ProgrammeWeekView,
   StartProgrammeRequest,
   ReadinessWeights,
   StudentReadiness,
@@ -1211,6 +1213,11 @@ export function fetchStaffStudentIntegrity(
   );
 }
 
+/** The counts of every assigned round of one student, for the staff student page. */
+export function fetchStudentIntegrityTotals(orgId: string, memberId: string, options: ApiGetOptions): Promise<StudentIntegrityTotals> {
+  return apiGet<StudentIntegrityTotals>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/integrity`, options);
+}
+
 export function fetchReadinessWeights(orgId: string, options: ApiGetOptions): Promise<ReadinessWeights> {
   return apiGet<ReadinessWeights>(`${campusOrg(orgId)}/readiness-weights`, options);
 }
@@ -1319,6 +1326,11 @@ export function startProgramme(accessToken: string, orgId: string, body: StartPr
 
 export function fetchProgramme(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeView> {
   return apiGet<ProgrammeView>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}`, options);
+}
+
+/** The programme week by week: unlock date, open or locked, and how many of its students finished it. */
+export function fetchProgrammeWeeks(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeWeekView[]> {
+  return apiGet<ProgrammeWeekView[]>(`${campusOrg(orgId)}/programmes/${encodeURIComponent(id)}/weeks`, options);
 }
 
 export function fetchProgrammeProgress(orgId: string, id: string, options: ApiGetOptions): Promise<ProgrammeProgress[]> {

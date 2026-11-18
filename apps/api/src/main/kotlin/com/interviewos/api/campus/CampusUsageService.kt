@@ -78,6 +78,10 @@ class CampusUsageService internal constructor(
                 interviewsThisMonth = facts.interviewsThisMonth,
                 aiCostUsd = cost,
                 aiCostPerInterviewUsd = if (facts.interviewsInRange == 0) null else cost / facts.interviewsInRange,
+                interviewsByRound =
+                    facts.interviewsByRound.sortedWith(
+                        compareByDescending<RoundUsage> { it.interviews }.thenBy { it.roundType },
+                    ),
             )
         }
 

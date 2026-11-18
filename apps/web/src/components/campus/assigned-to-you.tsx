@@ -21,7 +21,7 @@ import { errorText } from "./use-load";
  * must stay exactly as it was for everyone this does not concern. The caller mounts it
  * only when the campus switch is on.
  */
-export function AssignedToYou() {
+export function AssignedToYou({ hideReadinessLink = false }: { hideReadinessLink?: boolean } = {}) {
   const accessToken = useAccessToken();
   const [items, setItems] = useState<AssignedItem[]>([]);
   const [programmes, setProgrammes] = useState<MyProgrammeView[]>([]);
@@ -51,9 +51,11 @@ export function AssignedToYou() {
         <h2 id="assigned-to-you" className="text-heading text-ink">
           Assigned to you
         </h2>
-        <Link href="/campus/me" className="text-caption font-semibold text-accent underline">
-          See your readiness
-        </Link>
+        {hideReadinessLink ? null : (
+          <Link href="/campus/me" className="text-caption font-semibold text-accent underline">
+            See your readiness
+          </Link>
+        )}
       </div>
       {programmes.length > 0 ? <ProgrammesBlock programmes={programmes} /> : null}
       {items.length > 0 ? (
