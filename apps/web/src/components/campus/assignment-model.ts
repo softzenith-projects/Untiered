@@ -62,6 +62,8 @@ export const BLOCKED_REASON_TEXT: Record<string, string> = {
   attempt_limit: "You have used all the attempts allowed for this assignment.",
   student_cap: "You have reached the number of interviews your college allows you for this assignment.",
   college_allowance: "Your college has used up its interview allowance for now. Ask your placement office.",
+  no_active_package: "Your college does not have an active interview package right now. Ask your placement office.",
+  package_student_limit: "You have used all the interviews your college's package allows each student. Ask your placement office.",
 };
 
 /** MCQ test limits (contract "Module 4b"). */

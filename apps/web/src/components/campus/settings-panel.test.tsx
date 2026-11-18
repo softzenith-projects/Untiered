@@ -15,6 +15,8 @@ const api = vi.hoisted(() => ({
   // The settings page also holds the readiness weights editor (campus spec §6).
   fetchReadinessWeights: vi.fn(),
   updateReadinessWeights: vi.fn(),
+  // ...and the college's interview package (contract Module 14).
+  fetchCollegePackages: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({ ...api, ApiRequestError: class ApiRequestError extends Error {} }));
@@ -38,6 +40,7 @@ const entry = (id: number, action: string): AuditEntryView => ({
 describe("SettingsPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    api.fetchCollegePackages.mockResolvedValue({ fundedByPackages: false, current: null, packages: null });
     api.fetchReadinessWeights.mockResolvedValue({ coding: 30, coreCs: 25, technicalInterview: 25, communication: 10, aptitude: 10 });
     api.fetchMeCampus.mockResolvedValue({
       student: null,

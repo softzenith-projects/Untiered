@@ -10,10 +10,21 @@ import { fetchAuditLog, fetchCampusOrg, updateCampusOrg } from "@/lib/api";
 import type { AuditEntryView, OrgView } from "@untiered/shared";
 
 import { useCampusOrg } from "./campus-context";
+import { CollegePackagesPanel } from "./college-packages";
 import { errorText, useLoad } from "./use-load";
 import { WeightsEditor } from "./weights-editor";
 
+/**
+ * The settings page. A placement officer or faculty member sees only the interview package
+ * (what is left, the per-student limit, the end date); the rest is a college admin's.
+ */
 export function SettingsPanel() {
+  const { role } = useCampusOrg();
+  if (role !== "college_admin") return <CollegePackagesPanel />;
+  return <AdminSettings />;
+}
+
+function AdminSettings() {
   const { orgId, accessToken } = useCampusOrg();
   const load = useCallback((signal: AbortSignal) => fetchCampusOrg(orgId, { accessToken, signal }), [orgId, accessToken]);
   const { data, error, loading } = useLoad(load);
@@ -23,6 +34,7 @@ export function SettingsPanel() {
       {error ? <Alert tone="error">{error.message}</Alert> : null}
       {loading && !data ? <Skeleton className="h-48 w-full" /> : null}
       {data ? <ContactForm org={data} /> : null}
+      <CollegePackagesPanel />
       <WeightsEditor />
       <AuditLog />
     </div>

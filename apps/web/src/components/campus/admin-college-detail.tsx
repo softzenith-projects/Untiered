@@ -13,6 +13,7 @@ import { useAccessToken } from "@/lib/use-access-token";
 import type { AdminOrgSummary, OrgView } from "@untiered/shared";
 
 import { NotFoundState } from "./admin-colleges";
+import { AdminPackagesSection } from "./admin-packages";
 import { AdminStaffInvites } from "./staff-invites";
 import { errorText, useLoad } from "./use-load";
 
@@ -48,6 +49,7 @@ export function AdminCollegeDetail({ orgId }: { orgId: string }) {
         </span>
       </div>
       <ProfileForm org={data} accessToken={accessToken} onSaved={merge} />
+      <AdminPackagesSection orgId={orgId} />
       <LogoUpload org={data} accessToken={accessToken} onSaved={merge} />
       <AdminStaffInvites orgId={orgId} />
       <StatusControl org={data} accessToken={accessToken} onSaved={merge} />

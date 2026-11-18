@@ -71,7 +71,7 @@ class CollegePackageRepository(
     /** Every package of the college, newest term first. */
     fun list(scope: OrgScope): List<PackageRow> =
         jdbc
-            .sql("$SELECT where p.org_id = :orgId order by p.starts_on desc, p.created_at desc, p.id")
+            .sql("$PACKAGE_SELECT where p.org_id = :orgId order by p.starts_on desc, p.created_at desc, p.id")
             .param("orgId", scope.orgId)
             .query { rs, _ -> rs.toPackage() }
             .list()
@@ -81,7 +81,7 @@ class CollegePackageRepository(
         id: UUID,
     ): PackageRow? =
         jdbc
-            .sql("$SELECT where p.org_id = :orgId and p.id = :id")
+            .sql("$PACKAGE_SELECT where p.org_id = :orgId and p.id = :id")
             .param("orgId", scope.orgId)
             .param("id", id)
             .query { rs, _ -> rs.toPackage() }
@@ -203,7 +203,7 @@ class CollegePackageRepository(
     @Suppress("UNUSED_PARAMETER")
     fun allPackages(admin: PlatformAdmin): List<PackageRow> =
         jdbc
-            .sql("/* unscoped: platform-admin-billing */ $SELECT order by p.org_id, p.ends_on, p.id")
+            .sql("/* unscoped: platform-admin-billing */ $PACKAGE_SELECT order by p.org_id, p.ends_on, p.id")
             .query { rs, _ -> rs.toPackage() }
             .list()
 
@@ -238,7 +238,7 @@ class CollegePackageRepository(
                 """
                 /* unscoped: notification-discovery */
                 select o.name as college, x.*
-                  from ($SELECT) x
+                  from ($PACKAGE_SELECT) x
                   join public.organisations o on o.id = x.org_id and o.status = 'active'
                  where x.status in ('invoiced', 'paid')
                    and x.ends_on >= :today
@@ -365,15 +365,13 @@ class CollegePackageRepository(
         )
 
     private companion object {
-        val SELECT =
-            """
-            select p.id, p.org_id, p.interviews, p.per_student_limit, p.starts_on, p.ends_on, p.grace_days, p.amount_paise,
-                   p.invoice_number, p.status, p.invoiced_on, p.paid_on, p.payment_reference, p.notes, p.created_at,
-                   p.updated_at,
+        /** Completed by every caller with `p.org_id = :orgId`, or an `unscoped` marker. */
+        const val PACKAGE_SELECT = """select p.id, p.org_id, p.interviews, p.per_student_limit, p.starts_on, p.ends_on,
+                   p.grace_days, p.amount_paise, p.invoice_number, p.status, p.invoiced_on, p.paid_on, p.payment_reference,
+                   p.notes, p.created_at, p.updated_at,
                    (select count(*) from public.assignment_attempts a
                      where a.org_id = p.org_id and a.package_id = p.id and a.status <> 'failed') as used,
                    array(select r.kind from public.college_package_reminders r where r.package_id = p.id) as reminders
-              from public.college_packages p
-            """.trimIndent()
+              from public.college_packages p"""
     }
 }

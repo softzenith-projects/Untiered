@@ -314,7 +314,14 @@ export interface CampusScenarioOption {
   estimatedMinutes: number;
 }
 
-export type AssignmentBlockedReason = "not_open" | "past_due" | "attempt_limit" | "student_cap" | "college_allowance";
+export type AssignmentBlockedReason =
+  | "not_open"
+  | "past_due"
+  | "attempt_limit"
+  | "student_cap"
+  | "college_allowance"
+  | "no_active_package"
+  | "package_student_limit";
 
 export interface AssignedItem {
   id: string;
