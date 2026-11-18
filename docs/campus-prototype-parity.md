@@ -165,3 +165,36 @@ Aggregation is computed on the server. Join consent wording and `CONSENT_VERSION
 
 Counted per row above (63 rows): SAME 21, REAL HAS MORE 11, MISSING 25, WRONG 6 (rows 8, 12, 15,
 40, 52 and 56). Build notes are appended below as each screen lands.
+
+## What was built (per screen)
+
+All 25 MISSING rows are built; none needed a migration or a permission change.
+
+| Screen | Built | Wire change |
+|---|---|---|
+| Overview | "Interview-ready or strong" headline tile | none |
+| Students | Last active column, View readiness link on every row (faculty too), invite-behaviour note | `MemberView.lastActiveAt` |
+| Import | "No accounts are created at import" note | none |
+| Assignments | Header tiles: college interviews used of the allowance (read-only, every staff role, from `GET /campus/orgs/{org}`), published and draft, overdue student tasks | none |
+| Assignment detail | Completed / in progress / not started / overdue tiles; Report link for a completed interview; Student link otherwise | `RecipientProgress.completedSessionId` |
+| Student detail | Needs-attention callout with the attention list's reasons, last active, assigned work with report and answers links, integrity counts | `StudentReadiness.staff`; new `GET .../students/{memberId}/integrity` |
+| Staff report | "Opening this report is written to the audit log" | none |
+| Attention | "Has a staff note" marker | `AttentionRow.hasStaffNote` |
+| Programmes | Week-by-week view (unlock date, open or locked, % of students who completed the week) and a certificate preview | new `GET .../programmes/{id}/weeks` |
+| Me | One page: assigned to you with the programme, readiness with a ring, leaderboard, leave college | none |
+| Start | "Counts, never a verdict; nobody is failed automatically" added to the notice | none |
+| Leads | Students column; Convert and Mark contacted from the row | none |
+| Colleges | Allowance as a bar with its numbers | none |
+| Usage | Interviews by round type; allowance left | `OrgUsageRow.interviewsByRound` |
+
+## Decisions
+
+- The assignments header tiles sum the per-assignment counts the server already returns, in the
+  browser (`assignmentTotals`). This is presentation of server-computed counts, not scoring; if the
+  owner wants even that on the server it is one small route.
+- Interviews by round type counts the same range as the AI cost (default: this month), not all time.
+- The readiness ring is decorative; the score stays in text, so it is accessible and unchanged for
+  the existing tests.
+- Integrity totals on the student page are a separate staff route (404 outside the college or a
+  faculty member's batches, audited as `integrity_totals.viewed`) so that a refusal on it never
+  hides the readiness read.
