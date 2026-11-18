@@ -213,17 +213,17 @@ class ReadinessCalculatorTest {
     fun `a topic named like a suggested component is not suggested twice`() {
         val items =
             listOf(
-                item(ReadinessComponent.COMMUNICATION, 64, day = 0, topic = "communication"),
-                item(ReadinessComponent.CORE_CS, 60, day = 1, topic = "dbms"),
+                item(ReadinessComponent.COMMUNICATION, 54, day = 0, topic = "communication"),
+                item(ReadinessComponent.CORE_CS, 50, day = 1, topic = "dbms"),
             )
 
         val result = ReadinessCalculator.compute(items, weights)
 
         assertEquals(
             listOf(
-                ReadinessSuggestion(ReadinessComponent.CORE_CS, null, "Scored 60 on 1 core CS assignment."),
-                ReadinessSuggestion(ReadinessComponent.COMMUNICATION, null, "Scored 64 on 1 communication assignment."),
-                ReadinessSuggestion(ReadinessComponent.CORE_CS, "dbms", "Scored 60 on 1 DBMS assignment."),
+                ReadinessSuggestion(ReadinessComponent.CORE_CS, null, "Scored 50 on 1 core CS assignment."),
+                ReadinessSuggestion(ReadinessComponent.COMMUNICATION, null, "Scored 54 on 1 communication assignment."),
+                ReadinessSuggestion(ReadinessComponent.CORE_CS, "dbms", "Scored 50 on 1 DBMS assignment."),
             ),
             result.suggestions,
         )
