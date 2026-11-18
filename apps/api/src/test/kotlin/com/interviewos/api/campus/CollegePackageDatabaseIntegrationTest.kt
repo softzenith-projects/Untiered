@@ -391,6 +391,7 @@ class CollegePackageDatabaseIntegrationTest {
             .sql("select package_id from public.assignment_attempts where session_id = :s")
             .param("s", session)
             .query { rs, _ -> rs.getString("package_id")?.let(UUID::fromString) }
+            .list()
             .single()
 
     private fun publishedInterview(
