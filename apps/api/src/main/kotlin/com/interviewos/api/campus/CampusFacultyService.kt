@@ -56,7 +56,9 @@ class CampusFacultyService internal constructor(
             }
         val students = readinessService.compute(scope, ReadinessFilter(), readiness.weights(scope))
         audit.recordPlatformAdminRead(scope, "attention.viewed", CampusOrgService.TARGET_ORG, orgId)
-        return AttentionRules.rows(students, clock.instant(), only)
+        val rows = AttentionRules.rows(students, clock.instant(), only)
+        val noted = comments.membersWithNotes(scope, rows.map { it.memberId })
+        return rows.map { it.copy(hasStaffNote = it.memberId in noted) }
     }
 
     // -- private staff notes --------------------------------------------------------------

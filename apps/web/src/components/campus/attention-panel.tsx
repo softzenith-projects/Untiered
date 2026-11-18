@@ -129,6 +129,11 @@ export function AttentionPanel() {
                           <Badge tone={REASON_TONE[value]}>{REASON_LABEL[value]}</Badge>
                         </li>
                       ))}
+                      {row.hasStaffNote ? (
+                        <li>
+                          <Badge tone="highlight">Has a staff note</Badge>
+                        </li>
+                      ) : null}
                     </ul>
                   </td>
                   <td className="px-3 py-2 text-ink">{scoreText(row.overall)}</td>

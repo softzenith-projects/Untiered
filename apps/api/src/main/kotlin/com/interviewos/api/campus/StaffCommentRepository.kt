@@ -57,6 +57,30 @@ class StaffCommentRepository(
         memberId: UUID,
     ): List<StaffCommentRow> = select(scope, "c.member_id = :memberId", "memberId", memberId)
 
+    /** Which of [memberIds] have at least one note, narrowed to the caller's scope like every note read. */
+    fun membersWithNotes(
+        scope: OrgScope,
+        memberIds: Collection<UUID>,
+    ): Set<UUID> {
+        if (memberIds.isEmpty()) return emptySet()
+        val visible = scope.visibleBatchIds
+        if (visible != null && visible.isEmpty()) return emptySet()
+        val statement =
+            jdbc
+                .sql(
+                    """
+                    select distinct c.member_id
+                      from public.campus_staff_comments c
+                      join public.org_members m on m.org_id = c.org_id and m.id = c.member_id
+                     where c.org_id = :orgId and c.member_id in (:ids) and m.role = 'student'
+                       and m.status = 'joined'${if (visible != null) " and m.batch_id in (:visible)" else ""}
+                    """.trimIndent(),
+                ).param("orgId", scope.orgId)
+                .param("ids", memberIds.toList())
+        if (visible != null) statement.param("visible", visible.toList())
+        return statement.query { rs, _ -> UUID.fromString(rs.getString("member_id")) }.list().toSet()
+    }
+
     /** One note, when it belongs to this college and its student is in the caller's scope. */
     fun find(
         scope: OrgScope,
