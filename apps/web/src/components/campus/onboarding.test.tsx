@@ -92,6 +92,12 @@ beforeEach(() => {
 });
 
 describe("ImportPanel", () => {
+  it("says before upload that no accounts are created at import", async () => {
+    gate("tpo", <ImportPanel />);
+    expect(await screen.findByText("No accounts are created at import.")).toBeInTheDocument();
+    expect(screen.getByText(/single-use invite link/)).toBeInTheDocument();
+  });
+
   const preview: ImportPreview = {
     id: "imp1",
     status: "previewed",
