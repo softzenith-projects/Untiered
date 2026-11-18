@@ -33,6 +33,19 @@ internal data class StudentReadinessFacts(
     val attempted: Boolean = false,
     /** When each of the student's assignments, published or archived, was completed. */
     val completionTimes: List<Instant> = emptyList(),
+    /** Each published assignment the student is set, with where it stands. */
+    val work: List<AssignedWorkFact> = emptyList(),
+)
+
+/** One published assignment as one student stands with it. */
+internal data class AssignedWorkFact(
+    val assignmentId: UUID,
+    val title: String,
+    val kind: AssignmentKind,
+    val status: CompletionStatus,
+    val dueAt: Instant,
+    val sessionId: UUID?,
+    val mcqAttemptId: UUID?,
 )
 
 /**
@@ -99,7 +112,7 @@ class CampusReadinessService internal constructor(
         val weights = readiness.weights(scope)
         val facts = compute(scope, ReadinessFilter(memberId = memberId), weights).singleOrNull() ?: throw ApiException.notFound()
         audit.record(scope, "readiness.viewed", CampusOrgService.TARGET_MEMBER, memberId)
-        return studentView(facts, weights)
+        return studentView(facts, weights).copy(staff = StaffStudentRules.detail(facts, clock.instant()))
     }
 
     /**
@@ -342,6 +355,7 @@ class CampusReadinessService internal constructor(
             var started = false
             var openAssigned = 0
             var attempted = false
+            val work = mutableListOf<AssignedWorkFact>()
             for (fact in mine) {
                 val assignment = rows.getValue(fact.assignmentId)
                 val done = fact.completed(assignment.kind)
@@ -351,7 +365,18 @@ class CampusReadinessService internal constructor(
                     openAssigned++
                     if (done || fact.attemptsUsed > 0 || fact.stepsAnswered > 0) attempted = true
                 }
-                when (AssignmentRules.completion(done, underway, assignment.dueAt, assignment.allowLate, now)) {
+                val standing = AssignmentRules.completion(done, underway, assignment.dueAt, assignment.allowLate, now)
+                work +=
+                    AssignedWorkFact(
+                        assignmentId = assignment.id,
+                        title = assignment.title,
+                        kind = assignment.kind,
+                        status = standing,
+                        dueAt = assignment.dueAt,
+                        sessionId = if (assignment.kind == AssignmentKind.INTERVIEW) fact.completedSessionIds.firstOrNull() else null,
+                        mcqAttemptId = if (assignment.kind == AssignmentKind.MCQ_TEST) fact.mcqLatestAttemptId else null,
+                    )
+                when (standing) {
                     CompletionStatus.COMPLETED -> completed++
                     CompletionStatus.OVERDUE -> overdue++
                     else -> if (!now.isBefore(assignment.dueAt)) dueNow++
@@ -368,6 +393,7 @@ class CampusReadinessService internal constructor(
                 openAssigned = openAssigned,
                 attempted = attempted,
                 completionTimes = completionTimes[student.memberId].orEmpty(),
+                work = work.sortedWith(compareBy<AssignedWorkFact> { it.dueAt }.thenBy { it.title.lowercase() }.thenBy { it.assignmentId }),
             )
         }
     }

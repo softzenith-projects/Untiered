@@ -47,6 +47,7 @@ import type {
   AssignmentInput,
   IntegrityEventBatch,
   IntegritySummary,
+  StudentIntegrityTotals,
   AssignmentPublishedPatch,
   AssignmentStatus,
   AssignmentView,
@@ -1209,6 +1210,11 @@ export function fetchStaffStudentIntegrity(
     `${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/reports/${encodeURIComponent(sessionId)}/integrity`,
     options,
   );
+}
+
+/** The counts of every assigned round of one student, for the staff student page. */
+export function fetchStudentIntegrityTotals(orgId: string, memberId: string, options: ApiGetOptions): Promise<StudentIntegrityTotals> {
+  return apiGet<StudentIntegrityTotals>(`${campusOrg(orgId)}/students/${encodeURIComponent(memberId)}/integrity`, options);
 }
 
 export function fetchReadinessWeights(orgId: string, options: ApiGetOptions): Promise<ReadinessWeights> {

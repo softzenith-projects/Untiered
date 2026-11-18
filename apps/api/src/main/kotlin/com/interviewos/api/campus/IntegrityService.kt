@@ -79,6 +79,29 @@ class IntegrityService(
         return summary
     }
 
+    /**
+     * The counts of every assigned round of one student, added together, for the student's page.
+     * Behind the same check as the staff report view; a student outside the college or a faculty
+     * member's batches is a 404, and a personal round is never counted. Audited as
+     * `integrity_totals.viewed`.
+     */
+    fun studentTotals(
+        identity: SupabaseIdentity,
+        orgId: UUID,
+        memberId: UUID,
+    ): StudentIntegrityTotals {
+        val scope = access.resolve(identity, orgId)
+        scope.require(CampusPermission.STUDENT_REPORT_VIEW)
+        if (!readiness.studentInScope(scope, memberId)) throw ApiException.notFound()
+        val rounds =
+            readiness.attemptSessions(scope, memberId).map { round ->
+                val timings = integrity.answerTimings(round.sessionId, round.userId).mapNotNull { AnswerTiming.parse(it, objectMapper) }
+                integrity.counts(round.sessionId, round.userId) to IntegrityRules.timingSignals(timings)
+            }
+        audit.record(scope, "integrity_totals.viewed", CampusOrgService.TARGET_MEMBER, memberId)
+        return IntegrityRules.totals(rounds)
+    }
+
     private fun summaryOf(
         sessionId: UUID,
         ownerUserId: UUID,

@@ -450,6 +450,40 @@ export interface StudentReadiness {
   weights: ReadinessWeights;
   evidence: EvidenceItem[];
   suggestedTopics: SuggestedTopic[];
+  /** Only on the staff read of one student; never on the student's own. */
+  staff?: StaffStudentDetail | null;
+}
+
+export interface AssignedWorkRow {
+  assignmentId: string;
+  title: string;
+  kind: AssignmentKind;
+  status: CompletionStatus;
+  dueAt: string;
+  /** Interviews: the first completed attempt's session, whose report staff open. */
+  sessionId?: string | null;
+  /** MCQ tests: the latest submitted attempt. */
+  mcqAttemptId?: string | null;
+}
+
+export interface StaffStudentDetail {
+  lastActiveAt: string | null;
+  /** In the order low_score, inactive, overdue; empty when the student needs none. */
+  attention: AttentionReason[];
+  /** Every published assignment the student is set, soonest deadline first. */
+  assignedWork: AssignedWorkRow[];
+}
+
+/** Counts of all of one student's assigned rounds added together. Counts, never a verdict. */
+export interface StudentIntegrityTotals {
+  rounds: number;
+  /** tabHidden + windowBlur. */
+  windowSwitches: number;
+  tabHidden: number;
+  windowBlur: number;
+  pastes: number;
+  fastAnswers: number;
+  longPauses: number;
 }
 
 export interface HeatmapCell {
@@ -558,6 +592,8 @@ export interface AttentionRow {
   band: ReadinessBand;
   overdue: number;
   lastActiveAt: string | null;
+  /** True when staff kept a private note on this student; the note itself is never sent here. */
+  hasStaffNote?: boolean;
 }
 
 /** A private staff note about a student. Never returned on a student route. */

@@ -541,6 +541,17 @@ interface StudentReadiness {
   weights: ReadinessWeights;
   evidence: EvidenceItem[];      // newest first; this is also the score history
   suggestedTopics: { component: ReadinessComponent; topic: CampusTopic | null; reason: string }[];
+  staff?: StaffStudentDetail;    // only on the staff read below, never on `GET /me/campus/readiness`
+}
+
+interface StaffStudentDetail {
+  lastActiveAt: string | null;   // the latest round, scenario answer or Arena review
+  attention: AttentionReason[];  // the attention list's reasons for this student (module 8), same facts and order
+  assignedWork: {                // every published assignment the student is set, soonest deadline first
+    assignmentId: string; title: string; kind: AssignmentKind; status: CompletionStatus; dueAt: string;
+    sessionId?: string | null;   // interview: first completed attempt's session, whose report staff open
+    mcqAttemptId?: string | null; // mcq_test: the latest submitted attempt
+  }[];
 }
 ```
 
@@ -667,7 +678,17 @@ interface IntegritySummary {
 |---|---|---|
 | `POST /sessions/{id}/integrity-events` | the session's owner | `IntegrityEventBatch` → `204`. Ignored, but still `204`, for a round that was not assigned. `pastedChars` is capped at 100,000 per session and each counter at 10,000. |
 | `GET /sessions/{id}/integrity` | the session's owner | `IntegritySummary`; a student sees exactly what their college sees |
+| `GET /campus/orgs/{org}/students/{memberId}/integrity` | staff with report access (faculty: scoped) | `StudentIntegrityTotals`: the counts of all this student's assigned rounds added together, for the student page. Audited as `integrity_totals.viewed`. `404` for a student outside the college or the faculty member's batches. |
 | `GET /campus/orgs/{org}/students/{memberId}/reports/{sessionId}/integrity` | staff (scoped) | `IntegritySummary`; same rules as the staff report view |
+
+```ts
+interface StudentIntegrityTotals {
+  rounds: number;          // assigned rounds the student has started
+  windowSwitches: number;  // tabHidden + windowBlur
+  tabHidden: number; windowBlur: number; pastes: number;
+  fastAnswers: number; longPauses: number;
+}
+```
 
 The thresholds for `fastAnswers` and `longPauses` are server constants, documented next to
 their code (`IntegrityRules`).
@@ -692,6 +713,7 @@ interface AttentionRow {
   memberId: string; name: string | null; rollNumber: string | null; batchName: string;
   reasons: AttentionReason[];    // low_score: band is needs_structured_prep; inactive: no activity in 14 days; overdue: ≥ 1 overdue assignment
   overall: number | null; band: ReadinessBand; overdue: number; lastActiveAt: string | null;
+  hasStaffNote?: boolean;        // staff kept at least one private note on this student (the note itself is never sent), scoped like the notes
 }
 
 interface StaffComment {
