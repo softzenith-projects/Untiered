@@ -85,6 +85,7 @@ export interface MemberView {
   rollNumber: string | null;
   joinedAt: string;
   active: boolean;
+  lastActiveAt?: string | null;
 }
 
 export interface FacultyScopesView {
@@ -301,6 +302,8 @@ export interface RecipientProgress {
   attemptsUsed: number;
   lastActivityAt: string | null;
   sessionIds: string[];
+  /** interview: the first completed attempt's session, whose report staff open. */
+  completedSessionId?: string | null;
   scenarioScore: number | null;
   /** mcq_test: the best submitted score, 0–100. */
   mcqScore: number | null;

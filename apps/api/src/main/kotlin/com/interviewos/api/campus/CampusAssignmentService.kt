@@ -233,6 +233,8 @@ class CampusAssignmentService internal constructor(
                             attemptsUsed = if (row.kind != AssignmentKind.ARENA_SCENARIOS) facts.attemptsUsed else 0,
                             lastActivityAt = facts.lastActivityAt?.toString(),
                             sessionIds = if (row.kind == AssignmentKind.INTERVIEW) facts.sessionIds else emptyList(),
+                            completedSessionId =
+                                if (row.kind == AssignmentKind.INTERVIEW) facts.completedSessionIds.firstOrNull() else null,
                             scenarioScore = facts.scenarioScore(row.kind),
                             mcqScore = facts.mcqScore(row.kind),
                         )

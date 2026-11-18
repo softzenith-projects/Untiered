@@ -163,5 +163,5 @@ Aggregation is computed on the server. Join consent wording and `CONSENT_VERSION
 
 ## Summary
 
-Counted per row above: SAME 17, REAL HAS MORE 11, MISSING 28, WRONG 4 (rows 8, 12, 15, 40, 52,
-56 are the WRONG rows, six in all). See the build notes appended below once each screen lands.
+Counted per row above (63 rows): SAME 21, REAL HAS MORE 11, MISSING 25, WRONG 6 (rows 8, 12, 15,
+40, 52 and 56). Build notes are appended below as each screen lands.

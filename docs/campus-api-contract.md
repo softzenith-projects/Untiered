@@ -89,6 +89,7 @@ interface MemberView {
   rollNumber: string | null;
   joinedAt: string;
   active: boolean;       // derived: a session or Arena answer in the last 14 days
+  lastActiveAt?: string | null;  // the latest of those signals (any time); null when there is none
 }
 
 interface FacultyScopesView {
@@ -381,6 +382,7 @@ interface RecipientProgress {
   attemptsUsed: number;                // interviews: attempts not handed back; scenarios: 0
   lastActivityAt: string | null;
   sessionIds: string[];                // interview kind: sessions started from this assignment
+  completedSessionId?: string | null;  // interview kind: the first completed attempt's session (the one whose report staff open); null until then
   scenarioScore: number | null;        // scenario kind: correct / total steps answered, 0–1
   mcqScore: number | null;             // mcq_test kind: best submitted score, 0–100 (module 4b)
 }

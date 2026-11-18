@@ -104,6 +104,8 @@ data class RecipientProgress(
     val attemptsUsed: Int,
     val lastActivityAt: String?,
     val sessionIds: List<UUID>,
+    /** Interview kind: the first completed attempt's session, whose report staff may open; null until there is one. */
+    val completedSessionId: UUID? = null,
     val scenarioScore: Double?,
     /** MCQ kind: the best submitted score, 0–100; null before any submission. */
     val mcqScore: Int?,
