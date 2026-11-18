@@ -151,6 +151,41 @@ describe("admin lead review", () => {
     expect(within(screen.getByRole("table")).getByText("Converted")).toBeInTheDocument();
   });
 
+  it("shows the roughly-how-many-students figure in the list and acts on a lead from its row", async () => {
+    const user = userEvent.setup();
+    api.fetchAdminLeads.mockResolvedValue({ items: [lead(), lead({ id: "l2", collegeName: "Fergusson", approxStudents: null, status: "contacted" })], nextCursor: null });
+    api.updateAdminLead.mockResolvedValue(lead({ status: "contacted" }));
+    render(<AdminLeads />);
+
+    const table = await screen.findByRole("table", { name: "College leads, newest first" });
+    expect(within(table).getByRole("columnheader", { name: "Students" })).toBeInTheDocument();
+    expect(within(table).getByText("1,200")).toBeInTheDocument();
+    expect(within(table).getByText("Not given")).toBeInTheDocument();
+    // Only a new lead can be marked contacted; any lead that is not converted can be converted.
+    expect(within(table).getAllByRole("button", { name: /^Mark contacted/ })).toHaveLength(1);
+
+    await user.click(within(table).getByRole("button", { name: /^Mark contacted/ }));
+    await waitFor(() => expect(api.updateAdminLead).toHaveBeenCalledWith("token", "l1", { status: "contacted" }));
+    await waitFor(() => expect(within(table).queryByRole("button", { name: /^Mark contacted/ })).not.toBeInTheDocument());
+  });
+
+  it("opens the create-college form from the row's Convert button, prefilled, and sends the same request", async () => {
+    const user = userEvent.setup();
+    api.convertAdminLead.mockResolvedValue({ org, invite });
+    render(<AdminLeads />);
+
+    await user.click(await screen.findByRole("button", { name: "Convert St. Xavier's College" }));
+    const form = screen.getByRole("region", { name: "Create a college from this lead" });
+    expect(within(form).getByLabelText("College name")).toHaveValue("St. Xavier's College");
+    // The allowance is an explicit choice, never a guess from the lead's size.
+    expect(within(form).getByLabelText("Interview allowance")).toHaveValue(0);
+
+    await user.click(within(form).getByRole("button", { name: "Create college and send invite" }));
+    await waitFor(() => expect(api.convertAdminLead).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/a college admin invite is queued for asha@college.edu/)).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getByText("College created")).toBeInTheDocument();
+  });
+
   it("shows why a conversion was refused", async () => {
     const user = userEvent.setup();
     api.convertAdminLead.mockRejectedValue(new ApiRequestError(409, "slug_taken", "Another college already uses that slug."));

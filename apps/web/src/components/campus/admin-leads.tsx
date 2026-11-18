@@ -54,6 +54,11 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialLeadId ?? null);
+  // "Convert" in a row opens that lead with its create-college form already showing. The nonce
+  // makes a second click on the same row open the form again after it was cancelled.
+  const [convertRequest, setConvertRequest] = useState<{ leadId: string; nonce: number } | null>(null);
+  const [rowError, setRowError] = useState<string | null>(null);
+  const [rowPending, setRowPending] = useState<string | null>(null);
   // Pages after the first, tied to the first page they continue: a new filter starts over.
   const [more, setMore] = useState<{ base: CampusPage<LeadView> | null; items: LeadView[]; cursor: string | null }>({
     base: null,
@@ -107,6 +112,19 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
   function remove(leadId: string) {
     rewrite((leads) => leads.filter((lead) => lead.id !== leadId));
     setSelectedId(null);
+  }
+
+  async function markContacted(lead: LeadView) {
+    if (!accessToken) return;
+    setRowPending(lead.id);
+    setRowError(null);
+    try {
+      replace(await updateAdminLead(accessToken, lead.id, { status: "contacted" }));
+    } catch (cause) {
+      setRowError(errorText(cause, "The lead could not be marked as contacted just now."));
+    } finally {
+      setRowPending(null);
+    }
   }
 
   async function loadMore() {
@@ -181,8 +199,12 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
                 <tr>
                   <th scope="col" className="px-4 py-3">College</th>
                   <th scope="col" className="px-4 py-3">Contact</th>
+                  <th scope="col" className="px-4 py-3">Students</th>
                   <th scope="col" className="px-4 py-3">Status</th>
                   <th scope="col" className="px-4 py-3">Received</th>
+                  <th scope="col" className="px-4 py-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -204,10 +226,40 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
                       {lead.contactName}
                       <span className="block text-ink-subtle">{ROLE_LABEL[lead.contactRole]}</span>
                     </td>
+                    <td className="px-4 py-3">{lead.approxStudents?.toLocaleString("en-IN") ?? <span className="text-ink-subtle">Not given</span>}</td>
                     <td className="px-4 py-3">
                       <Badge tone={STATUS_TONE[lead.status]}>{STATUS_LABEL[lead.status]}</Badge>
                     </td>
                     <td className="px-4 py-3">{received(lead.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      {lead.status === "converted" ? (
+                        <span className="text-ink-muted">College created</span>
+                      ) : (
+                        <div className="flex flex-wrap justify-end gap-2">
+                          {lead.status === "new" ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              disabled={rowPending === lead.id}
+                              onClick={() => void markContacted(lead)}
+                            >
+                              Mark contacted <span className="sr-only">{lead.collegeName}</span>
+                            </Button>
+                          ) : null}
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedId(lead.id);
+                              setConvertRequest({ leadId: lead.id, nonce: (convertRequest?.nonce ?? 0) + 1 });
+                            }}
+                          >
+                            Convert <span className="sr-only">{lead.collegeName}</span>
+                          </Button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -222,11 +274,19 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
           </div>
         ) : null}
         {moreError ? <Alert tone="error">{moreError}</Alert> : null}
+        {rowError ? <Alert tone="error">{rowError}</Alert> : null}
       </section>
 
       {selectedId && !selected && directError ? <Alert tone="error">{directError}</Alert> : null}
       {selected && accessToken ? (
-        <LeadDetail key={selected.id} lead={selected} accessToken={accessToken} onChanged={replace} onDeleted={remove} />
+        <LeadDetail
+          key={`${selected.id}-${convertRequest?.leadId === selected.id ? convertRequest.nonce : 0}`}
+          lead={selected}
+          accessToken={accessToken}
+          initialConverting={convertRequest?.leadId === selected.id}
+          onChanged={replace}
+          onDeleted={remove}
+        />
       ) : null}
     </div>
   );
@@ -235,11 +295,13 @@ export function AdminLeads({ initialLeadId }: { initialLeadId?: string }) {
 function LeadDetail({
   lead,
   accessToken,
+  initialConverting = false,
   onChanged,
   onDeleted,
 }: {
   lead: LeadView;
   accessToken: string;
+  initialConverting?: boolean;
   onChanged: (lead: LeadView) => void;
   onDeleted: (leadId: string) => void;
 }) {
@@ -249,7 +311,7 @@ function LeadDetail({
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [converting, setConverting] = useState(false);
+  const [converting, setConverting] = useState(initialConverting);
   const [converted, setConverted] = useState<ConvertLeadResult | null>(null);
   const isConverted = lead.status === "converted";
 
