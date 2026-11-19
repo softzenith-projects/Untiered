@@ -115,17 +115,21 @@ export const SPEECH_PROBABILITY_END = 0.25;
 /** Weight on the previous average in the moving average; the newest pause gets the rest. */
 export const PAUSE_EMA_ALPHA = 0.9;
 
-/** The average a candidate starts with: a 2.5s window until we have seen them pause. */
-export const INITIAL_PAUSE_EMA_MS = 1_000;
+/**
+ * The average a candidate starts with: a 2.0s window until we have seen them pause. Shortened
+ * from 2.5s once a too-early submit stopped being final — with the server's turn-state check on,
+ * an answer cut off mid-thought is heard as unfinished and the room keeps listening.
+ */
+export const INITIAL_PAUSE_EMA_MS = 800;
 
 /** Fixed part of the silence window, before the learned pause is added. */
-export const ENDPOINT_BASE_MS = 1_000;
+export const ENDPOINT_BASE_MS = 800;
 
 /** How many of the candidate's own typical pauses the window allows on top of the base. */
 export const ENDPOINT_PAUSE_MULTIPLIER = 1.5;
 
 /** The window never gets shorter than this, however brisk the speaker. */
-export const MIN_ENDPOINT_MS = 2_000;
+export const MIN_ENDPOINT_MS = 1_500;
 
 /** The window never gets longer than this, however slow the speaker. */
 export const MAX_ENDPOINT_MS = 4_500;

@@ -95,12 +95,12 @@ describe("speech-probability path", () => {
 });
 
 describe("dynamic endpointing", () => {
-  it("starts at 2.5s", () => {
+  it("starts at 2.0s", () => {
     expect(dynamicSilenceMs(INITIAL_PAUSE_EMA_MS)).toBe(ENDPOINT_BASE_MS + 1.5 * INITIAL_PAUSE_EMA_MS);
-    expect(dynamicSilenceMs(INITIAL_PAUSE_EMA_MS)).toBe(2_500);
+    expect(dynamicSilenceMs(INITIAL_PAUSE_EMA_MS)).toBe(2_000);
   });
 
-  it("clamps to 2.0s and 4.5s", () => {
+  it("clamps to 1.5s and 4.5s", () => {
     expect(dynamicSilenceMs(0)).toBe(MIN_ENDPOINT_MS);
     expect(dynamicSilenceMs(100_000)).toBe(MAX_ENDPOINT_MS);
   });
@@ -120,7 +120,7 @@ describe("dynamic endpointing", () => {
       brisk = learnPause(brisk, 400);
       slow = learnPause(slow, 3_000);
     }
-    expect(dynamicSilenceMs(brisk)).toBeLessThan(2_500);
+    expect(dynamicSilenceMs(brisk)).toBeLessThan(2_000);
     expect(dynamicSilenceMs(slow)).toBeGreaterThan(3_500);
   });
 
