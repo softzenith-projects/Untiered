@@ -1617,8 +1617,10 @@ class InterviewService(
         val facts =
             TurnGuards.TurnFacts(
                 briefing = plan.briefTheCandidate,
-                askedSoFar = askedSoFar,
-                reAskAllowed = reAskRequested || (helpGiven && !TurnGuards.wasReAsk(askedSoFar, rules.repeatThreshold)),
+                // Asked to repeat it, the interviewer may say the question just answered again in the
+                // same words; it is still checked against every question before it.
+                askedSoFar = if (reAskRequested) askedSoFar.dropLast(1) else askedSoFar,
+                reAskAllowed = helpGiven && !TurnGuards.wasReAsk(askedSoFar, rules.repeatThreshold),
             )
         val violations =
             TurnGuards.violations(

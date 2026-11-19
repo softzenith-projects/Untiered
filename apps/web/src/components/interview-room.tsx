@@ -402,19 +402,42 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
   // Counts microphone openings, so a second take on the same question restarts the silence
   // detector even when the phase went answering → submitting → answering in one render.
   const [answerTake, setAnswerTake] = useState(0);
+  /*
+   * Set when the server said the candidate had not finished (PRD 06): the answering phase that
+   * follows resumes the same take rather than starting one, and goes again after `waitMs` of
+   * silence. Cleared when a take starts or the held one ends.
+   */
+  const resumedListening = useRef<{ waitMs: number } | null>(null);
+  // When the take began, so a resumed take's clock carries on instead of starting from 0:00.
+  const takeStartedAt = useRef(0);
+
+  // The held take's recorder is still running once its answer has been taken: stop it, and the
+  // transcript, discarding what it held since. The answer as sent is the answer.
+  const settleHeldTake = useCallback(async () => {
+    resumedListening.current = null;
+    liveTranscript.stop();
+    await capture.stop();
+  }, [capture, liveTranscript]);
 
   const finishAnswer = useCallback(async (endRound = false) => {
     if (!accessToken || !turn) return;
     const priorPhase = phase;
+    /*
+     * Whether the interviewer may answer "keep going" (PRD 06). Then the answer goes up as a
+     * snapshot and the recorder carries on, so if the candidate was not finished the next
+     * submission holds the whole turn. The last answer of a round is never held: nothing can
+     * follow it. Without the server's word the answer is stopped and sent, as it always was.
+     */
+    const holding = session?.listensThroughPauses === true && !endRound;
     setPhase("submitting");
     setError(null);
-    const captured = await capture.stop();
+    const captured = holding ? await capture.snapshot() : await capture.stop();
     if (!captured) {
       setPhase(priorPhase);
       return;
     }
 
-    liveTranscript.stop();
+    if (!holding) liveTranscript.stop();
     const requestId = answerRequestIds.current.get(turn.turnIndex) ?? crypto.randomUUID();
     answerRequestIds.current.set(turn.turnIndex, requestId);
     reportRoomEvent("answer_submission_started", "submitting", turn.turnIndex, requestId);
@@ -445,6 +468,18 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
         captured.timing,
       );
       answerRequestIds.current.delete(turn.turnIndex);
+      if (holding && result.keepListening) {
+        /*
+         * They had not finished. The question stands and the floor stays theirs: back to
+         * listening on the same take, with nothing new on screen. The next submission is a new
+         * request carrying everything said so far. If they say nothing more, it goes after the
+         * server's wait anyway, and the server stops waiting after a couple of these.
+         */
+        resumedListening.current = { waitMs: result.keepListening.waitMs };
+        setPhase("answering");
+        return;
+      }
+      if (holding) await settleHeldTake();
       if (result.sessionComplete || !result.nextTurn) {
         /*
          * A round ends with somebody saying it has.
@@ -467,6 +502,7 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
       );
       setPhase("asking");
     } catch (cause) {
+      if (holding) await settleHeldTake();
       /*
        * The answer came back transcribed as a copy of the one before, so the server kept
        * nothing. The question still stands: say so and open the microphone again, the way
@@ -488,7 +524,19 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
     } finally {
       window.clearTimeout(slowRequestTimer);
     }
-  }, [accessToken, capture, closeRound, liveTranscript, phase, reportRoomEvent, sessionId, speaksLocally, turn]);
+  }, [
+    accessToken,
+    capture,
+    closeRound,
+    liveTranscript,
+    phase,
+    reportRoomEvent,
+    session?.listensThroughPauses,
+    sessionId,
+    settleHeldTake,
+    speaksLocally,
+    turn,
+  ]);
 
   // The meter and the submit callback are read through refs by the tick below. The
   // meter changes on every animation frame, and rebuilding the interval each time would
@@ -503,20 +551,26 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (phase !== "answering") return;
     const startedAt = Date.now();
+    // A resumed take keeps its clock; it still listens afresh for when this stretch ends.
+    const resumed = resumedListening.current;
+    if (!resumed) takeStartedAt.current = startedAt;
+    const clockFrom = takeStartedAt.current;
     let silence = initialSilenceState;
     let ended = false;
 
     const TICK_MS = 200;
     const id = setInterval(() => {
       const now = Date.now();
-      setElapsed(Math.floor((now - startedAt) / 1000));
+      setElapsed(Math.floor((now - clockFrom) / 1000));
 
       silence = observe(silence, latest.current.level, now);
       const over = hasWorkspace
         ? shouldEndWorkspace(silence, now, startedAt, lastWorkspaceChange.current) ||
           now - startedAt >= LONGEST_WORKSPACE_TAKE_MS
         : shouldEnd(silence, now, startedAt);
-      if (!ended && over) {
+      // Told to keep listening and nothing more was said: the interviewer comes back in anyway.
+      const waitedOut = resumed !== null && !silence.hasSpoken && now - startedAt >= resumed.waitMs;
+      if (!ended && (over || waitedOut)) {
         ended = true;
         void latest.current.finish();
       }
@@ -528,6 +582,7 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
   const beginAnswering = useCallback(async () => {
     const started = await capture.start();
     if (started) {
+      resumedListening.current = null;
       setElapsed(0);
       setAnswerTake((take) => take + 1);
       lastWorkspaceChange.current = null;

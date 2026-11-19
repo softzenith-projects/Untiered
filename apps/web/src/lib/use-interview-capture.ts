@@ -164,6 +164,26 @@ export function useInterviewCapture({ withVideo }: UseInterviewCaptureOptions) {
     return { audio, durationMs, timing };
   }, [stopMeter]);
 
+  /**
+   * Everything recorded so far on this answer, without stopping (PRD 06, keep-listening).
+   *
+   * The recorder flushes what it holds and carries on. Chunks of one recorder concatenate into
+   * one valid file, so a later snapshot, or the final [stop], carries the whole answer from its
+   * first word — the interviewer hears the turn as one, however many times it waited. The meter
+   * and the timing keep running too; the timing returned here covers the answer up to now.
+   */
+  const snapshot = useCallback(async (): Promise<CapturedAnswer | null> => {
+    const audioRecorder = audioRecorderRef.current;
+    if (!audioRecorder || audioRecorder.state === "inactive") return null;
+
+    const durationMs = Date.now() - startedAtRef.current;
+    const timing = timingRef.current ? finishTiming(timingRef.current, performance.now()) : null;
+    await flush(audioRecorder);
+
+    const audio = new Blob(audioChunksRef.current, { type: audioRecorder.mimeType || "application/octet-stream" });
+    return { audio, durationMs, timing };
+  }, []);
+
   /** Releases the camera light and the microphone. Called on unmount and on exit. */
   const release = useCallback(() => {
     stopMeter();
@@ -189,6 +209,7 @@ export function useInterviewCapture({ withVideo }: UseInterviewCaptureOptions) {
     requestDevices,
     start,
     stop,
+    snapshot,
     release,
     isRecording: state === "recording",
   };
@@ -215,6 +236,32 @@ function recorderOptions(candidates: string[], audioBps: number): MediaRecorderO
     ...(supported ? { mimeType: supported } : {}),
     audioBitsPerSecond: audioBps,
   };
+}
+
+/** A recorder that stays silent this long after `requestData` has nothing more to give. */
+const FLUSH_TIMEOUT_MS = 1_000;
+
+/**
+ * Asks a running recorder for what it holds and waits for it to arrive. The recorder's own
+ * `ondataavailable`, set when it started, stores the chunk; it was registered first, so it has
+ * run by the time this listener resolves.
+ */
+function flush(recorder: MediaRecorder): Promise<void> {
+  return new Promise((resolve) => {
+    let timer = 0;
+    const done = () => {
+      window.clearTimeout(timer);
+      recorder.removeEventListener("dataavailable", done);
+      resolve();
+    };
+    timer = window.setTimeout(done, FLUSH_TIMEOUT_MS);
+    recorder.addEventListener("dataavailable", done);
+    try {
+      recorder.requestData();
+    } catch {
+      done();
+    }
+  });
 }
 
 function finish(recorder: MediaRecorder, chunks: React.RefObject<Blob[]>): Promise<Blob> {
