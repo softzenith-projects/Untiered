@@ -35,3 +35,41 @@ openly licensed set of DSA problem statements that a commercial product may use 
 Project Euler are CC BY-NC-SA, and the NonCommercial clause rules both out. Aptitude and
 coding material is therefore generated through the question pool and carries the
 `model_knowledge` tier, which is what the candidate is told.
+
+## Voice-activity detection and endpointing
+
+Used for deciding when a spoken answer has ended (`apps/web/src/lib/silence.ts`,
+`use-speech-probability.ts`), behind `NEXT_PUBLIC_VAD_ENDPOINTING`. These are software we
+run, not knowledge about any employer; nothing here is shown to a candidate.
+
+### @ricky0123/vad-web
+
+- Repository: <https://github.com/ricky0123/vad>
+- Licence: ISC. Copyright (c) Ricky Samore.
+- What we use: the package as a dependency (pinned 0.0.31), which runs Silero VAD in the
+  browser over the room's existing microphone stream. Its worklet bundle is served from our
+  own origin (`public/vad/`, copied by `apps/web/scripts/copy-vad-assets.mjs`).
+
+### Silero VAD
+
+- Repository: <https://github.com/snakers4/silero-vad>
+- Licence: MIT. Copyright (c) Silero Team.
+- What we use: the `silero_vad_v5.onnx` model file, shipped inside vad-web, self-hosted. Audio
+  is processed in the browser and is not sent anywhere for this purpose.
+
+### ONNX Runtime Web
+
+- Repository: <https://github.com/microsoft/onnxruntime>
+- Licence: MIT. Copyright (c) Microsoft Corporation.
+- What we use: `onnxruntime-web` (pinned 1.24.3), the peer dependency that runs the model; its
+  wasm runtime is self-hosted alongside the model.
+
+### LiveKit Agents, `DynamicEndpointing`
+
+- Repository: <https://github.com/livekit/agents>
+  (`livekit-agents/livekit/agents/voice/endpointing.py`)
+- Licence: Apache-2.0. Copyright LiveKit, Inc.
+- What we took: the idea of an exponential moving average (alpha 0.9) of the pauses a speaker
+  takes between their own utterances, carried across turns, to size the silence window. Our
+  constants and code are our own (`dynamicSilenceMs`, `learnPause` in `silence.ts`); no source
+  was copied.

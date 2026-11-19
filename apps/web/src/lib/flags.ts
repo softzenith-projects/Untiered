@@ -73,3 +73,12 @@ export function campusEnabled(): boolean {
 export function campusLeadsEnabled(): boolean {
   return configured(process.env.NEXT_PUBLIC_FEATURE_CAMPUS_LEADS, true);
 }
+
+/**
+ * Ends a spoken answer from a speech-probability signal (Silero VAD in the browser) and the
+ * candidate's own pause length, instead of microphone volume. Off by default: with it off
+ * nothing new loads and the volume rule is exactly what it was.
+ */
+export function vadEndpointingEnabled(): boolean {
+  return configured(process.env.NEXT_PUBLIC_VAD_ENDPOINTING, false);
+}

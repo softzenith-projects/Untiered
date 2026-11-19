@@ -67,3 +67,16 @@ describe("campus leads switch", () => {
     expect(campusLeadsEnabled()).toBe(false);
   });
 });
+
+describe("VAD endpointing flag", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is off unless explicitly true", async () => {
+    const { vadEndpointingEnabled } = await import("@/lib/flags");
+    expect(vadEndpointingEnabled()).toBe(false);
+    vi.stubEnv("NEXT_PUBLIC_VAD_ENDPOINTING", "");
+    expect(vadEndpointingEnabled()).toBe(false);
+    vi.stubEnv("NEXT_PUBLIC_VAD_ENDPOINTING", "true");
+    expect(vadEndpointingEnabled()).toBe(true);
+  });
+});

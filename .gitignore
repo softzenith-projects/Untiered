@@ -39,3 +39,6 @@ Thumbs.db
 
 # Agent worktrees, created by tooling and never part of the project.
 .claude/worktrees/
+
+# Copied from node_modules by scripts/copy-vad-assets.mjs
+/apps/web/public/vad/

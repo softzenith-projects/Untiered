@@ -107,6 +107,7 @@ class InterviewTelemetryService(
                 "model_audio_error",
                 "model_audio_stalled",
                 "model_audio_timed_out",
+                "turn_resumed_after_submit",
             )
         val ALLOWED_PHASES =
             setOf("loading", "checking", "asking", "answering", "submitting", "closing", "complete", "terminal", "error")
@@ -118,6 +119,7 @@ class InterviewTelemetryService(
                     "client_page_hidden",
                     "answer_submission_started",
                     "answer_submission_slow",
+                    "turn_resumed_after_submit",
                 )
 
         fun clientOutcome(event: String): String? =
