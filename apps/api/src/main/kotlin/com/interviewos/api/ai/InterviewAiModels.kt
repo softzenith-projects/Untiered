@@ -476,13 +476,14 @@ data class AnswerAssessment(
      * everything else here: the engine checks the text before it believes it.
      */
     val askedPlannedQuestion: Boolean? = null,
-    /*
-     * The five fields below exist only in the schema the turn-state and answer-key flags add
-     * (`assess-answer-turn-state.json`, `assess-answer-concepts.json`). Nullable so stored
-     * assessments from before them, and every other variant, still parse; and left out of the
-     * JSON when null, so an assessment stored with the flags off is byte-for-byte what it was.
+    /**
+     * `complete`, `cut_off` or `needs_time`. See [TurnState].
+     *
+     * This and the four fields after it exist only in the schema the turn-state and answer-key
+     * flags add (`assess-answer-turn-state.json`, `assess-answer-concepts.json`). Nullable so
+     * stored assessments from before them, and every other variant, still parse; and left out of
+     * the JSON when null, so an assessment stored with the flags off is byte-for-byte what it was.
      */
-    /** `complete`, `cut_off` or `needs_time`. See [TurnState]. */
     @field:JsonInclude(JsonInclude.Include.NON_NULL)
     val turnState: String? = null,
     /** What kind of turn the candidate took. See [CandidateIntent]. */

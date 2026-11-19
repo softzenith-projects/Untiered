@@ -496,6 +496,8 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
          * server's wait anyway, and the server stops waiting after a couple of these.
          */
         resumedListening.current = { waitMs: result.keepListening.waitMs };
+        // Restarts the silence detector even if answering → submitting → answering lands in one render.
+        setAnswerTake((take) => take + 1);
         setPhase("answering");
         return;
       }

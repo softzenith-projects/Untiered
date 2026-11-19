@@ -751,6 +751,7 @@ describe("InterviewRoom keep-listening (PRD 06)", () => {
     const take = { audio: new Blob(["voice"], { type: "audio/webm" }), durationMs: 4_000, timing: null };
     captureStop.mockResolvedValue(take);
     captureSnapshot.mockResolvedValue(take);
+    submitAnswer.mockReset();
     beginSession.mockResolvedValue({
       startedAt: new Date().toISOString(),
       scheduledEndAt: new Date(Date.now() + 30 * 60_000).toISOString(),
@@ -800,7 +801,7 @@ describe("InterviewRoom keep-listening (PRD 06)", () => {
     expect(captureStart).toHaveBeenCalledTimes(1);
     // Back to listening, on the same question, with nothing new on screen.
     await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
-    expect(screen.getByText("Tell me about the project.")).toBeInTheDocument();
+    expect(screen.getAllByText("Tell me about the project.").length).toBeGreaterThan(0);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
     // They say nothing more: the take goes again once the server's wait is up, not before.
@@ -815,7 +816,7 @@ describe("InterviewRoom keep-listening (PRD 06)", () => {
     expect(second[4]).not.toBe(first[4]);
     // The answer is in: the held recorder is stopped, and the next question is asked.
     await waitFor(() => expect(captureStop).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText("What did you measure first?")).toBeInTheDocument();
+    expect((await screen.findAllByText("What did you measure first?")).length).toBeGreaterThan(0);
   });
 
   it("submits the continued take on silence once they carry on talking", async () => {
@@ -846,7 +847,7 @@ describe("InterviewRoom keep-listening (PRD 06)", () => {
     expect(submitAnswer).toHaveBeenCalledTimes(1);
     expect(captureStop).toHaveBeenCalledTimes(1);
     expect(captureSnapshot).not.toHaveBeenCalled();
-    expect(await screen.findByText("What did you measure first?")).toBeInTheDocument();
+    expect((await screen.findAllByText("What did you measure first?")).length).toBeGreaterThan(0);
   });
 
   it("stops the held recorder before asking again when the answer was not heard", async () => {

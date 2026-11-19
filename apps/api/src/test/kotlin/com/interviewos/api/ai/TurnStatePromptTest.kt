@@ -33,25 +33,26 @@ class TurnStatePromptTest {
     )
 
     private fun prompt(round: RoundContext): String =
-        library.assessAnswer(
-            brief =
-                InterviewBrief(
-                    company = "Amazon",
-                    archetype = "Global product company",
-                    role = "SDE 2",
-                    roundType = "Technical fundamentals.",
-                    roundCovers = "- Operating systems",
-                    language = "english",
-                    candidateFunction = null,
-                    candidateLevel = null,
-                    targetLevel = null,
-                    grounding = "General patterns.",
-                ),
-            round = round,
-            priorTurns = listOf(TurnTranscript("What is a process?", "A program in execution.")),
-            currentQuestion = "Explain indexing.",
-            // A Windows checkout has CRLF templates; CI has LF.
-        ).replace("\r\n", "\n")
+        library
+            .assessAnswer(
+                brief =
+                    InterviewBrief(
+                        company = "Amazon",
+                        archetype = "Global product company",
+                        role = "SDE 2",
+                        roundType = "Technical fundamentals.",
+                        roundCovers = "- Operating systems",
+                        language = "english",
+                        candidateFunction = null,
+                        candidateLevel = null,
+                        targetLevel = null,
+                        grounding = "General patterns.",
+                    ),
+                round = round,
+                priorTurns = listOf(TurnTranscript("What is a process?", "A program in execution.")),
+                currentQuestion = "Explain indexing.",
+                // A Windows checkout has CRLF templates; CI has LF.
+            ).replace("\r\n", "\n")
 
     @Test
     fun `with both flags off the turn prompt and schema are exactly what they were`() {
@@ -105,9 +106,20 @@ class TurnStatePromptTest {
         val schema = library.assessmentSchema(round(turnCompletion = TurnCompletionContext(0, true)))
         val properties = schema.path("properties")
 
-        assertThat(properties.path("turnState").path("enum").toList().map { it.asString() })
-            .containsExactly("complete", "cut_off", "needs_time")
-        assertThat(properties.path("candidateIntent").path("enum").toList().map { it.asString() }).contains(
+        assertThat(
+            properties
+                .path("turnState")
+                .path("enum")
+                .toList()
+                .map { it.asString() },
+        ).containsExactly("complete", "cut_off", "needs_time")
+        assertThat(
+            properties
+                .path("candidateIntent")
+                .path("enum")
+                .toList()
+                .map { it.asString() },
+        ).contains(
             "answer",
             "confirmation",
             "clarification",
@@ -145,7 +157,13 @@ class TurnStatePromptTest {
         assertThat(on).contains("Never ask again about anything already demonstrated.")
 
         val schema = library.assessmentSchema(round(answerKey = key))
-        assertThat(schema.path("properties").path("conceptsCovered").path("type").asString()).isEqualTo("ARRAY")
+        assertThat(
+            schema
+                .path("properties")
+                .path("conceptsCovered")
+                .path("type")
+                .asString(),
+        ).isEqualTo("ARRAY")
         assertThat(schema.path("properties").has("turnState")).isFalse()
     }
 

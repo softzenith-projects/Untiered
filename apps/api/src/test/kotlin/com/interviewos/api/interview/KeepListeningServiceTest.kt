@@ -55,8 +55,16 @@ class KeepListeningServiceTest {
         assertEquals(1, s.calls("recordAnswer"))
         assertEquals(0, s.calls("findKeepListening"))
         assertEquals(0, s.calls("turnMemory"))
-        assertNull(s.harness.assessedRounds.single().turnCompletion)
-        assertNull(s.harness.assessedRounds.single().answerKey)
+        assertNull(
+            s.harness.assessedRounds
+                .single()
+                .turnCompletion,
+        )
+        assertNull(
+            s.harness.assessedRounds
+                .single()
+                .answerKey,
+        )
         assertTrue(s.eventsOf("turn_keep_listening").isEmpty())
     }
 
@@ -70,7 +78,11 @@ class KeepListeningServiceTest {
 
         assertNull(response.keepListening)
         assertEquals(1, s.calls("recordAnswer"))
-        assertNull(s.harness.assessedRounds.single().turnCompletion)
+        assertNull(
+            s.harness.assessedRounds
+                .single()
+                .turnCompletion,
+        )
     }
 
     @Test
@@ -96,7 +108,12 @@ class KeepListeningServiceTest {
         assertEquals("applied", event.outcome)
         assertEquals("needs_time", event.reason)
         assertEquals(s.turnIndex, event.turnIndex)
-        val context = assertNotNull(s.harness.assessedRounds.single().turnCompletion)
+        val context =
+            assertNotNull(
+                s.harness.assessedRounds
+                    .single()
+                    .turnCompletion,
+            )
         assertEquals(0, context.waitsSoFar)
         assertTrue(context.mayWait)
     }
@@ -151,7 +168,12 @@ class KeepListeningServiceTest {
         assertEquals(1, s.calls("recordAnswer"))
         assertEquals(0, s.calls("recordKeepListening"))
         assertEquals("fallback", s.eventsOf("turn_keep_listening").single().outcome)
-        val context = assertNotNull(s.harness.assessedRounds.single().turnCompletion)
+        val context =
+            assertNotNull(
+                s.harness.assessedRounds
+                    .single()
+                    .turnCompletion,
+            )
         assertEquals(2, context.waitsSoFar)
         assertFalse(context.mayWait)
     }
@@ -231,7 +253,11 @@ class KeepListeningServiceTest {
         s.modelSays("complete", nextQuestion = "What would you check first?", transcript = "I would add an index.")
 
         s.submitAs()
-        assertTrue(s.harness.assessedRounds.single().mustMoveOn)
+        assertTrue(
+            s.harness.assessedRounds
+                .single()
+                .mustMoveOn,
+        )
 
         // ...unless one of them was the candidate asking to hear the question again.
         val t = TurnScenario(on)
@@ -242,7 +268,11 @@ class KeepListeningServiceTest {
         t.modelSays("complete", nextQuestion = "What would you check first?", transcript = "I would add an index.")
 
         t.submitAs()
-        assertFalse(t.harness.assessedRounds.single().mustMoveOn)
+        assertFalse(
+            t.harness.assessedRounds
+                .single()
+                .mustMoveOn,
+        )
     }
 
     @Test
@@ -257,12 +287,21 @@ class KeepListeningServiceTest {
 
         val response = s.submitAs()
 
-        val key = assertNotNull(s.harness.assessedRounds.single().answerKey)
+        val key =
+            assertNotNull(
+                s.harness.assessedRounds
+                    .single()
+                    .answerKey,
+            )
         assertEquals(listOf("write amplification"), key.strongAnswerCovers)
         assertEquals(listOf("When would you not index?"), key.followUps)
         assertEquals(listOf("processes own memory"), key.alreadyDemonstrated)
         // The answer key alone never keeps listening.
-        assertNull(s.harness.assessedRounds.single().turnCompletion)
+        assertNull(
+            s.harness.assessedRounds
+                .single()
+                .turnCompletion,
+        )
         assertNull(response.keepListening)
     }
 
