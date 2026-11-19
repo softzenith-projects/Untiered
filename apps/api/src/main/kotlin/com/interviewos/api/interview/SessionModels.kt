@@ -1,5 +1,6 @@
 package com.interviewos.api.interview
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
@@ -141,6 +142,12 @@ data class SessionView(
      * integrity events (§5); the student was told so on the start screen, before consent.
      */
     val assigned: Boolean = false,
+    /**
+     * The server may answer a submitted turn with [KeepListening] (`interviewos.interviewer.turn-state`),
+     * so the room records each answer as one continuous take it can resume. False everywhere else,
+     * and then the room records and submits exactly as it did before.
+     */
+    val listensThroughPauses: Boolean = false,
 )
 
 /**
@@ -219,6 +226,24 @@ data class SubmitAnswerResponse(
      * so a round ends with somebody saying it has rather than with the page changing.
      */
     val closingRemark: String? = null,
+    /**
+     * Set when the candidate had not finished: the turn was not answered and the room keeps
+     * listening on the same question (PRD 06, `interviewos.interviewer.turn-state`). Left out
+     * of the JSON when null, so every other response is exactly what it was.
+     */
+    @field:JsonInclude(JsonInclude.Include.NON_NULL)
+    val keepListening: KeepListening? = null,
+)
+
+/**
+ * The interviewer is not taking the floor yet. The room carries on recording the same answer,
+ * and submits all of it again once the candidate stops — or after [waitMs] of silence if they
+ * say nothing more. The server stops waiting after a fixed number of these on one turn.
+ */
+data class KeepListening(
+    /** `cut_off` (stopped mid-thought) or `needs_time` (asked for time). */
+    val turnState: String,
+    val waitMs: Long,
 )
 
 /** Whether the candidate may start another interview, and why not if not. */

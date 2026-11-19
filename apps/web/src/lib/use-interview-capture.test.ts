@@ -82,4 +82,77 @@ describe("useInterviewCapture", () => {
     expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
     unmount();
   });
+
+  it("hands over everything recorded so far without stopping the recorder, then stops as before", async () => {
+    const recorders: FakeRecorder[] = [];
+    class FakeRecorder extends EventTarget {
+      static isTypeSupported() {
+        return true;
+      }
+
+      mimeType = "audio/webm";
+      state: RecordingState = "inactive";
+      ondataavailable: ((event: { data: Blob }) => void) | null = null;
+      onstop: (() => void) | null = null;
+      private part = 0;
+
+      constructor() {
+        super();
+        recorders.push(this);
+      }
+
+      start() {
+        this.state = "recording";
+      }
+
+      requestData() {
+        this.emit();
+      }
+
+      stop() {
+        this.emit();
+        this.state = "inactive";
+        this.onstop?.();
+      }
+
+      private emit() {
+        this.part += 1;
+        const data = new Blob([`part-${this.part}`]);
+        this.ondataavailable?.({ data });
+        const event = new Event("dataavailable");
+        Object.assign(event, { data });
+        this.dispatchEvent(event);
+      }
+    }
+    vi.stubGlobal("MediaRecorder", FakeRecorder);
+    const { result, unmount } = renderHook(() => useInterviewCapture({ withVideo: false }));
+
+    await act(async () => {
+      await result.current.start();
+    });
+    let first: Awaited<ReturnType<typeof result.current.snapshot>> = null;
+    await act(async () => {
+      first = await result.current.snapshot();
+    });
+
+    expect(recorders).toHaveLength(1);
+    expect(recorders[0]?.state).toBe("recording");
+    expect(await first!.audio.text()).toBe("part-1");
+    expect(result.current.isRecording).toBe(true);
+
+    let second: Awaited<ReturnType<typeof result.current.snapshot>> = null;
+    await act(async () => {
+      second = await result.current.snapshot();
+    });
+    // Every chunk from the start of the take, so the continued answer is heard as one.
+    expect(await second!.audio.text()).toBe("part-1part-2");
+
+    let final: Awaited<ReturnType<typeof result.current.stop>> = null;
+    await act(async () => {
+      final = await result.current.stop();
+    });
+    expect(await final!.audio.text()).toBe("part-1part-2part-3");
+    expect(recorders[0]?.state).toBe("inactive");
+    unmount();
+  });
 });
