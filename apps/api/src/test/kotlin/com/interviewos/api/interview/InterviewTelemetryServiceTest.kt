@@ -44,6 +44,33 @@ class InterviewTelemetryServiceTest {
     }
 
     @Test
+    fun `records a turn resumed after an automatic submit as a neutral event with the window used`() {
+        given(repository.findSession(sessionId, userId)).willReturn(mock(SessionRow::class.java))
+
+        service.record(
+            userId,
+            sessionId,
+            InterviewClientEventRequest(
+                event = "turn_resumed_after_submit",
+                turnIndex = 2,
+                durationMs = 2_500,
+                phase = "submitting",
+            ),
+        )
+
+        verify(events).record(
+            InterviewEvent(
+                userId = userId,
+                sessionId = sessionId,
+                type = "turn_resumed_after_submit",
+                turnIndex = 2,
+                phase = "submitting",
+                durationMs = 2_500,
+            ),
+        )
+    }
+
+    @Test
     fun `rejects an event outside the privacy-safe vocabulary`() {
         given(repository.findSession(sessionId, userId)).willReturn(mock(SessionRow::class.java))
 

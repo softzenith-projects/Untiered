@@ -496,7 +496,8 @@ export type InterviewClientEvent =
   | "model_audio_play_rejected"
   | "model_audio_error"
   | "model_audio_stalled"
-  | "model_audio_timed_out";
+  | "model_audio_timed_out"
+  | "turn_resumed_after_submit";
 
 export type InterviewClientPhase =
   | "loading"
