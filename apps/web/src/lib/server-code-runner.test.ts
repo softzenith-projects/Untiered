@@ -11,6 +11,8 @@ const ran = (overrides: Partial<CodeRunResult> = {}): CodeRunResult => ({
   timedOut: false,
   available: true,
   message: null,
+  outputLimited: false,
+  wallTimeMillis: null,
   ...overrides,
 });
 
@@ -25,6 +27,7 @@ describe("runOnServer", () => {
       stderr: "Main.java:3: error: ';' expected",
       available: true,
       timedOut: false,
+      outputLimited: false,
       message: null,
     });
   });
@@ -34,6 +37,20 @@ describe("runOnServer", () => {
 
     expect(outcome.timedOut).toBe(true);
     expect(outcome.message).toMatch(/Stopped after 5 seconds/);
+  });
+
+  it("says a run stopped for printing too much was not a timeout", async () => {
+    const outcome = await runOnServer(() =>
+      Promise.resolve(
+        ran({ stderr: "Exception in thread \"main\" java.lang.NullPointerException", exitCode: -1, outputLimited: true }),
+      ),
+    );
+
+    expect(outcome.timedOut).toBe(false);
+    expect(outcome.outputLimited).toBe(true);
+    expect(outcome.message).toMatch(/printed more than the runner keeps/);
+    expect(outcome.message).not.toMatch(/loop/);
+    expect(outcome.stderr).toMatch(/NullPointerException/);
   });
 
   it("hands on the server's own words when no runner is configured", async () => {

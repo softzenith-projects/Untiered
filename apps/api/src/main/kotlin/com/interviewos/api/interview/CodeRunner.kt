@@ -99,6 +99,7 @@ class CodeRunner internal constructor(
                     ?: return CodeRunResult.unavailable("The code runner returned nothing.")
 
             val run = response.path("run")
+            val stop = PistonStop.of(run.path("status").asString().orEmpty(), run.path("signal").asString().orEmpty())
             val compileError =
                 response
                     .path("compile")
@@ -118,9 +119,11 @@ class CodeRunner internal constructor(
                         .replace("${language.fileName}.java", language.fileName)
                         .let(::explainMissingMain),
                 exitCode = run.path("code").asInt(-1),
-                timedOut = run.path("signal").asString() == "SIGKILL",
+                timedOut = stop == PistonStop.TIME,
+                outputLimited = stop == PistonStop.OUTPUT,
                 available = true,
                 message = null,
+                wallTimeMillis = run.path("wall_time").takeIf { it.isNumber }?.asLong(),
             )
         } catch (e: RestClientException) {
             // Nearly always the public instance rate-limiting us. Worth a log line, never
@@ -196,14 +199,51 @@ enum class CodeLanguage(
     }
 }
 
+/**
+ * Why Piston stopped a program early, from its `status` field.
+ *
+ * Piston reports `signal: "SIGKILL"` for three different stops — out of time (`TO`), too much
+ * standard output (`OL`) and too much standard error (`EL`) — so the signal alone cannot say
+ * which. Reading it as "timed out" told a candidate whose Java threw an exception, with a
+ * stack trace longer than Piston's 1 KB output buffer, that they had written an endless loop.
+ */
+internal enum class PistonStop {
+    NONE,
+    TIME,
+    OUTPUT,
+    ;
+
+    companion object {
+        fun of(
+            status: String,
+            signal: String,
+        ): PistonStop =
+            when (status) {
+                "TO" -> TIME
+
+                "OL", "EL" -> OUTPUT
+
+                // A Piston that predates `status` only has the signal, and a kill was the deadline.
+                "" -> if (signal == "SIGKILL") TIME else NONE
+
+                else -> NONE
+            }
+    }
+}
+
 data class CodeRunResult(
     val stdout: String,
     val stderr: String,
     val exitCode: Int,
+    /** Stopped at the run deadline. */
     val timedOut: Boolean,
     /** False when nothing ran. [message] then says why, in words meant for the candidate. */
     val available: Boolean,
     val message: String?,
+    /** Stopped because it printed more than the runner keeps; what came back is the start of it. */
+    val outputLimited: Boolean = false,
+    /** How long the program ran, as the runner measured it. Null when nothing ran. */
+    val wallTimeMillis: Long? = null,
 ) {
     companion object {
         fun unavailable(message: String) =

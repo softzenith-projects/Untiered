@@ -175,6 +175,9 @@ class BankRoundHarness(
     /** Every interview event the service wrote, in order. */
     val events = mutableListOf<InterviewEvent>()
 
+    /** Stands in for Piston; a test that presses Run says what it returns. */
+    val codeRunner: CodeRunner = mock(CodeRunner::class.java)
+
     val service =
         InterviewService(
             repository = repository,
@@ -193,7 +196,7 @@ class BankRoundHarness(
             poolRounds = PoolRoundPlanner(directory, pool, repository, poolMaterial),
             resumeService = resumeService,
             roundWorkspaceComposer = RoundWorkspaceComposer(ai, mapper, ProblemVerifier(ai, mapper), poolMaterial),
-            codeRunner = mock(CodeRunner::class.java),
+            codeRunner = codeRunner,
             interviewEvents = InterviewEventRecorder { events += it },
             activeLeases = activeLeases,
             assignedRounds = assignedRounds,

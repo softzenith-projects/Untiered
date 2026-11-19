@@ -14,6 +14,8 @@ export interface RunOutcome {
   available: boolean;
   /** True when the run was stopped for taking too long — most likely an endless loop. */
   timedOut: boolean;
+  /** True when a server run was stopped for printing too much; the output is its start. */
+  outputLimited?: boolean;
   message: string | null;
 }
 
