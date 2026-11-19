@@ -227,9 +227,14 @@ export interface CodeRunResult {
   stdout: string;
   stderr: string;
   exitCode: number;
+  /** Stopped at the run deadline. */
   timedOut: boolean;
   available: boolean;
   message: string | null;
+  /** Stopped because it printed more than the runner keeps; the output is its start. */
+  outputLimited: boolean;
+  /** How long the program ran, as the runner measured it. Null when nothing ran. */
+  wallTimeMillis: number | null;
 }
 
 /** One line of intent, as the candidate typed it. */

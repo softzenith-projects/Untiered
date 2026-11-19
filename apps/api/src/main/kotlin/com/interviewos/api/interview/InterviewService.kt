@@ -1419,8 +1419,21 @@ class InterviewService(
         val language =
             CodeLanguage.parse(request.language)
                 ?: throw ApiException.badRequest("This round takes Python or Java.")
-        return codeRunner.run(language, request.source, request.stdin)
+        val result = codeRunner.run(language, request.source, request.stdin)
+        // No source, input or output: only how the run ended and how long it took, so a report
+        // of "Run kept stopping" can be answered from the ledger instead of guessed at.
+        recordEvent(userId, sessionId, "code_run", outcome = codeRunOutcome(result), durationMs = result.wallTimeMillis)
+        return result
     }
+
+    private fun codeRunOutcome(result: CodeRunResult): String =
+        when {
+            !result.available -> "unavailable"
+            result.timedOut -> "timed_out"
+            result.outputLimited -> "output_limited"
+            result.exitCode != 0 -> "failed"
+            else -> "succeeded"
+        }
 
     /** Stores the board, so a reload does not lose twenty minutes of drawing. */
     fun saveBoard(

@@ -18,6 +18,8 @@ export interface ServerRunOutcome {
   /** False when nothing ran — no runner configured, rate-limited, or unreachable. */
   available: boolean;
   timedOut: boolean;
+  /** Stopped because it printed more than the runner keeps; [stdout]/[stderr] are its start. */
+  outputLimited: boolean;
   /** Set whenever the output alone would not say what happened. */
   message: string | null;
 }
@@ -39,10 +41,14 @@ export async function runOnServer(call: () => Promise<CodeRunResult>): Promise<S
       stderr: result.stderr,
       available: true,
       timedOut: result.timedOut,
+      outputLimited: result.outputLimited ?? false,
       message: result.timedOut
         ? `Stopped after ${SERVER_RUN_TIMEOUT_SECONDS} seconds — that usually means a loop that never ends. ` +
           "Your code is untouched."
-        : null,
+        : result.outputLimited
+          ? "Stopped because it printed more than the runner keeps (about 1 KB). A long stack trace or a lot of " +
+            "debug printing does this. What it printed first is below. Your code is untouched."
+          : null,
     };
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 429) return unavailable(error.message);
@@ -51,5 +57,5 @@ export async function runOnServer(call: () => Promise<CodeRunResult>): Promise<S
 }
 
 function unavailable(message: string): ServerRunOutcome {
-  return { stdout: "", stderr: "", available: false, timedOut: false, message };
+  return { stdout: "", stderr: "", available: false, timedOut: false, outputLimited: false, message };
 }

@@ -107,6 +107,57 @@ class CodeRunnerTest {
     }
 
     @Test
+    fun `Piston's time-out status is a time-out, with the run's wall time`() {
+        val result = runWith("""{"run":{"stdout":"","stderr":"","code":null,"signal":"SIGKILL","status":"TO","wall_time":5012}}""")
+
+        assertThat(result.timedOut).isTrue()
+        assertThat(result.outputLimited).isFalse()
+        assertThat(result.wallTimeMillis).isEqualTo(5012L)
+    }
+
+    @Test
+    fun `a run stopped for too much standard error is not reported as a time-out`() {
+        // What a candidate's Java looked like on 19 Nov 2026: an exception's stack trace overran
+        // Piston's 1 KB buffer, Piston said SIGKILL, and the room called it an endless loop.
+        val result =
+            runWith(
+                """{"run":{"stdout":"","stderr":"Exception in thread \"main\" java.lang.NullPointerException","code":null,""" +
+                    """"signal":"SIGKILL","status":"EL","wall_time":1840}}""",
+            )
+
+        assertThat(result.timedOut).isFalse()
+        assertThat(result.outputLimited).isTrue()
+        assertThat(result.stderr).contains("NullPointerException")
+    }
+
+    @Test
+    fun `a run stopped for too much standard output is not reported as a time-out`() {
+        val result = runWith("""{"run":{"stdout":"1\n2\n3\n","stderr":"","code":null,"signal":"SIGKILL","status":"OL"}}""")
+
+        assertThat(result.timedOut).isFalse()
+        assertThat(result.outputLimited).isTrue()
+        assertThat(result.stdout).isEqualTo("1\n2\n3\n")
+    }
+
+    @Test
+    fun `a runtime error that exits on its own is neither a time-out nor an output limit`() {
+        val result = runWith("""{"run":{"stdout":"","stderr":"boom","code":1,"signal":null,"status":"RE"}}""")
+
+        assertThat(result.timedOut).isFalse()
+        assertThat(result.outputLimited).isFalse()
+        assertThat(result.exitCode).isEqualTo(1)
+    }
+
+    private fun runWith(response: String): CodeRunResult {
+        val (runner, server) = runner()
+        expectRuntimes(server)
+        server
+            .expect(once(), requestTo("$base/execute"))
+            .andRespond(withSuccess(response, MediaType.APPLICATION_JSON))
+        return runner.run(CodeLanguage.JAVA, "public class Main {}", "")
+    }
+
+    @Test
     fun `switched off, it says so without calling anything`() {
         val builder = RestClient.builder()
         val server = MockRestServiceServer.bindTo(builder).build()

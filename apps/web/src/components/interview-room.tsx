@@ -911,6 +911,8 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
             stderr: "",
             exitCode: -1,
             timedOut: false,
+            outputLimited: false,
+            wallTimeMillis: null,
             available: false,
             message: "Your sign-in has lapsed. Reload the page to run code; your work is saved.",
           }),

@@ -93,7 +93,7 @@ export function Playground({
       message: outcome.message,
       timedOut: outcome.timedOut,
       matchesExpected:
-        block.expectedOutput && outcome.available && !outcome.timedOut && !outcome.stderr
+        block.expectedOutput && outcome.available && !outcome.timedOut && !outcome.outputLimited && !outcome.stderr
           ? matchesExpected(outcome.stdout, block.expectedOutput)
           : null,
     });
