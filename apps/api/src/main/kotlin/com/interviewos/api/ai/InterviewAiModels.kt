@@ -1,5 +1,6 @@
 package com.interviewos.api.ai
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import tools.jackson.databind.JsonNode
 import java.time.LocalDate
 
@@ -354,6 +355,38 @@ data class RoundContext(
     val mustMoveOn: Boolean = false,
     /** Which prompt and response schema the assessment uses. Chosen by the server. */
     val variant: AssessmentVariant = AssessmentVariant.LEGACY,
+    /**
+     * Ask whether the candidate had finished before assessing (`interviewos.interviewer.turn-state`).
+     * Null when the flag is off, and then the prompt and schema are exactly what they were.
+     */
+    val turnCompletion: TurnCompletionContext? = null,
+    /**
+     * The answer key and what is already demonstrated (`interviewos.interviewer.answer-key`).
+     * Null when the flag is off.
+     */
+    val answerKey: AnswerKey? = null,
+)
+
+/** How long the interviewer has already waited on this question (PRD 06, keep-listening). */
+data class TurnCompletionContext(
+    /** Keep-listening verdicts already given on this turn. */
+    val waitsSoFar: Int,
+    /** False once the server will not wait again: the model is told to take the floor. */
+    val mayWait: Boolean,
+)
+
+/**
+ * Reference material for judging the answer to the question on the table, never read out.
+ *
+ * [strongAnswerCovers] and [followUps] come from the AI pool row the question was asked from,
+ * and are general knowledge like the question itself (`model_knowledge`): empty for a bank
+ * question or a question the model wrote. [alreadyDemonstrated] is what earlier answers in this
+ * round showed, as the model recorded it in each turn's `conceptsCovered`.
+ */
+data class AnswerKey(
+    val strongAnswerCovers: List<String> = emptyList(),
+    val followUps: List<String> = emptyList(),
+    val alreadyDemonstrated: List<String> = emptyList(),
 )
 
 /**
@@ -443,7 +476,80 @@ data class AnswerAssessment(
      * everything else here: the engine checks the text before it believes it.
      */
     val askedPlannedQuestion: Boolean? = null,
+    /*
+     * The five fields below exist only in the schema the turn-state and answer-key flags add
+     * (`assess-answer-turn-state.json`, `assess-answer-concepts.json`). Nullable so stored
+     * assessments from before them, and every other variant, still parse; and left out of the
+     * JSON when null, so an assessment stored with the flags off is byte-for-byte what it was.
+     */
+    /** `complete`, `cut_off` or `needs_time`. See [TurnState]. */
+    @field:JsonInclude(JsonInclude.Include.NON_NULL)
+    val turnState: String? = null,
+    /** What kind of turn the candidate took. See [CandidateIntent]. */
+    @field:JsonInclude(JsonInclude.Include.NON_NULL)
+    val candidateIntent: String? = null,
+    /** What they first said and what they meant, when they corrected themselves. */
+    @field:JsonInclude(JsonInclude.Include.NON_NULL)
+    val selfCorrection: String? = null,
+    /** Points of a strong answer this answer demonstrated, as short phrases. */
+    @field:JsonInclude(JsonInclude.Include.NON_NULL)
+    val conceptsCovered: List<String>? = null,
+    /** Points of a strong answer this answer left out. */
+    @field:JsonInclude(JsonInclude.Include.NON_NULL)
+    val conceptsMissing: List<String>? = null,
 )
+
+/**
+ * Whether the candidate had finished speaking when the recording ended (PRD 06).
+ *
+ * The verdicts and their waits are adapted from Pipecat's user-turn completion protocol
+ * (BSD-2-Clause; see `docs/third-party-sources.md`). Anything unrecognised, or absent, is
+ * [COMPLETE]: the safe reading is the one the room took before this existed.
+ */
+enum class TurnState(
+    val wireValue: String,
+    /** The room keeps listening on the same question instead of being answered. */
+    val keepsListening: Boolean,
+) {
+    COMPLETE("complete", false),
+    CUT_OFF("cut_off", true),
+    NEEDS_TIME("needs_time", true),
+    ;
+
+    companion object {
+        fun parse(value: String?): TurnState {
+            val wire = value?.trim()?.lowercase() ?: return COMPLETE
+            return entries.firstOrNull { it.wireValue == wire } ?: COMPLETE
+        }
+    }
+}
+
+/** What kind of turn a complete one was. Anything unrecognised, or absent, is [ANSWER]. */
+enum class CandidateIntent(
+    val wireValue: String,
+    /**
+     * The candidate asked to hear the question again, or asked about it: the interviewer may
+     * re-ask it, and the exchange spends none of the follow-up budget.
+     */
+    val reAsksTheQuestion: Boolean,
+) {
+    ANSWER("answer", false),
+    CONFIRMATION("confirmation", false),
+    CLARIFICATION("clarification", true),
+    REPEAT_REQUEST("repeat_request", true),
+    HINT_REQUEST("hint_request", false),
+    ASKS_QUESTION("asks_question", true),
+    SELF_CORRECTION("self_correction", false),
+    OFF_TOPIC("off_topic", false),
+    ;
+
+    companion object {
+        fun parse(value: String?): CandidateIntent {
+            val wire = value?.trim()?.lowercase() ?: return ANSWER
+            return entries.firstOrNull { it.wireValue == wire } ?: ANSWER
+        }
+    }
+}
 
 /**
  * How much the interviewer had to help on a single turn.

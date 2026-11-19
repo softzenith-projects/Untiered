@@ -205,6 +205,14 @@ interviewos:
     echo-all-answers: ${INTERVIEWER_ECHO_ALL_ANSWERS:false}
     audio-hash-guard: ${INTERVIEWER_AUDIO_HASH_GUARD:false}
     bank-pool-fallthrough: ${INTERVIEWER_BANK_POOL_FALLTHROUGH:false}
+    # Whether the candidate had finished (turnState / candidateIntent) and keep-listening
+    # when they had not. Needs final-variant on; spoken rounds only. Waits are Pipecat's defaults.
+    turn-state: ${INTERVIEWER_TURN_STATE:false}
+    keep-listening-cut-off-ms: ${INTERVIEWER_KEEP_LISTENING_CUT_OFF_MS:5000}
+    keep-listening-needs-time-ms: ${INTERVIEWER_KEEP_LISTENING_NEEDS_TIME_MS:10000}
+    max-keep-listening: ${INTERVIEWER_MAX_KEEP_LISTENING:2}
+    # The pool question's answer key and what was already demonstrated, in the turn prompt.
+    answer-key: ${INTERVIEWER_ANSWER_KEY:false}
   # Server-side code execution, for languages a browser cannot run. Off by default.
   #
   # Python runs in the candidate's own browser (Pyodide) and needs nothing here. Java

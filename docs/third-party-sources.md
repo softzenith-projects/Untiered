@@ -26,6 +26,26 @@ What we did not take: any question text, any answer, any rubric wording. No cont
 copied; this is attribution for an idea we would otherwise be quietly passing off as our
 own.
 
+## Pipecat — user-turn completion
+
+- Repository: <https://github.com/pipecat-ai/pipecat>
+- File consulted: `src/pipecat/turns/user_turn_completion_mixin.py`, the instructions
+  rendered by `_render_completion_instructions`.
+- Licence: BSD 2-Clause. Copyright (c) Daily and the Pipecat contributors.
+
+What we took: the protocol of having the model say whether the user had finished before it
+answers — complete, cut off mid-thought, or asking for time — the rule that "complete" means
+conversationally complete rather than long, the cues it lists for each (a phrase left open on
+a conjunction or an unfinished list; "let me think", "give me a second"), and its default
+waits of five and ten seconds for the two unfinished verdicts. Adapted, in our own words and
+with interview examples, as the turn-completion section of the turn prompt
+(`apps/api/src/main/resources/ai/prompts/assess-answer-turn-completion.md`) behind
+`interviewos.interviewer.turn-state`, and as the waits in `InterviewerRulesProperties`.
+
+What we did not take: any code, and none of the prompt text verbatim. Our verdicts are JSON
+fields in the response schema rather than Pipecat's marker characters, and the candidate
+intents (`repeat_request`, `self_correction` and the rest) are ours.
+
 ## What was looked for and not found
 
 Recorded because the absence is load-bearing, and because somebody will otherwise look

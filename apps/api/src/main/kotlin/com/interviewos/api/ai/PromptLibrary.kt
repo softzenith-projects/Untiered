@@ -4,6 +4,8 @@ import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.ArrayNode
+import tools.jackson.databind.node.ObjectNode
 
 /**
  * The prompts and response schemas, built once and shared by every provider.
@@ -45,7 +47,101 @@ class PromptLibrary(
     ): String =
         fillRound(fillBrief(loadPrompt(round.variant.resource), brief), round, clockFree = round.variant != AssessmentVariant.LEGACY)
             .replace("{{currentQuestion}}", currentQuestion)
-            .replace("{{history}}", historyOf(priorTurns).ifBlank { "(this is the first answer)" })
+            .replace("{{history}}", historyOf(priorTurns).ifBlank { "(this is the first answer)" } + turnSections(brief, round))
+
+    /**
+     * The response schema for an assessment: the variant's own file, plus the fields the
+     * turn-state and answer-key flags add on the turn variant. With both flags off this is the
+     * variant's file exactly, so the request is what it was before they existed.
+     */
+    fun assessmentSchema(round: RoundContext): JsonNode {
+        val base = schema(round.variant.resource)
+        if (round.variant != AssessmentVariant.TURN) return base
+        val extensions =
+            listOfNotNull(
+                round.turnCompletion?.let { "assess-answer-turn-state" },
+                round.answerKey?.let { "assess-answer-concepts" },
+            )
+        if (extensions.isEmpty()) return base
+        val merged = base as ObjectNode
+        val properties = merged.get("properties") as ObjectNode
+        val required = merged.get("required") as ArrayNode
+        extensions.map(::schema).forEach { extension ->
+            extension.path("properties").properties().forEach { (name, value) -> properties.set(name, value) }
+            extension.path("required").forEach { required.add(it) }
+        }
+        return merged
+    }
+
+    /**
+     * The sections the turn-state and answer-key flags add, after the conversation so far. Empty
+     * with both off, so the prompt is byte-for-byte the one before them (PRD 06).
+     */
+    private fun turnSections(
+        brief: InterviewBrief,
+        round: RoundContext,
+    ): String {
+        if (round.variant != AssessmentVariant.TURN) return ""
+        val sections =
+            listOfNotNull(
+                round.turnCompletion?.let { turnCompletionSection(it) },
+                round.answerKey?.let { answerKeySection(it, brief.company) },
+            )
+        return sections.joinToString("") { "\n\n" + it.trimEnd() }
+    }
+
+    private fun turnCompletionSection(context: TurnCompletionContext): String {
+        val waitNote =
+            when {
+                !context.mayWait -> {
+                    "You have already waited ${times(context.waitsSoFar)} on this question, which is as long as the room " +
+                        "waits. Do not wait again: set `turnState` to `complete` and take the floor. If they still have " +
+                        "nothing, help them with a `hint` or a `guide`, or move on."
+                }
+
+                context.waitsSoFar > 0 -> {
+                    "You have already waited ${times(context.waitsSoFar)} on this question. Wait again only if they are " +
+                        "plainly still in the middle of it."
+                }
+
+                else -> {
+                    "This is the first time the recording has stopped on this question."
+                }
+            }
+        return loadPrompt("assess-answer-turn-completion").replace("{{waitNote}}", waitNote)
+    }
+
+    private fun times(count: Int): String = if (count == 1) "once" else "$count times"
+
+    private fun answerKeySection(
+        key: AnswerKey,
+        company: String,
+    ): String {
+        val covers =
+            buildString {
+                if (key.strongAnswerCovers.isEmpty()) {
+                    append("(nothing recorded for this question: judge it on your own knowledge of the topic)")
+                } else {
+                    append(key.strongAnswerCovers.joinToString("\n") { "- ${it.trim()}" })
+                }
+                if (key.followUps.isNotEmpty()) {
+                    append("\n\nFollow-ups prepared for it, to use when they fit:\n")
+                    append(key.followUps.joinToString("\n") { "- ${it.trim()}" })
+                }
+            }
+        val demonstrated =
+            key.alreadyDemonstrated
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .takeLast(MAX_DEMONSTRATED)
+                .ifEmpty { listOf("(nothing recorded yet)") }
+                .joinToString("\n") { if (it.startsWith("(")) it else "- $it" }
+        return loadPrompt("assess-answer-turn-answer-key")
+            .replace("{{answerKey}}", covers)
+            .replace("{{alreadyDemonstrated}}", demonstrated)
+            .replace("{{company}}", company)
+    }
 
     fun offerHint(
         brief: InterviewBrief,
@@ -421,5 +517,8 @@ class PromptLibrary(
         const val WARMUP_PHASE = "warm-up"
         const val CLOSING_PHASE = "closing"
         const val MAIN_PHASE = "main round"
+
+        /** The most recent demonstrated points the prompt carries; a long round would otherwise grow it without end. */
+        const val MAX_DEMONSTRATED = 20
     }
 }

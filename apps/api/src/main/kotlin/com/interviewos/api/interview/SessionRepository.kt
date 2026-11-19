@@ -1131,6 +1131,135 @@ class SessionRepository(
             .param("i", turnIndex)
             .update() == 1
 
+    /**
+     * How often the room has been told to keep listening on one turn, and which request was
+     * told last (PRD 06, `interviewos.interviewer.turn-state`). Read only while that flag is on,
+     * so with it off no query touches the columns its migration adds. Null when there is no
+     * such turn.
+     */
+    fun findKeepListening(
+        sessionId: UUID,
+        userId: UUID,
+        turnIndex: Int,
+    ): KeepListeningRow? =
+        jdbcClient
+            .sql(
+                """
+                select keep_listening_count, keep_listening_request_id, keep_listening_state
+                  from public.session_turns
+                 where session_id = :s and user_id = :u and turn_index = :i
+                """.trimIndent(),
+            ).param("s", sessionId)
+            .param("u", userId)
+            .param("i", turnIndex)
+            .query { rs, _ ->
+                KeepListeningRow(
+                    count = rs.getInt("keep_listening_count"),
+                    requestId = rs.getObject("keep_listening_request_id", UUID::class.java),
+                    state = rs.getString("keep_listening_state"),
+                )
+            }.optional()
+            .orElse(null)
+
+    /**
+     * Counts one keep-listening verdict against the turn, by the request that holds its claim.
+     * The turn stays unanswered and its claim is released afterwards like any unfinished request,
+     * so the candidate's continued answer arrives as a new request.
+     */
+    fun recordKeepListening(
+        sessionId: UUID,
+        userId: UUID,
+        turnIndex: Int,
+        requestId: UUID,
+        state: String,
+    ): Boolean =
+        jdbcClient
+            .sql(
+                """
+                update public.session_turns
+                   set keep_listening_count = keep_listening_count + 1,
+                       keep_listening_request_id = :request,
+                       keep_listening_state = :state
+                 where session_id = :s and user_id = :u and turn_index = :i
+                   and answered_at is null
+                   and answer_request_id = :request
+                   and exists (
+                       select 1
+                         from public.sessions s
+                        where s.id = :s and s.user_id = :u and s.status = 'in_progress'
+                   )
+                """.trimIndent(),
+            ).param("request", requestId)
+            .param("state", state)
+            .param("s", sessionId)
+            .param("u", userId)
+            .param("i", turnIndex)
+            .update() == 1
+
+    /**
+     * What each answered turn's stored assessment says about the turn itself: the kind of turn
+     * the candidate took and what the answer demonstrated. Both are absent from assessments
+     * stored with the turn-state and answer-key flags off, which read as an answer that
+     * demonstrated nothing recorded.
+     */
+    fun turnMemory(
+        sessionId: UUID,
+        userId: UUID,
+    ): List<TurnMemory> =
+        jdbcClient
+            .sql(
+                """
+                select turn_index,
+                       assessment ->> 'candidateIntent' as candidate_intent,
+                       case when jsonb_typeof(assessment -> 'conceptsCovered') = 'array'
+                            then array(select jsonb_array_elements_text(assessment -> 'conceptsCovered'))
+                            else '{}'::text[]
+                       end as concepts_covered
+                  from public.session_turns
+                 where session_id = :s and user_id = :u and answered_at is not null
+                 order by turn_index
+                """.trimIndent(),
+            ).param("s", sessionId)
+            .param("u", userId)
+            .query { rs, _ ->
+                val concepts = rs.getArray("concepts_covered")?.array as? Array<*>
+                TurnMemory(
+                    turnIndex = rs.getInt("turn_index"),
+                    candidateIntent = rs.getString("candidate_intent"),
+                    conceptsCovered = concepts?.filterIsInstance<String>() ?: emptyList(),
+                )
+            }.list()
+
+    /**
+     * The answer key of the AI pool question a turn asked: what a strong answer covers and the
+     * follow-ups written with it. Null for a bank question or a question the model wrote.
+     */
+    fun poolAnswerKey(
+        sessionId: UUID,
+        userId: UUID,
+        turnIndex: Int,
+    ): PoolAnswerKey? =
+        jdbcClient
+            .sql(
+                """
+                select pq.strong_answer_covers, pq.follow_ups
+                  from public.session_turns t
+                  join public.pool_questions pq on pq.id = t.pool_question_id
+                 where t.session_id = :s and t.user_id = :u and t.turn_index = :i
+                """.trimIndent(),
+            ).param("s", sessionId)
+            .param("u", userId)
+            .param("i", turnIndex)
+            .query { rs, _ ->
+                val covers = rs.getArray("strong_answer_covers")?.array as? Array<*>
+                val followUps = rs.getArray("follow_ups")?.array as? Array<*>
+                PoolAnswerKey(
+                    strongAnswerCovers = covers?.filterIsInstance<String>() ?: emptyList(),
+                    followUps = followUps?.filterIsInstance<String>() ?: emptyList(),
+                )
+            }.optional()
+            .orElse(null)
+
     fun countAnsweredTurns(
         sessionId: UUID,
         userId: UUID,
@@ -1540,6 +1669,27 @@ data class TurnRow(
      * only by [listTranscript], like [poolStrongAnswerCovers].
      */
     val answerTimingJson: String? = null,
+)
+
+/** One turn's keep-listening state. See [SessionRepository.findKeepListening]. */
+data class KeepListeningRow(
+    val count: Int,
+    val requestId: UUID?,
+    /** `cut_off` or `needs_time`, or null when the room was never told to keep listening. */
+    val state: String?,
+)
+
+/** See [SessionRepository.turnMemory]. */
+data class TurnMemory(
+    val turnIndex: Int,
+    val candidateIntent: String?,
+    val conceptsCovered: List<String>,
+)
+
+/** See [SessionRepository.poolAnswerKey]. */
+data class PoolAnswerKey(
+    val strongAnswerCovers: List<String>,
+    val followUps: List<String>,
 )
 
 enum class TurnRequestClaimStatus {

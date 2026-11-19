@@ -15,6 +15,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *   interviewer:
  *     final-variant: true
  *     planned-fallback: true
+ *     turn-state: true
+ *     answer-key: true
  * ```
  */
 @ConfigurationProperties(prefix = "interviewos.interviewer")
@@ -52,6 +54,34 @@ data class InterviewerRulesProperties(
      * `model_knowledge` per turn, exactly as in a round with no bank at all.
      */
     val bankPoolFallthrough: Boolean = false,
+    /**
+     * The interviewer decides whether the candidate had finished before it answers them (PRD 06).
+     *
+     * The browser ends a turn on a few seconds of quiet, and quiet is not the same as finished:
+     * "give me a second" and a sentence that stops on "because" both used to be assessed as the
+     * answer. With this on, the turn prompt asks the model for a `turnState` and a
+     * `candidateIntent`. A `cut_off` or `needs_time` turn is not recorded as answered: the room
+     * keeps listening on the same question for [keepListeningCutOffMs] or [keepListeningNeedsTimeMs],
+     * at most [maxKeepListening] times in a row, and then the next verdict is taken as complete.
+     * A request to repeat or clarify the question may re-ask it and spends no follow-up budget.
+     *
+     * Only on the turn variant ([finalVariant] on) and only in spoken rounds: a workspace round
+     * is quiet while the candidate types, which is work, not a pause.
+     */
+    val turnState: Boolean = false,
+    /** How long the room waits on a turn that stopped mid-thought. Pipecat's default for the same verdict. */
+    val keepListeningCutOffMs: Long = 5_000,
+    /** How long the room waits on a candidate who asked for time. Pipecat's default for the same verdict. */
+    val keepListeningNeedsTimeMs: Long = 10_000,
+    /** Consecutive keep-listening verdicts on one turn before the next is treated as complete. */
+    val maxKeepListening: Int = 2,
+    /**
+     * The turn prompt carries the answer key of the question being answered, when it came from
+     * the AI pool (its `strongAnswerCovers` and `followUps`), and what the candidate has already
+     * demonstrated earlier in the round, from each turn's stored `conceptsCovered`. Turn variant
+     * only, like [turnState], and independent of it.
+     */
+    val answerKey: Boolean = false,
     /** Phrases that announce the end of the interview, matched case-insensitively. */
     val wrapUpPhrases: List<String> = DEFAULT_WRAP_UP_PHRASES,
 ) {
