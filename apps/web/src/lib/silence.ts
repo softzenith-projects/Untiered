@@ -92,3 +92,109 @@ export function shouldEndWorkspace(
   if (!shouldEnd(state, now, startedAt, WORKSPACE_SILENCE_TO_END_MS)) return false;
   return lastWorkAt === null || now - lastWorkAt >= WORKSPACE_ACTIVITY_GRACE_MS;
 }
+
+/*
+ * Speech-probability endpointing (PRD §interview, voice loop).
+ *
+ * The volume rule above never ends an answer in a noisy room and is slow for a brisk
+ * speaker. This path takes a speech probability from a voice-activity model instead, and
+ * learns how long this candidate pauses within an answer.
+ *
+ * The dynamic silence window is adapted from LiveKit Agents' `DynamicEndpointing`
+ * (livekit-agents/livekit/agents/voice/endpointing.py, Apache-2.0,
+ * https://github.com/livekit/agents): an exponential moving average of the pauses a speaker
+ * takes between their own utterances, carried across turns. See docs/third-party-sources.md.
+ */
+
+/** Probability at or above which a frame counts as speech (vad-web's default positive threshold). */
+export const SPEECH_PROBABILITY_START = 0.3;
+
+/** Probability below which a speaking frame counts as silence again. Between the two, hold. */
+export const SPEECH_PROBABILITY_END = 0.25;
+
+/** Weight on the previous average in the moving average; the newest pause gets the rest. */
+export const PAUSE_EMA_ALPHA = 0.9;
+
+/** The average a candidate starts with: a 2.5s window until we have seen them pause. */
+export const INITIAL_PAUSE_EMA_MS = 1_000;
+
+/** Fixed part of the silence window, before the learned pause is added. */
+export const ENDPOINT_BASE_MS = 1_000;
+
+/** How many of the candidate's own typical pauses the window allows on top of the base. */
+export const ENDPOINT_PAUSE_MULTIPLIER = 1.5;
+
+/** The window never gets shorter than this, however brisk the speaker. */
+export const MIN_ENDPOINT_MS = 2_000;
+
+/** The window never gets longer than this, however slow the speaker. */
+export const MAX_ENDPOINT_MS = 4_500;
+
+/** A gap shorter than this is breath or a stop consonant, not a pause worth learning from. */
+export const MIN_LEARNABLE_PAUSE_MS = 300;
+
+/** If speech resumes within this long of an automatic submit, the answer was cut off. */
+export const RESUME_AFTER_SUBMIT_MS = 3_000;
+
+export interface ProbabilitySilenceState extends SilenceState {
+  /** Hysteresis memory: whether the previous frame was inside speech. */
+  voiced: boolean;
+  /**
+   * Set only on the frame where speech resumed after a pause within the answer: how long
+   * that pause was. The caller feeds it to `learnPause`.
+   */
+  resumedPauseMs: number | null;
+}
+
+export const initialProbabilityState: ProbabilitySilenceState = {
+  ...initialSilenceState,
+  voiced: false,
+  resumedPauseMs: null,
+};
+
+/**
+ * Folds one speech-probability frame into the running state. Hysteresis stops a
+ * probability hovering near one threshold from flickering between speech and silence.
+ * The "has spoken" and "silent since" bookkeeping is shared with the volume rule, so
+ * `SPEECH_TO_START_MS` still applies and nothing ends before they have spoken.
+ */
+export function observeProbability(
+  state: ProbabilitySilenceState,
+  probability: number,
+  now: number,
+): ProbabilitySilenceState {
+  const voiced = probability >= SPEECH_PROBABILITY_START
+    ? true
+    : probability < SPEECH_PROBABILITY_END
+      ? false
+      : state.voiced;
+  const next = observe(state, voiced ? 1 : 0, now);
+  const resumed = voiced && state.hasSpoken && state.silentSince !== null;
+  return {
+    ...next,
+    voiced,
+    resumedPauseMs: resumed ? now - state.silentSince! : null,
+  };
+}
+
+/**
+ * Updates the learned pause length. Pauses too short to be pauses are ignored, and one
+ * longer than the window can ever be is capped so a single long think does not drag it up.
+ */
+export function learnPause(emaMs: number, pauseMs: number | null): number {
+  if (pauseMs === null || pauseMs < MIN_LEARNABLE_PAUSE_MS) return emaMs;
+  const capped = Math.min(pauseMs, MAX_ENDPOINT_MS);
+  return PAUSE_EMA_ALPHA * emaMs + (1 - PAUSE_EMA_ALPHA) * capped;
+}
+
+/** Silence needed to end a spoken (non-workspace) answer, given this candidate's average pause. */
+export function dynamicSilenceMs(emaMs: number): number {
+  const window = ENDPOINT_BASE_MS + ENDPOINT_PAUSE_MULTIPLIER * emaMs;
+  return Math.min(MAX_ENDPOINT_MS, Math.max(MIN_ENDPOINT_MS, window));
+}
+
+/** Whether speech began again soon enough after an automatic submit to call it a false cut-off. */
+export function resumedAfterSubmit(submittedAt: number, speechAt: number): boolean {
+  const elapsed = speechAt - submittedAt;
+  return elapsed >= 0 && elapsed <= RESUME_AFTER_SUBMIT_MS;
+}

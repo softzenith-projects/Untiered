@@ -25,7 +25,21 @@ import {
   saveBoard,
   submitAnswer,
 } from "@/lib/api";
-import { initialSilenceState, observe, shouldEnd, shouldEndWorkspace } from "@/lib/silence";
+import { vadEndpointingEnabled } from "@/lib/flags";
+import {
+  INITIAL_PAUSE_EMA_MS,
+  SILENCE_TO_END_MS,
+  dynamicSilenceMs,
+  initialProbabilityState,
+  initialSilenceState,
+  learnPause,
+  observe,
+  observeProbability,
+  shouldEnd,
+  shouldEndWorkspace,
+} from "@/lib/silence";
+import { type AutoSubmit, useResumeWatch } from "@/lib/use-resume-watch";
+import { isFresh, useSpeechProbability } from "@/lib/use-speech-probability";
 import { revealedText } from "@/lib/spoken-text";
 import { useBrowserVoice } from "@/lib/use-browser-voice";
 import { useLiveTranscript } from "@/lib/use-live-transcript";
@@ -154,6 +168,12 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
   // status meant a candidate who declined video was recorded anyway (PRD 12).
   const withVideo = session?.consentVideo === true;
   const capture = useInterviewCapture({ withVideo });
+  // Speech-probability endpointing (flag off by default). The learned pause length lives
+  // for the whole session, so a candidate's pace carries from one answer to the next.
+  const vadOn = vadEndpointingEnabled();
+  const speechFrames = useSpeechProbability(capture.stream, vadOn);
+  const pauseEma = useRef(INITIAL_PAUSE_EMA_MS);
+  const autoSubmit = useRef<AutoSubmit | null>(null);
   /*
    * The interviewer speaks locally when the browser has a voice worth using: instantly,
    * for nothing, and reporting where in the sentence it has reached — which is the sync
@@ -556,28 +576,61 @@ export function InterviewRoom({ sessionId }: { sessionId: string }) {
     if (!resumed) takeStartedAt.current = startedAt;
     const clockFrom = takeStartedAt.current;
     let silence = initialSilenceState;
+    let probability = initialProbabilityState;
     let ended = false;
+    autoSubmit.current = null;
 
     const TICK_MS = 200;
     const id = setInterval(() => {
       const now = Date.now();
       setElapsed(Math.floor((now - clockFrom) / 1000));
 
+      // The voice model's probability when it is running, otherwise microphone volume.
+      const frame = speechFrames.current;
+      const useProbability = vadOn && isFresh(frame, now);
       silence = observe(silence, latest.current.level, now);
+      if (useProbability) {
+        probability = observeProbability(probability, frame.p, now);
+        pauseEma.current = learnPause(pauseEma.current, probability.resumedPauseMs);
+      }
+      const active = useProbability ? probability : silence;
+      const silenceMs = useProbability ? dynamicSilenceMs(pauseEma.current) : SILENCE_TO_END_MS;
       const over = hasWorkspace
-        ? shouldEndWorkspace(silence, now, startedAt, lastWorkspaceChange.current) ||
+        ? shouldEndWorkspace(active, now, startedAt, lastWorkspaceChange.current) ||
           now - startedAt >= LONGEST_WORKSPACE_TAKE_MS
-        : shouldEnd(silence, now, startedAt);
+        : shouldEnd(active, now, startedAt, silenceMs);
       // Told to keep listening and nothing more was said: the interviewer comes back in anyway.
-      const waitedOut = resumed !== null && !silence.hasSpoken && now - startedAt >= resumed.waitMs;
+      const waitedOut = resumed !== null && !active.hasSpoken && now - startedAt >= resumed.waitMs;
       if (!ended && (over || waitedOut)) {
         ended = true;
+        autoSubmit.current = { at: now, windowMs: hasWorkspace ? 0 : silenceMs };
         void latest.current.finish();
       }
     }, TICK_MS);
 
     return () => clearInterval(id);
-  }, [phase, hasWorkspace, answerTake]);
+  }, [phase, hasWorkspace, answerTake, speechFrames, vadOn]);
+
+  // A candidate who starts talking again just after an automatic submit was cut off; report
+  // the window that did it. Content-free: an event name and a duration.
+  const reportResumed = useCallback(
+    (windowMs: number) => {
+      if (!accessToken || !turn) return;
+      reportInterviewClientEvent(
+        accessToken,
+        sessionId,
+        "turn_resumed_after_submit",
+        turn.turnIndex,
+        windowMs,
+        answerRequestIds.current.get(turn.turnIndex),
+        "submitting",
+      ).catch(() => {
+        // Telemetry must never disturb the round.
+      });
+    },
+    [accessToken, sessionId, turn],
+  );
+  useResumeWatch(phase === "submitting", autoSubmit, capture.stream, speechFrames, reportResumed);
 
   const beginAnswering = useCallback(async () => {
     const started = await capture.start();
