@@ -10,6 +10,7 @@ const fetchSession = vi.hoisted(() => vi.fn());
 const beginSession = vi.hoisted(() => vi.fn());
 const captureStart = vi.hoisted(() => vi.fn());
 const captureStop = vi.hoisted(() => vi.fn());
+const captureSnapshot = vi.hoisted(() => vi.fn());
 const captureLevel = vi.hoisted(() => ({ current: 0 }));
 const dsaWorkspaceRender = vi.hoisted(() => vi.fn());
 const dsaBoard = vi.hoisted(() => ({ onChange: null as ((board: BoardState) => void) | null }));
@@ -103,6 +104,7 @@ vi.mock("@/lib/use-interview-capture", () => ({
     requestDevices: vi.fn(),
     start: captureStart,
     stop: captureStop,
+    snapshot: captureSnapshot,
     release: vi.fn(),
     isRecording: false,
   }),
@@ -724,5 +726,140 @@ describe("interviewerDesignation", () => {
         companyName: "General practice",
       }),
     ).toBe("Engineer · Technical fundamentals");
+  });
+});
+
+describe("InterviewRoom keep-listening (PRD 06)", () => {
+  const spokenRound = { ...baseSession, workspace: null, listensThroughPauses: true } as SessionView;
+  const nextTurn = {
+    turnIndex: 1,
+    questionText: "What did you measure first?",
+    questionAudioUrl: null,
+    questionAudioStatus: "unavailable",
+    phase: "main",
+    answered: false,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    auth.token = "token-abc";
+    captureLevel.current = 0;
+    questionAudio.current = { url: null, status: "unavailable" };
+    transcript.supported = false;
+    captureStart.mockResolvedValue(true);
+    const take = { audio: new Blob(["voice"], { type: "audio/webm" }), durationMs: 4_000, timing: null };
+    captureStop.mockResolvedValue(take);
+    captureSnapshot.mockResolvedValue(take);
+    submitAnswer.mockReset();
+    beginSession.mockResolvedValue({
+      startedAt: new Date().toISOString(),
+      scheduledEndAt: new Date(Date.now() + 30 * 60_000).toISOString(),
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function enterAndSpeak(session: SessionView) {
+    fetchSession.mockResolvedValue(session);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const view = render(<InterviewRoom sessionId={baseSession.id} />);
+    await user.click(await screen.findByRole("button", { name: "Enter the room" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+    expect(captureStart).toHaveBeenCalledTimes(1);
+    await speakThenPause(view.rerender);
+    return view;
+  }
+
+  async function speakThenPause(rerender: (ui: React.ReactElement) => void) {
+    captureLevel.current = 0.4;
+    rerender(<InterviewRoom sessionId={baseSession.id} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_500); });
+    captureLevel.current = 0;
+    rerender(<InterviewRoom sessionId={baseSession.id} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(4_000); });
+  }
+
+  it("keeps the same take going when the interviewer says they had not finished", async () => {
+    submitAnswer
+      .mockResolvedValueOnce({
+        sessionComplete: false,
+        turnsCompleted: 0,
+        nextTurn: null,
+        keepListening: { turnState: "needs_time", waitMs: 10_000 },
+      })
+      .mockResolvedValueOnce({ sessionComplete: false, turnsCompleted: 1, nextTurn });
+
+    await enterAndSpeak(spokenRound);
+
+    // A snapshot went up; the recorder was never stopped, and no new take was opened.
+    expect(submitAnswer).toHaveBeenCalledTimes(1);
+    expect(captureSnapshot).toHaveBeenCalledTimes(1);
+    expect(captureStop).not.toHaveBeenCalled();
+    expect(captureStart).toHaveBeenCalledTimes(1);
+    // Back to listening, on the same question, with nothing new on screen.
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+    expect(screen.getAllByText("Tell me about the project.").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    // They say nothing more: the take goes again once the server's wait is up, not before.
+    await act(async () => { await vi.advanceTimersByTimeAsync(9_000); });
+    expect(submitAnswer).toHaveBeenCalledTimes(1);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1_400); });
+    expect(submitAnswer).toHaveBeenCalledTimes(2);
+
+    const [first, second] = submitAnswer.mock.calls as [unknown[], unknown[]];
+    expect(second[2]).toBe(first[2]);
+    // The continued answer is a new request: the first was answered, with "keep listening".
+    expect(second[4]).not.toBe(first[4]);
+    // The answer is in: the held recorder is stopped, and the next question is asked.
+    await waitFor(() => expect(captureStop).toHaveBeenCalledTimes(1));
+    expect((await screen.findAllByText("What did you measure first?")).length).toBeGreaterThan(0);
+  });
+
+  it("submits the continued take on silence once they carry on talking", async () => {
+    submitAnswer
+      .mockResolvedValueOnce({
+        sessionComplete: false,
+        turnsCompleted: 0,
+        nextTurn: null,
+        keepListening: { turnState: "cut_off", waitMs: 5_000 },
+      })
+      .mockResolvedValueOnce({ sessionComplete: false, turnsCompleted: 1, nextTurn });
+
+    const { rerender } = await enterAndSpeak(spokenRound);
+    expect(submitAnswer).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+
+    await speakThenPause(rerender);
+
+    expect(submitAnswer).toHaveBeenCalledTimes(2);
+    expect(captureSnapshot).toHaveBeenCalledTimes(2);
+  });
+
+  it("records and submits exactly as before when the server never holds the floor", async () => {
+    submitAnswer.mockResolvedValueOnce({ sessionComplete: false, turnsCompleted: 1, nextTurn });
+
+    await enterAndSpeak({ ...baseSession, workspace: null } as SessionView);
+
+    expect(submitAnswer).toHaveBeenCalledTimes(1);
+    expect(captureStop).toHaveBeenCalledTimes(1);
+    expect(captureSnapshot).not.toHaveBeenCalled();
+    expect((await screen.findAllByText("What did you measure first?")).length).toBeGreaterThan(0);
+  });
+
+  it("stops the held recorder before asking again when the answer was not heard", async () => {
+    submitAnswer.mockRejectedValueOnce(
+      new ApiRequestError(422, "answer_not_heard", "We didn't catch that answer clearly. Please give it again."),
+    );
+
+    await enterAndSpeak(spokenRound);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Please give it again.");
+    expect(captureStop).toHaveBeenCalledTimes(1);
+    expect(captureStart).toHaveBeenCalledTimes(2);
+    expect(captureStop.mock.invocationCallOrder[0]).toBeLessThan(captureStart.mock.invocationCallOrder[1]!);
   });
 });

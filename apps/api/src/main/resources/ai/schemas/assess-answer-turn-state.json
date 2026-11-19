@@ -1,0 +1,38 @@
+{
+  "type": "OBJECT",
+  "description": "Merged into assess-answer-turn.json when interviewos.interviewer.turn-state is on. Not a response schema on its own.",
+  "properties": {
+    "turnState": {
+      "type": "STRING",
+      "description": "Whether the candidate had finished: complete, cut_off (stopped mid-thought) or needs_time (asked for time, or holding the floor with no answer yet).",
+      "enum": [
+        "complete",
+        "cut_off",
+        "needs_time"
+      ]
+    },
+    "candidateIntent": {
+      "type": "STRING",
+      "description": "What kind of turn it was. Only meaningful when turnState is complete.",
+      "enum": [
+        "answer",
+        "confirmation",
+        "clarification",
+        "repeat_request",
+        "hint_request",
+        "asks_question",
+        "self_correction",
+        "off_topic"
+      ]
+    },
+    "selfCorrection": {
+      "type": "STRING",
+      "description": "When they corrected themselves: what they first said and what they meant, as 'first -> meant'.",
+      "nullable": true
+    }
+  },
+  "required": [
+    "turnState",
+    "candidateIntent"
+  ]
+}

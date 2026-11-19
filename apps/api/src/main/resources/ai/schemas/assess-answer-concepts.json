@@ -1,0 +1,22 @@
+{
+  "type": "OBJECT",
+  "description": "Merged into assess-answer-turn.json when interviewos.interviewer.answer-key is on. Not a response schema on its own.",
+  "properties": {
+    "conceptsCovered": {
+      "type": "ARRAY",
+      "description": "Points of a strong answer this answer actually demonstrated, as short phrases.",
+      "items": {
+        "type": "STRING"
+      },
+      "nullable": true
+    },
+    "conceptsMissing": {
+      "type": "ARRAY",
+      "description": "Points a strong answer would cover that this answer did not, as short phrases.",
+      "items": {
+        "type": "STRING"
+      },
+      "nullable": true
+    }
+  }
+}

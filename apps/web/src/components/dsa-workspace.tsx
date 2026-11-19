@@ -95,7 +95,7 @@ export function DsaWorkspace({
         stdout: outcome.stdout,
         stderr: outcome.stderr,
         passed:
-          outcome.available && !outcome.timedOut && !outcome.stderr
+          outcome.available && !outcome.timedOut && !("outputLimited" in outcome && outcome.outputLimited) && !outcome.stderr
             ? matchesExpected(outcome.stdout, testCase.expected)
             : null,
         message: outcome.message,

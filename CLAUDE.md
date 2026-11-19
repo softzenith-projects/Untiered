@@ -318,8 +318,10 @@ interviewbit.com: a bright, confident, polished learning-platform look.
   The interviewer is **Krivih**, drawn as an unmistakably artificial, glowing circuit-style
   head (owner, 4 November 2026; it used to be nameless). It must never look like a real
   person: a synthetic photoreal human face gets mistaken for one, and a candidate who
-  believes there is a human here has been lied to. The name is in the UI and marketing; the
-  spoken prompts do not introduce it yet (that needs a live check). A photoreal
+  believes there is a human here has been lied to. The name is in the UI and marketing, and
+  since 19 November 2026 (owner) the interviewer says it: the opening introduces "Krivih, your
+  AI interviewer", and every turn prompt answers "who are you / are you human" with the same.
+  It never claims to be a person or to work at the employer. A photoreal
   talking-head vendor is a live option but commits real spend, so it is the owner's call.
 - **Recording consent is a hard gate.** Explicit, specific consent before capture
   starts, stored with a timestamp. No consent, no session. Account deletion removes the

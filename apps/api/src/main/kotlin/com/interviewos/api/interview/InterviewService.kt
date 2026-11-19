@@ -3,13 +3,17 @@ package com.interviewos.api.interview
 import com.interviewos.api.ai.AiSpendContext
 import com.interviewos.api.ai.AiUnavailableException
 import com.interviewos.api.ai.AnswerAudio
+import com.interviewos.api.ai.AnswerKey
 import com.interviewos.api.ai.AskedQuestion
 import com.interviewos.api.ai.AssessmentVariant
+import com.interviewos.api.ai.CandidateIntent
 import com.interviewos.api.ai.Intervention
 import com.interviewos.api.ai.InterviewAi
 import com.interviewos.api.ai.InterviewBrief
 import com.interviewos.api.ai.PlannedQuestion
 import com.interviewos.api.ai.RoundContext
+import com.interviewos.api.ai.TurnCompletionContext
+import com.interviewos.api.ai.TurnState
 import com.interviewos.api.ai.TurnTranscript
 import com.interviewos.api.bank.BankQuestion
 import com.interviewos.api.billing.BillingProperties
@@ -728,15 +732,36 @@ class InterviewService(
             }
             if (claim.status != TurnRequestClaimStatus.ACQUIRED) throw sessionStateChanged()
 
+            // Keep-listening (PRD 06): whether the candidate had finished is asked only here. With
+            // the flag off nothing below reads or writes any of it.
+            val listens = listensThroughPauses(session)
+            val held = if (listens) repository.findKeepListening(sessionId, userId, turnIndex) else null
+            if (held != null && held.requestId == requestId) {
+                // This very request was told to keep listening and is being retried: the same answer
+                // again, with no second model call, as a completed request gets its stored response.
+                return keepListeningResponse(sessionId, userId, TurnState.parse(held.state))
+            }
+
             val roundType = RoundType.fromDbValue(session.roundType)
-            val priorTurns =
+            val priorRows =
                 repository
                     .listTranscript(sessionId, userId)
                     .filter { it.turnIndex < turnIndex && it.answerTranscript != null }
-                    .map { it.toTranscript() }
+            val priorTurns = priorRows.map { it.toTranscript() }
+            val memory =
+                if (listens || interviewerRules.answerKey) repository.turnMemory(sessionId, userId) else emptyList()
+            // A turn that asked for the question again, or asked about it, spent none of the
+            // follow-up budget: it is passed over in the count rather than counted or breaking it.
+            val reAskTurns =
+                if (listens) {
+                    memory.filter { CandidateIntent.parse(it.candidateIntent).reAsksTheQuestion }.map { it.turnIndex }.toSet()
+                } else {
+                    emptySet()
+                }
             val consecutiveFollowUps =
-                priorTurns
+                priorRows
                     .asReversed()
+                    .filter { it.turnIndex !in reAskTurns }
                     .takeWhile { it.nextAction in FOLLOW_UP_ACTIONS }
                     .size
             val mustMoveOn = consecutiveFollowUps >= roundType.followUpLimit
@@ -778,6 +803,24 @@ class InterviewService(
                     !interviewerRules.finalVariant -> AssessmentVariant.LEGACY
                     finalTurn -> AssessmentVariant.FINAL
                     else -> AssessmentVariant.TURN
+                }
+            val turnCompletion =
+                if (listens && variant == AssessmentVariant.TURN) {
+                    val waits = held?.count ?: 0
+                    TurnCompletionContext(waitsSoFar = waits, mayWait = waits < interviewerRules.maxKeepListening)
+                } else {
+                    null
+                }
+            val answerKey =
+                if (interviewerRules.answerKey && variant == AssessmentVariant.TURN) {
+                    val key = repository.poolAnswerKey(sessionId, userId, turnIndex)
+                    AnswerKey(
+                        strongAnswerCovers = key?.strongAnswerCovers.orEmpty(),
+                        followUps = key?.followUps.orEmpty(),
+                        alreadyDemonstrated = memory.filter { it.turnIndex < turnIndex }.flatMap { it.conceptsCovered },
+                    )
+                } else {
+                    null
                 }
 
             val resolution =
@@ -828,6 +871,8 @@ class InterviewService(
                                     followUpLimit = roundType.followUpLimit,
                                     mustMoveOn = mustMoveOn,
                                     variant = variant,
+                                    turnCompletion = turnCompletion,
+                                    answerKey = answerKey,
                                 ),
                             priorTurns = priorTurns,
                             currentQuestion = turn.questionText,
@@ -911,6 +956,41 @@ class InterviewService(
                 )
                 if (refused) throw echoedAnswer(userId, sessionId, turnIndex, requestId)
             }
+
+            // Had they finished? Only asked with the flag on; otherwise every answer is complete.
+            val turnState = if (turnCompletion != null) TurnState.parse(assessment.value.turnState) else TurnState.COMPLETE
+            if (turnState.keepsListening) {
+                if (turnCompletion?.mayWait == true) {
+                    // Not answered, not advanced, nothing spent but the call itself, which is on the
+                    // spend ledger already. The claim is released in `finally`, so the rest of this
+                    // answer arrives as a new request.
+                    if (!repository.recordKeepListening(sessionId, userId, turnIndex, requestId, turnState.wireValue)) {
+                        throw sessionStateChanged()
+                    }
+                    recordEvent(
+                        userId,
+                        sessionId,
+                        "turn_keep_listening",
+                        turnIndex,
+                        requestId,
+                        outcome = "applied",
+                        reason = turnState.wireValue,
+                    )
+                    return keepListeningResponse(sessionId, userId, turnState)
+                }
+                // The room has waited as long as it waits: this is taken as the answer.
+                recordEvent(
+                    userId,
+                    sessionId,
+                    "turn_keep_listening",
+                    turnIndex,
+                    requestId,
+                    outcome = "fallback",
+                    reason = turnState.wireValue,
+                )
+            }
+            val reAskRequested =
+                turnCompletion != null && CandidateIntent.parse(assessment.value.candidateIntent).reAsksTheQuestion
 
             val suggestedAction = normaliseAction(assessment.value.suggestedNextAction)
             // The model advises how to continue; it does not own the clock. It sometimes
@@ -1033,13 +1113,16 @@ class InterviewService(
                                 modelSaysAskedPlanned = assessment.value.askedPlannedQuestion,
                                 planned = planned,
                                 plannedWasConsidered = plannedWasConsidered,
-                                askNow = askNow,
+                                // Asked to repeat or explain the question, the interviewer does that
+                                // first; the planned question waits for the next turn.
+                                askNow = askNow && !reAskRequested,
                                 plan = plan,
                                 fallbackContext = FallbackContext(userId, session, roundType, resolution.archetype, background),
                                 answered = answered,
                                 askedSoFar = priorTurns.map { it.questionText } + turn.questionText,
                                 helpGiven = nextAction in HELP_ACTIONS || intervention.isAssisted,
                                 events = guardEvents,
+                                reAskRequested = reAskRequested,
                             )
                         val askedFrom = choice.askedFrom
                         val nextText = choice.text
@@ -1336,8 +1419,21 @@ class InterviewService(
         val language =
             CodeLanguage.parse(request.language)
                 ?: throw ApiException.badRequest("This round takes Python or Java.")
-        return codeRunner.run(language, request.source, request.stdin)
+        val result = codeRunner.run(language, request.source, request.stdin)
+        // No source, input or output: only how the run ended and how long it took, so a report
+        // of "Run kept stopping" can be answered from the ledger instead of guessed at.
+        recordEvent(userId, sessionId, "code_run", outcome = codeRunOutcome(result), durationMs = result.wallTimeMillis)
+        return result
     }
+
+    private fun codeRunOutcome(result: CodeRunResult): String =
+        when {
+            !result.available -> "unavailable"
+            result.timedOut -> "timed_out"
+            result.outputLimited -> "output_limited"
+            result.exitCode != 0 -> "failed"
+            else -> "succeeded"
+        }
 
     /** Stores the board, so a reload does not lose twenty minutes of drawing. */
     fun saveBoard(
@@ -1526,13 +1622,17 @@ class InterviewService(
         askedSoFar: List<String>,
         helpGiven: Boolean,
         events: MutableList<GuardEvent>,
+        /** The candidate asked for the question again, or about it (turn-state). Always false with the flag off. */
+        reAskRequested: Boolean = false,
     ): NextLine {
         val rules = interviewerRules
         val resolved = modelText?.let { PlannedQuestionCheck.resolveText(planned?.text, askNow, modelSaysAskedPlanned, it) }
         val facts =
             TurnGuards.TurnFacts(
                 briefing = plan.briefTheCandidate,
-                askedSoFar = askedSoFar,
+                // Asked to repeat it, the interviewer may say the question just answered again in the
+                // same words; it is still checked against every question before it.
+                askedSoFar = if (reAskRequested) askedSoFar.dropLast(1) else askedSoFar,
                 reAskAllowed = helpGiven && !TurnGuards.wasReAsk(askedSoFar, rules.repeatThreshold),
             )
         val violations =
@@ -1596,6 +1696,35 @@ class InterviewService(
             context.background?.tenure?.totalExperienceMonths,
         )
     }
+
+    /**
+     * Whether this session's room may be told to keep listening (PRD 06): the turn-state flag,
+     * on the turn variant it is written for, in a spoken round. A workspace round goes quiet
+     * while the candidate types, and that is work, not a pause.
+     */
+    private fun listensThroughPauses(session: SessionRow): Boolean =
+        interviewerRules.turnState && interviewerRules.finalVariant && session.workspace == null
+
+    private fun keepListeningResponse(
+        sessionId: UUID,
+        userId: UUID,
+        state: TurnState,
+    ): SubmitAnswerResponse =
+        SubmitAnswerResponse(
+            sessionComplete = false,
+            turnsCompleted = repository.countAnsweredTurns(sessionId, userId),
+            nextTurn = null,
+            keepListening =
+                KeepListening(
+                    turnState = state.wireValue,
+                    waitMs =
+                        if (state == TurnState.CUT_OFF) {
+                            interviewerRules.keepListeningCutOffMs
+                        } else {
+                            interviewerRules.keepListeningNeedsTimeMs
+                        },
+                ),
+        )
 
     private fun sha256Hex(bytes: ByteArray): String =
         MessageDigest
@@ -1671,6 +1800,7 @@ class InterviewService(
                     ?.let { turnViewOf(it, userId, sessionId) },
             focusTopic = session.focusTopic,
             assigned = session.assigned,
+            listensThroughPauses = listensThroughPauses(session),
         )
     }
 
@@ -1920,6 +2050,8 @@ class InterviewService(
         followUpLimit: Int = 2,
         mustMoveOn: Boolean = false,
         variant: AssessmentVariant = AssessmentVariant.LEGACY,
+        turnCompletion: TurnCompletionContext? = null,
+        answerKey: AnswerKey? = null,
     ) = RoundContext(
         phase =
             when (phase) {
@@ -1936,6 +2068,8 @@ class InterviewService(
         followUpLimit = followUpLimit,
         mustMoveOn = mustMoveOn,
         variant = variant,
+        turnCompletion = turnCompletion,
+        answerKey = answerKey,
     )
 
     private fun TurnRow.toTranscript() =

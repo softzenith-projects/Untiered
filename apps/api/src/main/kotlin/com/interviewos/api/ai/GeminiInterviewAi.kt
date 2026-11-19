@@ -279,7 +279,7 @@ class GeminiInterviewAi(
         val prompt = prompts.assessAnswer(brief, round, priorTurns, currentQuestion)
 
         val parts = listOf(textPart(prompt), inlineDataPart(answer.contentType, answer.bytes))
-        val (node, usage) = generateJson(reasoningModel, parts, prompts.schema(round.variant.resource), Thinking.IN_THE_ROOM, inRoomClient)
+        val (node, usage) = generateJson(reasoningModel, parts, prompts.assessmentSchema(round), Thinking.IN_THE_ROOM, inRoomClient)
         return decodedResult(node, usage, AnswerAssessment::class.java)
     }
 

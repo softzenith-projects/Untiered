@@ -123,6 +123,12 @@ export interface SessionView {
    * Optional so an older API without the field reads as a personal round.
    */
   assigned?: boolean;
+  /**
+   * The server may answer a submitted turn with `keepListening` (PRD 06). Only then does the
+   * room record each answer as one continuous take it can resume; otherwise it records and
+   * submits exactly as before.
+   */
+  listensThroughPauses?: boolean;
 }
 
 /** The material a round runs on. Discriminated on `kind`; more rounds may grow one. */
@@ -221,9 +227,14 @@ export interface CodeRunResult {
   stdout: string;
   stderr: string;
   exitCode: number;
+  /** Stopped at the run deadline. */
   timedOut: boolean;
   available: boolean;
   message: string | null;
+  /** Stopped because it printed more than the runner keeps; the output is its start. */
+  outputLimited: boolean;
+  /** How long the program ran, as the runner measured it. Null when nothing ran. */
+  wallTimeMillis: number | null;
 }
 
 /** One line of intent, as the candidate typed it. */
@@ -319,6 +330,19 @@ export interface SubmitAnswerResponse {
    * otherwise. The room speaks it before showing the completion screen.
    */
   closingRemark?: string | null;
+  /**
+   * Set when the candidate had not finished (PRD 06): nothing was answered, and the room keeps
+   * listening on the same question. Absent on every other response.
+   */
+  keepListening?: KeepListening | null;
+}
+
+/** The interviewer is not taking the floor yet. See `SubmitAnswerResponse.keepListening`. */
+export interface KeepListening {
+  /** `cut_off` (stopped mid-thought) or `needs_time` (asked for time). */
+  turnState: "cut_off" | "needs_time";
+  /** How long to wait in silence before submitting the take again. */
+  waitMs: number;
 }
 
 /**

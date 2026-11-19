@@ -43,6 +43,8 @@ const result = (overrides: Partial<CodeRunResult> = {}): CodeRunResult => ({
   timedOut: false,
   available: true,
   message: null,
+  outputLimited: false,
+  wallTimeMillis: null,
   ...overrides,
 });
 
